@@ -1,0 +1,1 @@
+<?php require "vendor/autoload.php"; $app = require_once "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach(App\Models\CartItem::all() as $i) { $i->unit_price = $i->product->selling_price * 0.8; $i->save(); echo $i->product->name . " updated\n"; }

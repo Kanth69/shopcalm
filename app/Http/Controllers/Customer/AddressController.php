@@ -1,0 +1,55 @@
+<?php
+
+namespace App\Http\Controllers\Customer;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreAddressRequest;
+use App\Models\Address;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class AddressController extends Controller
+{
+    public function index()
+    {
+        $addresses = Auth::user()->addresses;
+        return view('customer.account.addresses', compact('addresses'));
+    }
+
+    public function create()
+    {
+        return view('customer.account.addresses.create');
+    }
+
+    public function store(StoreAddressRequest $request)
+    {
+        Auth::user()->addresses()->create($request->validated());
+        return redirect()->route('account.addresses.index')->with('success', 'Address saved successfully.');
+    }
+
+    public function edit(Address $address)
+    {
+        if ($address->user_id !== Auth::id()) {
+            abort(404);
+        }
+        return view('customer.account.addresses.edit', compact('address'));
+    }
+
+    public function update(StoreAddressRequest $request, Address $address)
+    {
+        if ($address->user_id !== Auth::id()) {
+            abort(404);
+        }
+        $address->update($request->validated());
+        return redirect()->route('account.addresses.index')->with('success', 'Address updated successfully.');
+    }
+
+    public function destroy(Address $address)
+    {
+        if ($address->user_id !== Auth::id()) {
+            abort(404);
+        }
+        $address->delete();
+        return back()->with('success', 'Address deleted successfully.');
+    }
+}
