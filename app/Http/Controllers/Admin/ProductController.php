@@ -93,9 +93,10 @@ class ProductController extends Controller
         return redirect()->route('admin.products.index')->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => 'Product created successfully.']);
     }
 
-    public function show(Product $product)
+    public function show(Product $product, \App\Services\OfferService $offerService)
     {
-        $product->load(['category', 'brand', 'galleryImages']);
+        $product->load(['category', 'brand', 'galleryImages', 'reviews.user']);
+        $product = $offerService->applyOfferDiscountToProduct($product);
         return view('admin.products.show', compact('product'));
     }
 
@@ -142,9 +143,17 @@ class ProductController extends Controller
         return redirect()->route('admin.products.index')->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => 'Product updated successfully.']);
     }
 
-    public function destroy(Product $product)
+    public function destroy(Request $request, Product $product)
     {
         $product->delete();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Product deleted successfully.'
+            ]);
+        }
+
         return redirect()->route('admin.products.index')->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => 'Product deleted successfully.']);
     }
 

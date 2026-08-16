@@ -66,17 +66,36 @@
                                     {{ $movement->created_at->format('H:i:s') }}
                                 </td>
                                 <td>
-                                    <div class="d-flex align-items-center">
-                                        @if($movement->product->main_image)
-                                            <img src="{{ asset('storage/' . $movement->product->main_image) }}" class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">
-                                        @endif
-                                        <div>
-                                            <a href="{{ route('admin.products.show', $movement->product) }}" class="text-decoration-none fw-bold text-dark">
-                                                {{ Str::limit($movement->product->name, 30) }}
-                                            </a>
-                                            <div class="small text-muted">SKU: {{ $movement->product->sku }}</div>
+                                    @if($movement->product)
+                                        <div class="d-flex align-items-center">
+                                            @if($movement->product->main_image)
+                                                <img src="{{ asset('storage/' . $movement->product->main_image) }}" class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                            @else
+                                                <div class="bg-light rounded d-flex align-items-center justify-content-center me-2 text-muted" style="width: 40px; height: 40px;">
+                                                    <i class="bi bi-box"></i>
+                                                </div>
+                                            @endif
+                                            <div>
+                                                <a href="{{ route('admin.products.show', $movement->product) }}" class="text-decoration-none fw-bold text-dark">
+                                                    {{ Str::limit($movement->product->name, 30) }}
+                                                </a>
+                                                @if(method_exists($movement->product, 'trashed') && $movement->product->trashed())
+                                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 ms-1" style="font-size: 0.65rem;">Deleted</span>
+                                                @endif
+                                                <div class="small text-muted">SKU: {{ $movement->product->sku ?? 'N/A' }}</div>
+                                            </div>
                                         </div>
-                                    </div>
+                                    @else
+                                        <div class="d-flex align-items-center text-muted">
+                                            <div class="bg-light rounded d-flex align-items-center justify-content-center me-2 text-muted" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-trash"></i>
+                                            </div>
+                                            <div>
+                                                <span class="fw-semibold text-secondary">Deleted Product</span>
+                                                <div class="small text-muted">ID #{{ $movement->product_id }}</div>
+                                            </div>
+                                        </div>
+                                    @endif
                                 </td>
                                 <td>
                                     <div class="mb-1">

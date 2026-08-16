@@ -90,9 +90,17 @@ class CouponController extends Controller
         return redirect()->route('admin.coupons.index')->with('toast', ['type' => 'success', 'title' => 'Coupon Updated', 'message' => 'Coupon updated successfully.']);
     }
 
-    public function destroy(Coupon $coupon)
+    public function destroy(Request $request, Coupon $coupon)
     {
         $coupon->delete();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Coupon deleted successfully.'
+            ]);
+        }
+
         return back()->with('toast', ['type' => 'success', 'title' => 'Coupon Deleted', 'message' => 'Coupon moved to trash.']);
     }
 }

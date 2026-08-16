@@ -28,16 +28,33 @@ class ProductReviewController extends Controller
             ]
         );
 
-        return back()->with('success', 'Your review has been submitted for approval.');
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Your review will be posted soon after administrator approval!'
+            ]);
+        }
+
+        return back()->with('review_submitted_swal', 'Your review will be posted soon!');
     }
 
-    public function destroy(ProductReview $review)
+    public function destroy(Request $request, ProductReview $review)
     {
         if ($review->user_id !== Auth::id()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
             abort(403);
         }
 
         $review->delete();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Your review has been deleted successfully.'
+            ]);
+        }
 
         return back()->with('success', 'Your review has been deleted.');
     }

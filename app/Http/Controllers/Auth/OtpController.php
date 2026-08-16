@@ -24,6 +24,14 @@ class OtpController extends Controller
         $identifier = $request->input('identifier');
         $user = User::where('email', $identifier)->orWhere('mobile_number', $identifier)->first();
 
+        if ($user && $user->status === 'Blocked') {
+            return response()->json([
+                'exists'  => true,
+                'blocked' => true,
+                'message' => 'Your account has been blocked. Please contact support.'
+            ]);
+        }
+
         return response()->json(['exists' => (bool)$user]);
     }
 

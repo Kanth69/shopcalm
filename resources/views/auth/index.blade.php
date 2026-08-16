@@ -2,8 +2,15 @@
     <x-slot name="title">Authentication</x-slot>
 
     <div id="auth-container" class="auth-card-container">
+        @if ($errors->any() || session('error'))
+            <div class="auth-alert error mb-3" style="display: flex;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span>{{ session('error') ?? $errors->first() }}</span>
+            </div>
+        @endif
+
         <!-- Initial State -->
-        <div id="state-initial" style="{{ $errors->any() ? 'display: none;' : '' }}">
+        <div id="state-initial">
             @include('auth.components.initial')
         </div>
 
@@ -13,7 +20,7 @@
         </div>
 
         <!-- Register State -->
-        <div id="state-register" style="{{ $errors->any() ? 'display: block; opacity: 1; transform: translateY(0);' : 'display: none;' }}">
+        <div id="state-register" style="display: none;">
             @include('auth.components.register')
         </div>
 
@@ -175,6 +182,39 @@
             border-color: #3b82f6;
             background-color: #fff;
             box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        .password-input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .password-input-wrapper .auth-input {
+            padding-right: 46px;
+        }
+
+        .password-toggle-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            padding: 6px;
+            color: #64748b;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            z-index: 5;
+            font-size: 18px;
+        }
+
+        .password-toggle-btn:hover {
+            color: #3b82f6;
+            background-color: #f1f5f9;
         }
 
         .readonly-input {

@@ -17,7 +17,7 @@ class Order extends Model
         'order_number',
         'subtotal_amount',
         'coupon_id',
-        'discount_amount',
+        'coupon_discount_amount',
         'total_amount',
         'status',
         'payment_method',
@@ -35,7 +35,7 @@ class Order extends Model
 
     protected $casts = [
         'subtotal_amount' => 'decimal:2',
-        'discount_amount' => 'decimal:2',
+        'coupon_discount_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
     ];
 

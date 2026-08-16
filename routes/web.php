@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\BannerController;
+use App\Http\Controllers\Admin\SubscriberController as AdminSubscriberController;
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\OtpController;
@@ -28,8 +29,12 @@ use App\Http\Controllers\Customer\ProductReviewController;
 use App\Http\Controllers\Customer\ShopController;
 use App\Http\Controllers\Customer\WishlistController;
 use App\Http\Controllers\Customer\ProfileSetupController;
+use App\Http\Controllers\Customer\NewsletterController;
 use App\Http\Controllers\Customer\OfferController as CustomerOfferController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\Admin\PageController as AdminPageController;
+use App\Http\Controllers\Admin\ContactEnquiryController;
 use App\Http\Controllers\Auth\GoogleController;
 use Illuminate\Support\Facades\Route;
 
@@ -68,7 +73,8 @@ Route::delete('/cart/clear-all', [CartController::class, 'clear'])->name('cart.c
 
 // Static Pages
 Route::get('/about-us', [PageController::class, 'show'])->defaults('slug', 'about-us')->name('page.about');
-Route::get('/contact-us', [PageController::class, 'show'])->defaults('slug', 'contact-us')->name('page.contact');
+Route::get('/contact-us', [ContactController::class, 'show'])->name('page.contact');
+Route::post('/contact-us', [ContactController::class, 'submit'])->name('page.contact.submit');
 Route::get('/faq', [PageController::class, 'show'])->defaults('slug', 'faq')->name('page.faq');
 Route::get('/shipping-policy', [PageController::class, 'show'])->defaults('slug', 'shipping-policy')->name('page.shipping');
 Route::get('/return-refund-policy', [PageController::class, 'show'])->defaults('slug', 'return-refund-policy')->name('page.return');
@@ -77,6 +83,10 @@ Route::get('/terms-and-conditions', [PageController::class, 'show'])->defaults('
 Route::get('/privacy-policy', [PageController::class, 'show'])->defaults('slug', 'privacy-policy')->name('page.privacy');
 Route::get('/cookie-policy', [PageController::class, 'show'])->defaults('slug', 'cookie-policy')->name('page.cookie');
 Route::get('/disclaimer', [PageController::class, 'show'])->defaults('slug', 'disclaimer')->name('page.disclaimer');
+
+// Newsletter Routes
+Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])->name('newsletter.subscribe');
+Route::middleware(['auth:customer'])->post('/newsletter/toggle', [NewsletterController::class, 'toggle'])->name('newsletter.toggle');
 
 // Profile Setup
 Route::middleware(['auth:customer'])->prefix('account/setup')->name('profile.setup')->group(function () {
@@ -90,7 +100,6 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['au
 Route::middleware(['auth:customer', 'profile.setup'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Wishlist Routes
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
@@ -125,7 +134,7 @@ Route::middleware('guest.admin')->group(function () {
     Route::get('admin/login', [AdminAuthController::class, 'create'])->name('admin.login');
     Route::post('admin/login', [AdminAuthController::class, 'store']);
 });
-Route::post('admin/logout', [AdminAuthController::class, 'destroy'])->name('admin.logout')->middleware('auth:admin');
+Route::match(['get', 'post'], 'admin/logout', [AdminAuthController::class, 'destroy'])->name('admin.logout');
 
 Route::get('/auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.redirect');
 Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback'])->name('google.callback');
@@ -146,6 +155,9 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::resource('coupons', CouponController::class);
     Route::resource('offers', \App\Http\Controllers\Admin\OfferController::class)->except(['show']);
     Route::resource('banners', BannerController::class)->except(['show']);
+    Route::resource('pages', AdminPageController::class)->only(['index', 'edit', 'update']);
+    Route::post('enquiries/bulk-destroy', [ContactEnquiryController::class, 'bulkDestroy'])->name('enquiries.bulk-destroy');
+    Route::resource('enquiries', ContactEnquiryController::class)->only(['index', 'show', 'destroy']);
 
     Route::post('customers/{customer}/toggle-status', [AdminCustomerController::class, 'toggleStatus'])->name('customers.toggle-status');
     Route::resource('customers', AdminCustomerController::class)->only(['index', 'show', 'destroy']);
@@ -174,8 +186,14 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::delete('products/gallery/{id}', [ProductController::class, 'deleteGalleryImage'])->name('products.gallery.destroy');
 
     Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
+    Route::post('reviews/bulk-action', [ReviewController::class, 'bulkAction'])->name('reviews.bulk-action');
     Route::patch('reviews/{review}', [ReviewController::class, 'update'])->name('reviews.update');
     Route::delete('reviews/{review}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
+
+    // Subscribers Routes
+    Route::get('subscribers', [AdminSubscriberController::class, 'index'])->name('subscribers.index');
+    Route::post('subscribers/bulk-action', [AdminSubscriberController::class, 'bulkAction'])->name('subscribers.bulk-action');
+    Route::delete('subscribers/{subscriber}', [AdminSubscriberController::class, 'destroy'])->name('subscribers.destroy');
 
     Route::get('orders', [AdminOrderController::class, 'index'])->name('orders.index');
     Route::get('orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');

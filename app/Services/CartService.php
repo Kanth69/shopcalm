@@ -25,7 +25,7 @@ class CartService
         $product = Product::findOrFail($productId);
 
         if ($product->status !== 'Active' || $product->stock < $quantity) {
-            return back()->with('toast', ['type' => 'error', 'title' => 'Unavailable', 'message' => 'Product is unavailable or out of stock.']);
+            return ['success' => false, 'type' => 'error', 'title' => 'Unavailable', 'message' => 'Product is unavailable or out of stock.'];
         }
 
         $cartItem = $cart->items()->where('product_id', $productId)->first();
@@ -33,7 +33,7 @@ class CartService
         if ($cartItem) {
             $newQuantity = $cartItem->quantity + $quantity;
             if ($product->stock < $newQuantity) {
-                return back()->with('toast', ['type' => 'warning', 'title' => 'Limit Reached', 'message' => 'Cannot add more than available stock.']);
+                return ['success' => false, 'type' => 'warning', 'title' => 'Limit Reached', 'message' => 'Cannot add more than available stock.'];
             }
             $cartItem->increment('quantity', $quantity);
         } else {
@@ -47,8 +47,7 @@ class CartService
             ]);
         }
 
-        // Return back to the same page instead of redirecting to the cart page
-        return back()->with('toast', ['type' => 'success', 'title' => 'Added to Bag', 'message' => "{$product->name} added to your cart."]);
+        return ['success' => true, 'type' => 'success', 'title' => 'Added to Bag', 'message' => "{$product->name} added to your cart."];
     }
 
     public function updateQuantity(int $itemId, int $quantity)
@@ -58,29 +57,28 @@ class CartService
         $product = $cartItem->product;
 
         if ($quantity < 1) {
-            return $this->removeItem($itemId);
+            $success = $this->removeItem($itemId);
+            return ['success' => $success, 'type' => $success ? 'success' : 'error', 'title' => $success ? 'Removed' : 'Error', 'message' => $success ? 'Item removed from cart.' : 'Item not found.'];
         }
 
         if ($product->stock < $quantity) {
-            return back()->with('toast', ['type' => 'error', 'title' => 'Error', 'message' => 'Cannot update to more than available stock.']);
+            return ['success' => false, 'type' => 'error', 'title' => 'Error', 'message' => 'Cannot update to more than available stock.'];
         }
 
         $cartItem->update(['quantity' => $quantity]);
-        return back()->with('toast', ['type' => 'success', 'title' => 'Updated', 'message' => 'Cart updated.']);
+        return ['success' => true, 'type' => 'success', 'title' => 'Updated', 'message' => 'Cart updated.'];
     }
 
     public function removeItem(int $itemId)
     {
         $cart = $this->getCart();
-        $cart->items()->where('id', $itemId)->delete();
-        return back()->with('toast', ['type' => 'success', 'title' => 'Removed', 'message' => 'Item removed from cart.']);
+        return $cart->items()->where('id', $itemId)->delete() > 0;
     }
 
     public function clearCart()
     {
         $cart = $this->getCart();
-        $cart->items()->delete();
-        return back()->with('toast', ['type' => 'success', 'title' => 'Cleared', 'message' => 'Your cart is now empty.']);
+        return $cart->items()->delete() > 0;
     }
 
     public function subtotal()

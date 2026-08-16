@@ -1,1 +1,0 @@
-<?php require "vendor/autoload.php"; $app = require_once "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $item = App\Models\CartItem::first(); if($item) { $item->unit_price = $item->product->selling_price * 0.8; $item->save(); echo "Updated successfully!"; } else { echo "No item found."; }

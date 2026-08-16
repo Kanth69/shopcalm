@@ -23,7 +23,6 @@ class Product extends Model
         'description',
         'price',
         'stock',
-        'low_stock_alert',
         'featured',
         'trending',
         'status',
@@ -56,6 +55,11 @@ class Product extends Model
         return $this->hasMany(ProductReview::class);
     }
 
+    public function approvedReviews(): HasMany
+    {
+        return $this->hasMany(ProductReview::class)->where('status', 'Approved');
+    }
+
     public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class);
@@ -68,7 +72,13 @@ class Product extends Model
 
     public function averageRating(): float
     {
-        return $this->reviews()->where('status', 'Approved')->avg('rating') ?? 0;
+        if (isset($this->avg_rating)) {
+            return (float) $this->avg_rating;
+        }
+        if (isset($this->reviews_avg_rating)) {
+            return (float) $this->reviews_avg_rating;
+        }
+        return (float) ($this->reviews()->where('status', 'Approved')->avg('rating') ?? 0);
     }
 
     public function ratingPercentage(int $rating): float

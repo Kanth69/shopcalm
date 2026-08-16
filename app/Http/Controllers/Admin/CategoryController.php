@@ -17,16 +17,24 @@ class CategoryController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search');
+        $status = $request->input('status');
 
         $categories = Category::query()
+            ->withCount('products')
             ->when($search, function ($query, $search) {
-                return $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
+                return $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%")
+                      ->orWhere('slug', 'like', "%{$search}%");
+                });
+            })
+            ->when($status, function ($query, $status) {
+                return $query->where('status', $status);
             })
             ->latest()
             ->paginate(10);
 
-        return view('admin.categories.index', compact('categories', 'search'));
+        return view('admin.categories.index', compact('categories', 'search', 'status'));
     }
 
     /**
@@ -95,10 +103,21 @@ class CategoryController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Category $category)
+    public function destroy(Request $request, Category $category)
     {
+        if ($category->image) {
+            Storage::disk('public')->delete($category->image);
+        }
+
         $category->delete();
 
-        return redirect()->route('admin.categories.index')->with('success', 'Category deleted successfully.');
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Category deleted successfully.'
+            ]);
+        }
+
+        return redirect()->route('admin.categories.index')->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => 'Category deleted successfully.']);
     }
 }

@@ -123,6 +123,11 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(res => res.json())
         .then(data => {
+            if (data.blocked) {
+                showToast(data.message || 'Your account has been blocked. Please contact support.', 'error');
+                return;
+            }
+
             if (data.exists) {
                 // Registered user -> Show Password / Login Screen
                 const loginIdHidden = document.getElementById('login_identifier_for_login');
@@ -239,14 +244,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         alertEl.style.display = 'flex';
                     }
 
-                    // Show Inline Red Error Under Password Input
-                    const inlineErrSpan = document.getElementById('login-inline-error');
-                    const inlineErrText = document.getElementById('login-error-text');
                     const passInput = document.getElementById('password_for_login');
-                    if (inlineErrSpan && inlineErrText) {
-                        inlineErrText.textContent = errorMsg;
-                        inlineErrSpan.style.display = 'block';
-                    }
                     if (passInput) {
                         passInput.classList.add('is-invalid');
                         passInput.value = '';
@@ -274,7 +272,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const submitBtn = document.getElementById('forgot-submit-btn');
             const originalBtnText = submitBtn.innerHTML;
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending link...';
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
+
+            const alertEl = document.getElementById('forgot-alert');
+            if (alertEl) alertEl.style.display = 'none';
 
             const formData = new FormData(forgotForm);
 
@@ -288,32 +289,64 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(async res => {
                 const data = await res.json();
-                const alertEl = document.getElementById('forgot-alert');
-                const alertMsg = document.getElementById('forgot-alert-msg');
-                const alertIcon = document.getElementById('forgot-alert-icon');
-
-                if (res.status === 200 || data.success || data.status) {
-                    if (alertEl && alertMsg) {
-                        alertMsg.textContent = 'Reset link has been sent to your email!';
-                        alertEl.className = 'auth-alert success';
-                        if (alertIcon) alertIcon.className = 'bi bi-check-circle-fill me-2';
-                        alertEl.style.display = 'flex';
-                    }
+                if (res.ok || data.success) {
+                    // Success -> Hide form and show tick mark
+                    forgotForm.style.display = 'none';
+                    const container = forgotForm.parentElement;
+                    const successDiv = document.createElement('div');
+                    successDiv.className = 'text-center py-4';
+                    successDiv.innerHTML = `
+                        <style>
+                            @keyframes fadeScale { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+                            @keyframes popInCheck { 0% { transform: scale(0); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
+                            .premium-success-icon {
+                                width: 72px; height: 72px;
+                                background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0.05) 100%);
+                                border-radius: 50%;
+                                display: flex; align-items: center; justify-content: center;
+                                box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15), inset 0 2px 0 rgba(255,255,255,0.6);
+                                margin: 0 auto 24px auto;
+                                position: relative;
+                            }
+                            .premium-success-icon::after {
+                                content: ''; position: absolute; top: -8px; left: -8px; right: -8px; bottom: -8px;
+                                border: 1px solid rgba(16,185,129,0.2); border-radius: 50%;
+                            }
+                        </style>
+                        <div style="animation: fadeScale 0.5s ease-out forwards; padding: 20px 10px;">
+                            <div class="premium-success-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" fill="#10b981" viewBox="0 0 16 16" style="animation: popInCheck 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.1s both;">
+                                  <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                                </svg>
+                            </div>
+                            <h3 style="font-weight: 800; font-size: 24px; color: #1e293b; letter-spacing: -0.5px; margin-bottom: 12px;">Link Sent Successfully!</h3>
+                            <p style="color: #64748b; font-size: 15px; line-height: 1.6; margin-bottom: 32px; padding: 0 15px;">${data.status || 'If an account exists with this email, a password reset link has been sent.'}</p>
+                            <button type="button" class="auth-submit-btn w-100" onclick="window.location.reload()" style="background: #f1f5f9; color: #334155; box-shadow: none; border: 1px solid #cbd5e1; transition: all 0.2s;">
+                                Back to Login
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(successDiv);
                 } else {
-                    const errorMsg = data.errors && data.errors.email ? data.errors.email[0] : (data.message || 'We could not find a user with that email address.');
-                    if (alertEl && alertMsg) {
-                        alertMsg.textContent = errorMsg;
+                    const msg = data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Something went wrong.');
+                    if (alertEl) {
+                        document.getElementById('forgot-alert-msg').textContent = msg;
                         alertEl.className = 'auth-alert error';
-                        if (alertIcon) alertIcon.className = 'bi bi-exclamation-triangle-fill me-2';
+                        document.getElementById('forgot-alert-icon').className = 'bi bi-exclamation-triangle-fill me-2';
                         alertEl.style.display = 'flex';
                     }
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
                 }
             })
             .catch(err => {
                 console.error(err);
-                showToast('Network error occurred. Please try again.', 'error');
-            })
-            .finally(() => {
+                if (alertEl) {
+                    document.getElementById('forgot-alert-msg').textContent = 'An unexpected error occurred.';
+                    alertEl.className = 'auth-alert error';
+                    document.getElementById('forgot-alert-icon').className = 'bi bi-exclamation-triangle-fill me-2';
+                    alertEl.style.display = 'flex';
+                }
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalBtnText;
             });
@@ -479,4 +512,5 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+
 });

@@ -49,7 +49,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-2">
                     <span class="text-muted">Reorder Level:</span>
-                    <span class="fw-bold">{{ $product->low_stock_alert }} units</span>
+                    <span class="fw-bold">5 units</span>
                 </div>
                 <div class="d-flex justify-content-between mb-2">
                     <span class="text-muted">Reserved:</span>
@@ -59,7 +59,7 @@
                     <span class="text-muted">Status:</span>
                     @if($product->stock <= 0)
                         <span class="badge bg-danger">Out of Stock</span>
-                    @elseif($product->stock <= $product->low_stock_alert)
+                    @elseif($product->stock <= 5)
                         <span class="badge bg-warning text-dark">Low Stock</span>
                     @else
                         <span class="badge bg-success">Healthy</span>

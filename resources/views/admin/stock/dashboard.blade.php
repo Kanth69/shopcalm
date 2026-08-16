@@ -118,11 +118,11 @@
                         <td class="text-center fw-bold">{{ $product->stock }}</td>
                         <td class="text-center text-muted">0</td>
                         <td class="text-center text-primary fw-bold">{{ $product->stock }}</td>
-                        <td class="text-center text-muted small">{{ $product->low_stock_alert }}</td>
+                        <td class="text-center text-muted small">5</td>
                         <td class="text-center">
                             @if($product->stock <= 0)
                                 <span class="badge bg-danger rounded-pill">Out of Stock</span>
-                            @elseif($product->stock <= $product->low_stock_alert)
+                            @elseif($product->stock <= 5)
                                 <span class="badge bg-warning text-dark rounded-pill">Low Stock</span>
                             @else
                                 <span class="badge bg-success rounded-pill">Optimal</span>

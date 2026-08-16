@@ -33,23 +33,29 @@
             <div class="table-responsive">
                 <table class="table">
                     <thead>
-                        <tr>
-                            <th>Product</th>
-                            <th class="text-center">Price</th>
-                            <th class="text-center">Quantity</th>
-                            <th class="text-end">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($order->items as $item)
-                        <tr>
-                            <td>{{ $item->product_name }}</td>
-                            <td class="text-center">₹{{ number_format($item->product_price, 2) }}</td>
-                            <td class="text-center">{{ $item->quantity }}</td>
-                            <td class="text-end">₹{{ number_format($item->product_price * $item->quantity, 2) }}</td>
-                        </tr>
-                        @endforeach
-                    </tbody>
+                            <tr>
+                                <th>Product</th>
+                                <th class="text-end">Original Price</th>
+                                <th class="text-end">Offer</th>
+                                <th class="text-end">Unit Price</th>
+                                <th class="text-center">Qty</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($order->items as $item)
+                            <tr>
+                                <td>
+                                    <h6 class="mb-0 fw-bold">{{ $item->product_name }}</h6>
+                                </td>
+                                <td class="text-end text-muted text-decoration-line-through">₹{{ number_format($item->original_price, 2) }}</td>
+                                <td class="text-end text-success">-₹{{ number_format($item->offer_discount, 2) }}</td>
+                                <td class="text-end">₹{{ number_format($item->unit_price, 2) }}</td>
+                                <td class="text-center">{{ $item->quantity }}</td>
+                                <td class="text-end fw-bold">₹{{ number_format($item->total_price, 2) }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
                 </table>
             </div>
         </div>

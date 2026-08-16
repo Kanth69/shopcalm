@@ -48,7 +48,7 @@
                         <i class="bi bi-star{{ $i <= round($product->averageRating()) ? '-fill' : '' }}"></i>
                     @endfor
                 </div>
-                <span class="text-muted small">({{ $product->reviews->count() }} Reviews)</span>
+                <span class="text-muted small">({{ $product->approvedReviews->count() }} Reviews)</span>
                 <span class="badge bg-light text-dark border">SKU: {{ $product->sku }}</span>
             </div>
 
@@ -95,11 +95,11 @@
                 </div>
                 <div class="col-md-8 d-flex align-items-end">
                     <div class="d-flex gap-2 w-100">
-                        <form action="{{ route('cart.add') }}" method="POST" class="flex-grow-1 ajax-cart-form">
+                        <form action="{{ route('cart.add') }}" method="POST" class="flex-grow-1 ajax-cart-form no-loader">
                             @csrf
                             <input type="hidden" name="product_id" value="{{ $product->id }}">
                             <input type="hidden" name="quantity" class="hidden-qty-input" value="1">
-                            <button type="submit" class="btn btn-outline-primary btn-lg w-100 rounded-pill shadow-sm add-to-cart-btn">
+                            <button type="submit" class="btn btn-outline-primary btn-lg w-100 rounded-pill shadow-sm add-to-cart-btn no-loader">
                                 <i class="bi bi-cart-plus me-2"></i> Add to Cart
                             </button>
                         </form>
@@ -143,7 +143,7 @@
                 </li>
                 @endif
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link rounded-pill px-4" data-bs-toggle="pill" data-bs-target="#rev" type="button">Reviews ({{ $product->reviews->count() }})</button>
+                    <button class="nav-link rounded-pill px-4" data-bs-toggle="pill" data-bs-target="#rev" type="button">Reviews ({{ $product->approvedReviews->count() }})</button>
                 </li>
             </ul>
             <div class="tab-content card border-0 shadow-sm rounded-4" id="productTabContent">
@@ -195,11 +195,11 @@
                             @endauth
 
                             <div class="review-list">
-                                @forelse($product->reviews()->where('status', 'Approved')->latest()->get() as $review)
+                                @forelse($product->approvedReviews as $review)
                                     @include('customer.components.reviews.review-card', ['review' => $review])
                                 @empty
                                     <div class="text-center py-4 bg-light rounded-4">
-                                        <p class="text-muted mb-0">No reviews yet. Be the first to review this product!</p>
+                                        <p class="text-muted mb-0">No approved reviews yet. Be the first to review this product!</p>
                                     </div>
                                 @endforelse
                             </div>
@@ -239,4 +239,88 @@ function changeQty(amt) {
 .prose { line-height: 1.8; color: #475569; }
 .cursor-pointer { cursor: pointer; }
 </style>
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+function confirmDeleteUserReview(id, deleteUrl, btnElement) {
+    if (typeof Swal === 'undefined') {
+        if (!confirm('Are you sure you want to delete your review?')) return;
+        executeUserReviewDelete(id, deleteUrl, btnElement);
+    } else {
+        Swal.fire({
+            title: 'Delete Your Review?',
+            text: 'This action cannot be undone.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, Delete',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                executeUserReviewDelete(id, deleteUrl, btnElement);
+            }
+        });
+    }
+}
+
+function executeUserReviewDelete(id, deleteUrl, btnElement) {
+    btnElement.disabled = true;
+    fetch(deleteUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'X-HTTP-Method-Override': 'DELETE',
+            'Accept': 'application/json'
+        }
+    })
+    .then(async res => {
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.message || 'Failed to delete review.');
+        return data;
+    })
+    .then(data => {
+        const card = document.getElementById('user-review-card-' + id);
+        if (card) {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = '0';
+            setTimeout(() => card.remove(), 300);
+        }
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Deleted!',
+                text: data.message || 'Review deleted successfully.',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2500
+            });
+        }
+    })
+    .catch(err => {
+        btnElement.disabled = false;
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+        } else {
+            alert(err.message);
+        }
+    });
+}
+
+@if(session('review_submitted_swal'))
+document.addEventListener('DOMContentLoaded', function() {
+    Swal.fire({
+        icon: 'success',
+        title: 'Review Submitted!',
+        text: '{{ session("review_submitted_swal") }}',
+        confirmButtonColor: '#6366f1',
+        confirmButtonText: 'OK'
+    });
+});
+@endif
+</script>
+@endpush
+
 @endsection

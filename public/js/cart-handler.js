@@ -92,12 +92,24 @@ document.addEventListener('DOMContentLoaded', function () {
                     showToast(data.message || 'Added to bag!', 'success');
                 }
 
-                // Swap Add to Cart button with Quantity Controller Pill
+                // Swap Add to Cart button with Quantity Controller Pill if on a product card
                 if (productId && data.item_id) {
                     const actionWraps = document.querySelectorAll(`#card-action-wrap-${productId}`);
-                    actionWraps.forEach(wrap => {
-                        wrap.innerHTML = renderQtyControllerHtml(productId, data.item_id, data.quantity);
-                    });
+                    if (actionWraps.length > 0) {
+                        actionWraps.forEach(wrap => {
+                            wrap.innerHTML = renderQtyControllerHtml(productId, data.item_id, data.quantity);
+                        });
+                    } else {
+                        // On product details page or other pages, just reset the button
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="bi bi-check2 me-2"></i> Added!';
+                        setTimeout(() => {
+                            submitBtn.innerHTML = originalBtnContent;
+                        }, 2000);
+                    }
+                } else {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnContent;
                 }
             } else {
                 if (typeof showToast === 'function') {

@@ -112,10 +112,18 @@ class BannerController extends Controller
         return redirect()->route('admin.banners.index')->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => 'Banner updated successfully.']);
     }
 
-    public function destroy(Banner $banner)
+    public function destroy(Request $request, Banner $banner)
     {
         $banner->delete();
         Cache::forget('home_banners');
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Banner deleted successfully.'
+            ]);
+        }
+
         return back()->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => 'Banner deleted.']);
     }
 }

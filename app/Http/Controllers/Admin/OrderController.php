@@ -19,7 +19,22 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         $orders = $this->orderService->getAdminOrders($request);
-        return view('admin.orders.index', compact('orders'));
+
+        $stats = [
+            'total_orders'     => Order::count(),
+            'total_revenue'    => Order::where('status', '!=', 'cancelled')->sum('total_amount'),
+            'pending_count'    => Order::where('status', 'pending')->count(),
+            'processing_count' => Order::whereIn('status', ['confirmed', 'packed', 'shipped', 'out for delivery'])->count(),
+            'delivered_count'  => Order::where('status', 'delivered')->count(),
+            'cancelled_count'  => Order::where('status', 'cancelled')->count(),
+        ];
+
+        $statusCounts = Order::selectRaw('status, count(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
+        return view('admin.orders.index', compact('orders', 'stats', 'statusCounts'));
     }
 
     public function show(Order $order)

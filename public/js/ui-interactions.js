@@ -6,46 +6,35 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     toastList.forEach(toast => toast.show());
 
-    // 2. Button Loading State Management
-    const forms = document.querySelectorAll('form:not(.no-loader)');
-
-    forms.forEach(form => {
-        // Prevent duplicate bindings
-        if (form.dataset.loadingBound) return;
-        form.dataset.loadingBound = 'true';
-
-        form.addEventListener('submit', function(e) {
-            // Don't apply loading state if form submission is prevented (e.g., HTML5 validation failed)
+    // 2. Button Loading State Management (Event Delegation for AJAX compatibility)
+    document.body.addEventListener('submit', function(e) {
+        const form = e.target;
+        if (form.tagName === 'FORM' && !form.classList.contains('no-loader')) {
             if (e.defaultPrevented) return;
 
             const submitButton = form.querySelector('button[type="submit"]');
             if (submitButton && !submitButton.classList.contains('no-loader')) {
-                // Store original button content to restore later if needed
                 const originalHTML = submitButton.innerHTML;
                 const originalWidth = submitButton.offsetWidth;
 
-                // Add loading spinner while maintaining button width
                 submitButton.style.width = originalWidth + 'px';
                 submitButton.disabled = true;
 
-                // Keep the icon if it exists, otherwise just show spinner
                 const hasIcon = originalHTML.includes('<i');
                 submitButton.innerHTML = `
                     <span class="spinner-border spinner-border-sm ${hasIcon ? 'me-2' : ''}" role="status" aria-hidden="true"></span>
                     <span class="opacity-75">Wait...</span>
                 `;
 
-                // Handle scenarios where the server redirects back with validation errors
-                // If a user clicks back or the page is served from bfcache, restore the button
                 window.addEventListener('pageshow', function(event) {
                     if (event.persisted) {
                         submitButton.disabled = false;
                         submitButton.innerHTML = originalHTML;
                         submitButton.style.width = 'auto';
                     }
-                });
+                }, { once: true });
             }
-        });
+        }
     });
 
     // 3. Skeleton Loader Management

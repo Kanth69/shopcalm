@@ -2,29 +2,34 @@
 
 @section('header', 'Add New Banner')
 
+@section('breadcrumb')
+    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.banners.index') }}">Banners</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Create</li>
+@endsection
+
 @section('actions')
-    <a href="{{ route('admin.banners.index') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i> Back to List
+    <a href="{{ route('admin.banners.index') }}" class="btn btn-outline-secondary rounded-pill px-3">
+        <i class="bi bi-arrow-left me-1"></i> Back to Banners
     </a>
 @endsection
 
 @section('content')
-<form action="{{ route('admin.banners.store') }}" method="POST" enctype="multipart/form-data">
+<form action="{{ route('admin.banners.store') }}" method="POST" enctype="multipart/form-data" id="bannerForm">
     @csrf
 
     <div class="row g-4">
-        {{-- LEFT COLUMN --}}
+        <!-- Left Column -->
         <div class="col-lg-8">
-
-            {{-- Step 1: Banner Type --}}
-            <div class="card border-0 shadow-sm mb-4">
+            <!-- 1. Banner Type Selection -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
                 <div class="card-header bg-white py-3 border-bottom">
-                    <h6 class="mb-0 fw-bold"><span class="text-primary me-2">①</span> Choose Banner Type</h6>
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-ui-checks-grid text-primary me-2"></i>1. Banner Format & Purpose
+                    </h6>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     <div class="row g-3">
-
-                        {{-- Type Radio Cards --}}
                         @php
                             $types = [
                                 ['val'=>'GENERAL_PROMO',  'icon'=>'bi-image',       'label'=>'Promo Slider',       'desc'=>'Full-width homepage hero slide. Link to any page.'],
@@ -35,185 +40,197 @@
                         @endphp
                         @foreach($types as $t)
                         <div class="col-6 col-md-3">
-                            <input type="radio" class="btn-check banner-type-radio" name="banner_type" id="type_{{ $t['val'] }}" value="{{ $t['val'] }}" {{ old('banner_type','GENERAL_PROMO') === $t['val'] ? 'checked' : '' }} autocomplete="off">
-                            <label class="btn btn-outline-primary w-100 h-100 text-start p-3 rounded-3" for="type_{{ $t['val'] }}">
-                                <i class="bi {{ $t['icon'] }} fs-4 d-block mb-2 text-primary"></i>
-                                <strong class="d-block fs-7">{{ $t['label'] }}</strong>
-                                <small class="text-muted" style="font-size:.72rem;">{{ $t['desc'] }}</small>
+                            <input type="radio" class="btn-check banner-type-radio" name="banner_type" id="type_{{ $t['val'] }}" value="{{ $t['val'] }}" {{ old('banner_type', 'GENERAL_PROMO') === $t['val'] ? 'checked' : '' }} autocomplete="off">
+                            <label class="btn btn-outline-primary w-100 h-100 text-start p-3 rounded-4 d-flex flex-column justify-content-between" for="type_{{ $t['val'] }}">
+                                <div>
+                                    <i class="bi {{ $t['icon'] }} fs-3 d-block mb-2"></i>
+                                    <strong class="d-block text-dark small fw-bold">{{ $t['label'] }}</strong>
+                                </div>
+                                <small class="text-muted mt-2" style="font-size: 0.7rem; line-height: 1.3;">{{ $t['desc'] }}</small>
                             </label>
                         </div>
                         @endforeach
-
                     </div>
                 </div>
             </div>
 
-            {{-- Step 2: Dynamic Fields based on type --}}
-
-            {{-- CATEGORY_HEADER: Category dropdown --}}
-            <div id="section-CATEGORY_HEADER" class="dynamic-section d-none card border-0 shadow-sm mb-4">
+            <!-- 2. Dynamic Destination Fields -->
+            <div id="section-CATEGORY_HEADER" class="dynamic-section d-none card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
                 <div class="card-header bg-white py-3 border-bottom">
-                    <h6 class="mb-0 fw-bold"><span class="text-primary me-2">②</span> Select Category</h6>
+                    <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-folder-check text-primary me-2"></i>2. Select Target Category</h6>
                 </div>
-                <div class="card-body">
-                    <label class="form-label fw-bold">Category <span class="text-danger">*</span></label>
+                <div class="card-body p-4">
+                    <label class="form-label fw-bold text-dark small">Associated Category <span class="text-danger">*</span></label>
                     <select name="link_category_id" class="form-select">
-                        <option value="">— Select a Category —</option>
+                        <option value="">— Select Category —</option>
                         @foreach($categories as $cat)
                             <option value="{{ $cat->id }}" {{ old('link_category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
                         @endforeach
                     </select>
-                    <div class="form-text mt-2">The button will automatically redirect to <code>/shop?category=ID</code></div>
+                    <div class="form-text text-muted mt-2" style="font-size: 0.72rem;">Banner click will automatically redirect customers to <code>/shop?category=ID</code></div>
                 </div>
             </div>
 
-            {{-- BRAND_PROMO: Brand dropdown --}}
-            <div id="section-BRAND_PROMO" class="dynamic-section d-none card border-0 shadow-sm mb-4">
+            <div id="section-BRAND_PROMO" class="dynamic-section d-none card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
                 <div class="card-header bg-white py-3 border-bottom">
-                    <h6 class="mb-0 fw-bold"><span class="text-primary me-2">②</span> Select Brand</h6>
+                    <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-award-fill text-primary me-2"></i>2. Select Target Brand</h6>
                 </div>
-                <div class="card-body">
-                    <label class="form-label fw-bold">Brand <span class="text-danger">*</span></label>
+                <div class="card-body p-4">
+                    <label class="form-label fw-bold text-dark small">Associated Brand <span class="text-danger">*</span></label>
                     <select name="link_brand_id" class="form-select">
-                        <option value="">— Select a Brand —</option>
+                        <option value="">— Select Brand —</option>
                         @foreach($brands as $brand)
                             <option value="{{ $brand->id }}" {{ old('link_brand_id') == $brand->id ? 'selected' : '' }}>{{ $brand->name }}</option>
                         @endforeach
                     </select>
-                    <div class="form-text mt-2">The button will automatically redirect to <code>/shop?brand=ID</code></div>
+                    <div class="form-text text-muted mt-2" style="font-size: 0.72rem;">Banner click will automatically redirect customers to <code>/shop?brand=ID</code></div>
                 </div>
             </div>
 
-            {{-- CAMPAIGN_OFFER: Offer dropdown --}}
-            <div id="section-CAMPAIGN_OFFER" class="dynamic-section d-none card border-0 shadow-sm mb-4">
+            <div id="section-CAMPAIGN_OFFER" class="dynamic-section d-none card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
                 <div class="card-header bg-white py-3 border-bottom">
-                    <h6 class="mb-0 fw-bold"><span class="text-primary me-2">②</span> Link to Sale Campaign</h6>
+                    <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-fire text-primary me-2"></i>2. Link to Mega Sale Campaign</h6>
                 </div>
-                <div class="card-body">
-                    <label class="form-label fw-bold">Active Offer / Sale Campaign <span class="text-danger">*</span></label>
+                <div class="card-body p-4">
+                    <label class="form-label fw-bold text-dark small">Active Offer Campaign <span class="text-danger">*</span></label>
                     <select name="offer_id" id="offer_id_select" class="form-select">
-                        <option value="" data-title="">— Select an Offer —</option>
+                        <option value="" data-title="">— Select an Active Campaign —</option>
                         @foreach($offers as $offer)
                             <option value="{{ $offer->id }}" data-title="{{ $offer->title }}" {{ old('offer_id') == $offer->id ? 'selected' : '' }}>
-                                {{ $offer->title }} &middot; ({{ $offer->type }})
+                                {{ $offer->title }} &middot; ({{ str_replace('_', ' ', $offer->type) }})
                             </option>
                         @endforeach
                     </select>
-                    <div class="alert alert-info border-0 mt-3 py-2 small">
-                        <i class="bi bi-info-circle me-2"></i>
-                        Clicking this banner will redirect customers to the <strong>Offers page</strong> filtered for this sale.
+                    <div class="alert alert-primary border-0 rounded-3 mt-3 py-2 small" style="font-size: 0.75rem;">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Clicking this hero slide will take customers directly to the curated sale storefront.
                     </div>
                 </div>
             </div>
 
-            {{-- GENERAL_PROMO: Manual URL --}}
-            <div id="section-GENERAL_PROMO" class="dynamic-section card border-0 shadow-sm mb-4">
+            <div id="section-GENERAL_PROMO" class="dynamic-section card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
                 <div class="card-header bg-white py-3 border-bottom">
-                    <h6 class="mb-0 fw-bold"><span class="text-primary me-2">②</span> Destination URL</h6>
+                    <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-link-45deg text-primary me-2"></i>2. Destination URL</h6>
                 </div>
-                <div class="card-body">
-                    <label class="form-label fw-bold">Button Link URL</label>
+                <div class="card-body p-4">
+                    <label class="form-label fw-bold text-dark small">Target Page Link</label>
                     <div class="input-group">
-                        <span class="input-group-text text-muted">yourdomain.com</span>
-                        <input type="text" name="primary_button_link" class="form-control" value="{{ old('primary_button_link', '/shop') }}" placeholder="/shop or /category/electronics">
+                        <span class="input-group-text bg-light text-muted border-end-0">URL</span>
+                        <input type="text" name="primary_button_link" class="form-control border-start-0 ps-0" value="{{ old('primary_button_link', '/shop') }}" placeholder="/shop or /shop?category=1">
                     </div>
+                    <div class="form-text text-muted" style="font-size: 0.72rem;">Relative URL path to any storefront page or promotional landing.</div>
                 </div>
             </div>
 
-            {{-- Step 3: Content --}}
-            <div class="card border-0 shadow-sm mb-4">
+            <!-- 3. Banner Text & Copy -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
                 <div class="card-header bg-white py-3 border-bottom">
-                    <h6 class="mb-0 fw-bold"><span class="text-primary me-2">③</span> Banner Text & Button</h6>
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-fonts text-primary me-2"></i>3. Banner Content & Button
+                    </h6>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     <div class="row g-3">
                         <div class="col-md-6" id="title-row">
-                            <label class="form-label fw-bold">Headline <span class="text-danger" id="title-required-star">*</span></label>
-                            <input type="text" name="title" id="banner-title-input" class="form-control @error('title') is-invalid @enderror" value="{{ old('title') }}" placeholder="e.g. Big Summer Sale">
-                            <div class="form-text text-muted d-none" id="title-auto-note"><i class="bi bi-magic me-1 text-primary"></i>Auto-filled from offer title</div>
-                            @error('title') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <label class="form-label fw-bold text-dark small">Main Headline <span class="text-danger" id="title-required-star">*</span></label>
+                            <input type="text" name="title" id="banner-title-input" class="form-control @error('title') is-invalid @enderror" value="{{ old('title') }}" placeholder="e.g. Big Summer Savings Event">
+                            <div class="form-text text-muted d-none" id="title-auto-note"><i class="bi bi-magic me-1 text-primary"></i>Auto-populated from campaign title</div>
+                            @error('title') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                         </div>
+
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Subheadline / Tagline</label>
-                            <input type="text" name="subtitle" class="form-control" value="{{ old('subtitle') }}" placeholder="e.g. Up to 70% off today only">
+                            <label class="form-label fw-bold text-dark small">Subheadline / Tagline</label>
+                            <input type="text" name="subtitle" class="form-control" value="{{ old('subtitle') }}" placeholder="e.g. Up to 50% off top branded audio & wearables">
                         </div>
+
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Button Label</label>
+                            <label class="form-label fw-bold text-dark small">Call to Action Button Label</label>
                             <input type="text" name="primary_button_text" class="form-control" value="{{ old('primary_button_text', 'Shop Now') }}">
                         </div>
                     </div>
                 </div>
             </div>
 
-            {{-- Step 4: Background --}}
-            <div class="card border-0 shadow-sm">
+            <!-- 4. Background Media & Gradient -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
                 <div class="card-header bg-white py-3 border-bottom">
-                    <h6 class="mb-0 fw-bold"><span class="text-primary me-2">④</span> Background — Image or Colour Gradient</h6>
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-palette-fill text-primary me-2"></i>4. Background Artwork & Colors
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
+                <div class="card-body p-4">
+                    <div class="row g-3 mb-4">
                         <div class="col-md-4">
-                            <label class="form-label fw-bold">Accent Colour <small class="text-muted">(used in gradient if no image)</small></label>
-                            <input type="color" name="bg_color_accent" id="bg_color_accent" class="form-control form-control-color w-100" value="{{ old('bg_color_accent', '#6d28d9') }}" style="height: 44px;">
+                            <label class="form-label fw-bold text-dark small">Accent Color</label>
+                            <input type="color" name="bg_color_accent" id="bg_color_accent" class="form-control form-control-color w-100 rounded-3" value="{{ old('bg_color_accent', '#6366f1') }}" style="height: 44px; cursor: pointer;">
                         </div>
                         <div class="col-md-8">
-                            <label class="form-label fw-bold">Live Preview</label>
-                            <div id="gradient-preview" class="rounded-3 border shadow-sm d-flex align-items-center justify-content-center text-white fw-bold" style="height: 44px; font-size: 13px; background: linear-gradient(135deg, {{ old('bg_color_accent','#6d28d9') }} 0%, #0f172a 100%);">
+                            <label class="form-label fw-bold text-dark small">Live Gradient Preview</label>
+                            <div id="gradient-preview" class="rounded-3 border shadow-xs d-flex align-items-center justify-content-center text-white fw-bold px-3" style="height: 44px; font-size: 13px; background: linear-gradient(135deg, {{ old('bg_color_accent', '#6366f1') }} 0%, #0f172a 100%);">
                                 Banner Gradient Preview
                             </div>
-                            <input type="hidden" name="bg_gradient" id="bg_gradient_hidden" value="{{ old('bg_gradient', 'linear-gradient(135deg, #6d28d9 0%, #0f172a 100%)') }}">
+                            <input type="hidden" name="bg_gradient" id="bg_gradient_hidden" value="{{ old('bg_gradient', 'linear-gradient(135deg, #6366f1 0%, #0f172a 100%)') }}">
                         </div>
+                    </div>
+
+                    <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Desktop Image <small class="text-muted">(Optional — overrides gradient)</small></label>
-                            <input type="file" name="desktop_image" class="form-control" accept="image/*">
-                            <div class="form-text">Recommended: 1920 × 600px</div>
+                            <label class="form-label fw-bold text-dark small">Desktop Hero Image (Optional)</label>
+                            <input type="file" name="desktop_image" class="form-control" accept="image/*" onchange="previewDesktopImage(this)">
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Recommended: 1920 × 600px widescreen image.</div>
+                            <img id="desktopPreviewImg" src="#" alt="Desktop Preview" class="img-fluid rounded-3 mt-2 d-none border shadow-xs" style="max-height: 100px; width: 100%; object-fit: cover;">
                         </div>
+
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Mobile Image <small class="text-muted">(Optional)</small></label>
-                            <input type="file" name="mobile_image" class="form-control" accept="image/*">
-                            <div class="form-text">Recommended: 800 × 800px</div>
+                            <label class="form-label fw-bold text-dark small">Mobile Hero Image (Optional)</label>
+                            <input type="file" name="mobile_image" class="form-control" accept="image/*" onchange="previewMobileImage(this)">
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Recommended: 800 × 800px square banner.</div>
+                            <img id="mobilePreviewImg" src="#" alt="Mobile Preview" class="img-fluid rounded-3 mt-2 d-none border shadow-xs" style="max-height: 100px; width: 100px; object-fit: cover;">
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- RIGHT COLUMN --}}
+        <!-- Right Column: Settings & Actions -->
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm mb-4">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
                 <div class="card-header bg-white py-3 border-bottom">
-                    <h6 class="mb-0 fw-bold">Settings</h6>
+                    <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-sliders text-primary me-2"></i>Display Settings</h6>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Display Order</label>
+                        <label class="form-label fw-bold text-dark small">Carousel Display Order</label>
                         <input type="number" name="display_order" class="form-control" value="{{ old('display_order', 0) }}" min="0">
-                        <div class="form-text">0 = first slide in carousel.</div>
+                        <div class="form-text text-muted" style="font-size: 0.72rem;">0 = First banner rendered in homepage hero.</div>
                     </div>
-                    <div class="form-check form-switch mt-3">
+
+                    <hr class="my-3">
+
+                    <div class="form-check form-switch mb-0">
                         <input class="form-check-input" type="checkbox" name="is_active" id="is_active" value="1" checked>
-                        <label class="form-check-label fw-bold" for="is_active">Active (visible on site)</label>
+                        <label class="form-check-label fw-semibold text-dark small" for="is_active">Publish Banner (Active)</label>
                     </div>
                 </div>
             </div>
 
             <div class="d-grid gap-2">
-                <button type="submit" class="btn btn-primary btn-lg fw-bold">
-                    <i class="bi bi-cloud-upload me-2"></i> Publish Banner
+                <button type="submit" class="btn btn-primary rounded-pill btn-lg fw-bold shadow-sm">
+                    <i class="bi bi-check-circle me-1"></i> Save & Publish Banner
                 </button>
-                <a href="{{ route('admin.banners.index') }}" class="btn btn-light">Cancel</a>
+                <a href="{{ route('admin.banners.index') }}" class="btn btn-light rounded-pill border">Cancel</a>
             </div>
         </div>
     </div>
 </form>
 
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const radios = document.querySelectorAll('.banner-type-radio');
     const sections = document.querySelectorAll('.dynamic-section');
     const offerSelect = document.getElementById('offer_id_select');
     const titleInput = document.getElementById('banner-title-input');
-    const titleRow = document.getElementById('title-row');
     const titleNote = document.getElementById('title-auto-note');
     const titleStar = document.getElementById('title-required-star');
 
@@ -226,7 +243,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        // For CAMPAIGN_OFFER: auto-fill title from offer, lock field
         if (val === 'CAMPAIGN_OFFER') {
             syncTitleFromOffer();
             titleInput.readOnly = true;
@@ -263,11 +279,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // On load
     const checked = document.querySelector('.banner-type-radio:checked');
     if (checked) showSection(checked.value);
 
-    // Live gradient preview from colour picker
+    // Live gradient preview
     const colorPicker = document.getElementById('bg_color_accent');
     const gradientPreview = document.getElementById('gradient-preview');
     const gradientHidden = document.getElementById('bg_gradient_hidden');
@@ -283,5 +298,30 @@ document.addEventListener('DOMContentLoaded', function () {
         updateGradient(colorPicker.value);
     }
 });
+
+function previewDesktopImage(input) {
+    const preview = document.getElementById('desktopPreviewImg');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.classList.remove('d-none');
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function previewMobileImage(input) {
+    const preview = document.getElementById('mobilePreviewImg');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.classList.remove('d-none');
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
 </script>
+@endpush
 @endsection

@@ -9,7 +9,7 @@
                         <i class="bi {{ $i <= $product->averageRating() ? 'bi-star-fill' : ($i - 0.5 <= $product->averageRating() ? 'bi-star-half' : 'bi-star') }}"></i>
                     @endfor
                 </div>
-                <p class="text-muted">Based on {{ $product->reviews->count() }} reviews</p>
+                <p class="text-muted">Based on {{ $product->approvedReviews->count() }} reviews</p>
             </div>
             <div class="col-md-8">
                 @for($i = 5; $i >= 1; $i--)

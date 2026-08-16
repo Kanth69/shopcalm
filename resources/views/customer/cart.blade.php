@@ -86,7 +86,7 @@
             </div>
 
             <div class="col-lg-4">
-                <div class="card border-0 shadow-lg rounded-4 sticky-top" style="top: 100px;">
+                <div class="card border-0 shadow-lg rounded-4 sticky-top" style="top: 100px; z-index: 1000;">
                     <div class="card-body p-4">
                         <h5 class="fw-bold mb-4">Bag Summary</h5>
 

@@ -37,10 +37,15 @@ class StockManagementController extends Controller
         // Filtering by stock status
         if ($request->filled('stock_status')) {
             if ($request->stock_status === 'low') {
-                $query->where('stock', '<=', DB::raw('low_stock_alert'))->where('stock', '>', 0);
+                $query->where('stock', '<=', 5)->where('stock', '>', 0);
             } elseif ($request->stock_status === 'out') {
                 $query->where('stock', '=', 0);
             }
+        }
+
+        // Filtering by category
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
         }
 
         $products = $query->latest('updated_at')->paginate(15)->withQueryString();
@@ -49,9 +54,9 @@ class StockManagementController extends Controller
         $stats = [
             'total_products' => Product::count(),
             'total_stock' => Product::sum('stock'),
-            'low_stock' => Product::where('stock', '<=', DB::raw('low_stock_alert'))->where('stock', '>', 0)->count(),
+            'low_stock' => Product::where('stock', '<=', 5)->where('stock', '>', 0)->count(),
             'out_of_stock' => Product::where('stock', '=', 0)->count(),
-            'total_value' => Product::sum(DB::raw('stock * selling_price')),
+            'total_value' => Product::sum(DB::raw('stock * price')),
         ];
 
         return view('admin.stock.dashboard', compact('products', 'stats'));

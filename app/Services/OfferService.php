@@ -56,6 +56,31 @@ class OfferService
     }
 
     /**
+     * Attach active sale prices and badges to a single product.
+     */
+    public function applyOfferDiscountToProduct(Product $product): Product
+    {
+        $liveOffers = Offer::live()->with('targets')->orderBy('priority', 'desc')->get();
+
+        if ($liveOffers->isEmpty()) {
+            return $product;
+        }
+
+        $basePrice = (float) ($product->price ?? 0);
+        if ($basePrice > 0) {
+            $applicableOffer = $this->findBestOfferForProduct($product, $liveOffers);
+            if ($applicableOffer) {
+                $discount = $applicableOffer->calculateDiscount($basePrice);
+                $product->sale_price = max(0, $basePrice - $discount);
+                $product->offer_badge = $applicableOffer->badge_text ?? "{$applicableOffer->title}";
+                $product->offer_discount_percentage = round(($discount / $basePrice) * 100);
+            }
+        }
+
+        return $product;
+    }
+
+    /**
      * Find the best matching active offer for a specific product.
      */
     public function findBestOfferForProduct(Product $product, Collection $offers): ?Offer

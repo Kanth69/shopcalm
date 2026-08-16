@@ -52,11 +52,12 @@ class CustomerController extends Controller
         return view('admin.customers.show', compact('customer'));
     }
 
-    public function toggleStatus(User $customer)
+    public function toggleStatus(Request $request, User $customer)
     {
         $this->authorize('update', $customer);
 
         if ($customer->role_id !== User::ROLE_CUSTOMER) {
+            if ($request->ajax() || $request->wantsJson()) return response()->json(['success' => false, 'message' => 'Not found'], 404);
             abort(404);
         }
 
@@ -64,18 +65,35 @@ class CustomerController extends Controller
         $customer->save();
 
         $message = $customer->status === 'Active' ? 'Customer unblocked successfully.' : 'Customer blocked successfully.';
+        
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'status' => $customer->status
+            ]);
+        }
+        
         return back()->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => $message]);
     }
 
-    public function destroy(User $customer)
+    public function destroy(Request $request, User $customer)
     {
         $this->authorize('delete', $customer);
 
         if ($customer->role_id !== User::ROLE_CUSTOMER) {
+            if ($request->ajax() || $request->wantsJson()) return response()->json(['success' => false, 'message' => 'Not found'], 404);
             abort(404);
         }
 
         $customer->delete();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Customer account deleted successfully.'
+            ]);
+        }
 
         return redirect()->route('admin.customers.index')
             ->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => 'Customer account deleted successfully.']);

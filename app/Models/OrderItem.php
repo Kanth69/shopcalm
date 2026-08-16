@@ -14,8 +14,11 @@ class OrderItem extends Model
         'order_id',
         'product_id',
         'product_name',
-        'product_price',
+        'original_price',
+        'offer_discount',
+        'unit_price',
         'quantity',
+        'total_price',
     ];
 
     public function order(): BelongsTo
@@ -25,6 +28,6 @@ class OrderItem extends Model
 
     public function product(): BelongsTo
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Product::class)->withTrashed();
     }
 }

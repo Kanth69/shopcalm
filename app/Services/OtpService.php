@@ -4,8 +4,7 @@ namespace App\Services;
 
 use App\Models\OtpVerification;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\SendOtpMail;
+use App\Jobs\SendBrevoEmailJob;
 use Carbon\Carbon;
 
 class OtpService
@@ -23,7 +22,9 @@ class OtpService
             ]
         );
 
-        Mail::to($email)->send(new SendOtpMail($otp));
+        $html = view('emails.auth.otp-brevo', ['otp' => $otp])->render();
+
+        SendBrevoEmailJob::dispatch($email, 'ShopCalm Registration OTP', $html);
     }
 
     public function verify(string $email, string $otp, string $purpose): bool
@@ -35,7 +36,7 @@ class OtpService
             ->first();
 
         if ($record && Hash::check($otp, $record->otp_hash)) {
-            $record->update(['verified_at' => Carbon::now()]);
+            $record->delete(); // Delete immediately after successful verification
             return true;
         }
 

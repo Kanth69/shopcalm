@@ -12,7 +12,7 @@ class OrderService
 {
     public function getCustomerOrders(Request $request)
     {
-        $query = Auth::user()->orders()->with('items');
+        $query = Auth::user()->orders()->with('items.product');
 
         if ($request->filled('search')) {
             $query->where('order_number', 'like', '%' . $request->search . '%');
@@ -27,20 +27,31 @@ class OrderService
 
     public function getAdminOrders(Request $request)
     {
-        $query = Order::with('user');
+        $query = Order::with(['user', 'items']);
 
         if ($request->filled('search')) {
-            $query->where('order_number', 'like', '%' . $request->search . '%')
-                ->orWhereHas('user', function ($q) use ($request) {
-                    $q->where('name', 'like', '%' . $request->search . '%');
-                });
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('order_number', 'like', "%{$search}%")
+                  ->orWhere('shipping_name', 'like', "%{$search}%")
+                  ->orWhere('shipping_phone', 'like', "%{$search}%")
+                  ->orWhere('shipping_email', 'like', "%{$search}%")
+                  ->orWhereHas('user', function ($userQ) use ($search) {
+                      $userQ->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                  });
+            });
         }
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        return $query->latest()->paginate(10);
+        if ($request->filled('payment_method')) {
+            $query->where('payment_method', $request->payment_method);
+        }
+
+        return $query->latest()->paginate(15);
     }
 
     /**

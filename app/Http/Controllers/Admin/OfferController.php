@@ -184,9 +184,17 @@ class OfferController extends Controller
         return redirect()->route('admin.offers.index')->with('toast', ['type' => 'success', 'title' => 'Updated', 'message' => 'Offer updated successfully!']);
     }
 
-    public function destroy(Offer $offer)
+    public function destroy(Request $request, Offer $offer)
     {
         $offer->delete();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Offer campaign deleted successfully.'
+            ]);
+        }
+
         return redirect()->route('admin.offers.index')->with('toast', ['type' => 'success', 'title' => 'Deleted', 'message' => 'Offer campaign archived.']);
     }
 }

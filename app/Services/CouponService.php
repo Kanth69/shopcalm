@@ -139,6 +139,17 @@ class CouponService
     }
 
     /**
+     * Safely record coupon usage with a database lock.
+     */
+    public function recordUsage(int $couponId, User $user, Order $order, float $discountAmount): void
+    {
+        $coupon = Coupon::where('id', $couponId)->lockForUpdate()->first();
+        if ($coupon) {
+            $this->markUsed($coupon, $user, $order, $discountAmount);
+        }
+    }
+
+    /**
      * Mark coupon as used after successful order placement.
      */
     public function markUsed(Coupon $coupon, User $user, Order $order, float $discountAmount): void

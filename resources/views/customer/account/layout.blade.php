@@ -11,6 +11,8 @@
             @yield('account_content')
         </div>
     </div>
+
+    @yield('full_width_account_content')
 </div>
 @endsection
 

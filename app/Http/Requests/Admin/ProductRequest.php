@@ -25,7 +25,6 @@ class ProductRequest extends FormRequest
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
-            'low_stock_alert' => 'nullable|integer|min:0',
             'featured' => 'nullable|boolean',
             'trending' => 'nullable|boolean',
             'status' => 'required|in:Active,Inactive',

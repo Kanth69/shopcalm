@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Banner;
 use App\Models\Setting;
+use App\Services\OfferService;
 use App\Services\SearchService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -45,13 +46,13 @@ class ShopController extends Controller
         }
 
         $featuredProducts = Cache::remember('featured_products', 300, function () {
-            return Product::with(['category', 'brand'])->where('status', 'Active')->where('featured', true)->latest()->take(8)->get();
+            return Product::with(['category', 'brand'])->withAvg(['reviews as avg_rating' => fn($q) => $q->where('status', 'Approved')], 'rating')->where('status', 'Active')->where('featured', true)->latest()->take(8)->get();
         });
         $trendingProducts = Cache::remember('trending_products', 300, function () {
-            return Product::with(['category', 'brand'])->where('status', 'Active')->where('trending', true)->latest()->take(8)->get();
+            return Product::with(['category', 'brand'])->withAvg(['reviews as avg_rating' => fn($q) => $q->where('status', 'Approved')], 'rating')->where('status', 'Active')->where('trending', true)->latest()->take(8)->get();
         });
         $latestProducts = Cache::remember('latest_products', 300, function () {
-            return Product::with(['category', 'brand'])->where('status', 'Active')->latest()->take(8)->get();
+            return Product::with(['category', 'brand'])->withAvg(['reviews as avg_rating' => fn($q) => $q->where('status', 'Approved')], 'rating')->where('status', 'Active')->latest()->take(8)->get();
         });
 
         $featuredProducts = $offerService->applyOfferDiscountsToProducts($featuredProducts);
@@ -186,6 +187,9 @@ class ShopController extends Controller
             }
         }
 
+        // Always eager-load avg_rating to prevent N+1 query loop on card render
+        $query->withAvg(['reviews as avg_rating' => fn($q) => $q->where('status', 'Approved')], 'rating');
+
         // Sorting
         $sort = $request->input('sort', 'latest');
         switch ($sort) {
@@ -196,14 +200,14 @@ class ShopController extends Controller
                 $query->orderBy('price', 'desc');
                 break;
             case 'rating_high':
-                $query->withAvg(['reviews' => fn($q) => $q->where('status', 'Approved')], 'rating')->orderBy('reviews_avg_rating', 'desc');
+                $query->orderBy('avg_rating', 'desc');
                 break;
             default:
                 $query->latest();
                 break;
         }
 
-        $products = $query->with(['category', 'brand'])->paginate(12)->appends($request->query());
+        $products = $query->with(['category:id,name,slug', 'brand:id,name,slug'])->paginate(12)->appends($request->query());
 
         // Apply offer discount badges & prices
         app(\App\Services\OfferService::class)->applyOfferDiscountsToProducts($products->items());
@@ -245,15 +249,26 @@ class ShopController extends Controller
         return view('customer.components.shop.brand-filter-options', compact('brands', 'prefix'));
     }
 
-    public function productDetails(Product $product)
+    public function productDetails(Product $product, OfferService $offerService)
     {
-        $product->load(['category', 'brand', 'galleryImages', 'reviews.user']);
+        $product->load([
+            'category', 
+            'brand', 
+            'galleryImages', 
+            'approvedReviews' => fn($q) => $q->with('user')->latest()
+        ]);
+        
+        $product = $offerService->applyOfferDiscountToProduct($product);
+
         $relatedProducts = Product::with(['category', 'brand'])->where('status', 'Active')
             ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->inRandomOrder()
             ->take(4)
             ->get();
+            
+        $relatedProducts = $offerService->applyOfferDiscountsToProducts($relatedProducts);
+
         return view('customer.product_details', compact('product', 'relatedProducts'));
     }
 

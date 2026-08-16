@@ -38,13 +38,23 @@
             <!-- Password -->
             <div class="form-group">
                 <label for="password">New Password <span class="text-danger">*</span></label>
-                <input id="password" class="auth-input" type="password" name="password" required placeholder="Minimum 6 characters" autofocus minlength="6">
+                <div class="password-input-wrapper">
+                    <input id="password" class="auth-input" type="password" name="password" required placeholder="Minimum 6 characters" autofocus minlength="6">
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password', this)" title="Show password">
+                        <i class="bi bi-eye-slash"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- Confirm Password -->
             <div class="form-group">
                 <label for="password_confirmation">Confirm New Password <span class="text-danger">*</span></label>
-                <input id="password_confirmation" class="auth-input" type="password" name="password_confirmation" required placeholder="Re-enter new password">
+                <div class="password-input-wrapper">
+                    <input id="password_confirmation" class="auth-input" type="password" name="password_confirmation" required placeholder="Re-enter new password">
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password_confirmation', this)" title="Show password">
+                        <i class="bi bi-eye-slash"></i>
+                    </button>
+                </div>
             </div>
 
             <button type="submit" id="btn-submit-reset" class="auth-submit-btn">
@@ -96,14 +106,40 @@
             .then(async res => {
                 const data = await res.json();
                 if (res.status === 200 || data.success) {
-                    // Password changed successfully -> stay on page & show success banner
-                    if (succAlert) {
-                        document.getElementById('reset-success-msg').textContent = data.message || 'Your password has been changed successfully! Please go back and login.';
-                        succAlert.style.display = 'flex';
-                    }
-                    form.reset();
-                    // Keep email preserved
-                    document.getElementById('email').value = "{{ $request->email }}";
+                    // Password changed successfully -> hide form and show success state
+                    const formContainer = form.parentElement;
+                    formContainer.innerHTML = `
+                        <style>
+                            @keyframes fadeScale { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+                            @keyframes popInCheck { 0% { transform: scale(0); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
+                            .premium-success-icon {
+                                width: 72px; height: 72px;
+                                background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0.05) 100%);
+                                border-radius: 50%;
+                                display: flex; align-items: center; justify-content: center;
+                                box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15), inset 0 2px 0 rgba(255,255,255,0.6);
+                                margin: 0 auto 24px auto;
+                                position: relative;
+                            }
+                            .premium-success-icon::after {
+                                content: ''; position: absolute; top: -8px; left: -8px; right: -8px; bottom: -8px;
+                                border: 1px solid rgba(16,185,129,0.2); border-radius: 50%;
+                            }
+                        </style>
+                        <div style="animation: fadeScale 0.5s ease-out forwards; padding: 20px 10px; text-align: center;">
+                            <div class="premium-success-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" fill="#10b981" viewBox="0 0 16 16" style="animation: popInCheck 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.1s both;">
+                                  <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                                </svg>
+                            </div>
+                            <h3 style="font-weight: 800; font-size: 24px; color: #1e293b; letter-spacing: -0.5px; margin-bottom: 12px;">Password Changed!</h3>
+                            <p style="color: #64748b; font-size: 15px; line-height: 1.6; margin-bottom: 32px; padding: 0 15px;">You can now use your new password to sign in to your account.</p>
+                            <div class="d-grid gap-3" style="display: flex; flex-direction: column; gap: 12px;">
+                                <a href="{{ route('login') }}" class="btn btn-primary fw-medium" style="background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); border: none; border-radius: 12px; padding: 14px; text-decoration: none; color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); transition: all 0.2s;">Go to Login</a>
+                                <a href="{{ route('home') }}" class="btn fw-medium" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px; text-decoration: none; transition: all 0.2s;">Go to Home</a>
+                            </div>
+                        </div>
+                    `;
                 } else {
                     const msg = data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Failed to reset password. Token may be invalid or expired.');
                     if (errAlert) {
@@ -207,6 +243,39 @@
             background-color: #fff;
             box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
         }
+        .password-input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .password-input-wrapper .auth-input {
+            padding-right: 46px;
+        }
+
+        .password-toggle-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            padding: 6px;
+            color: #64748b;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            z-index: 5;
+            font-size: 18px;
+        }
+
+        .password-toggle-btn:hover {
+            color: #3b82f6;
+            background-color: #f1f5f9;
+        }
+
         .readonly-input {
             background-color: #f1f5f9;
             color: #64748b;

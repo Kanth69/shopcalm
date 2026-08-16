@@ -7,7 +7,7 @@ use App\Models\User;
 class UserPolicy
 {
     /**
-     * Determine whether the user can view any models.
+     * Determine whether the user can view any models (Customer List).
      */
     public function viewAny(User $user): bool
     {
@@ -15,7 +15,7 @@ class UserPolicy
     }
 
     /**
-     * Determine whether the user can view the model.
+     * Determine whether the user can view the model (Customer Details).
      */
     public function view(User $user, User $model): bool
     {
@@ -27,22 +27,22 @@ class UserPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 
     /**
-     * Determine whether the user can update the model.
+     * Determine whether the user can update the model (Block / Unblock / Edit Customer).
      */
     public function update(User $user, User $model): bool
     {
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 
     /**
-     * Determine whether the user can delete the model.
+     * Determine whether the user can delete the model (Delete Customer).
      */
     public function delete(User $user, User $model): bool
     {
-        return $user->isSuperAdmin();
+        return $user->isAdmin();
     }
 }

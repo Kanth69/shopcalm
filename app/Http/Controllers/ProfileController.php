@@ -21,9 +21,14 @@ class ProfileController extends Controller
         $user->load(['profile', 'interests']);
         $categories = Category::where('status', 'Active')->orderBy('name')->get();
 
+        $isSubscribed = \App\Models\Subscriber::where('email', strtolower(trim($user->email)))
+            ->where('status', 'Subscribed')
+            ->exists();
+
         return view('customer.account.profile', [
             'user' => $user,
             'categories' => $categories,
+            'isSubscribed' => $isSubscribed,
         ]);
     }
 
@@ -51,26 +56,5 @@ class ProfileController extends Controller
         $user->interests()->sync($request->input('interests', []));
 
         return Redirect::route('profile.edit')->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => 'Profile updated successfully.']);
-    }
-
-    /**
-     * Delete the user's account.
-     */
-    public function destroy(Request $request): RedirectResponse
-    {
-        $request->validateWithBag('userDeletion', [
-            'password' => ['required', 'current_password'],
-        ]);
-
-        $user = $request->user();
-
-        Auth::logout();
-
-        $user->delete();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return Redirect::to('/');
     }
 }

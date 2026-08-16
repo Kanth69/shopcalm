@@ -26,16 +26,24 @@ class SendBrevoEmailJob implements ShouldQueue
 
     public function handle(EmailService $emailService): void
     {
-        $success = $emailService->sendEmail(
+        $result = $emailService->sendEmail(
             to:      $this->to,
             subject: $this->subject,
             html:    $this->html,
             text:    $this->text,
         );
 
-        if (!$success) {
-            // Fail the job so it retries according to $tries
-            $this->fail('Brevo API returned a failure. Check logs for details.');
+        if (!$result['success']) {
+            $status = $result['status'] ?? 500;
+            
+            // Do not retry permanent failures
+            if (in_array($status, [400, 401, 403])) {
+                $this->fail(new \Exception("Brevo API returned a permanent failure (HTTP $status)."));
+                return;
+            }
+
+            // For temporary failures (5xx, timeouts), throw exception to trigger a retry
+            throw new \Exception("Brevo API returned a temporary failure (HTTP $status). Retrying...");
         }
     }
 

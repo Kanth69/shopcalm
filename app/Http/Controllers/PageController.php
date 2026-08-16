@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CmsPage;
+use App\Models\Page;
 use Illuminate\Http\Request;
 
 class PageController extends Controller
@@ -13,11 +13,10 @@ class PageController extends Controller
      * @param  string  $slug
      * @return \Illuminate\View\View
      */
-    public function show(Request $request)
+    public function show($slug)
     {
-        $slug = $request->route('slug');
-        $page = CmsPage::where('slug', $slug)->where('status', 'Active')->firstOrFail();
-
-        return view('customer.pages.show', compact('page'));
+        $page = Page::where('slug', $slug)->where('is_active', true)->firstOrFail();
+        
+        return view('pages.show', compact('page'));
     }
 }

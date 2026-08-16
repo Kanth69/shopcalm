@@ -2,9 +2,11 @@
     <div class="img-wrap position-relative">
         <a href="{{ route('product.show', $product->slug) }}">
             @if($product->main_image)
-                <img loading="lazy" src="{{ asset('storage/' . $product->main_image) }}" class="card-img-top" alt="{{ $product->name }}">
+                <img loading="lazy" decoding="async" src="{{ asset('storage/' . $product->main_image) }}" class="card-img-top" alt="{{ $product->name }}">
             @else
-                <img loading="lazy" src="https://ui-avatars.com/api/?name={{ urlencode($product->name) }}&background=f1f5f9&color=64748b&size=300" class="card-img-top" alt="No Image">
+                <div class="card-img-top bg-light d-flex align-items-center justify-content-center text-muted" style="height: 220px;">
+                    <i class="bi bi-image fs-1 opacity-25"></i>
+                </div>
             @endif
         </a>
 
@@ -58,32 +60,4 @@
         </div>
     </div>
 
-    <div class="card-footer bg-white border-0 p-3 pt-0 mt-auto">
-        @php $cartItem = $cartItemMap[$product->id] ?? null; @endphp
-
-        <div class="product-card-action-wrap text-center" id="card-action-wrap-{{ $product->id }}">
-            @if($cartItem)
-                <div class="d-inline-flex align-items-center justify-content-between bg-white border border-2 border-primary rounded-pill p-1 shadow-sm mx-auto" style="width: 110px; height: 36px;">
-                    <button type="button" class="btn btn-sm btn-light border-0 rounded-circle d-flex align-items-center justify-content-center p-0 text-primary fw-bold card-qty-btn" style="width: 26px; height: 26px; background-color: #e0e7ff;" data-item-id="{{ $cartItem['id'] }}" data-action="decrease" data-product-id="{{ $product->id }}" data-current-qty="{{ $cartItem['qty'] }}">
-                        <i class="bi bi-dash-lg" style="font-size: 12px;"></i>
-                    </button>
-                    <span class="fw-bolder text-primary fs-6 card-qty-val px-1" id="card-qty-val-{{ $product->id }}">{{ $cartItem['qty'] }}</span>
-                    <button type="button" class="btn btn-sm btn-primary rounded-circle d-flex align-items-center justify-content-center p-0 text-white fw-bold card-qty-btn" style="width: 26px; height: 26px;" data-item-id="{{ $cartItem['id'] }}" data-action="increase" data-product-id="{{ $product->id }}" data-current-qty="{{ $cartItem['qty'] }}">
-                        <i class="bi bi-plus-lg" style="font-size: 12px;"></i>
-                    </button>
-                </div>
-                <small class="text-success fw-bold d-block mt-1.5 text-center" style="font-size: 0.68rem; letter-spacing: 0.5px;"><i class="bi bi-check-circle-fill me-1"></i>Added to Bag</small>
-            @else
-                <!-- Add to Cart Button -->
-                <form action="{{ route('cart.add') }}" method="POST" class="m-0 ajax-cart-form no-loader">
-                    @csrf
-                    <input type="hidden" name="product_id" value="{{ $product->id }}">
-                    <input type="hidden" name="quantity" value="1">
-                    <button type="submit" class="btn btn-primary w-100 rounded-pill py-2 d-flex align-items-center justify-content-center fw-semibold transition-all hover-elevate no-loader" {{ $product->stock <= 0 ? 'disabled' : '' }}>
-                        <i class="bi bi-cart-plus me-2"></i> Add to Cart
-                    </button>
-                </form>
-            @endif
-        </div>
-    </div>
 </div>

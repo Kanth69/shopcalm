@@ -5,35 +5,50 @@ namespace App\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class SendOtpMail extends Mailable
+class ContactEnquiryMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $otp;
+    public $enquiry;
 
-    public function __construct($otp)
+    /**
+     * Create a new message instance.
+     */
+    public function __construct($enquiry)
     {
-        $this->otp = $otp;
+        $this->enquiry = $enquiry;
     }
 
+    /**
+     * Get the message envelope.
+     */
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your Shopcalm Verification Code',
+            subject: 'New Contact Enquiry: ' . $this->enquiry->subject,
         );
     }
 
+    /**
+     * Get the message content definition.
+     */
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.auth.send-otp',
+            markdown: 'mail.contact',
         );
     }
 
+    /**
+     * Get the attachments for the message.
+     *
+     * @return array<int, Attachment>
+     */
     public function attachments(): array
     {
         return [];

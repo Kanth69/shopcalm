@@ -77,7 +77,7 @@ class CheckoutService
                 'order_number' => $this->generateOrderNumber(),
                 'subtotal_amount' => $subtotalAmount,
                 'coupon_id' => $couponId,
-                'discount_amount' => $discountAmount,
+                'coupon_discount_amount' => $discountAmount,
                 'total_amount' => $totalAmount,
                 'payment_method' => 'cod',
                 'payment_status' => 'pending',
@@ -108,11 +108,18 @@ class CheckoutService
                 }
 
                 // Create Order Item
+                $originalPrice = (float) $product->price;
+                $unitPrice = (float) $item->unit_price;
+                $offerDiscount = max(0, $originalPrice - $unitPrice);
+                
                 $order->items()->create([
                     'product_id' => $product->id,
                     'product_name' => $product->name,
-                    'product_price' => $item->unit_price,
+                    'original_price' => $originalPrice,
+                    'offer_discount' => $offerDiscount,
+                    'unit_price' => $unitPrice,
                     'quantity' => $item->quantity,
+                    'total_price' => $unitPrice * $item->quantity,
                 ]);
 
                 $stockBefore = $product->stock;

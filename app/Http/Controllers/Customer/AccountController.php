@@ -11,8 +11,18 @@ class AccountController extends Controller
 {
     public function orders()
     {
-        $orders = Auth::user()->orders()->with('items')->latest()->paginate(10);
-        return view('customer.account.orders', compact('orders'));
+        $user   = Auth::user();
+        $orders = $user->orders()->with('items.product')->latest()->paginate(10);
+
+        $totalCount     = $user->orders()->count();
+        $deliveredCount = $user->orders()->where('status', 'delivered')->count();
+        $activeCount    = $user->orders()->whereNotIn('status', ['delivered', 'cancelled'])->count();
+
+        $recommendedProducts = \Illuminate\Support\Facades\Cache::remember('recommended_products', 600, function () {
+            return \App\Models\Product::with(['category', 'brand'])->where('status', 'Active')->inRandomOrder()->take(4)->get();
+        });
+
+        return view('customer.account.orders', compact('orders', 'recommendedProducts', 'totalCount', 'deliveredCount', 'activeCount'));
     }
 
     public function showOrder(Order $order)
@@ -20,7 +30,14 @@ class AccountController extends Controller
         if ($order->user_id !== Auth::id()) {
             abort(404);
         }
-        return view('customer.account.order_details', compact('order'));
+
+        $order->load(['items.product.category', 'items.product.brand', 'coupon']);
+
+        $recommendedProducts = \Illuminate\Support\Facades\Cache::remember('recommended_products', 600, function () {
+            return \App\Models\Product::with(['category', 'brand'])->where('status', 'Active')->inRandomOrder()->take(4)->get();
+        });
+
+        return view('customer.account.order_details', compact('order', 'recommendedProducts'));
     }
 
     public function reviews()

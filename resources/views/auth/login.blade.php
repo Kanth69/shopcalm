@@ -35,7 +35,12 @@
                         <a class="forgot-link" href="{{ route('password.request') }}">Forgot?</a>
                     @endif
                 </div>
-                <input id="password" class="auth-input" type="password" name="password" required placeholder="••••••••">
+                <div class="password-input-wrapper">
+                    <input id="password" class="auth-input" type="password" name="password" required placeholder="••••••••">
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password', this)" title="Show password">
+                        <i class="bi bi-eye-slash"></i>
+                    </button>
+                </div>
                 <x-input-error :messages="$errors->get('password')" class="mt-2" />
             </div>
 
@@ -175,6 +180,39 @@
             border-color: #3b82f6;
             background-color: #fff;
             box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        .password-input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .password-input-wrapper .auth-input {
+            padding-right: 46px;
+        }
+
+        .password-toggle-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            padding: 6px;
+            color: #64748b;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            z-index: 5;
+            font-size: 18px;
+        }
+
+        .password-toggle-btn:hover {
+            color: #3b82f6;
+            background-color: #f1f5f9;
         }
 
         .form-options {

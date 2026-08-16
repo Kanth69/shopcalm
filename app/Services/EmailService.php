@@ -26,17 +26,17 @@ class EmailService
      * @param  string       $subject Email subject line
      * @param  string       $html    HTML body
      * @param  string|null  $text    Plain-text fallback (optional)
-     * @return bool
+     * @return array
      */
     public function sendEmail(
         string $to,
         string $subject,
         string $html,
         ?string $text = null
-    ): bool {
+    ): array {
         if (empty($this->apiKey) || empty($this->senderEmail)) {
             Log::error('[EmailService] Brevo credentials missing — BREVO_API_KEY or BREVO_SENDER_EMAIL not set.');
-            return false;
+            return ['success' => false, 'status' => 500];
         }
 
         $payload = [
@@ -56,11 +56,18 @@ class EmailService
         }
 
         try {
-            $response = Http::withHeaders([
+            $request = Http::withHeaders([
                 'api-key'      => $this->apiKey,
                 'Content-Type' => 'application/json',
                 'Accept'       => 'application/json',
-            ])->post($this->apiUrl, $payload);
+            ]);
+            
+            // Bypass SSL verification in local development (fixes cURL error 60 on Windows)
+            if (app()->environment('local')) {
+                $request = $request->withoutVerifying();
+            }
+
+            $response = $request->post($this->apiUrl, $payload);
 
             if ($response->successful()) {
                 Log::info('[EmailService] Email sent successfully.', [
@@ -68,7 +75,7 @@ class EmailService
                     'subject' => $subject,
                     'message_id' => $response->json('messageId') ?? null,
                 ]);
-                return true;
+                return ['success' => true, 'status' => $response->status()];
             }
 
             Log::error('[EmailService] Brevo API returned an error.', [
@@ -77,7 +84,7 @@ class EmailService
                 'status'  => $response->status(),
                 'body'    => $response->body(),
             ]);
-            return false;
+            return ['success' => false, 'status' => $response->status()];
 
         } catch (\Throwable $e) {
             Log::error('[EmailService] Brevo API exception.', [
@@ -86,7 +93,7 @@ class EmailService
                 'exception' => $e->getMessage(),
                 'trace'     => $e->getTraceAsString(),
             ]);
-            return false;
+            return ['success' => false, 'status' => 500];
         }
     }
 }

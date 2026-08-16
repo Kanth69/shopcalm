@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Jobs\SendBrevoEmailJob;
 
 class User extends Authenticatable
 {
@@ -86,6 +87,29 @@ class User extends Authenticatable
     public function isCustomer(): bool
     {
         return (int) $this->role_id === self::ROLE_CUSTOMER;
+    }
+
+    public function getWishlistedProductIds()
+    {
+        return $this->wishlist()->pluck('product_id')->toArray();
+    }
+
+    /**
+     * Send the password reset notification.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $resetUrl = url(route('password.reset', [
+            'token' => $token,
+            'email' => $this->getEmailForPasswordReset(),
+        ], false));
+
+        $html = view('emails.auth.reset-brevo', ['resetUrl' => $resetUrl])->render();
+
+        SendBrevoEmailJob::dispatch($this->email, 'Reset Password Notification', $html);
     }
 
     public function wishlist(): HasOne

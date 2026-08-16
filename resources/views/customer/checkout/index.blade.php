@@ -73,22 +73,27 @@
                         <i class="bi bi-exclamation-triangle-fill me-2"></i><span>Please select or add a valid delivery address before placing your order.</span>
                     </div>
 
+                    <!-- Success Banner for Saved Address -->
+                    <div id="address-success-banner" class="alert alert-success small mb-3 rounded-3 border-0 bg-success-subtle text-success" style="display: none;">
+                        <i class="bi bi-check-circle-fill me-2"></i><span>Address saved successfully!</span>
+                    </div>
+
                     <!-- Active Selected Shipping Display (Read-Only) -->
                     <div id="active-address-display" class="p-3 bg-light rounded-3 border">
-                        @if($addresses->count() > 0)
-                            @php $activeAddr = $addresses->firstWhere('is_default', true) ?? $addresses->first(); @endphp
+                        <div id="no-address-msg" style="display: {{ $addresses->count() > 0 ? 'none' : 'block' }};" class="text-center py-3 text-muted">
+                            <i class="bi bi-building-add fs-2 text-primary d-block mb-2"></i>
+                            No saved address found. Click <strong>"Add New Address"</strong> below to save your delivery location.
+                        </div>
+
+                        @php $activeAddr = $addresses->count() > 0 ? ($addresses->firstWhere('is_default', true) ?? $addresses->first()) : null; @endphp
+                        <div id="active-address-details" style="display: {{ $addresses->count() > 0 ? 'block' : 'none' }};">
                             <div class="d-flex justify-content-between align-items-start mb-1">
-                                <h6 class="fw-bold mb-0 text-dark" id="display-name">{{ $activeAddr->name }}</h6>
+                                <h6 class="fw-bold mb-0 text-dark" id="display-name">{{ $activeAddr ? $activeAddr->name : '' }}</h6>
                                 <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3">Selected</span>
                             </div>
-                            <p class="text-secondary mb-1" id="display-street-city">{{ $activeAddr->address }}, {{ $activeAddr->city }}, {{ $activeAddr->state }} - {{ $activeAddr->zip }}</p>
-                            <div class="small text-muted" id="display-phone"><i class="bi bi-telephone me-1"></i> Phone: {{ $activeAddr->phone }}</div>
-                        @else
-                            <div class="text-center py-3 text-muted" id="no-address-msg">
-                                <i class="bi bi-building-add fs-2 text-primary d-block mb-2"></i>
-                                No saved address found. Click <strong>"Add New Address"</strong> below to save your delivery location.
-                            </div>
-                        @endif
+                            <p class="text-secondary mb-1" id="display-street-city">{{ $activeAddr ? "{$activeAddr->address}, {$activeAddr->city}, {$activeAddr->state} - {$activeAddr->zip}" : '' }}</p>
+                            <div class="small text-muted" id="display-phone"><i class="bi bi-telephone me-1"></i> Phone: {{ $activeAddr ? $activeAddr->phone : '' }}</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -178,25 +183,18 @@
                     
                     <div id="coupon-status-wrapper">
                         @if($couponCode)
-                            <div class="coupon-celebration-banner p-3.5 rounded-4 text-white shadow-sm position-relative overflow-hidden" id="applied-coupon-box" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); border: 1px solid rgba(255,255,255,0.25);">
-                                <div class="position-absolute end-0 bottom-0 opacity-10 pe-2 pb-1" style="pointer-events: none;">
-                                    <i class="bi bi-stars" style="font-size: 4.5rem; color: #fff;"></i>
-                                </div>
-                                <div class="d-flex align-items-center justify-content-between gap-2 position-relative" style="z-index: 2;">
+                            <div class="coupon-celebration-banner p-3 rounded-4 text-white shadow-sm position-relative overflow-hidden" id="applied-coupon-box" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                                <div class="d-flex align-items-center justify-content-between gap-2">
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="celebration-icon bg-white text-success rounded-circle p-2 d-flex align-items-center justify-content-center shadow" style="width: 44px; height: 44px;">
-                                            <i class="bi bi-party-popper-fill fs-4 text-success"></i>
+                                        <div class="celebration-icon bg-white text-success rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 44px; height: 44px;">
+                                            <i class="bi bi-party-popper fs-4"></i>
                                         </div>
                                         <div>
-                                            <div class="d-flex align-items-center gap-2 mb-0.5">
-                                                <h6 class="mb-0 fw-extrabold text-white fs-5">Hurray! You saved <span id="hurray-savings-amount">₹{{ number_format($discountAmount, 2) }}</span></h6>
-                                            </div>
+                                            <h6 class="mb-0 fw-bolder text-white">Hurray! You saved <span id="hurray-savings-amount">₹{{ number_format($discountAmount, 2) }}</span></h6>
                                             <small class="text-white-50">Coupon <strong class="text-white text-uppercase" id="hurray-coupon-code">{{ $couponCode }}</strong> applied successfully 🎉</small>
                                         </div>
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-white text-danger bg-white border-0 rounded-pill px-3 fw-bold flex-shrink-0 shadow-sm" id="btn-remove-coupon-ajax">
-                                        <i class="bi bi-trash3 me-1"></i> Remove
-                                    </button>
+                                    <button type="button" class="btn btn-sm btn-light border-0 text-danger rounded-pill px-3 fw-bold flex-shrink-0 shadow-sm" id="btn-remove-coupon-ajax">Remove</button>
                                 </div>
                             </div>
                         @else
@@ -233,48 +231,85 @@
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4">
                     <h5 class="fw-bold mb-4"><i class="bi bi-bag-check me-2 text-primary"></i>Order Summary</h5>
-                    <ul class="list-group list-group-flush mb-3">
+                    <!-- Cart Items -->
+                    <div class="checkout-items-wrapper mb-4">
                         @foreach($cart->items as $item)
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent py-3">
+                        <div class="d-flex justify-content-between align-items-center py-3 border-bottom">
                             <div class="d-flex align-items-center gap-3">
                                 @if($item->product->main_image)
-                                    <img src="{{ asset('storage/' . $item->product->main_image) }}" alt="{{ $item->product->name }}" class="rounded-2" style="width: 48px; height: 48px; object-fit: cover;">
+                                    <div class="position-relative">
+                                        <img src="{{ asset('storage/' . $item->product->main_image) }}" alt="{{ $item->product->name }}" class="rounded-3 border shadow-sm" style="width: 56px; height: 56px; object-fit: cover;">
+                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-secondary border border-light">{{ $item->quantity }}</span>
+                                    </div>
                                 @endif
-                                <div>
-                                    <h6 class="mb-0 fw-semibold text-dark">{{ $item->product->name }}</h6>
-                                    <small class="text-muted">Qty: {{ $item->quantity }} × ₹{{ number_format($item->unit_price, 2) }}</small>
+                                <div class="ms-2">
+                                    <h6 class="mb-1 fw-bold text-dark" style="font-size: 0.95rem;">{{ $item->product->name }}</h6>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <small class="fw-semibold text-primary">₹{{ number_format($item->unit_price, 2) }} <span class="text-muted fw-normal">× {{ $item->quantity }}</span></small>
+                                        @if($item->product->price > $item->unit_price)
+                                            <small class="text-muted text-decoration-line-through" style="font-size: 0.8rem;">₹{{ number_format($item->product->price, 2) }}</small>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
-                            <span class="fw-semibold">₹{{ number_format($item->quantity * $item->unit_price, 2) }}</span>
-                        </li>
+                            <span class="fw-bold text-dark">₹{{ number_format($item->quantity * $item->unit_price, 2) }}</span>
+                        </div>
                         @endforeach
+                    </div>
 
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent pt-3 border-top">
-                            <span class="text-muted">Subtotal</span>
-                            <span class="fw-semibold" id="summary-subtotal">₹{{ number_format($subtotal, 2) }}</span>
-                        </li>
+                    <!-- Price Breakdown Box -->
+                    <div class="price-breakdown bg-light rounded-4 p-4 mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted fw-semibold">Total MRP</span>
+                            <span class="fw-semibold text-dark">₹{{ number_format($totalMrp ?? $subtotal, 2) }}</span>
+                        </div>
 
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent text-success {{ $discountAmount > 0 ? '' : 'd-none' }}" id="summary-discount-row">
-                            <span id="summary-discount-label">Coupon Discount ({{ $couponCode }})</span>
-                            <span class="fw-semibold" id="summary-discount-val">-₹{{ number_format($discountAmount, 2) }}</span>
-                        </li>
-
-                        @if(isset($offerDiscount) && $offerDiscount > 0)
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent">
-                            <span class="fw-semibold text-primary"><i class="bi bi-fire text-warning me-1"></i> Instant Sale Offer Discount</span>
-                            <span class="fw-bold text-primary">-₹{{ number_format($offerDiscount, 2) }}</span>
-                        </li>
+                        @if(isset($totalDiscount) && $totalDiscount > 0)
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted fw-semibold">Discount on MRP</span>
+                            <span class="fw-bold text-success">-₹{{ number_format($totalDiscount, 2) }}</span>
+                        </div>
                         @endif
 
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent">
-                            <span class="text-muted">Shipping</span>
-                            <span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>FREE</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent border-top border-2 pt-3 mt-2">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted fw-semibold">Subtotal</span>
+                            <span class="fw-semibold text-dark" id="summary-subtotal">₹{{ number_format($subtotal, 2) }}</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-2 text-success {{ $discountAmount > 0 ? '' : 'd-none' }}" id="summary-discount-row">
+                            <span class="fw-semibold" id="summary-discount-label">Coupon ({{ $couponCode }})</span>
+                            <span class="fw-bold" id="summary-discount-val">-₹{{ number_format($discountAmount, 2) }}</span>
+                        </div>
+
+                        @if(isset($offerDiscount) && $offerDiscount > 0)
+                        <div class="d-flex justify-content-between align-items-center mb-2 text-primary">
+                            <span class="fw-semibold"><i class="bi bi-fire text-warning me-1"></i> Sale Offer</span>
+                            <span class="fw-bold">-₹{{ number_format($offerDiscount, 2) }}</span>
+                        </div>
+                        @endif
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-muted fw-semibold">Shipping</span>
+                            <span class="fw-bold text-success">FREE</span>
+                        </div>
+
+                        <hr class="border-secondary opacity-25 my-3">
+                        
+                        <div class="d-flex justify-content-between align-items-center">
                             <span class="fs-5 fw-bold text-dark">Grand Total</span>
-                            <span class="fs-4 fw-bold text-primary" id="summary-grand-total">₹{{ number_format($grandTotal, 2) }}</span>
-                        </li>
-                    </ul>
+                            <span class="fs-4 fw-bolder text-primary" id="summary-grand-total">₹{{ number_format($grandTotal, 2) }}</span>
+                        </div>
+                    </div>
+
+                    @php
+                        $totalSavings = ($totalDiscount ?? 0) + ($discountAmount ?? 0) + ($offerDiscount ?? 0);
+                    @endphp
+                    <div id="total-savings-box" class="alert alert-success rounded-4 border-0 d-flex align-items-center mb-0 mt-3 py-2 px-3 {{ $totalSavings > 0 ? '' : 'd-none' }}">
+                        <i class="bi bi-piggy-bank fs-4 me-3 text-success"></i>
+                        <div class="fw-bold text-success mb-0">
+                            You will save <span id="total-savings-amount">₹{{ number_format($totalSavings, 2) }}</span> on this order
+                        </div>
+                    </div>
 
                     <div class="mt-4 p-3 bg-light rounded-3">
                         <h6 class="fw-bold mb-2 small text-uppercase text-muted">Payment Option</h6>
@@ -352,18 +387,44 @@ document.addEventListener('DOMContentLoaded', function() {
 function applySelectedAddress(addr) {
     currentSelectedAddress = addr;
 
+    // Toggle active address display vs no address message
+    const noAddrMsg = document.getElementById('no-address-msg');
+    if (noAddrMsg) noAddrMsg.style.display = 'none';
+
+    const addrDetails = document.getElementById('active-address-details');
+    if (addrDetails) addrDetails.style.display = 'block';
+
+    const errorBanner = document.getElementById('address-error-banner');
+    if (errorBanner) errorBanner.style.display = 'none';
+
     // 1. Update Read-Only Card UI
-    document.getElementById('display-name').textContent = addr.name;
-    document.getElementById('display-street-city').textContent = `${addr.address}, ${addr.city}, ${addr.state} - ${addr.zip}`;
-    document.getElementById('display-phone').innerHTML = `<i class="bi bi-telephone me-1"></i> Phone: ${addr.phone}`;
+    const nameEl = document.getElementById('display-name');
+    if (nameEl) nameEl.textContent = addr.name;
+
+    const streetCityEl = document.getElementById('display-street-city');
+    if (streetCityEl) streetCityEl.textContent = `${addr.address}, ${addr.city}, ${addr.state} - ${addr.zip}`;
+
+    const phoneEl = document.getElementById('display-phone');
+    if (phoneEl) phoneEl.innerHTML = `<i class="bi bi-telephone me-1"></i> Phone: ${addr.phone}`;
 
     // 2. Populate Hidden Checkout Form Fields
-    document.getElementById('hidden_shipping_name').value = addr.name;
-    document.getElementById('hidden_shipping_phone').value = addr.phone;
-    document.getElementById('hidden_shipping_address').value = addr.address;
-    document.getElementById('hidden_shipping_city').value = addr.city;
-    document.getElementById('hidden_shipping_state').value = addr.state;
-    document.getElementById('hidden_shipping_zip').value = addr.zip;
+    const hiddenName = document.getElementById('hidden_shipping_name');
+    if (hiddenName) hiddenName.value = addr.name;
+
+    const hiddenPhone = document.getElementById('hidden_shipping_phone');
+    if (hiddenPhone) hiddenPhone.value = addr.phone;
+
+    const hiddenAddr = document.getElementById('hidden_shipping_address');
+    if (hiddenAddr) hiddenAddr.value = addr.address;
+
+    const hiddenCity = document.getElementById('hidden_shipping_city');
+    if (hiddenCity) hiddenCity.value = addr.city;
+
+    const hiddenState = document.getElementById('hidden_shipping_state');
+    if (hiddenState) hiddenState.value = addr.state;
+
+    const hiddenZip = document.getElementById('hidden_shipping_zip');
+    if (hiddenZip) hiddenZip.value = addr.zip;
 }
 
 function openNewAddressForm() {
@@ -407,37 +468,72 @@ function handleSaveAddress(e) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': "{{ csrf_token() }}"
+            'X-CSRF-TOKEN': "{{ csrf_token() }}",
+            'Accept': 'application/json'
         },
         body: JSON.stringify(payload)
     })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            userAddresses = data.all_addresses;
-            applySelectedAddress(data.address);
-
-            // Update modal address list HTML dynamically
-            renderModalAddresses(data.all_addresses);
-
-            // Enable Change Address button
-            document.getElementById('btn-change-address').style.display = 'inline-block';
-
-            // Hide new address card
-            closeNewAddressForm();
-
-            // Clear inputs
-            document.getElementById('new_address').value = '';
-            document.getElementById('new_city').value = '';
-            document.getElementById('new_state').value = '';
-            document.getElementById('new_zip').value = '';
-        } else {
-            alert(data.message || 'Failed to save address.');
+    .then(async res => {
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+            let errorMsg = data.message || 'Failed to save address.';
+            if (data.errors) {
+                const firstKey = Object.keys(data.errors)[0];
+                if (firstKey && data.errors[firstKey][0]) {
+                    errorMsg = data.errors[firstKey][0];
+                }
+            }
+            throw new Error(errorMsg);
         }
+        return data;
+    })
+    .then(data => {
+        userAddresses = data.all_addresses;
+        applySelectedAddress(data.address);
+
+        // Show success banner
+        const successBanner = document.getElementById('address-success-banner');
+        if (successBanner) {
+            successBanner.style.display = 'block';
+            successBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => {
+                successBanner.style.display = 'none';
+            }, 5000);
+        }
+
+        // Show SweetAlert Toast if available
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Address Saved',
+                text: 'Address saved successfully!',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+        }
+
+        // Update modal address list HTML dynamically
+        renderModalAddresses(data.all_addresses);
+
+        // Enable Change Address button
+        const btnChange = document.getElementById('btn-change-address');
+        if (btnChange) btnChange.style.display = 'inline-block';
+
+        // Hide new address card
+        closeNewAddressForm();
+
+        // Clear inputs
+        document.getElementById('new_address').value = '';
+        document.getElementById('new_city').value = '';
+        document.getElementById('new_state').value = '';
+        document.getElementById('new_zip').value = '';
     })
     .catch(err => {
         console.error(err);
-        alert('An error occurred while saving the address.');
+        alert(err.message || 'An error occurred while saving the address.');
     })
     .finally(() => {
         btn.disabled = false;
@@ -517,7 +613,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </div>
                                     <div>
                                         <h6 class="mb-0 fw-bolder text-white">Hurray! You saved <span id="hurray-savings-amount">₹${data.formatted_discount}</span></h6>
-                                        <small class="text-white-50">Code <strong class="text-white" id="hurray-coupon-code">${data.coupon_code}</strong> applied successfully 🎉</small>
+                                        <small class="text-white-50">Coupon <strong class="text-white text-uppercase" id="hurray-coupon-code">${data.coupon_code}</strong> applied successfully 🎉</small>
                                     </div>
                                 </div>
                                 <button type="button" class="btn btn-sm btn-light border-0 text-danger rounded-pill px-3 fw-bold flex-shrink-0 shadow-sm" id="btn-remove-coupon-ajax">Remove</button>
@@ -525,9 +621,21 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     `;
                     if (summaryDiscountRow) summaryDiscountRow.classList.remove('d-none');
-                    if (summaryDiscountLabel) summaryDiscountLabel.textContent = `Discount (${data.coupon_code})`;
+                    if (summaryDiscountLabel) summaryDiscountLabel.textContent = `Coupon (${data.coupon_code})`;
                     if (summaryDiscountVal) summaryDiscountVal.textContent = `-₹${data.formatted_discount}`;
                     if (summaryGrandTotal) summaryGrandTotal.textContent = `₹${data.grand_total}`;
+                    
+                    const savingsBox = document.getElementById('total-savings-box');
+                    const savingsAmount = document.getElementById('total-savings-amount');
+                    if (savingsBox && savingsAmount && data.total_savings) {
+                        const parsedSavings = parseFloat(data.total_savings.replace(/,/g, ''));
+                        if (parsedSavings > 0) {
+                            savingsBox.classList.remove('d-none');
+                            savingsAmount.textContent = `₹${data.total_savings}`;
+                        } else {
+                            savingsBox.classList.add('d-none');
+                        }
+                    }
                 } else {
                     if (errorBanner && errorText) {
                         errorText.textContent = data.message || 'Failed to apply coupon.';
@@ -727,4 +835,8 @@ window.applyCouponFromModal = function(code) {
 .hover-lift { transition: transform 0.2s; }
 .hover-lift:hover { transform: translateY(-1px); }
 </style>
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@endpush
+
 @endsection

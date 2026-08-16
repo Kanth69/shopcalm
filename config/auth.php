@@ -40,7 +40,7 @@ return [
     'guards' => [
         'admin' => [
             'driver' => 'session',
-            'provider' => 'users',
+            'provider' => 'admins',   // separate provider → separate session key
         ],
         'customer' => [
             'driver' => 'session',
@@ -68,7 +68,13 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', User::class),
+            'model'  => env('AUTH_MODEL', User::class),
+        ],
+        // Admin uses the same User model/table but a DIFFERENT provider name
+        // so Laravel generates a different session key (login_admins_xxxx vs login_users_xxxx)
+        'admins' => [
+            'driver' => 'eloquent',
+            'model'  => env('AUTH_MODEL', User::class),
         ],
     ],
 

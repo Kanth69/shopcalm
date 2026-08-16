@@ -44,12 +44,26 @@ class AddressController extends Controller
         return redirect()->route('account.addresses.index')->with('success', 'Address updated successfully.');
     }
 
-    public function destroy(Address $address)
+    public function destroy(Request $request, Address $address)
     {
-        if ($address->user_id !== Auth::id()) {
+        $user = Auth::guard('customer')->user() ?? Auth::user();
+        if (!$user || $address->user_id !== $user->id) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
             abort(404);
         }
+
         $address->delete();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Address deleted successfully.',
+                'remaining_count' => $user->addresses()->count()
+            ]);
+        }
+
         return back()->with('success', 'Address deleted successfully.');
     }
 }

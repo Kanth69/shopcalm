@@ -33,6 +33,12 @@ class CheckoutController extends Controller
         }
 
         $subtotal = $this->cartService->subtotal();
+        
+        $totalMrp = $cart->items->sum(function ($item) {
+            return $item->quantity * $item->product->price;
+        });
+        $totalDiscount = $totalMrp - $subtotal;
+
         $discountAmount = 0;
         $couponCode = Session::get('applied_coupon');
         $couponError = null;
@@ -71,7 +77,7 @@ class CheckoutController extends Controller
             }
         }
 
-        return view('customer.checkout.index', compact('cart', 'subtotal', 'discountAmount', 'offerDiscount', 'grandTotal', 'couponCode', 'couponError', 'addresses', 'availableCoupons'));
+        return view('customer.checkout.index', compact('cart', 'subtotal', 'totalMrp', 'totalDiscount', 'discountAmount', 'offerDiscount', 'grandTotal', 'couponCode', 'couponError', 'addresses', 'availableCoupons'));
     }
 
     public function applyCoupon(Request $request)
@@ -86,7 +92,14 @@ class CheckoutController extends Controller
             $discountAmount = $this->couponService->calculateDiscount($coupon, $subtotal);
             Session::put('applied_coupon', $coupon->code);
 
-            $grandTotal = $subtotal - $discountAmount;
+            $offerDiscount = app(\App\Services\OfferService::class)->calculateCheckoutOfferDiscount($cart);
+            $grandTotal = max(0, $subtotal - $discountAmount - $offerDiscount);
+            
+            $totalMrp = $cart->items->sum(function ($item) {
+                return $item->quantity * $item->product->price;
+            });
+            $totalDiscount = $totalMrp - $subtotal;
+            $totalSavings = $totalDiscount + $discountAmount + $offerDiscount;
 
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
@@ -96,7 +109,8 @@ class CheckoutController extends Controller
                     'discount_amount' => $discountAmount,
                     'formatted_discount' => number_format($discountAmount, 2),
                     'subtotal' => number_format($subtotal, 2),
-                    'grand_total' => number_format($grandTotal, 2)
+                    'grand_total' => number_format($grandTotal, 2),
+                    'total_savings' => number_format($totalSavings, 2),
                 ]);
             }
 
@@ -116,14 +130,25 @@ class CheckoutController extends Controller
     public function removeCoupon(Request $request)
     {
         Session::forget('applied_coupon');
+        $cart = $this->cartService->getCart();
         $subtotal = $this->cartService->subtotal();
+        
+        $offerDiscount = app(\App\Services\OfferService::class)->calculateCheckoutOfferDiscount($cart);
+        $grandTotal = max(0, $subtotal - $offerDiscount);
+        
+        $totalMrp = $cart->items->sum(function ($item) {
+            return $item->quantity * $item->product->price;
+        });
+        $totalDiscount = $totalMrp - $subtotal;
+        $totalSavings = $totalDiscount + $offerDiscount;
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Coupon removed.',
                 'subtotal' => number_format($subtotal, 2),
-                'grand_total' => number_format($subtotal, 2)
+                'grand_total' => number_format($grandTotal, 2),
+                'total_savings' => number_format($totalSavings, 2)
             ]);
         }
 
@@ -142,7 +167,14 @@ class CheckoutController extends Controller
             'country' => 'nullable|string|max:100',
         ]);
 
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user() ?? Auth::user();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please log in to save your address.'
+            ], 401);
+        }
+
         $newAddress = $user->addresses()->create([
             'name' => $validated['name'],
             'phone' => $validated['phone'],

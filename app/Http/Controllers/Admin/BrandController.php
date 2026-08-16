@@ -19,20 +19,29 @@ class BrandController extends Controller
     {
         $search = $request->input('search');
         $categoryId = $request->input('category_id');
+        $status = $request->input('status');
 
         $brands = Brand::with('category')
+            ->withCount('products')
             ->when($search, function ($query, $search) {
-                return $query->where('name', 'like', "%{$search}%");
+                return $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('slug', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%");
+                });
             })
             ->when($categoryId, function ($query, $categoryId) {
                 return $query->where('category_id', $categoryId);
+            })
+            ->when($status !== null && $status !== '', function ($query) use ($status) {
+                return $query->where('status', (bool) $status);
             })
             ->latest()
             ->paginate(10);
 
         $categories = Category::where('status', 'Active')->orderBy('name')->get();
 
-        return view('admin.brands.index', compact('brands', 'categories', 'search', 'categoryId'));
+        return view('admin.brands.index', compact('brands', 'categories', 'search', 'categoryId', 'status'));
     }
 
     /**
@@ -70,7 +79,7 @@ class BrandController extends Controller
 
         Brand::create($validated);
 
-        return redirect()->route('admin.brands.index')->with('success', 'Brand created successfully.');
+        return redirect()->route('admin.brands.index')->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => 'Brand created successfully.']);
     }
 
     /**
@@ -112,16 +121,27 @@ class BrandController extends Controller
 
         $brand->update($validated);
 
-        return redirect()->route('admin.brands.index')->with('success', 'Brand updated successfully.');
+        return redirect()->route('admin.brands.index')->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => 'Brand updated successfully.']);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Brand $brand)
+    public function destroy(Request $request, Brand $brand)
     {
+        if ($brand->logo) {
+            Storage::disk('public')->delete($brand->logo);
+        }
+
         $brand->delete();
 
-        return redirect()->route('admin.brands.index')->with('success', 'Brand deleted successfully.');
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Brand deleted successfully.'
+            ]);
+        }
+
+        return redirect()->route('admin.brands.index')->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => 'Brand deleted successfully.']);
     }
 }

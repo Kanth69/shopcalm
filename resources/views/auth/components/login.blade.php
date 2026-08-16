@@ -29,10 +29,12 @@
             <label for="password_for_login">Password</label>
             <a href="#" class="forgot-link" id="show-forgot-password">Forgot?</a>
         </div>
-        <input id="password_for_login" class="auth-input" type="password" name="password" required autofocus placeholder="••••••••">
-        <span id="login-inline-error" class="text-danger small mt-1 d-block" style="display: none;">
-            <i class="bi bi-exclamation-triangle-fill me-1"></i><span id="login-error-text"></span>
-        </span>
+        <div class="password-input-wrapper">
+            <input id="password_for_login" class="auth-input" type="password" name="password" required autofocus placeholder="••••••••">
+            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password_for_login', this)" title="Show password">
+                <i class="bi bi-eye-slash"></i>
+            </button>
+        </div>
     </div>
 
     <div class="form-options">

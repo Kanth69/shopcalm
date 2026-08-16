@@ -46,12 +46,22 @@
     <div class="form-row">
         <div class="form-group flex-1">
             <label for="register_password">Password <span class="text-danger">*</span></label>
-            <input id="register_password" class="auth-input" type="password" name="password" required minlength="8" placeholder="At least 8 chars">
+            <div class="password-input-wrapper">
+                <input id="register_password" class="auth-input" type="password" name="password" required minlength="8" placeholder="At least 8 chars">
+                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('register_password', this)" title="Show password">
+                    <i class="bi bi-eye-slash"></i>
+                </button>
+            </div>
         </div>
 
         <div class="form-group flex-1">
             <label for="password_confirmation">Confirm Password <span class="text-danger">*</span></label>
-            <input id="password_confirmation" class="auth-input" type="password" name="password_confirmation" required placeholder="Re-enter password">
+            <div class="password-input-wrapper">
+                <input id="password_confirmation" class="auth-input" type="password" name="password_confirmation" required placeholder="Re-enter password">
+                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password_confirmation', this)" title="Show password">
+                    <i class="bi bi-eye-slash"></i>
+                </button>
+            </div>
         </div>
     </div>
 
