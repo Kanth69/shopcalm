@@ -252,49 +252,70 @@
                     </a>
                 </li>
 
-                <li class="nav-header">Catalog</li>
-                
+                <li class="nav-header">Catalog Management</li>
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('product-manager.products.index') || request()->routeIs('product-manager.products.edit') ? 'active' : '' }}" href="{{ route('product-manager.products.index') }}">
-                        <i class="bi bi-box-seam"></i> Products
+                    <a class="nav-link has-submenu {{ request()->routeIs('product-manager.products.*') || request()->routeIs('product-manager.categories.*') || request()->routeIs('product-manager.brands.*') ? '' : 'collapsed' }}"
+                       data-bs-toggle="collapse" href="#catalogSubmenu" role="button"
+                       aria-expanded="{{ request()->routeIs('product-manager.products.*') || request()->routeIs('product-manager.categories.*') || request()->routeIs('product-manager.brands.*') ? 'true' : 'false' }}">
+                        <i class="bi bi-grid"></i> Catalog
                     </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('product-manager.products.pending') ? 'active' : '' }}" href="{{ route('product-manager.products.pending') }}">
-                        <i class="bi bi-hourglass-split"></i> Pending Approvals
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('product-manager.products.rejected') ? 'active' : '' }}" href="{{ route('product-manager.products.rejected') }}">
-                        <i class="bi bi-x-octagon"></i> Rejected Items
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('product-manager.products.create') ? 'active' : '' }}" href="{{ route('product-manager.products.create') }}">
-                        <i class="bi bi-plus-circle"></i> Add Product
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('product-manager.categories.*') ? 'active' : '' }}" href="{{ route('product-manager.categories.index') }}">
-                        <i class="bi bi-grid"></i> Categories
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('product-manager.brands.*') ? 'active' : '' }}" href="{{ route('product-manager.brands.index') }}">
-                        <i class="bi bi-tag"></i> Brands
-                    </a>
+                    <div class="collapse {{ request()->routeIs('product-manager.products.*') || request()->routeIs('product-manager.categories.*') || request()->routeIs('product-manager.brands.*') ? 'show' : '' }}" id="catalogSubmenu">
+                        <ul class="nav flex-column submenu">
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('product-manager.products.index') || request()->routeIs('product-manager.products.edit') ? 'active' : '' }}" href="{{ route('product-manager.products.index') }}">
+                                    All Products
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('product-manager.products.pending') ? 'active' : '' }}" href="{{ route('product-manager.products.pending') }}">
+                                    Pending Approvals
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('product-manager.products.rejected') ? 'active' : '' }}" href="{{ route('product-manager.products.rejected') }}">
+                                    Rejected Items
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('product-manager.products.create') ? 'active' : '' }}" href="{{ route('product-manager.products.create') }}">
+                                    Add New Product
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('product-manager.categories.*') ? 'active' : '' }}" href="{{ route('product-manager.categories.index') }}">
+                                    Categories
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('product-manager.brands.*') ? 'active' : '' }}" href="{{ route('product-manager.brands.index') }}">
+                                    Brands
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </li>
 
                 <li class="nav-header">Inventory</li>
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('product-manager.stock.dashboard') || request()->routeIs('product-manager.stock.form') ? 'active' : '' }}" href="{{ route('product-manager.stock.dashboard') }}">
-                        <i class="bi bi-boxes"></i> Stock Management
+                    <a class="nav-link has-submenu {{ request()->routeIs('product-manager.stock.*') ? '' : 'collapsed' }}"
+                       data-bs-toggle="collapse" href="#stockSubmenu" role="button"
+                       aria-expanded="{{ request()->routeIs('product-manager.stock.*') ? 'true' : 'false' }}">
+                        <i class="bi bi-boxes"></i> Inventory
                     </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('product-manager.stock.history') ? 'active' : '' }}" href="{{ route('product-manager.stock.history') }}">
-                        <i class="bi bi-clock-history"></i> Stock History
-                    </a>
+                    <div class="collapse {{ request()->routeIs('product-manager.stock.*') ? 'show' : '' }}" id="stockSubmenu">
+                        <ul class="nav flex-column submenu">
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('product-manager.stock.dashboard') || request()->routeIs('product-manager.stock.form') ? 'active' : '' }}" href="{{ route('product-manager.stock.dashboard') }}">
+                                    Stock Management
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('product-manager.stock.history') ? 'active' : '' }}" href="{{ route('product-manager.stock.history') }}">
+                                    Stock History
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </li>
 
                 <li class="nav-header">Quality & Intelligence</li>
