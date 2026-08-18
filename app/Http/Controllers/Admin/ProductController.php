@@ -51,7 +51,75 @@ class ProductController extends Controller
         $categories = Category::where('status', 'Active')->orderBy('name')->get();
         $brands = Brand::where('status', 1)->orderBy('name')->get();
 
-        return view('admin.products.index', compact('products', 'categories', 'brands'));
+        $totalCount = Product::count();
+        $activeCount = Product::where('status', 'Active')->count();
+        $pendingCount = Product::where('status', 'Pending_Approval')->count();
+        $rejectedCount = Product::where('status', 'Rejected')->count();
+        $inactiveCount = Product::where('status', 'Inactive')->count();
+
+        return view('admin.products.index', compact(
+            'products', 
+            'categories', 
+            'brands',
+            'totalCount',
+            'activeCount',
+            'pendingCount',
+            'rejectedCount',
+            'inactiveCount'
+        ));
+    }
+
+    /**
+     * Approve a pending product and make it live on the storefront.
+     */
+    public function approve(Product $product)
+    {
+        $this->authorize('approve-products');
+
+        $product->update([
+            'status'           => 'Active',
+            'rejection_reason' => null,
+        ]);
+
+        $product->rejectionReasons()->where('status', 'active')->update(['status' => 'resolved']);
+
+        return back()->with('toast', [
+            'type'    => 'success',
+            'title'   => 'Product Approved',
+            'message' => "Product '{$product->name}' is now approved and live on the storefront.",
+        ]);
+    }
+
+    /**
+     * Reject a product with mandatory feedback reason.
+     */
+    public function reject(Request $request, Product $product)
+    {
+        $this->authorize('approve-products');
+
+        $request->validate([
+            'rejection_reason' => ['required', 'string', 'min:5', 'max:1000'],
+        ], [
+            'rejection_reason.required' => 'Please provide a clear reason for rejecting this product.',
+            'rejection_reason.min'      => 'Rejection reason must be at least 5 characters.',
+        ]);
+
+        $product->update([
+            'status'           => 'Rejected',
+            'rejection_reason' => $request->rejection_reason,
+        ]);
+
+        $product->rejectionReasons()->create([
+            'rejected_by' => auth()->id(),
+            'reason'      => $request->rejection_reason,
+            'status'      => 'active',
+        ]);
+
+        return back()->with('toast', [
+            'type'    => 'info',
+            'title'   => 'Product Rejected',
+            'message' => "Product '{$product->name}' has been marked as rejected and sent back to Product Manager.",
+        ]);
     }
 
     public function create()

@@ -22,7 +22,7 @@
         <i class="bi bi-exclamation-octagon-fill text-danger fs-4 flex-shrink-0 mt-1"></i>
         <div>
             <div class="fw-bold text-danger">Admin Feedback / Rejection Reason:</div>
-            <div class="text-dark small">{{ $product->rejection_reason ?? 'Please revise specifications or media.' }}</div>
+            <div class="text-dark small">{{ $product->active_rejection_reason ?? $product->rejection_reason ?? 'Please revise specifications or media.' }}</div>
         </div>
     </div>
 @endif

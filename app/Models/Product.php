@@ -26,6 +26,8 @@ class Product extends Model
         'featured',
         'trending',
         'status',
+        'rejection_reason',
+        'submitted_by',
         'main_image',
     ];
 
@@ -34,6 +36,26 @@ class Product extends Model
         'trending' => 'boolean',
         'price' => 'decimal:2',
     ];
+
+    public function submitter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function isPendingApproval(): bool
+    {
+        return $this->status === 'Pending_Approval';
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->status === 'Rejected';
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === 'Active';
+    }
 
     public function category(): BelongsTo
     {
@@ -89,5 +111,23 @@ class Product extends Model
         }
         $count = $this->reviews()->where('status', 'Approved')->where('rating', $rating)->count();
         return ($count / $total) * 100;
+    }
+
+    public function rejectionReasons(): HasMany
+    {
+        return $this->hasMany(ProductRejectionReason::class)->latest();
+    }
+
+    public function latestRejectionReason(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(ProductRejectionReason::class)->latestOfMany();
+    }
+
+    public function getActiveRejectionReasonAttribute(): ?string
+    {
+        if ($this->relationLoaded('latestRejectionReason') && $this->latestRejectionReason) {
+            return $this->latestRejectionReason->reason;
+        }
+        return $this->latestRejectionReason()->value('reason') ?? $this->rejection_reason;
     }
 }

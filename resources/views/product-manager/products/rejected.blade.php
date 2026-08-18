@@ -43,9 +43,20 @@
                                 </div>
                             </div>
                         </td>
-                        <td style="max-width: 320px;">
-                            <div class="p-2 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-3 text-dark small" style="font-size: 0.78rem;">
-                                <i class="bi bi-chat-left-quote text-danger me-1"></i>{{ $prod->rejection_reason ?? 'Review required.' }}
+                        <td style="max-width: 340px;">
+                            <div class="p-2.5 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-3 text-dark small" style="font-size: 0.78rem;">
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <span class="fw-bold text-danger"><i class="bi bi-chat-left-quote me-1"></i>Admin Feedback</span>
+                                    @if($prod->latestRejectionReason)
+                                        <span class="text-muted" style="font-size: 0.68rem;">{{ $prod->latestRejectionReason->created_at->diffForHumans() }}</span>
+                                    @endif
+                                </div>
+                                <div>{{ $prod->active_rejection_reason ?? ($prod->latestRejectionReason->reason ?? $prod->rejection_reason ?? 'Review specifications.') }}</div>
+                                @if($prod->latestRejectionReason && $prod->latestRejectionReason->rejector)
+                                    <div class="mt-1 text-muted" style="font-size: 0.68rem;">
+                                        By: {{ $prod->latestRejectionReason->rejector->name }}
+                                    </div>
+                                @endif
                             </div>
                         </td>
                         <td>
