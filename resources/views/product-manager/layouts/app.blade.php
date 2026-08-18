@@ -1,170 +1,235 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Catalog & Inventory Workspace') - Product Manager Portal</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>{{ config('app.name', 'Shopcalm') }} - Product Manager</title>
 
-    <!-- Bootstrap 5 & Icons -->
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.20/dist/sweetalert2.min.css">
 
     <style>
+        /* ============================================
+           SHOPCALM PRODUCT MANAGER — PREMIUM UI LAYER
+        ============================================ */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap');
+
         :root {
-            --pm-primary: #7c3aed;
-            --pm-primary-dark: #6d28d9;
-            --pm-sidebar-bg: #0f172a;
-            --pm-bg: #f8fafc;
-            --pm-card-border: #e2e8f0;
+            --sidebar-width: 260px;
+            --sidebar-bg: #0f172a;
+            --sidebar-hover: rgba(99, 102, 241, 0.15);
+            --sidebar-active: #6366f1;
+            --navbar-height: 62px;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --surface: #ffffff;
+            --bg: #f1f5f9;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #06b6d4;
+            --radius: 12px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
         }
+
+        *, *::before, *::after { box-sizing: border-box; }
 
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--pm-bg);
-            color: #1e293b;
-            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 0.875rem;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* Sidebar Styling */
-        #pmSidebar {
-            width: 260px;
-            background: var(--pm-sidebar-bg);
-            min-height: 100vh;
+        /* ── SIDEBAR ── */
+        .sidebar {
             position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            z-index: 1030;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            top: 0; bottom: 0; left: 0;
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            background-image: linear-gradient(180deg, #0f172a 0%, #1a1040 100%);
+            z-index: 1040;
+            transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            color: #fff;
+            border-right: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .sidebar-brand {
+            height: var(--navbar-height);
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            background: rgba(255,255,255,0.03);
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #fff;
+            text-decoration: none;
+            flex-shrink: 0;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            letter-spacing: -0.3px;
+        }
+
+        .sidebar-sticky {
+            flex-grow: 1;
             overflow-y: auto;
+            padding: 0.75rem 0 2rem;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.1) transparent;
         }
+        .sidebar-sticky::-webkit-scrollbar { width: 3px; }
+        .sidebar-sticky::-webkit-scrollbar-track { background: transparent; }
+        .sidebar-sticky::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
 
-        .pm-brand {
-            padding: 24px 20px;
+        .sidebar .nav-link {
+            color: #94a3b8;
+            padding: 0.6rem 1.25rem;
             display: flex;
             align-items: center;
-            gap: 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            font-weight: 500;
+            font-size: 0.82rem;
+            border-radius: 8px;
+            margin: 1px 0.75rem;
+            transition: all 0.18s ease;
+            text-decoration: none;
+            gap: 0.6rem;
+            letter-spacing: 0.01em;
         }
-
-        .pm-brand-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #ffffff;
-            font-size: 20px;
-            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+        .sidebar .nav-link:hover {
+            color: #e2e8f0;
+            background: var(--sidebar-hover);
         }
-
-        .pm-nav-section {
-            font-size: 0.68rem;
+        .sidebar .nav-link.active {
+            color: #fff;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            box-shadow: 0 4px 12px rgba(99,102,241,0.4);
+        }
+        .sidebar .nav-link i {
+            font-size: 1.05rem;
+            flex-shrink: 0;
+            width: 20px;
+            text-align: center;
+        }
+        .sidebar .nav-header {
+            padding: 1.25rem 1.5rem 0.35rem;
+            font-size: 0.65rem;
             font-weight: 700;
             text-transform: uppercase;
+            color: #475569;
             letter-spacing: 0.08em;
+        }
+        .sidebar .submenu {
+            padding-left: 0.75rem;
+        }
+        .sidebar .submenu .nav-link {
+            font-size: 0.8rem;
+            padding: 0.5rem 1rem;
             color: #64748b;
-            padding: 20px 20px 8px;
+        }
+        .sidebar .submenu .nav-link.active {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+        }
+        .sidebar .submenu .nav-link::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+            flex-shrink: 0;
+            opacity: 0.5;
+        }
+        .sidebar .submenu .nav-link.active::before { opacity: 1; }
+
+        .sidebar .nav-link.has-submenu::after {
+            content: "\F282";
+            font-family: "bootstrap-icons";
+            margin-left: auto;
+            font-size: 0.7rem;
+            transition: transform 0.25s;
+            opacity: 0.5;
+        }
+        .sidebar .nav-link.has-submenu[aria-expanded="true"]::after { transform: rotate(180deg); }
+
+        /* ── NAVBAR ── */
+        .navbar-admin {
+            height: var(--navbar-height);
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 1px 0 var(--border);
+            z-index: 1030;
+            padding-left: var(--sidebar-width);
+            transition: padding-left 0.3s cubic-bezier(.4,0,.2,1);
+            border-bottom: 1px solid var(--border);
         }
 
-        .pm-nav-link {
-            display: flex;
-            align-items: center;
-            padding: 10px 18px;
-            margin: 3px 12px;
-            color: #94a3b8;
-            text-decoration: none;
-            font-size: 0.88rem;
-            font-weight: 500;
-            border-radius: 10px;
+        /* ── MAIN CONTENT ── */
+        main.main-content {
+            margin-left: var(--sidebar-width);
+            padding-top: calc(var(--navbar-height) + 1.75rem);
+            min-height: 100vh;
+            transition: margin-left 0.3s cubic-bezier(.4,0,.2,1);
+        }
+
+        /* ── PAGE HEADER ── */
+        .d-flex.justify-content-between h1.h3 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            letter-spacing: -0.4px;
+            color: var(--text);
+        }
+
+        /* ── CARDS ── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            border: none;
+            font-weight: 600;
+            letter-spacing: -0.2px;
             transition: all 0.2s ease;
         }
 
-        .pm-nav-link i {
-            font-size: 1.1rem;
-            margin-right: 12px;
-            width: 22px;
-            text-align: center;
-        }
-
-        .pm-nav-link:hover {
-            color: #ffffff;
-            background: rgba(255, 255, 255, 0.06);
-        }
-
-        .pm-nav-link.active {
-            color: #ffffff;
-            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
-        }
-
-        /* Main Content Area */
-        #pmMain {
-            margin-left: 260px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .pm-topbar {
-            height: 70px;
-            background: #ffffff;
-            border-bottom: 1px solid var(--pm-card-border);
-            padding: 0 28px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 1020;
-        }
-
-        .pm-content {
-            padding: 28px;
-            flex-grow: 1;
-        }
-
-        .card {
-            border: 1px solid var(--pm-card-border);
-            border-radius: 16px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-        }
-
-        .btn-pm-primary {
-            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-            color: #ffffff;
-            border: none;
-            font-weight: 600;
-            border-radius: 10px;
-            transition: all 0.2s;
-        }
-
-        .btn-pm-primary:hover {
-            opacity: 0.95;
-            color: #ffffff;
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #4f46e5, #4338ca);
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+            box-shadow: 0 4px 12px rgba(99,102,241,0.35);
         }
 
         @media (max-width: 991.98px) {
-            #pmSidebar {
-                margin-left: -260px;
+            .sidebar {
+                transform: translateX(-100%);
             }
-            #pmSidebar.show {
-                margin-left: 0;
+            .sidebar.show {
+                transform: translateX(0);
             }
-            #pmMain {
+            .navbar-admin {
+                padding-left: 0;
+            }
+            main.main-content {
                 margin-left: 0;
             }
         }
@@ -172,152 +237,151 @@
     @stack('styles')
 </head>
 <body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <a href="{{ route('product-manager.dashboard') }}" class="sidebar-brand">
+            <i class="bi bi-box-seam me-2 text-primary" style="color: #818cf8 !important;"></i>
+            <span>Shopcalm <span class="badge rounded-pill bg-primary ms-1" style="font-size: 0.62rem; background: #6366f1 !important;">PM</span></span>
+        </a>
 
-<!-- Sidebar -->
-<aside id="pmSidebar">
-    <!-- Brand -->
-    <div class="pm-brand">
-        <div class="pm-brand-icon">
-            <i class="bi bi-box-seam"></i>
+        <div class="sidebar-sticky">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('product-manager.dashboard') ? 'active' : '' }}" href="{{ route('product-manager.dashboard') }}">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                </li>
+
+                <li class="nav-header">Catalog</li>
+                
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('product-manager.products.index') || request()->routeIs('product-manager.products.edit') ? 'active' : '' }}" href="{{ route('product-manager.products.index') }}">
+                        <i class="bi bi-box-seam"></i> Products
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('product-manager.products.pending') ? 'active' : '' }}" href="{{ route('product-manager.products.pending') }}">
+                        <i class="bi bi-hourglass-split"></i> Pending Approvals
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('product-manager.products.rejected') ? 'active' : '' }}" href="{{ route('product-manager.products.rejected') }}">
+                        <i class="bi bi-x-octagon"></i> Rejected Items
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('product-manager.products.create') ? 'active' : '' }}" href="{{ route('product-manager.products.create') }}">
+                        <i class="bi bi-plus-circle"></i> Add Product
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('product-manager.categories.*') ? 'active' : '' }}" href="{{ route('product-manager.categories.index') }}">
+                        <i class="bi bi-grid"></i> Categories
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('product-manager.brands.*') ? 'active' : '' }}" href="{{ route('product-manager.brands.index') }}">
+                        <i class="bi bi-tag"></i> Brands
+                    </a>
+                </li>
+
+                <li class="nav-header">Inventory</li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('product-manager.stock.dashboard') || request()->routeIs('product-manager.stock.form') ? 'active' : '' }}" href="{{ route('product-manager.stock.dashboard') }}">
+                        <i class="bi bi-boxes"></i> Stock Management
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('product-manager.stock.history') ? 'active' : '' }}" href="{{ route('product-manager.stock.history') }}">
+                        <i class="bi bi-clock-history"></i> Stock History
+                    </a>
+                </li>
+
+                <li class="nav-header">Quality & Intelligence</li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('product-manager.reviews.*') ? 'active' : '' }}" href="{{ route('product-manager.reviews.index') }}">
+                        <i class="bi bi-star"></i> Reviews
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('product-manager.reports.*') ? 'active' : '' }}" href="{{ route('product-manager.reports.index') }}">
+                        <i class="bi bi-graph-up"></i> Reports
+                    </a>
+                </li>
+
+                <li class="nav-item mt-4">
+                    <a class="nav-link text-danger" href="#" onclick="event.preventDefault(); document.getElementById('pm-logout-form').submit();">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                    <form id="pm-logout-form" action="{{ route('product-manager.logout') }}" method="POST" class="d-none">
+                        @csrf
+                    </form>
+                </li>
+            </ul>
         </div>
-        <div>
-            <div class="text-white fw-bold" style="font-size: 0.95rem; letter-spacing: -0.2px;">ShopCalm</div>
-            <div class="badge rounded-pill text-uppercase" style="font-size: 0.62rem; background: #7c3aed; letter-spacing: 0.5px;">Product Portal</div>
-        </div>
-    </div>
+    </aside>
 
-    <!-- Navigation Menu -->
-    <div class="py-2">
-        <div class="pm-nav-section">Overview</div>
-        <a href="{{ route('product-manager.dashboard') }}" class="pm-nav-link {{ request()->routeIs('product-manager.dashboard') ? 'active' : '' }}">
-            <i class="bi bi-grid"></i>
-            <span>Dashboard</span>
-        </a>
-
-        <div class="pm-nav-section">Catalog Management</div>
-        <a href="{{ route('product-manager.products.index') }}" class="pm-nav-link {{ request()->routeIs('product-manager.products.index') || request()->routeIs('product-manager.products.edit') ? 'active' : '' }}">
-            <i class="bi bi-boxes"></i>
-            <span>All Products</span>
-        </a>
-        <a href="{{ route('product-manager.products.pending') }}" class="pm-nav-link {{ request()->routeIs('product-manager.products.pending') ? 'active' : '' }}">
-            <i class="bi bi-hourglass-split"></i>
-            <span>Pending Approvals</span>
-        </a>
-        <a href="{{ route('product-manager.products.rejected') }}" class="pm-nav-link {{ request()->routeIs('product-manager.products.rejected') ? 'active' : '' }}">
-            <i class="bi bi-x-octagon"></i>
-            <span>Rejected Items</span>
-        </a>
-        <a href="{{ route('product-manager.products.create') }}" class="pm-nav-link {{ request()->routeIs('product-manager.products.create') ? 'active' : '' }}">
-            <i class="bi bi-plus-circle"></i>
-            <span>Add Product</span>
-        </a>
-        <a href="{{ route('product-manager.categories.index') }}" class="pm-nav-link {{ request()->routeIs('product-manager.categories.*') ? 'active' : '' }}">
-            <i class="bi bi-diagram-3"></i>
-            <span>Categories</span>
-        </a>
-        <a href="{{ route('product-manager.brands.index') }}" class="pm-nav-link {{ request()->routeIs('product-manager.brands.*') ? 'active' : '' }}">
-            <i class="bi bi-tag"></i>
-            <span>Brands</span>
-        </a>
-
-        <div class="pm-nav-section">Inventory & Operations</div>
-        <a href="{{ route('product-manager.stock.dashboard') }}" class="pm-nav-link {{ request()->routeIs('product-manager.stock.dashboard') || request()->routeIs('product-manager.stock.form') ? 'active' : '' }}">
-            <i class="bi bi-stack"></i>
-            <span>Inventory / Stock</span>
-        </a>
-        <a href="{{ route('product-manager.stock.history') }}" class="pm-nav-link {{ request()->routeIs('product-manager.stock.history') ? 'active' : '' }}">
-            <i class="bi bi-clock-history"></i>
-            <span>Stock History</span>
-        </a>
-
-        <div class="pm-nav-section">Quality & Intelligence</div>
-        <a href="{{ route('product-manager.reviews.index') }}" class="pm-nav-link {{ request()->routeIs('product-manager.reviews.*') ? 'active' : '' }}">
-            <i class="bi bi-star"></i>
-            <span>Product Reviews</span>
-        </a>
-        <a href="{{ route('product-manager.reports.index') }}" class="pm-nav-link {{ request()->routeIs('product-manager.reports.*') ? 'active' : '' }}">
-            <i class="bi bi-bar-chart-line"></i>
-            <span>Inventory Reports</span>
-        </a>
-    </div>
-
-    <!-- User Section Bottom -->
-    <div class="p-3 mt-4 border-top border-secondary border-opacity-25">
-        <div class="d-flex align-items-center gap-2 text-white-50 small mb-2 px-2">
-            <i class="bi bi-shield-lock text-warning"></i>
-            <span>Logged in as:</span>
-        </div>
-        <div class="d-flex align-items-center justify-content-between bg-dark bg-opacity-50 p-2.5 rounded-3">
-            <div class="d-flex align-items-center gap-2 overflow-hidden">
-                <div class="rounded-circle bg-purple text-white d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; background: #7c3aed; font-size: 0.8rem;">
-                    {{ strtoupper(substr(auth()->user()->name ?? 'PM', 0, 2)) }}
-                </div>
-                <div class="text-truncate">
-                    <div class="text-white small fw-bold text-truncate" style="font-size: 0.82rem;">{{ auth()->user()->name ?? 'Staff' }}</div>
-                    <div class="text-muted text-truncate" style="font-size: 0.7rem;">Product Manager</div>
-                </div>
-            </div>
-            <form action="{{ route('product-manager.logout') }}" method="POST" class="m-0">
-                @csrf
-                <button type="submit" class="btn btn-sm btn-link text-danger p-1" title="Sign Out">
-                    <i class="bi bi-box-arrow-right fs-5"></i>
-                </button>
-            </form>
-        </div>
-    </div>
-</aside>
-
-<!-- Main Workspace -->
-<div id="pmMain">
-    <!-- Topbar -->
-    <header class="pm-topbar">
-        <div class="d-flex align-items-center gap-3">
-            <button class="btn btn-light d-lg-none rounded-3 p-2" type="button" onclick="document.getElementById('pmSidebar').classList.toggle('show')">
-                <i class="bi bi-list fs-5"></i>
+    <!-- Top Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light navbar-admin fixed-top">
+        <div class="container-fluid">
+            <button class="btn border-0 d-lg-none" type="button" onclick="document.getElementById('sidebar').classList.toggle('show')">
+                <i class="bi bi-list fs-4"></i>
             </button>
-            <div>
-                <h5 class="fw-bold mb-0 text-dark">@yield('header', 'Catalog Workspace')</h5>
-                <small class="text-muted">@yield('subheader', 'Product & Inventory Operations Console')</small>
+
+            <nav aria-label="breadcrumb" class="d-none d-md-inline-block">
+                <ol class="breadcrumb mb-0 ms-3">
+                    @yield('breadcrumb')
+                </ol>
+            </nav>
+
+            <ul class="navbar-nav ms-auto align-items-center">
+                <li class="nav-item me-2">
+                    <a href="{{ route('shop') }}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3" style="font-size: 0.78rem;">
+                        <i class="bi bi-box-arrow-up-right me-1"></i> Live Store
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <div class="d-flex align-items-center gap-2 ms-2 px-3 py-1 rounded-3" style="background:#f1f5f9; border:1px solid #e2e8f0;">
+                        <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;color:#fff;flex-shrink:0;">
+                            {{ strtoupper(substr(Auth::guard('admin')->user()->name ?? 'PM', 0, 1)) }}
+                        </div>
+                        <div>
+                            <div style="font-size:0.8rem;font-weight:600;color:#0f172a;line-height:1.1;">{{ Auth::guard('admin')->user()->name ?? 'Product Manager' }}</div>
+                            <div style="font-size:0.65rem;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">Product Manager</div>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container-fluid px-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center mb-4">
+                <h1 class="h3 fw-bold mb-0">@yield('header', 'Dashboard')</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    @yield('actions')
+                </div>
             </div>
-        </div>
 
-        <div class="d-flex align-items-center gap-2">
-            <a href="{{ route('shop') }}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3" title="Preview Customer Storefront">
-                <i class="bi bi-box-arrow-up-right me-1"></i> Live Store
-            </a>
-            <form action="{{ route('product-manager.logout') }}" method="POST" class="m-0">
-                @csrf
-                <button type="submit" class="btn btn-sm btn-light text-danger rounded-pill px-3 fw-semibold border">
-                    <i class="bi bi-power me-1"></i> Logout
-                </button>
-            </form>
-        </div>
-    </header>
+            @include('components.toast')
 
-    <!-- Page Content -->
-    <main class="pm-content">
-        @yield('content')
+            @yield('content')
+
+            <footer class="mt-5 mb-4 text-center text-muted">
+                <small>&copy; {{ date('Y') }} Shopcalm Product Manager. All rights reserved.</small>
+            </footer>
+        </div>
     </main>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.20/dist/sweetalert2.all.min.js"></script>
+    <script src="{{ asset('js/ui-interactions.js') }}?v={{ time() }}"></script>
+    <script src="{{ asset('js/admin-filters.js') }}?v={{ time() }}"></script>
 
-<!-- Flash Toast Notifications -->
-@if(session('toast'))
-<script>
-    Swal.fire({
-        icon: "{{ session('toast.type', 'info') }}",
-        title: "{{ session('toast.title', '') }}",
-        text: "{{ session('toast.message', '') }}",
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 3500,
-        timerProgressBar: true
-    });
-</script>
-@endif
-
-@stack('scripts')
+    @stack('scripts')
 </body>
 </html>
