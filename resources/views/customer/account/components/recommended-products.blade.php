@@ -1,15 +1,26 @@
-<div class="card border-0 shadow-sm rounded-4 overflow-hidden mt-4">
-    <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
-        <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-stars text-warning me-2 fs-5"></i>Recommended For You</h6>
-        <a href="{{ route('shop') }}" class="small fw-semibold text-primary text-decoration-none">Explore All <i class="bi bi-arrow-right"></i></a>
-    </div>
-    <div class="card-body p-4">
-        <div class="row g-3">
-            @foreach($recommendedProducts as $product)
-                <div class="col-6 col-md-3">
-                    @include('customer.components.product-card', ['product' => $product])
-                </div>
-            @endforeach
+<div class="mt-4 mt-md-5 pt-2">
+    <div class="d-flex justify-content-between align-items-center mb-3 mb-md-4">
+        <div>
+            <div class="mb-1 d-none d-md-block">
+                <span class="badge rounded-pill px-3 py-1.5 fw-bold text-uppercase d-inline-flex align-items-center gap-1" style="background: rgba(245, 158, 11, 0.12); color: #d97706; font-size: 0.72rem; letter-spacing: 0.05em;">
+                    <i class="bi bi-stars me-1 text-warning"></i> Handpicked For You
+                </span>
+            </div>
+            <h4 class="fw-bolder mb-0 text-dark" style="letter-spacing: -0.02em; font-size: clamp(1.15rem, 2.5vw, 1.5rem);">Recommended For You</h4>
+            <p class="text-muted small mb-0 d-none d-sm-block mt-0.5" style="font-size: 0.8rem;">
+                Handpicked suggestions tailored for your taste
+            </p>
         </div>
+        <a href="{{ route('shop') }}" class="btn btn-sm btn-light border rounded-pill px-3 py-1.5 fw-semibold text-primary shadow-xs" style="font-size: 0.8rem; background: #ffffff;">
+            <span>Explore All</span> <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+    </div>
+
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-2 g-md-3">
+        @foreach($recommendedProducts as $product)
+            <div class="col d-flex">
+                @include('customer.components.product-card', ['product' => $product])
+            </div>
+        @endforeach
     </div>
 </div>

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Brand extends Model
 {
@@ -24,6 +25,22 @@ class Brand extends Model
     protected $casts = [
         'status' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function ($brand) {
+            if (empty($brand->slug) && !empty($brand->name)) {
+                $slug = Str::slug($brand->name);
+                $originalSlug = $slug;
+                $count = 1;
+                while (static::where('slug', $slug)->exists()) {
+                    $slug = "{$originalSlug}-{$count}";
+                    $count++;
+                }
+                $brand->slug = $slug;
+            }
+        });
+    }
 
     public function category(): BelongsTo
     {

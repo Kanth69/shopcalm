@@ -54,6 +54,8 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'staff_hub_domain' => env('STAFF_HUB_DOMAIN', 'hub.shopcalm.in'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

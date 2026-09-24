@@ -64,8 +64,12 @@ class NewsletterController extends Controller
     public function toggle(Request $request)
     {
         $user = $request->user();
-        if (!$user || !$user->email) {
+        if (!$user) {
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 401);
+        }
+
+        if (!$user->email) {
+            return response()->json(['success' => false, 'message' => 'Please add an email address to your profile first to subscribe to newsletter updates.'], 422);
         }
 
         $email = strtolower(trim($user->email));

@@ -36,11 +36,11 @@ class CartController extends Controller
 
     public function add(StoreCartRequest $request)
     {
-        $result = $this->cartService->addProduct($request->product_id, $request->quantity ?? 1);
-
-        if ($request->has('buy_now') && $result['success']) {
-            return redirect()->route('checkout.index');
-        }
+        $result = $this->cartService->addProduct(
+            (int) $request->product_id,
+            (int) ($request->quantity ?? 1),
+            $request->selected_option
+        );
 
         if ($request->ajax()) {
             $cart = $this->cartService->getCart();
@@ -53,7 +53,12 @@ class CartController extends Controller
                 'product_id' => (int) $request->product_id,
                 'item_id' => $cartItem ? $cartItem->id : null,
                 'quantity' => $cartItem ? $cartItem->quantity : 0,
+                'redirect_url' => ($request->has('buy_now') && $result['success']) ? route('checkout.index') : null,
             ]);
+        }
+
+        if ($request->has('buy_now') && $result['success']) {
+            return redirect()->route('checkout.index');
         }
 
         return back()->with('toast', [

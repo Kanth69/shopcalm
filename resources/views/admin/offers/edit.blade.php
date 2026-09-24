@@ -326,15 +326,19 @@
         }
     }
 
+    let currentBannerDataUrl = @json($offer->banner_image ? asset('storage/' . $offer->banner_image) : null);
+
     function previewBannerImage(input) {
         const preview = document.getElementById('bannerPreviewImg');
         const existing = document.getElementById('existingBannerImg');
         if (input.files && input.files[0]) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                preview.src = e.target.result;
+                currentBannerDataUrl = e.target.result;
+                preview.src = currentBannerDataUrl;
                 preview.classList.remove('d-none');
                 if (existing) existing.style.display = 'none';
+                updatePreview();
             };
             reader.readAsDataURL(input.files[0]);
         }
@@ -354,7 +358,13 @@
         document.getElementById('preview_title').innerText = title;
         document.getElementById('preview_badge_pill').innerText = badge;
         document.getElementById('preview_desc_text').innerText = desc;
-        document.getElementById('preview_card_container').style.background = color;
+
+        const cardContainer = document.getElementById('preview_card_container');
+        if (currentBannerDataUrl) {
+            cardContainer.style.background = `linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.92) 100%), url('${currentBannerDataUrl}') center/cover no-repeat`;
+        } else {
+            cardContainer.style.background = `linear-gradient(135deg, ${color}dd 0%, #0f172a 100%)`;
+        }
 
         if (type === 'PERCENTAGE') {
             document.getElementById('preview_discount_rate').innerText = `${value}% OFF`;

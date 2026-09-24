@@ -81,25 +81,162 @@
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark small">Base Price <span class="text-danger">*</span></label>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-dark small">Cost Price (CP)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted">₹</span>
+                                <input type="number" name="cost_price" step="0.01" min="0" class="form-control @error('cost_price') is-invalid @enderror" value="{{ old('cost_price') }}" placeholder="e.g. 1800.00">
+                            </div>
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Procurement / wholesale cost (internal only).</div>
+                            @error('cost_price') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-dark small">Selling Price (SP) <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted">₹</span>
                                 <input type="number" name="price" step="0.01" min="0" class="form-control fw-bold @error('price') is-invalid @enderror" value="{{ old('price') }}" required placeholder="e.g. 2499.00">
                             </div>
-                            <div class="form-text text-muted" style="font-size: 0.72rem;">Customer price before dynamic promotional offers.</div>
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Customer price before offers.</div>
                             @error('price') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold text-dark small">Stock Inventory <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-boxes"></i></span>
                                 <input type="number" name="stock" min="0" class="form-control fw-bold @error('stock') is-invalid @enderror" value="{{ old('stock', 10) }}" required placeholder="e.g. 50">
                                 <span class="input-group-text bg-light text-muted small">Units</span>
                             </div>
-                            <div class="form-text text-muted" style="font-size: 0.72rem;">Available quantity for immediate dispatch.</div>
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Available quantity for dispatch.</div>
                             @error('stock') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Product Options & Stock Matrix (Sizes / Colors) -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-tag-fill text-primary me-2"></i>3. Product Sizes & Options Matrix
+                    </h6>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" name="has_options" id="has_options_switch" value="1" {{ old('has_options') ? 'checked' : '' }} onchange="toggleOptionMatrix()">
+                        <label class="form-check-label fw-bold small text-dark" for="has_options_switch">Enable Sizes / Colors</label>
+                    </div>
+                </div>
+                <div class="card-body p-4" id="options_matrix_section" style="{{ old('has_options') ? '' : 'display: none;' }}">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark small">Option Category / Type</label>
+                            <select name="option_type" id="option_type_select" class="form-select fw-semibold" onchange="applyPresetOptions()">
+                                <option value="size" {{ old('option_type', 'size') === 'size' ? 'selected' : '' }}>👕 Clothing Sizes (S, M, L, XL, XXL)</option>
+                                <option value="waist" {{ old('option_type') === 'waist' ? 'selected' : '' }}>👖 Waist Sizes (28, 30, 32, 34, 36)</option>
+                                <option value="color" {{ old('option_type') === 'color' ? 'selected' : '' }}>🎨 Colors (Black, Blue, Red, White)</option>
+                                <option value="custom" {{ old('option_type') === 'custom' ? 'selected' : '' }}>➕ Custom Options</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="addOptionRow()">
+                                <i class="bi bi-plus-lg me-1"></i> Add Option Row
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive border rounded-3 overflow-hidden mb-2">
+                        <table class="table table-hover align-middle mb-0" id="options_table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3" style="width: 50%;">Option Value (Size / Color)</th>
+                                    <th style="width: 40%;">Stock Available</th>
+                                    <th class="text-center" style="width: 10%;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="options_rows">
+                                @php
+                                    $existingOptions = old('option_keys', []);
+                                    $existingValues = old('option_values', []);
+                                @endphp
+                                @forelse($existingOptions as $idx => $optKey)
+                                    <tr>
+                                        <td class="ps-3">
+                                            <input type="text" name="option_keys[]" class="form-control form-control-sm fw-bold" value="{{ $optKey }}" placeholder="e.g. Size M" required>
+                                        </td>
+                                        <td>
+                                            <input type="number" name="option_values[]" min="0" class="form-control form-control-sm fw-bold option-qty-input" value="{{ $existingValues[$idx] ?? 0 }}" required onchange="calculateTotalStockFromOptions()">
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-danger border-0 rounded-circle p-1" onclick="removeOptionRow(this)"><i class="bi bi-trash-fill"></i></button>
+                                        </td>
+                                    </tr>
+                                @empty
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="form-text text-muted" style="font-size: 0.72rem;">Updating option stocks automatically updates the total product inventory quantity.</div>
+                </div>
+            </div>
+
+            <!-- 4. Logistics Package & GST Tax Settings -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-truck text-primary me-2"></i>4. iThink Logistics & GST Tax Settings
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-dark small">Package Weight (kg)</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" name="weight" step="0.01" min="0" class="form-control fw-bold" value="{{ old('weight', 0.50) }}" placeholder="0.50">
+                                <span class="input-group-text bg-light">kg</span>
+                            </div>
+                            <div class="form-text text-muted" style="font-size: 0.7rem;">Default fallback: 0.50 kg</div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-dark small">Length (cm)</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" name="length" step="0.01" min="0" class="form-control fw-bold" value="{{ old('length', 15.00) }}" placeholder="15.00">
+                                <span class="input-group-text bg-light">cm</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-dark small">Width (cm)</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" name="width" step="0.01" min="0" class="form-control fw-bold" value="{{ old('width', 10.00) }}" placeholder="10.00">
+                                <span class="input-group-text bg-light">cm</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-dark small">Height (cm)</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" name="height" step="0.01" min="0" class="form-control fw-bold" value="{{ old('height', 5.00) }}" placeholder="5.00">
+                                <span class="input-group-text bg-light">cm</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mt-3">
+                            <label class="form-label fw-bold text-dark small">HSN Code (GST Invoice)</label>
+                            <input type="text" name="hsn_code" class="form-control form-control-sm fw-bold" value="{{ old('hsn_code', '8518') }}" placeholder="e.g. 8518 / 6109">
+                            <div class="form-text text-muted" style="font-size: 0.7rem;">Harmonized System Nomenclature code</div>
+                        </div>
+
+                        <div class="col-md-6 mt-3">
+                            <label class="form-label fw-bold text-dark small">GST Tax Rate (%)</label>
+                            <select name="tax_rate" class="form-select form-select-sm fw-semibold">
+                                <option value="18.00" {{ old('tax_rate', 18.00) == 18.00 ? 'selected' : '' }}>18% GST (Standard Goods & Electronics)</option>
+                                <option value="12.00" {{ old('tax_rate') == 12.00 ? 'selected' : '' }}>12% GST (Apparel > ₹1,000 / Handicrafts)</option>
+                                <option value="5.00" {{ old('tax_rate') == 5.00 ? 'selected' : '' }}>5% GST (Apparel < ₹1,000 / Essentials)</option>
+                                <option value="28.00" {{ old('tax_rate') == 28.00 ? 'selected' : '' }}>28% GST (Luxury Items)</option>
+                                <option value="0.00" {{ old('tax_rate') == 0.00 ? 'selected' : '' }}>0% Exempt</option>
+                            </select>
+                            <div class="form-text text-muted" style="font-size: 0.7rem;">Prices are GST inclusive on storefront</div>
                         </div>
                     </div>
                 </div>
@@ -256,6 +393,108 @@
                 };
                 reader.readAsDataURL(file);
             });
+        }
+    }
+
+    function toggleOptionMatrix() {
+        const sw = document.getElementById('has_options_switch');
+        const sec = document.getElementById('options_matrix_section');
+        if (sw && sec) {
+            sec.style.display = sw.checked ? 'block' : 'none';
+            if (sw.checked && document.querySelectorAll('#options_rows tr').length === 0) {
+                applyPresetOptions();
+            }
+        }
+    }
+
+    function applyPresetOptions() {
+        const type = document.getElementById('option_type_select').value;
+        const tbody = document.getElementById('options_rows');
+        if (!tbody) return;
+        
+        let presets = [];
+        if (type === 'size') {
+            presets = [
+                { key: 'S', qty: 5 },
+                { key: 'M', qty: 20 },
+                { key: 'L', qty: 15 },
+                { key: 'XL', qty: 10 }
+            ];
+        } else if (type === 'waist') {
+            presets = [
+                { key: '28', qty: 5 },
+                { key: '30', qty: 10 },
+                { key: '32', qty: 15 },
+                { key: '34', qty: 10 },
+                { key: '36', qty: 5 }
+            ];
+        } else if (type === 'color') {
+            presets = [
+                { key: 'Black', qty: 20 },
+                { key: 'Blue', qty: 15 },
+                { key: 'White', qty: 10 }
+            ];
+        } else {
+            presets = [{ key: 'Option 1', qty: 10 }];
+        }
+
+        tbody.innerHTML = '';
+        presets.forEach(p => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="ps-3">
+                    <input type="text" name="option_keys[]" class="form-control form-control-sm fw-bold" value="${p.key}" required>
+                </td>
+                <td>
+                    <input type="number" name="option_values[]" min="0" class="form-control form-control-sm fw-bold option-qty-input" value="${p.qty}" required onchange="calculateTotalStockFromOptions()">
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-danger border-0 rounded-circle p-1" onclick="removeOptionRow(this)"><i class="bi bi-trash-fill"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        calculateTotalStockFromOptions();
+    }
+
+    function addOptionRow() {
+        const tbody = document.getElementById('options_rows');
+        if (!tbody) return;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="ps-3">
+                <input type="text" name="option_keys[]" class="form-control form-control-sm fw-bold" placeholder="e.g. Size XXL" required>
+            </td>
+            <td>
+                <input type="number" name="option_values[]" min="0" class="form-control form-control-sm fw-bold option-qty-input" value="10" required onchange="calculateTotalStockFromOptions()">
+            </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-danger border-0 rounded-circle p-1" onclick="removeOptionRow(this)"><i class="bi bi-trash-fill"></i></button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+        calculateTotalStockFromOptions();
+    }
+
+    function removeOptionRow(btn) {
+        const tr = btn.closest('tr');
+        if (tr) {
+            tr.remove();
+            calculateTotalStockFromOptions();
+        }
+    }
+
+    function calculateTotalStockFromOptions() {
+        const sw = document.getElementById('has_options_switch');
+        if (sw && sw.checked) {
+            let total = 0;
+            document.querySelectorAll('.option-qty-input').forEach(inp => {
+                total += parseInt(inp.value) || 0;
+            });
+            const stockInput = document.querySelector('input[name="stock"]');
+            if (stockInput) {
+                stockInput.value = total;
+            }
         }
     }
 

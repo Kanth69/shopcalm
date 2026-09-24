@@ -35,6 +35,7 @@ class AdminDashboardService
         $data['latestCustomers'] = User::where('role_id', 3)->latest()->take(5)->get();
         $data['lowStockProducts'] = Product::where('stock', '<=', 5)->where('stock', '>', 0)->orderBy('stock', 'asc')->take(5)->get();
         $data['pendingReviews'] = ProductReview::with('product', 'user')->where('status', 'Pending')->latest()->take(5)->get();
+        $data['pendingProducts'] = Product::with(['submitter', 'category'])->where('status', 'Pending_Approval')->latest()->take(6)->get();
 
         return $data;
     }
@@ -81,6 +82,7 @@ class AdminDashboardService
             'avg_order_value' => (float) ($validOrdersQuery->avg('total_amount') ?? 0),
             'total_products' => Product::count(),
             'active_products' => Product::where('status', 'Active')->count(),
+            'pending_products' => Product::where('status', 'Pending_Approval')->count(),
             'low_stock_products' => Product::where('stock', '<=', 5)->where('stock', '>', 0)->count(),
             'out_of_stock_products' => Product::where('stock', '=', 0)->count(),
             'pending_reviews' => ProductReview::where('status', 'Pending')->count(),

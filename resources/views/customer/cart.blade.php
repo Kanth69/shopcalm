@@ -1,161 +1,269 @@
 @extends('layouts.customer')
 
-@section('title', 'Your Shopping Bag - Shopcalm')
+@section('title', 'Your Shopping Bag - ' . \App\Models\Setting::get('store_name', 'ShopCalm'))
 
 @section('content')
-<div class="container my-5">
-    <div class="d-flex align-items-center gap-3 mb-5">
-        <h1 class="fw-bold mb-0">Shopping Bag</h1>
-        @if($cart && $cart->items->count() > 0)
-            <span class="badge bg-primary rounded-pill px-3" id="cart-page-badge">{{ $cart->items->sum('quantity') }} items</span>
-        @endif
-    </div>
+<div class="container my-3 my-md-4 px-2 px-md-4">
 
-    @if ($cart && $cart->items->count() > 0)
-        <div class="row g-4">
-            <div class="col-lg-8">
-                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-                    <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
-                        <h5 class="mb-0 fw-bold">Cart Items</h5>
-                        <button type="button" class="btn btn-link text-danger text-decoration-none p-0 small fw-bold" onclick="clearCart()">
-                            <i class="bi bi-trash3 me-1"></i> Clear Cart
-                        </button>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light small text-uppercase tracking-wider">
-                                    <tr>
-                                        <th class="ps-4 py-3">Product</th>
-                                        <th class="py-3">Quantity</th>
-                                        <th class="py-3 text-end">Price</th>
-                                        <th class="py-3 text-end pe-4">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($cart->items as $item)
-                                    <tr id="cart-row-{{ $item->id }}">
-                                        <td class="ps-4 py-4">
-                                            <div class="d-flex align-items-center gap-3">
-                                                <a href="{{ route('product.show', $item->product->slug) }}" class="flex-shrink-0">
-                                                    <img src="{{ asset('storage/' . $item->product->main_image) }}" class="rounded-3 border shadow-sm" width="80" height="80" style="object-fit: cover;">
-                                                </a>
-                                                <div>
-                                                    <a href="{{ route('product.show', $item->product->slug) }}" class="text-dark fw-bold text-decoration-none d-block mb-1">{{ $item->product->name }}</a>
-                                                    <div class="small text-muted">{{ $item->product->brand->name }}</div>
-                                                    <button type="button" class="btn btn-link text-muted p-0 small text-decoration-none hover-danger mt-2" onclick="removeItem({{ $item->id }})">Remove</button>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td width="160">
-                                            <div class="input-group input-group-sm border rounded-3 overflow-hidden" style="width: 120px;">
-                                                <button type="button" class="btn btn-light border-0 shadow-none px-2" onclick="updateQty({{ $item->id }}, -1)">-</button>
-                                                <input type="number" id="qty-{{ $item->id }}" name="quantity" value="{{ $item->quantity }}" min="1" max="{{ $item->product->stock }}" class="form-control text-center border-0 fw-bold shadow-none bg-white" readonly>
-                                                <button type="button" class="btn btn-light border-0 shadow-none px-2" onclick="updateQty({{ $item->id }}, 1)">+</button>
-                                            </div>
-                                            <form id="update-form-{{ $item->id }}" action="{{ route('cart.update', $item->id) }}" method="POST" class="d-none">
-                                                @csrf
-                                                @method('PATCH')
-                                                <input type="hidden" name="quantity" id="hidden-qty-{{ $item->id }}">
-                                            </form>
-                                        </td>
-                                        <td class="text-end small">
-                                            @if($item->product->price > $item->unit_price)
-                                                <div class="text-muted text-decoration-line-through" style="font-size: 0.75rem;">₹{{ number_format($item->product->price, 2) }}</div>
-                                                <div class="fw-bold text-dark">₹{{ number_format($item->unit_price, 2) }}</div>
-                                            @else
-                                                <div class="text-muted">₹{{ number_format($item->unit_price, 2) }}</div>
-                                            @endif
-                                        </td>
-                                        <td class="text-end pe-4">
-                                            <span class="fw-bolder text-dark" id="item-total-{{ $item->id }}">₹{{ number_format($item->quantity * $item->unit_price, 2) }}</span>
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+    {{-- 1. Breadcrumbs --}}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small mb-0" style="font-size: 0.82rem;">
+            <li class="breadcrumb-item"><a href="{{ route('home') }}" class="text-decoration-none text-muted">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('shop') }}" class="text-decoration-none text-muted">Shop</a></li>
+            <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">Shopping Bag</li>
+        </ol>
+    </nav>
+
+    @if ($cart && $cart->items->filter(fn($i) => $i->product)->count() > 0)
+        @php
+            $activeItems = $cart->items->filter(fn($i) => $i->product);
+            $totalCount = $activeItems->sum('quantity');
+            $freeShippingThreshold = 499;
+            $currentSubtotal = $subtotal ?? 0;
+            $freeShippingProgress = min(100, ($currentSubtotal / $freeShippingThreshold) * 100);
+            $amountNeeded = max(0, $freeShippingThreshold - $currentSubtotal);
+        @endphp
+
+        {{-- 2. Page Header Bar --}}
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 mb-md-4 pb-1">
+            <div class="d-flex align-items-center gap-2.5">
+                <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
+                     style="width: 42px; height: 42px; background: rgba(99, 102, 241, 0.12); color: #4f46e5;">
+                    <i class="bi bi-bag-check-fill fs-5"></i>
                 </div>
-
-                <div class="d-flex justify-content-between align-items-center p-3">
-                    <a href="{{ route('shop') }}" class="btn btn-light rounded-pill px-4 fw-bold">
-                        <i class="bi bi-arrow-left me-2"></i> Continue Shopping
-                    </a>
+                <div>
+                    <div class="d-flex align-items-center gap-2">
+                        <h1 class="h4 fw-bold text-dark mb-0" style="font-size: clamp(1.2rem, 2.5vw, 1.5rem); letter-spacing: -0.01em;">
+                            Shopping Bag
+                        </h1>
+                        <span class="badge rounded-pill fw-semibold" id="cart-page-badge" 
+                              style="background: #e0e7ff; color: #4338ca; font-size: 0.76rem; border: 1px solid #c7d2fe;">
+                            {{ $totalCount }} {{ Str::plural('item', $totalCount) }}
+                        </span>
+                    </div>
                 </div>
             </div>
 
-            <div class="col-lg-4">
-                <div class="card border-0 shadow-lg rounded-4 sticky-top" style="top: 100px; z-index: 1000;">
-                    <div class="card-body p-4">
-                        <h5 class="fw-bold mb-4">Bag Summary</h5>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ route('shop') }}" class="btn btn-sm btn-light border rounded-pill px-3 py-1.5 fw-semibold text-secondary shadow-xs" style="font-size: 0.8rem;">
+                    <i class="bi bi-arrow-left me-1"></i> Continue Shopping
+                </a>
+                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1.5 fw-semibold shadow-xs" style="font-size: 0.8rem;" onclick="clearCart()">
+                    <i class="bi bi-trash3 me-1"></i> Clear Bag
+                </button>
+            </div>
+        </div>
 
-                        <div class="d-flex justify-content-between mb-3 text-secondary">
-                            <span>Total MRP</span>
-                            <span id="summary-mrp">₹{{ isset($totalMrp) ? number_format($totalMrp, 2) : number_format($subtotal, 2) }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-3 text-secondary">
-                            <span>Discount on MRP</span>
-                            <span class="text-success fw-bold" id="summary-discount">-₹{{ isset($totalDiscount) ? number_format($totalDiscount, 2) : '0.00' }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-3 text-secondary">
-                            <span>Estimated Shipping</span>
-                            <span class="text-success fw-bold">FREE</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-4 text-secondary">
-                            <span>Tax (GST)</span>
-                            <span>Calculated at checkout</span>
-                        </div>
+        {{-- 3. Main Content: Items List + Order Summary --}}
+        <div class="row g-3 g-lg-4">
+            
+            {{-- Left Column: Cart Items --}}
+            <div class="col-lg-8">
+                
+                {{-- Modern Cart Items List (Clean Unified Cards for Laptop & Mobile) --}}
+                <div class="d-flex flex-column gap-3 mb-3">
+                    @foreach($activeItems as $item)
+                    @php
+                        $hasDiscount = $item->product->price > $item->unit_price;
+                        $discountPct = $hasDiscount ? round((($item->product->price - $item->unit_price) / $item->product->price) * 100) : 0;
+                    @endphp
+                    <div class="card border-0 shadow-xs rounded-4 overflow-hidden cart-item-card" id="cart-item-{{ $item->id }}" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+                        <div class="card-body p-3 p-md-3.5">
+                            <div class="row align-items-center g-3">
+                                
+                                {{-- 1. Thumbnail + Info --}}
+                                <div class="col-12 col-md-6 d-flex align-items-center gap-3 min-w-0">
+                                    <a href="{{ route('product.show', $item->product->slug) }}" class="flex-shrink-0 position-relative">
+                                        @if($item->product->main_image)
+                                            <img src="{{ asset('storage/' . $item->product->main_image) }}" 
+                                                 class="rounded-3 border p-1 bg-white shadow-xs" 
+                                                 width="84" height="84" style="object-fit: contain;">
+                                        @else
+                                            <div class="rounded-3 border bg-light d-flex align-items-center justify-content-center text-muted" style="width: 84px; height: 84px;">
+                                                <i class="bi bi-image fs-3 opacity-25"></i>
+                                            </div>
+                                        @endif
+                                    </a>
+                                    <div class="min-w-0 flex-grow-1">
+                                        @if($item->product->brand)
+                                            <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5 mb-1" style="font-size: 0.68rem;">
+                                                {{ $item->product->brand->name }}
+                                            </span>
+                                        @endif
+                                        <a href="{{ route('product.show', $item->product->slug) }}" class="text-dark fw-bold text-decoration-none d-block mb-1 text-truncate" style="font-size: 0.94rem; line-height: 1.35;" title="{{ $item->product->name }}">
+                                            {{ $item->product->name }}
+                                        </a>
+                                        <div class="d-flex align-items-baseline gap-2 flex-wrap">
+                                            <span class="fw-bolder text-dark" style="font-size: 0.95rem;">₹{{ number_format($item->unit_price, 2) }}</span>
+                                            @if($hasDiscount)
+                                                <span class="text-muted text-decoration-line-through small" style="font-size: 0.76rem;">₹{{ number_format($item->product->price, 2) }}</span>
+                                                <span class="badge bg-success bg-opacity-10 text-success fw-bold px-1.5 py-0.5" style="font-size: 0.65rem;">-{{ $discountPct }}%</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
 
-                        @if(isset($offerDiscount) && $offerDiscount > 0)
-                        <div class="d-flex justify-content-between mb-3 text-secondary">
-                            <span>Extra Offer Discount</span>
-                            <span class="text-success fw-bold" id="summary-offer-discount">-₹{{ number_format($offerDiscount, 2) }}</span>
-                        </div>
-                        @else
-                        <div class="d-flex justify-content-between mb-3 text-secondary d-none" id="summary-offer-discount-container">
-                            <span>Extra Offer Discount</span>
-                            <span class="text-success fw-bold" id="summary-offer-discount">-₹0.00</span>
-                        </div>
-                        @endif
+                                {{-- 2. Quantity Stepper --}}
+                                <div class="col-6 col-md-3 d-flex align-items-center justify-content-start justify-content-md-center">
+                                    <div>
+                                        <div class="input-group input-group-sm border rounded-pill overflow-hidden shadow-xs bg-white" style="width: 110px;">
+                                            <button type="button" class="btn btn-light border-0 shadow-none px-2.5 py-1 text-muted" onclick="updateQty({{ $item->id }}, -1)">
+                                                <i class="bi bi-dash"></i>
+                                            </button>
+                                            <input type="number" id="qty-{{ $item->id }}" value="{{ $item->quantity }}" min="1" max="{{ $item->product->stock }}" class="form-control text-center border-0 fw-bold shadow-none bg-white p-0" readonly style="font-size: 0.85rem;">
+                                            <button type="button" class="btn btn-light border-0 shadow-none px-2.5 py-1 text-muted" onclick="updateQty({{ $item->id }}, 1)">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                        @if($item->product->stock <= 5 && $item->product->stock > 0)
+                                            <small class="text-danger d-block text-center mt-1 fw-semibold" style="font-size: 0.7rem;">Only {{ $item->product->stock }} left</small>
+                                        @endif
+                                    </div>
+                                </div>
 
-                        <hr class="opacity-50">
+                                {{-- 3. Line Total & Remove --}}
+                                <div class="col-6 col-md-3 d-flex flex-column align-items-end justify-content-center">
+                                    <div class="text-muted small d-md-none" style="font-size: 0.72rem;">Total:</div>
+                                    <div class="fw-bolder text-dark mb-1" id="item-total-{{ $item->id }}" style="font-size: 1.05rem; letter-spacing: -0.01em;">
+                                        ₹{{ number_format($item->quantity * $item->unit_price, 2) }}
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-link text-muted p-0 text-decoration-none hover-danger small d-inline-flex align-items-center gap-1" onclick="removeItem({{ $item->id }})" title="Remove Item">
+                                        <i class="bi bi-trash3"></i> <span class="small">Remove</span>
+                                    </button>
+                                </div>
 
-                        <div class="d-flex justify-content-between align-items-center my-4">
-                            <span class="h5 fw-bold mb-0">Total Amount</span>
-                            <span class="h4 fw-bolder text-primary mb-0" id="summary-total">₹{{ isset($grandTotal) ? number_format($grandTotal, 2) : number_format($subtotal, 2) }}</span>
+                            </div>
                         </div>
+                    </div>
+                    @endforeach
+                </div>
 
-                        <div class="d-grid gap-3">
-                            <a href="{{ route('checkout.index') }}" class="btn btn-primary btn-lg py-3 rounded-3 shadow-sm d-flex align-items-center justify-content-center">
-                                Proceed to Checkout <i class="bi bi-arrow-right ms-2"></i>
-                            </a>
-                        </div>
-
-                        <div class="mt-4 p-3 bg-light rounded-3">
-                            <div class="d-flex align-items-center gap-2 small text-muted">
-                                <i class="bi bi-shield-check fs-5 text-success"></i>
-                                <span>Secure encrypted checkout process</span>
+                {{-- Shopping Perks Info Bar (2 Clean Modern Badges) --}}
+                <div class="card border-0 shadow-xs rounded-4 mb-3" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+                    <div class="card-body p-2.5 p-sm-3">
+                        <div class="row g-2">
+                            <div class="col-6 d-flex align-items-center gap-2 justify-content-center">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px; background: rgba(99, 102, 241, 0.1); color: #4f46e5;">
+                                    <i class="bi bi-shield-lock-fill small"></i>
+                                </div>
+                                <span class="fw-semibold text-dark text-truncate" style="font-size: 0.76rem;">100% Secure Checkout</span>
+                            </div>
+                            <div class="col-6 d-flex align-items-center gap-2 justify-content-center">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px; background: rgba(16, 185, 129, 0.1); color: #059669;">
+                                    <i class="bi bi-patch-check-fill small"></i>
+                                </div>
+                                <span class="fw-semibold text-dark text-truncate" style="font-size: 0.76rem;">Genuine Warranty</span>
                             </div>
                         </div>
                     </div>
                 </div>
+
             </div>
-        </div>
-    @else
-        <div class="card border-0 shadow-sm rounded-4 py-5 text-center fade-in">
-            <div class="card-body py-5">
-                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 120px; height: 120px;">
-                    <i class="bi bi-bag-x display-3 text-muted opacity-50"></i>
+
+            {{-- Right Column: Order Summary & Checkout Card --}}
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 sticky-top overflow-hidden" style="top: 90px; z-index: 10; background: #ffffff; border: 1px solid #e2e8f0 !important;">
+                    
+                    {{-- Summary Header --}}
+                    <div class="card-header bg-white py-3 px-3.5 border-bottom d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-receipt-cutoff text-primary fs-5"></i>
+                            <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.05rem;">Price Details</h5>
+                        </div>
+                        <span class="badge rounded-pill fw-semibold" style="background: #f1f5f9; color: #475569; font-size: 0.72rem;">
+                            <span id="summary-items-count">{{ $totalCount }}</span> Items
+                        </span>
+                    </div>
+
+                    <div class="card-body p-3.5">
+                        
+                        {{-- MRP Row --}}
+                        <div class="d-flex justify-content-between mb-2.5 text-secondary" style="font-size: 0.88rem;">
+                            <span>Total MRP</span>
+                            <span class="fw-semibold text-dark" id="summary-mrp">₹{{ isset($totalMrp) ? number_format($totalMrp, 2) : number_format($subtotal, 2) }}</span>
+                        </div>
+
+                        {{-- Discount Row --}}
+                        <div class="d-flex justify-content-between mb-2.5" style="font-size: 0.88rem;">
+                            <span class="text-secondary">Discount on MRP</span>
+                            <span class="text-success fw-bold" id="summary-discount">-₹{{ isset($totalDiscount) ? number_format($totalDiscount, 2) : '0.00' }}</span>
+                        </div>
+
+                        {{-- Extra Offer Discount Row --}}
+                        <div class="d-flex justify-content-between mb-2.5 {{ (isset($offerDiscount) && $offerDiscount > 0) ? '' : 'd-none' }}" id="summary-offer-discount-container" style="font-size: 0.88rem;">
+                            <span class="text-secondary d-flex align-items-center gap-1">
+                                <i class="bi bi-tag-fill text-success small"></i> Coupon / Offer
+                            </span>
+                            <span class="text-success fw-bold" id="summary-offer-discount">-₹{{ number_format($offerDiscount ?? 0, 2) }}</span>
+                        </div>
+
+                        {{-- Tax / GST --}}
+                        <div class="d-flex justify-content-between mb-3 text-secondary" style="font-size: 0.88rem;">
+                            <span>Taxes & GST</span>
+                            <span class="text-muted small">Included</span>
+                        </div>
+
+                        <hr class="my-3 opacity-25">
+
+                        {{-- Grand Total Amount --}}
+                        <div class="d-flex justify-content-between align-items-baseline mb-2">
+                            <div>
+                                <span class="h6 fw-bold text-dark mb-0 d-block">Total Payable</span>
+                                <small class="text-muted" style="font-size: 0.72rem;">Inclusive of all taxes</small>
+                            </div>
+                            <span class="h4 fw-bolder text-primary mb-0" id="summary-total" style="letter-spacing: -0.02em;">
+                                ₹{{ isset($grandTotal) ? number_format($grandTotal, 2) : number_format($subtotal, 2) }}
+                            </span>
+                        </div>
+
+                        {{-- Total Savings Pill --}}
+                        @php
+                            $currentSavings = ($totalDiscount ?? 0) + ($offerDiscount ?? 0);
+                        @endphp
+                        <div class="alert alert-success border-0 py-2 px-3 rounded-3 mb-3 d-flex align-items-center gap-2 {{ $currentSavings > 0 ? '' : 'd-none' }}" id="summary-savings-banner" style="background: rgba(16, 185, 129, 0.1); color: #047857; font-size: 0.8rem;">
+                            <i class="bi bi-piggy-bank-fill fs-6"></i>
+                            <span>You will save <strong id="summary-savings-amount">₹{{ number_format($currentSavings, 2) }}</strong> on this order!</span>
+                        </div>
+
+                        {{-- Checkout Primary CTA --}}
+                        <div class="d-grid gap-2">
+                            <a href="{{ route('checkout.index') }}" class="btn btn-primary btn-lg py-2.5 rounded-pill shadow-sm fw-bold d-flex align-items-center justify-content-center gap-2" style="font-size: 0.95rem; background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); border: none;">
+                                <i class="bi bi-lock-fill"></i> Proceed to Checkout <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+
+                    </div>
                 </div>
-                <h2 class="fw-bold text-dark">Your bag is empty</h2>
-                <p class="text-muted mb-4 mx-auto" style="max-width: 400px;">Looks like you haven't added anything to your shopping bag yet. Start exploring our amazing collections!</p>
-                <a href="{{ route('shop') }}" class="btn btn-primary btn-lg px-5 rounded-pill shadow">Start Shopping Now</a>
+            </div>
+
+        </div>
+
+    @else
+        {{-- 5. Illustrated Empty Bag State --}}
+        <div class="card border-0 shadow-xs rounded-4 py-5 text-center my-3" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+            <div class="card-body py-5 px-3">
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 100px; height: 100px; background: rgba(99, 102, 241, 0.08); color: #6366f1;">
+                    <i class="bi bi-bag-x-fill" style="font-size: 3rem;"></i>
+                </div>
+                <h3 class="fw-bold text-dark mb-2" style="letter-spacing: -0.01em;">Your Shopping Bag is Empty</h3>
+                <p class="text-muted mb-4 mx-auto small" style="max-width: 420px; font-size: 0.88rem;">
+                    Looks like you haven't added anything to your cart yet. Explore our curated collections and discover great deals today!
+                </p>
+                <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">
+                    <a href="{{ route('shop') }}" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-xs btn-sm" style="font-size: 0.86rem;">
+                        <i class="bi bi-shop me-1"></i> Start Shopping
+                    </a>
+                    <a href="{{ route('categories.index') }}" class="btn btn-light border rounded-pill px-4 py-2 fw-semibold text-secondary shadow-xs btn-sm" style="font-size: 0.86rem;">
+                        <i class="bi bi-grid me-1"></i> Browse Categories
+                    </a>
+                </div>
             </div>
         </div>
     @endif
 </div>
 
+@push('scripts')
 <script>
     function formatCurrency(amount) {
         return '₹' + parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -163,13 +271,18 @@
 
     function updateTotalsAndBadges(data) {
         if (data.cart_count === 0) {
-            window.location.reload(); // Reload to show empty cart state
+            window.location.reload();
             return;
         }
 
+        // 1. Update Cart Page Header Badge & Summary Count
         const badge = document.getElementById('cart-page-badge');
-        if (badge) badge.textContent = data.cart_count + ' items';
+        if (badge) badge.textContent = data.cart_count + (data.cart_count === 1 ? ' item' : ' items');
 
+        const summaryItemsCount = document.getElementById('summary-items-count');
+        if (summaryItemsCount) summaryItemsCount.textContent = data.cart_count;
+
+        // 2. Update Pricing Breakdown
         const mrpEl = document.getElementById('summary-mrp');
         if (mrpEl && data.total_mrp !== undefined) mrpEl.textContent = formatCurrency(data.total_mrp);
 
@@ -186,32 +299,45 @@
             }
         }
 
+        // 3. Update Grand Total
         const totalEl = document.getElementById('summary-total');
         if (totalEl && data.grand_total !== undefined) {
             totalEl.textContent = formatCurrency(data.grand_total);
-        } else if (totalEl) {
+        } else if (totalEl && data.subtotal !== undefined) {
             totalEl.textContent = formatCurrency(data.subtotal);
         }
+
+        // 4. Update Savings Banner
+        const savingsBanner = document.getElementById('summary-savings-banner');
+        const savingsAmount = document.getElementById('summary-savings-amount');
+        const totalSavings = (data.total_discount || 0) + (data.offer_discount || 0);
+        if (savingsBanner && savingsAmount) {
+            if (totalSavings > 0) {
+                savingsAmount.textContent = formatCurrency(totalSavings);
+                savingsBanner.classList.remove('d-none');
+            } else {
+                savingsBanner.classList.add('d-none');
+            }
+        }
         
-        // Also try to update the navbar badge if it exists
+        // 5. Update Navbar Badge
         const navBadge = document.getElementById('cart-badge');
         if (navBadge) {
             navBadge.textContent = data.cart_count;
-            if (data.cart_count > 0) {
-                navBadge.style.display = 'inline-block';
-            } else {
-                navBadge.style.display = 'none';
-            }
+            navBadge.style.display = data.cart_count > 0 ? 'inline-block' : 'none';
         }
     }
 
     function updateQty(itemId, delta) {
         const input = document.getElementById('qty-' + itemId);
-        const max = parseInt(input.max);
-        let newVal = parseInt(input.value) + delta;
+        if (!input) return;
+
+        const max = parseInt(input.max) || 99;
+        let currentVal = parseInt(input.value) || 1;
+        let newVal = currentVal + delta;
 
         if (newVal >= 1 && newVal <= max) {
-            input.value = newVal; // Optimistic update
+            input.value = newVal;
             
             fetch(`/cart/update/${itemId}`, {
                 method: 'PATCH',
@@ -226,14 +352,13 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    const itemTotalEl = document.getElementById('item-total-' + itemId);
-                    if (itemTotalEl && data.item_total !== undefined) {
-                        itemTotalEl.textContent = formatCurrency(data.item_total);
-                    }
+                    const itemTotal = document.getElementById('item-total-' + itemId);
+                    if (itemTotal) itemTotal.textContent = formatCurrency(data.item_total);
+                    
                     updateTotalsAndBadges(data);
                 } else {
-                    alert(data.message || 'Error updating cart');
-                    window.location.reload(); // Revert on error
+                    alert(data.message || 'Unable to update quantity.');
+                    window.location.reload();
                 }
             })
             .catch(err => {
@@ -244,8 +369,8 @@
     }
 
     function removeItem(itemId) {
-        const row = document.getElementById('cart-row-' + itemId);
-        if (row) row.style.opacity = '0.5';
+        const card = document.getElementById('cart-item-' + itemId);
+        if (card) card.style.opacity = '0.4';
 
         fetch(`/cart/remove/${itemId}`, {
             method: 'DELETE',
@@ -259,10 +384,10 @@
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                if (row) row.remove();
+                if (card) card.remove();
                 updateTotalsAndBadges(data);
             } else {
-                alert('Error removing item');
+                alert('Error removing item from bag.');
                 window.location.reload();
             }
         })
@@ -273,6 +398,8 @@
     }
 
     function clearCart() {
+        if (!confirm('Are you sure you want to clear your shopping bag?')) return;
+
         fetch(`{{ route('cart.clear') }}`, {
             method: 'DELETE',
             headers: {
@@ -287,7 +414,7 @@
             if (data.success) {
                 window.location.reload();
             } else {
-                alert('Error clearing cart');
+                alert('Error clearing bag.');
             }
         })
         .catch(err => {
@@ -296,9 +423,11 @@
         });
     }
 </script>
+@endpush
 
 <style>
     .hover-danger:hover { color: var(--bs-danger) !important; }
-    .shadow-inner { box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); }
+    .shadow-xs { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); }
+    .cart-item-row:last-child { border-bottom: none !important; }
 </style>
 @endsection

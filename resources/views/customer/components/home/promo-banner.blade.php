@@ -86,7 +86,7 @@
                     </a>
                 </div>
 
-                <div class="d-none d-lg-flex position-relative align-items-center justify-content-center">
+                <div class="d-none d-md-flex position-relative align-items-center justify-content-center">
                     <div class="glass-card p-4 rounded-5 shadow-lg text-center d-flex flex-column align-items-center justify-content-center" style="width: 260px; height: 260px; border: 1px solid rgba(255,255,255,0.2);">
                         <i class="bi bi-gift-fill text-white mb-3" style="font-size: 6rem; filter: drop-shadow(0 0 15px rgba(255,255,255,0.3));"></i>
                         <div class="fw-bold text-white h5 mb-0">Unbox Happiness</div>

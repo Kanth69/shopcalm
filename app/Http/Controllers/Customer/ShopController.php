@@ -92,6 +92,15 @@ class ShopController extends Controller
 
         $upcomingDeal = \App\Models\Offer::where('start_time', '>', now())->orderBy('start_time', 'asc')->first();
 
+        $testimonials = Cache::remember('home_testimonials', 300, function() {
+            return \App\Models\ProductReview::with(['user', 'product'])
+                ->where('status', 'Approved')
+                ->where('rating', '>=', 4)
+                ->latest()
+                ->take(8)
+                ->get();
+        });
+
         return view('customer.home', compact(
             'banners',
             'featuredProducts',
@@ -103,7 +112,8 @@ class ShopController extends Controller
             'brands',
             'settings',
             'liveMegaSale',
-            'upcomingDeal'
+            'upcomingDeal',
+            'testimonials'
         ));
     }
 
@@ -272,27 +282,37 @@ class ShopController extends Controller
         return view('customer.product_details', compact('product', 'relatedProducts'));
     }
 
-    public function categoryProducts(Category $category)
+    public function categoryProducts(Category $category, OfferService $offerService)
     {
         $products = Product::with(['category', 'brand'])->where('status', 'Active')
             ->where('category_id', $category->id)
             ->latest()
             ->paginate(12);
+
+        $offerService->applyOfferDiscountsToProducts($products->getCollection());
+
         return view('customer.category_products', compact('category', 'products'));
     }
 
-    public function brandProducts(Brand $brand)
+    public function brandProducts(Brand $brand, OfferService $offerService)
     {
         $products = Product::with(['category', 'brand'])->where('status', 'Active')
             ->where('brand_id', $brand->id)
             ->latest()
             ->paginate(12);
+
+        $offerService->applyOfferDiscountsToProducts($products->getCollection());
+
         return view('customer.brand_products', compact('brand', 'products'));
     }
 
     public function categories()
     {
-        $categories = Category::where('status', 'Active')->withCount('products')->orderBy('name')->get();
+        $categories = Category::where('status', 'Active')
+            ->withCount(['products' => fn($q) => $q->where('status', 'Active')])
+            ->withMin(['products as min_price' => fn($q) => $q->where('status', 'Active')], 'price')
+            ->orderBy('name')
+            ->get();
         return view('customer.categories_index', compact('categories'));
     }
 

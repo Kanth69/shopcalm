@@ -1,6 +1,6 @@
 @extends('product-manager.layouts.app')
 
-@section('header', 'Product Reviews')
+@section('header', 'Product Reviews & Moderation')
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('product-manager.dashboard') }}">Dashboard</a></li>
@@ -77,20 +77,20 @@
         </a>
     </div>
 
-    {{-- Rejected --}}
+    {{-- Rejected / Avg Rating --}}
     @php $isActiveRejected = request('status') === 'Rejected'; @endphp
     <div class="col-6 col-md-3">
         <a href="{{ route('product-manager.reviews.index', ['status' => 'Rejected']) }}" class="card text-decoration-none h-100 shadow-sm transition-all" 
             style="border-radius: 14px !important; border: {{ $isActiveRejected ? '2px solid #ef4444' : '1px solid #e2e8f0' }}; border-left: 5px solid #ef4444 !important; background: {{ $isActiveRejected ? '#fef2f2' : '#ffffff' }};">
             <div class="card-body p-3.5">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="fw-bold text-uppercase" style="font-size:0.72rem; letter-spacing:0.05em; color: #b91c1c;">Avg Rating</span>
+                    <span class="fw-bold text-uppercase" style="font-size:0.72rem; letter-spacing:0.05em; color: #b91c1c;">Rejected / Avg</span>
                     <div style="width:34px; height:34px; border-radius:10px; background:#fee2e2; display:flex; align-items:center; justify-content:center;">
                         <i class="bi bi-star-fill" style="font-size:0.95rem; color:#ef4444;"></i>
                     </div>
                 </div>
                 <div class="d-flex align-items-baseline justify-content-between">
-                    <h3 class="mb-0 fw-bolder" style="font-size:1.6rem; color:#0f172a;">{{ number_format($averageRating, 1) }}</h3>
+                    <h3 class="mb-0 fw-bolder" style="font-size:1.6rem; color:#0f172a;">{{ number_format($averageRating, 1) }} <span class="text-muted small fs-6">({{ $rejectedReviews }} rej)</span></h3>
                 </div>
             </div>
         </a>
@@ -161,7 +161,7 @@
         <div class="card-header d-flex align-items-center justify-content-between py-3" style="background:#fff; border-bottom: 1px solid #f1f5f9; border-radius: 14px 14px 0 0;">
             <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-chat-square-quote-fill text-primary"></i>
-                <h6 class="mb-0 fw-bold text-dark">Reviews Feed</h6>
+                <h6 class="mb-0 fw-bold text-dark">Customer Reviews Feed</h6>
             </div>
             <div class="d-flex align-items-center gap-2">
                 <select name="action" class="form-select form-select-sm" style="width: auto; border-radius: 8px; font-size: 0.8rem;" required>
@@ -182,12 +182,12 @@
                             <th class="ps-3" style="width: 40px;">
                                 <input type="checkbox" class="form-check-input" id="selectAll">
                             </th>
-                            <th style="font-size: 0.7rem;">Product</th>
-                            <th style="font-size: 0.7rem;">Customer</th>
-                            <th style="font-size: 0.7rem;">Rating & Comment</th>
-                            <th style="font-size: 0.7rem;">Status</th>
-                            <th style="font-size: 0.7rem;">Date</th>
-                            <th class="pe-3 text-end" style="font-size: 0.7rem;">Moderate</th>
+                            <th style="font-size: 0.72rem; letter-spacing: 0.04em;">Product</th>
+                            <th style="font-size: 0.72rem; letter-spacing: 0.04em;">Customer</th>
+                            <th style="font-size: 0.72rem; letter-spacing: 0.04em;">Rating & Review</th>
+                            <th style="font-size: 0.72rem; letter-spacing: 0.04em;">Status</th>
+                            <th style="font-size: 0.72rem; letter-spacing: 0.04em;">Date</th>
+                            <th class="pe-3 text-end" style="font-size: 0.72rem; letter-spacing: 0.04em;">Moderate</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -198,9 +198,10 @@
                             </td>
                             <td>
                                 <div class="fw-bold text-dark small text-truncate" style="max-width: 180px;">{{ $rev->product->name ?? '—' }}</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">SKU: {{ $rev->product?->sku ?? 'N/A' }}</div>
                             </td>
                             <td>
-                                <div class="fw-medium text-dark small">{{ $rev->user->name ?? 'Guest' }}</div>
+                                <div class="fw-medium text-dark small">{{ $rev->user->name ?? 'Customer' }}</div>
                                 <div class="text-muted" style="font-size: 0.7rem;">{{ $rev->user->email ?? '—' }}</div>
                             </td>
                             <td style="max-width: 320px;">
@@ -208,34 +209,49 @@
                                     @for($i = 1; $i <= 5; $i++)
                                         <i class="bi bi-star{{ $i <= $rev->rating ? '-fill' : '' }}"></i>
                                     @endfor
-                                    <span class="text-muted ms-1 font-monospace">{{ $rev->rating }}/5</span>
+                                    <span class="text-muted ms-1 font-monospace" style="font-size: 0.75rem;">{{ $rev->rating }}/5</span>
                                 </div>
-                                <div class="text-dark small" style="font-size: 0.8rem;">{{ $rev->review }}</div>
+                                <div class="text-dark small" style="font-size: 0.8rem; line-height: 1.4;">{{ $rev->review }}</div>
                             </td>
                             <td>
                                 @if($rev->status === 'Approved')
-                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1">Approved</span>
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.72rem;">Approved</span>
                                 @elseif($rev->status === 'Pending')
-                                    <span class="badge bg-warning bg-opacity-10 text-warning text-dark border border-warning border-opacity-25 rounded-pill px-2.5 py-1">Pending</span>
+                                    <span class="badge bg-warning bg-opacity-10 text-warning text-dark border border-warning border-opacity-25 rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.72rem; color: #b45309 !important;">Pending</span>
                                 @else
-                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2.5 py-1">Rejected</span>
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.72rem;">Rejected</span>
                                 @endif
                             </td>
-                            <td class="text-muted small">{{ $rev->created_at->format('M d, Y') }}</td>
+                            <td class="text-muted small" style="font-size: 0.72rem;">{{ $rev->created_at->format('M d, Y') }}</td>
                             <td class="pe-3 text-end">
-                                <div class="btn-group btn-group-sm">
+                                <div class="d-flex align-items-center justify-content-end gap-1">
                                     @if($rev->status !== 'Approved')
-                                        <button type="button" class="btn btn-outline-success" onclick="updateReviewStatus({{ $rev->id }}, 'Approved')" title="Approve">
-                                            <i class="bi bi-check-lg"></i>
+                                        <button type="button" class="btn btn-sm btn-success rounded-pill px-2.5 py-1 fw-bold shadow-xs d-inline-flex align-items-center gap-1" 
+                                                onclick="updateReviewStatus({{ $rev->id }}, 'Approved')" title="1-Click Approve" style="font-size: 0.72rem;">
+                                            <i class="bi bi-check-lg"></i> <span>Approve</span>
                                         </button>
                                     @endif
+
+                                    <!-- Edit Review Button -->
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-circle d-inline-flex align-items-center justify-content-center p-0" 
+                                            style="width: 28px; height: 28px;"
+                                            onclick="openEditReviewModal({{ $rev->id }}, {{ $rev->rating }}, {{ json_encode($rev->review) }}, '{{ $rev->status }}', {{ json_encode($rev->product?->name ?? '') }}, {{ json_encode($rev->user?->name ?? 'Customer') }})" 
+                                            title="Edit Review">
+                                        <i class="bi bi-pencil-fill" style="font-size: 0.75rem;"></i>
+                                    </button>
+
                                     @if($rev->status !== 'Rejected')
-                                        <button type="button" class="btn btn-outline-warning" onclick="updateReviewStatus({{ $rev->id }}, 'Rejected')" title="Reject">
-                                            <i class="bi bi-x-lg"></i>
+                                        <button type="button" class="btn btn-sm btn-outline-warning text-dark rounded-circle d-inline-flex align-items-center justify-content-center p-0" 
+                                                style="width: 28px; height: 28px;"
+                                                onclick="updateReviewStatus({{ $rev->id }}, 'Rejected')" title="Reject">
+                                            <i class="bi bi-x-lg" style="font-size: 0.75rem;"></i>
                                         </button>
                                     @endif
-                                    <button type="button" class="btn btn-outline-danger" onclick="deleteReview({{ $rev->id }})" title="Delete">
-                                        <i class="bi bi-trash"></i>
+
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-circle d-inline-flex align-items-center justify-content-center p-0" 
+                                            style="width: 28px; height: 28px;"
+                                            onclick="deleteReview({{ $rev->id }})" title="Delete">
+                                        <i class="bi bi-trash" style="font-size: 0.75rem;"></i>
                                     </button>
                                 </div>
                             </td>
@@ -258,11 +274,70 @@
     </div>
 </form>
 
+<!-- Single Action Form (for 1-click Approve/Reject) -->
 <form id="singleReviewActionForm" method="POST" style="display: none;">
     @csrf
     <input type="hidden" name="_method" id="singleReviewMethod" value="PATCH">
     <input type="hidden" name="status" id="singleReviewStatus">
 </form>
+
+<!-- Edit Review Modal -->
+<div class="modal fade" id="editReviewModal" tabindex="-1" aria-labelledby="editReviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-white py-3 px-4 border-bottom">
+                <h6 class="modal-title fw-bold text-dark" id="editReviewModalLabel">
+                    <i class="bi bi-pencil-square text-primary me-1"></i> Edit & Moderate Review
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editReviewForm" method="POST" action="">
+                @csrf
+                @method('PATCH')
+                <div class="modal-body p-4">
+                    <div class="p-3 bg-light rounded-3 mb-3 border">
+                        <div class="small fw-bold text-dark" id="modalProductName">—</div>
+                        <div class="text-muted small" style="font-size: 0.75rem;">Reviewer: <span id="modalCustomerName" class="fw-semibold text-dark">—</span></div>
+                    </div>
+
+                    <!-- Rating Select -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-dark">Star Rating</label>
+                        <select name="rating" id="modalRating" class="form-select small" required>
+                            <option value="5">⭐⭐⭐⭐⭐ (5 Stars)</option>
+                            <option value="4">⭐⭐⭐⭐ (4 Stars)</option>
+                            <option value="3">⭐⭐⭐ (3 Stars)</option>
+                            <option value="2">⭐⭐ (2 Stars)</option>
+                            <option value="1">⭐ (1 Star)</option>
+                        </select>
+                    </div>
+
+                    <!-- Review Textarea -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-dark">Review Comment</label>
+                        <textarea name="review" id="modalReviewText" rows="4" class="form-control small" required placeholder="Customer review message..."></textarea>
+                    </div>
+
+                    <!-- Status Select -->
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small text-dark">Moderation Status</label>
+                        <select name="status" id="modalStatus" class="form-select fw-bold small" required>
+                            <option value="Approved">🟢 Approved (Visible on storefront)</option>
+                            <option value="Pending">🟡 Pending (Awaiting review)</option>
+                            <option value="Rejected">🔴 Rejected (Hidden from storefront)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light p-3 border-top d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm">
+                        <i class="bi bi-check2-circle me-1"></i> Save Changes & Moderate
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 @push('scripts')
 <script>
@@ -276,6 +351,19 @@ function updateReviewStatus(reviewId, status) {
     document.getElementById('singleReviewMethod').value = 'PATCH';
     document.getElementById('singleReviewStatus').value = status;
     form.submit();
+}
+
+function openEditReviewModal(reviewId, rating, reviewText, status, productName, customerName) {
+    const form = document.getElementById('editReviewForm');
+    form.action = `/product-manager/reviews/${reviewId}`;
+    document.getElementById('modalRating').value = rating;
+    document.getElementById('modalReviewText').value = reviewText;
+    document.getElementById('modalStatus').value = status;
+    document.getElementById('modalProductName').innerText = productName;
+    document.getElementById('modalCustomerName').innerText = customerName;
+
+    const editModal = new bootstrap.Modal(document.getElementById('editReviewModal'));
+    editModal.show();
 }
 
 function deleteReview(reviewId) {

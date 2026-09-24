@@ -81,24 +81,34 @@
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark small">Base Price <span class="text-danger">*</span></label>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-dark small">Cost Price (CP)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted">₹</span>
+                                <input type="number" name="cost_price" step="0.01" min="0" class="form-control @error('cost_price') is-invalid @enderror" value="{{ old('cost_price') }}" placeholder="e.g. 1800.00">
+                            </div>
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Procurement / wholesale cost (internal only).</div>
+                            @error('cost_price') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-dark small">Selling Price (SP) <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted">₹</span>
                                 <input type="number" name="price" step="0.01" min="0" class="form-control fw-bold @error('price') is-invalid @enderror" value="{{ old('price') }}" required placeholder="e.g. 2499.00">
                             </div>
-                            <div class="form-text text-muted" style="font-size: 0.72rem;">Customer price before dynamic promotional offers.</div>
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Customer price before offers.</div>
                             @error('price') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold text-dark small">Stock Inventory <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-boxes"></i></span>
                                 <input type="number" name="stock" min="0" class="form-control fw-bold @error('stock') is-invalid @enderror" value="{{ old('stock', 10) }}" required placeholder="e.g. 50">
                                 <span class="input-group-text bg-light text-muted small">Units</span>
                             </div>
-                            <div class="form-text text-muted" style="font-size: 0.72rem;">Available quantity for initial stock.</div>
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Available initial stock quantity.</div>
                             @error('stock') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                         </div>
                     </div>
@@ -258,7 +268,8 @@
         function updateBrands() {
             const selectedCategoryId = categorySelect.value;
             allBrandOptions.forEach(option => {
-                if (!selectedCategoryId || option.getAttribute('data-category-id') === selectedCategoryId) {
+                const brandCatId = option.getAttribute('data-category-id');
+                if (!selectedCategoryId || !brandCatId || brandCatId === selectedCategoryId) {
                     option.style.display = '';
                 } else {
                     option.style.display = 'none';

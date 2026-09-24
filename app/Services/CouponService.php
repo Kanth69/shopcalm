@@ -18,7 +18,7 @@ class CouponService
      */
     public function validateCoupon(string $code, ?User $user, float $totalAmount, $cart = null): Coupon
     {
-        $coupon = Coupon::with(['categories', 'brands', 'products'])->where('code', strtoupper(trim($code)))->first();
+        $coupon = Coupon::with(['targets'])->where('code', strtoupper(trim($code)))->first();
 
         if (!$coupon) {
             throw new Exception("Invalid coupon code.");
@@ -70,7 +70,7 @@ class CouponService
         $cartItems = $cart->items;
 
         if ($type === 'CATEGORY') {
-            $allowedCatIds = $coupon->categories->pluck('id')->toArray();
+            $allowedCatIds = $coupon->getTargetIds('category');
             if ($coupon->applicable_id) {
                 $allowedCatIds[] = $coupon->applicable_id;
             }
@@ -86,7 +86,7 @@ class CouponService
         }
 
         if ($type === 'BRAND') {
-            $allowedBrandIds = $coupon->brands->pluck('id')->toArray();
+            $allowedBrandIds = $coupon->getTargetIds('brand');
             if ($coupon->applicable_id) {
                 $allowedBrandIds[] = $coupon->applicable_id;
             }
@@ -102,7 +102,7 @@ class CouponService
         }
 
         if ($type === 'PRODUCT') {
-            $allowedProductIds = $coupon->products->pluck('id')->toArray();
+            $allowedProductIds = $coupon->getTargetIds('product');
             if ($coupon->applicable_id) {
                 $allowedProductIds[] = $coupon->applicable_id;
             }

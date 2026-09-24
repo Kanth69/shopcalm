@@ -134,13 +134,13 @@
                                     {{ Str::limit($movement->notes, 50) }}
                                 </td>
                                 <td class="text-end pe-3">
-                                    @if($movement->createdBy)
-                                        <span class="badge bg-light text-dark border">
-                                            <i class="bi bi-person"></i> {{ $movement->createdBy->name }}
+                                    @if(!$movement->isSystemMovement() && $movement->createdBy)
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
+                                            <i class="bi bi-person-fill me-1"></i> {{ $movement->createdBy->name }} ({{ $movement->createdBy->role_name ?? 'Staff' }})
                                         </span>
                                     @else
-                                        <span class="badge bg-secondary text-white">
-                                            <i class="bi bi-robot"></i> System
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
+                                            <i class="bi bi-robot me-1"></i> System
                                         </span>
                                     @endif
                                 </td>

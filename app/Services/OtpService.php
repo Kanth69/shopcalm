@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\OtpVerification;
 use Illuminate\Support\Facades\Hash;
-use App\Jobs\SendBrevoEmailJob;
 use Carbon\Carbon;
 
 class OtpService
@@ -22,9 +21,16 @@ class OtpService
             ]
         );
 
-        $html = view('emails.auth.otp-brevo', ['otp' => $otp])->render();
+        $storeName = \App\Models\Setting::get('store_name', 'ShopCalm');
+        $subject = "{$storeName} Verification OTP: {$otp}";
+        $html = "<div style='font-family:sans-serif; padding:20px; text-align:center;'>
+            <h2>{$storeName} Verification Code</h2>
+            <p>Your 6-digit OTP code is:</p>
+            <h1 style='color:#6366f1; letter-spacing:5px;'>{$otp}</h1>
+            <p>Valid for 10 minutes. Do not share this code with anyone.</p>
+        </div>";
 
-        SendBrevoEmailJob::dispatch($email, 'ShopCalm Registration OTP', $html);
+        app(EmailService::class)->sendEmail($email, $subject, $html);
     }
 
     public function verify(string $email, string $otp, string $purpose): bool
@@ -36,7 +42,7 @@ class OtpService
             ->first();
 
         if ($record && Hash::check($otp, $record->otp_hash)) {
-            $record->delete(); // Delete immediately after successful verification
+            $record->delete();
             return true;
         }
 

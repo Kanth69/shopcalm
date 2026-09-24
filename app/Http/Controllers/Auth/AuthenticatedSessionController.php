@@ -17,11 +17,6 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(Request $request): View|RedirectResponse
     {
-        // If an admin guard session is active, redirect them to the admin panel
-        if (Auth::guard('admin')->check()) {
-            return redirect()->route('admin.dashboard');
-        }
-
         // If already logged in as customer, redirect to home
         if (Auth::guard('customer')->check()) {
             return redirect()->route('home');

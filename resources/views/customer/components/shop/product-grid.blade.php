@@ -1,5 +1,5 @@
 @forelse($products as $product)
-    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+    <div class="col d-flex">
         @include('customer.components.product-card', ['product' => $product])
     </div>
 @empty

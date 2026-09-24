@@ -40,11 +40,27 @@ return [
     'guards' => [
         'admin' => [
             'driver' => 'session',
-            'provider' => 'admins',   // separate provider → separate session key
+            'provider' => 'admins',
+        ],
+        'product_manager' => [
+            'driver' => 'session',
+            'provider' => 'product_managers',
+        ],
+        'order_manager' => [
+            'driver' => 'session',
+            'provider' => 'order_managers',
+        ],
+        'support' => [
+            'driver' => 'session',
+            'provider' => 'supports',
         ],
         'customer' => [
             'driver' => 'session',
             'provider' => 'users',
+        ],
+        'delivery_partner' => [
+            'driver' => 'session',
+            'provider' => 'delivery_partners',
         ],
     ],
 
@@ -70,9 +86,23 @@ return [
             'driver' => 'eloquent',
             'model'  => env('AUTH_MODEL', User::class),
         ],
-        // Admin uses the same User model/table but a DIFFERENT provider name
-        // so Laravel generates a different session key (login_admins_xxxx vs login_users_xxxx)
         'admins' => [
+            'driver' => 'eloquent',
+            'model'  => env('AUTH_MODEL', User::class),
+        ],
+        'product_managers' => [
+            'driver' => 'eloquent',
+            'model'  => env('AUTH_MODEL', User::class),
+        ],
+        'order_managers' => [
+            'driver' => 'eloquent',
+            'model'  => env('AUTH_MODEL', User::class),
+        ],
+        'supports' => [
+            'driver' => 'eloquent',
+            'model'  => env('AUTH_MODEL', User::class),
+        ],
+        'delivery_partners' => [
             'driver' => 'eloquent',
             'model'  => env('AUTH_MODEL', User::class),
         ],

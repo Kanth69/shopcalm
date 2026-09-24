@@ -12,11 +12,21 @@ use Illuminate\Support\Str;
 
 class BrandController extends Controller
 {
+    private function checkSuperAdmin(): void
+    {
+        $user = auth('admin')->user() ?? auth()->user();
+        if (!$user || !$user->isSuperAdmin()) {
+            abort(403, 'Unauthorized access. Only Super Admin has master permission to manage brands directly in Admin panel.');
+        }
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
+        $this->checkSuperAdmin();
+
         $search = $request->input('search');
         $categoryId = $request->input('category_id');
         $status = $request->input('status');
@@ -49,6 +59,7 @@ class BrandController extends Controller
      */
     public function create()
     {
+        $this->checkSuperAdmin();
         $categories = Category::where('status', 'Active')->orderBy('name')->get();
         return view('admin.brands.create', compact('categories'));
     }
@@ -58,6 +69,7 @@ class BrandController extends Controller
      */
     public function store(BrandRequest $request)
     {
+        $this->checkSuperAdmin();
         $validated = $request->validated();
 
         if (empty($validated['slug'])) {
@@ -87,6 +99,7 @@ class BrandController extends Controller
      */
     public function edit(Brand $brand)
     {
+        $this->checkSuperAdmin();
         $categories = Category::where('status', 'Active')->orderBy('name')->get();
         return view('admin.brands.edit', compact('brand', 'categories'));
     }
@@ -96,6 +109,7 @@ class BrandController extends Controller
      */
     public function update(BrandRequest $request, Brand $brand)
     {
+        $this->checkSuperAdmin();
         $validated = $request->validated();
 
         if (empty($validated['slug'])) {
@@ -129,6 +143,7 @@ class BrandController extends Controller
      */
     public function destroy(Request $request, Brand $brand)
     {
+        $this->checkSuperAdmin();
         if ($brand->logo) {
             Storage::disk('public')->delete($brand->logo);
         }

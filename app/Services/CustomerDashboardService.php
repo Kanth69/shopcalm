@@ -23,7 +23,8 @@ class CustomerDashboardService
         $recentReviews = $user->reviews()->with('product')->latest()->take(3)->get();
 
         $recommendedProducts = Cache::remember('recommended_products', 600, function () {
-            return \App\Models\Product::with(['category', 'brand'])->where('status', 'Active')->inRandomOrder()->take(4)->get();
+            $products = \App\Models\Product::with(['category', 'brand'])->where('status', 'Active')->inRandomOrder()->take(4)->get();
+            return app(\App\Services\OfferService::class)->applyOfferDiscountsToProducts($products);
         });
 
         return compact('stats', 'recentOrders', 'recentWishlistItems', 'recentReviews', 'recommendedProducts', 'user');

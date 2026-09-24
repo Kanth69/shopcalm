@@ -13,6 +13,17 @@
         <a href="{{ route('product-manager.products.index') }}" class="btn btn-outline-secondary rounded-pill px-3">
             <i class="bi bi-arrow-left me-1"></i> Back to Products
         </a>
+        <a href="{{ route('product-manager.products.show', $product) }}" class="btn btn-outline-primary rounded-pill px-3">
+            <i class="bi bi-eye me-1"></i> View Details
+        </a>
+        <a href="{{ route('product-manager.stock.history', ['product_id' => $product->id]) }}" class="btn btn-outline-success rounded-pill px-3">
+            <i class="bi bi-boxes me-1"></i> Stock History
+        </a>
+        @if($product->status === 'Active')
+            <a href="{{ route('product.show', $product->slug) }}" target="_blank" class="btn btn-outline-info rounded-pill px-3">
+                <i class="bi bi-box-arrow-up-right me-1"></i> Store View
+            </a>
+        @endif
     </div>
 @endsection
 
@@ -89,16 +100,27 @@
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark small">Base Price <span class="text-danger">*</span></label>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-dark small">Cost Price (CP)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted">₹</span>
+                                <input type="number" name="cost_price" step="0.01" min="0" class="form-control @error('cost_price') is-invalid @enderror" value="{{ old('cost_price', $product->cost_price) }}" placeholder="e.g. 1800.00">
+                            </div>
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Procurement / wholesale cost (internal only).</div>
+                            @error('cost_price') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-dark small">Selling Price (SP) <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted">₹</span>
                                 <input type="number" name="price" step="0.01" min="0" class="form-control fw-bold @error('price') is-invalid @enderror" value="{{ old('price', $product->price) }}" required>
                             </div>
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Customer price before offers.</div>
                             @error('price') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold text-dark small">Stock Inventory <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-boxes"></i></span>
@@ -299,7 +321,8 @@
         function updateBrands() {
             const selectedCategoryId = categorySelect.value;
             allBrandOptions.forEach(option => {
-                if (!selectedCategoryId || option.getAttribute('data-category-id') === selectedCategoryId) {
+                const brandCatId = option.getAttribute('data-category-id');
+                if (!selectedCategoryId || !brandCatId || brandCatId === selectedCategoryId) {
                     option.style.display = '';
                 } else {
                     option.style.display = 'none';

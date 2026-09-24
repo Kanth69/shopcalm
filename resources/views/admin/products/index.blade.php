@@ -8,12 +8,110 @@
 @endsection
 
 @section('actions')
+    @if(auth()->user()->isSuperAdmin())
     <a href="{{ route('admin.products.create') }}" class="btn btn-primary fw-semibold px-3" style="border-radius: 10px; font-size:0.875rem;">
         <i class="bi bi-plus-lg me-1"></i> Add Product
     </a>
+    @endif
 @endsection
 
+@push('styles')
+<style>
+    .action-btn-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        transition: all 0.2s cubic-bezier(.4,0,.2,1);
+        text-decoration: none;
+        font-size: 0.85rem;
+    }
+    .action-btn-circle:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    }
+    .action-btn-view {
+        background: #f1f5f9;
+        color: #475569;
+        border-color: #e2e8f0;
+    }
+    .action-btn-view:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+    .action-btn-edit {
+        background: #ede9fe;
+        color: #6366f1;
+        border-color: #ddd6fe;
+    }
+    .action-btn-edit:hover {
+        background: #ddd6fe;
+        color: #4f46e5;
+    }
+    .action-btn-delete {
+        background: #fee2e2;
+        color: #ef4444;
+        border-color: #fecaca;
+    }
+    .action-btn-delete:hover {
+        background: #fecaca;
+        color: #dc2626;
+    }
+</style>
+@endpush
+
 @section('content')
+
+@if($pendingCount > 0)
+    <div class="alert border-0 shadow-sm rounded-4 p-3.5 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3" 
+        style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border-left: 5px solid #d97706 !important;">
+        <div class="d-flex align-items-center gap-3">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(217, 119, 6, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="bi bi-hourglass-split text-warning fs-4" style="color: #b45309 !important;"></i>
+            </div>
+            <div>
+                <h6 class="fw-bold mb-0.5" style="color: #92400e; font-size: 0.95rem;">
+                    {{ $pendingCount }} {{ Str::plural('Product Submission', $pendingCount) }} Awaiting Your Review & Approval
+                </h6>
+                <p class="mb-0 text-muted small" style="font-size: 0.78rem;">
+                    Product Managers have submitted new or revised products for live catalog publication.
+                </p>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ route('admin.products.index', ['status' => 'Pending_Approval']) }}" class="btn btn-warning text-dark fw-bold rounded-pill px-3.5 py-1.5 shadow-sm" style="font-size: 0.82rem;">
+                <i class="bi bi-eye me-1"></i> Filter Pending Items ({{ $pendingCount }})
+            </a>
+        </div>
+    </div>
+@endif
+
+{{-- Quick Status Filter Tabs --}}
+<div class="d-flex flex-wrap gap-2 mb-3">
+    <a href="{{ route('admin.products.index') }}" class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-xs {{ !request('status') ? 'btn-dark text-white' : 'btn-outline-secondary bg-white text-dark' }}">
+        All Products <span class="badge {{ !request('status') ? 'bg-white text-dark' : 'bg-secondary text-white' }} ms-1">{{ $totalCount }}</span>
+    </a>
+    <a href="{{ route('admin.products.index', ['status' => 'Pending_Approval']) }}" class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-xs {{ request('status') === 'Pending_Approval' ? 'btn-warning text-dark' : 'btn-outline-warning text-dark bg-white' }}">
+        <i class="bi bi-hourglass-split me-1 text-warning"></i> Pending Approvals 
+        @if($pendingCount > 0)
+            <span class="badge bg-danger text-white ms-1">{{ $pendingCount }}</span>
+        @else
+            <span class="badge bg-light text-muted ms-1">0</span>
+        @endif
+    </a>
+    <a href="{{ route('admin.products.index', ['status' => 'Active']) }}" class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-xs {{ request('status') === 'Active' ? 'btn-success text-white' : 'btn-outline-success text-success bg-white' }}">
+        <i class="bi bi-check-circle me-1"></i> Live & Active <span class="badge {{ request('status') === 'Active' ? 'bg-white text-success' : 'bg-success text-white' }} ms-1">{{ $activeCount }}</span>
+    </a>
+    <a href="{{ route('admin.products.index', ['status' => 'Rejected']) }}" class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-xs {{ request('status') === 'Rejected' ? 'btn-danger text-white' : 'btn-outline-danger text-danger bg-white' }}">
+        <i class="bi bi-x-circle me-1"></i> Rejected <span class="badge {{ request('status') === 'Rejected' ? 'bg-white text-danger' : 'bg-danger text-white' }} ms-1">{{ $rejectedCount }}</span>
+    </a>
+    <a href="{{ route('admin.products.index', ['status' => 'Inactive']) }}" class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-xs {{ request('status') === 'Inactive' ? 'btn-secondary text-white' : 'btn-outline-secondary bg-white text-dark' }}">
+        Inactive <span class="badge {{ request('status') === 'Inactive' ? 'bg-white text-dark' : 'bg-secondary text-white' }} ms-1">{{ $inactiveCount }}</span>
+    </a>
+</div>
 
 {{-- Filters Card --}}
 <div class="card mb-4" style="border-radius: 14px !important;">
@@ -55,6 +153,8 @@
                     <select name="status" class="form-select" style="border-radius: 10px; border-color: #cbd5e1; font-size: 0.85rem;" onchange="this.form.submit()">
                         <option value="">All Statuses</option>
                         <option value="Active" {{ request('status') == 'Active' ? 'selected' : '' }}>Active</option>
+                        <option value="Pending_Approval" {{ request('status') == 'Pending_Approval' ? 'selected' : '' }}>Pending Approval</option>
+                        <option value="Rejected" {{ request('status') == 'Rejected' ? 'selected' : '' }}>Rejected</option>
                         <option value="Inactive" {{ request('status') == 'Inactive' ? 'selected' : '' }}>Inactive</option>
                     </select>
                 </div>
@@ -98,8 +198,8 @@
                     <tr>
                         <th class="ps-4 text-uppercase text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 0.05em;">Product</th>
                         <th class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 0.05em;">Category & Brand</th>
-                        <th class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 0.05em;">Price</th>
-                        <th class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 0.05em;">Status</th>
+                        <th class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 0.05em;">Price & Stock</th>
+                        <th class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 0.05em;">Approval Status</th>
                         <th class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 0.05em;">Badges</th>
                         <th class="pe-4 text-end text-uppercase text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 0.05em;">Actions</th>
                     </tr>
@@ -132,12 +232,33 @@
                         </td>
                         <td>
                             <div class="fw-bold text-dark" style="font-size:0.88rem;">₹{{ number_format($product->price, 2) }}</div>
+                            <div class="small {{ $product->stock <= 5 ? 'text-danger fw-bold' : 'text-muted' }}" style="font-size: 0.72rem;">Stock: {{ $product->stock }}</div>
                         </td>
                         <td>
                             @if($product->status == 'Active')
-                                <span class="badge" style="background:#d1fae5; color:#065f46; border-radius:999px; font-size:0.72rem; padding:0.3em 0.75em;">Active</span>
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1">
+                                    <i class="bi bi-check-circle me-1"></i> Live & Active
+                                </span>
+                            @elseif($product->status == 'Pending_Approval')
+                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill px-2.5 py-1 text-dark">
+                                    <i class="bi bi-hourglass-split me-1 text-warning"></i> Pending Approval
+                                </span>
+                            @elseif($product->status == 'Rejected')
+                                <div>
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2.5 py-1">
+                                        <i class="bi bi-x-circle me-1"></i> Rejected
+                                    </span>
+                                    @if($product->rejection_reason)
+                                        <button type="button" class="btn btn-link btn-sm p-0 d-block text-danger small text-decoration-underline mt-1" 
+                                            onclick="showRejectionReason('{{ addslashes($product->rejection_reason) }}')" style="font-size: 0.7rem;">
+                                            View Reason
+                                        </button>
+                                    @endif
+                                </div>
                             @else
-                                <span class="badge" style="background:#f1f5f9; color:#475569; border-radius:999px; font-size:0.72rem; padding:0.3em 0.75em;">Inactive</span>
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-2.5 py-1">
+                                    Inactive
+                                </span>
                             @endif
                         </td>
                         <td>
@@ -151,16 +272,31 @@
                             </div>
                         </td>
                         <td class="pe-4 text-end">
-                            <div class="btn-group" role="group">
-                                <a href="{{ route('admin.products.show', $product) }}" class="btn btn-sm btn-light text-secondary" style="border: 1px solid #cbd5e1; font-size:0.78rem;" title="View Product">
-                                    <i class="bi bi-eye"></i>
+                            <div class="d-flex align-items-center justify-content-end gap-1.5 flex-nowrap">
+                                @if($product->status === 'Pending_Approval')
+                                    <form action="{{ route('admin.products.approve', $product) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-success rounded-pill px-2.5 py-1 fw-bold shadow-xs d-inline-flex align-items-center gap-1" title="Approve & Publish Live" style="font-size: 0.72rem;">
+                                            <i class="bi bi-check-circle-fill"></i> Approve
+                                        </button>
+                                    </form>
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 shadow-xs d-inline-flex align-items-center gap-1 bg-white" title="Reject with Feedback" 
+                                        onclick="promptRejectProduct('{{ route('admin.products.reject', $product) }}', '{{ addslashes($product->name) }}')" style="font-size: 0.72rem;">
+                                        <i class="bi bi-x-circle-fill"></i> Reject
+                                    </button>
+                                @endif
+
+                                <a href="{{ route('admin.products.show', $product) }}" class="action-btn-circle action-btn-view" title="Inspect & Review">
+                                    <i class="bi bi-eye-fill"></i>
                                 </a>
-                                <a href="{{ route('admin.products.edit', $product) }}" class="btn btn-sm btn-light text-primary" style="border: 1px solid #cbd5e1; font-size:0.78rem;" title="Edit Product">
-                                    <i class="bi bi-pencil"></i>
+                                @if(auth()->user()->isSuperAdmin())
+                                <a href="{{ route('admin.products.edit', $product) }}" class="action-btn-circle action-btn-edit" title="Edit Product">
+                                    <i class="bi bi-pencil-fill"></i>
                                 </a>
-                                <button type="button" class="btn btn-sm btn-light text-danger" style="border: 1px solid #cbd5e1; font-size:0.78rem;" 
+                                @endif
+                                <button type="button" class="action-btn-circle action-btn-delete" 
                                     onclick="confirmDelete({{ $product->id }}, '{{ route('admin.products.destroy', $product) }}', this)" title="Delete Product">
-                                    <i class="bi bi-trash"></i>
+                                    <i class="bi bi-trash3-fill"></i>
                                 </button>
                             </div>
                         </td>
@@ -250,6 +386,60 @@ function confirmDelete(id, deleteUrl, btnElement) {
                 });
             });
         }
+    });
+}
+
+function promptRejectProduct(rejectUrl, productName) {
+    Swal.fire({
+        title: 'Reject Product?',
+        html: `Provide reason for rejecting <b>${productName}</b>:`,
+        input: 'textarea',
+        inputPlaceholder: 'e.g. Please update product description and upload higher quality image...',
+        inputAttributes: {
+            'aria-label': 'Rejection reason',
+            'rows': 3
+        },
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Reject Product',
+        cancelButtonText: 'Cancel',
+        inputValidator: (value) => {
+            if (!value || value.trim().length < 5) {
+                return 'Please enter a valid rejection reason (min 5 characters).';
+            }
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = rejectUrl;
+
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = '_token';
+            csrfInput.value = '{{ csrf_token() }}';
+            form.appendChild(csrfInput);
+
+            const reasonInput = document.createElement('input');
+            reasonInput.type = 'hidden';
+            reasonInput.name = 'rejection_reason';
+            reasonInput.value = result.value;
+            form.appendChild(reasonInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+
+function showRejectionReason(reason) {
+    Swal.fire({
+        title: 'Rejection Feedback',
+        text: reason,
+        icon: 'info',
+        confirmButtonColor: '#3b82f6',
+        confirmButtonText: 'Close'
     });
 }
 </script>

@@ -5,18 +5,22 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\ContactEnquiry;
 use App\Models\Page;
-use App\Mail\ContactEnquiryMail;
-use Illuminate\Support\Facades\Mail;
-use App\Jobs\SendBrevoEmailJob;
 
 class ContactController extends Controller
 {
+    /**
+     * Show the Contact Us page.
+     */
     public function show()
     {
         $page = Page::where('slug', 'contact-us')->where('is_active', true)->first();
         return view('pages.contact', compact('page'));
     }
 
+    /**
+     * Submit contact form directly to Customer Support database.
+     * No external emails are sent.
+     */
     public function submit(Request $request)
     {
         $validated = $request->validate([
@@ -27,21 +31,8 @@ class ContactController extends Controller
             'message' => 'required|string',
         ]);
 
-        $enquiry = ContactEnquiry::create($validated);
-
-        // Send email to admin
-        $adminEmail = config('mail.from.address'); // Or a specific admin email setting
-        
-        $mailable = new ContactEnquiryMail($enquiry);
-        $html = $mailable->render();
-        $text = strip_tags($html);
-        
-        SendBrevoEmailJob::dispatch(
-            $adminEmail,
-            'New Contact Enquiry: ' . $enquiry->subject,
-            $html,
-            $text
-        );
+        // Save enquiry directly to Customer Support portal table (contact_enquiries)
+        ContactEnquiry::create($validated);
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([

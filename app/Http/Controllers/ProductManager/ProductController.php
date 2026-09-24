@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\ProductManager;
 
+use App\Enums\MovementType;
+use App\Enums\StockSource;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ProductRequest;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Models\StockMovement;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -133,12 +136,39 @@ class ProductController extends Controller
     }
 
     /**
+     * Display the specified product details and full audit/stock history.
+     */
+    public function show(Product $product): View
+    {
+        $product->load([
+            'category',
+            'brand',
+            'galleryImages',
+            'reviews' => fn($q) => $q->latest()->take(10),
+            'reviews.user',
+            'stockMovements' => fn($q) => $q->latest()->take(15),
+            'stockMovements.createdBy',
+            'rejectionReasons' => fn($q) => $q->latest(),
+            'rejectionReasons.rejector',
+        ]);
+
+        return view('product-manager.products.show', compact('product'));
+    }
+
+    /**
      * Show the product creation form.
      */
     public function create(): View
     {
         $categories = Category::where('status', 'Active')->orderBy('name')->get();
+        if ($categories->isEmpty()) {
+            $categories = Category::orderBy('name')->get();
+        }
+
         $brands = Brand::where('status', 1)->orderBy('name')->get();
+        if ($brands->isEmpty()) {
+            $brands = Brand::orderBy('name')->get();
+        }
 
         return view('product-manager.products.create', compact('categories', 'brands'));
     }
@@ -176,6 +206,26 @@ class ProductController extends Controller
         $validated['submitted_by'] = Auth::id();
         $validated['featured'] = $request->boolean('featured');
         $validated['trending'] = $request->boolean('trending');
+        $validated['has_options'] = $request->boolean('has_options');
+
+        if ($validated['has_options'] && $request->filled('option_keys') && $request->filled('option_values')) {
+            $keys = $request->input('option_keys', []);
+            $values = $request->input('option_values', []);
+            $stocksMap = [];
+            foreach ($keys as $idx => $keyName) {
+                $trimmedKey = trim($keyName);
+                if ($trimmedKey !== '') {
+                    $stocksMap[$trimmedKey] = max(0, (int) ($values[$idx] ?? 0));
+                }
+            }
+            $validated['option_stocks'] = $stocksMap;
+            if (!empty($stocksMap)) {
+                $validated['stock'] = array_sum($stocksMap);
+            }
+        } elseif (!$validated['has_options']) {
+            $validated['option_stocks'] = null;
+            $validated['option_type'] = null;
+        }
 
         $product = Product::create($validated);
 
@@ -188,6 +238,20 @@ class ProductController extends Controller
                     'image'      => $path,
                 ]);
             }
+        }
+
+        // Record Initial Inventory Stock Movement
+        if ($product->stock > 0) {
+            StockMovement::create([
+                'product_id'    => $product->id,
+                'movement_type' => MovementType::PURCHASE,
+                'source'        => StockSource::PURCHASE,
+                'quantity'      => $product->stock,
+                'stock_before'  => 0,
+                'stock_after'   => $product->stock,
+                'notes'         => 'Initial inventory recorded upon product creation',
+                'created_by'    => Auth::id(),
+            ]);
         }
 
         return redirect()->route('product-manager.products.pending')->with('toast', [
@@ -236,16 +300,42 @@ class ProductController extends Controller
             $validated['main_image'] = $request->file('main_image')->store('products', 'public');
         }
 
-        // Approval workflow: If product was Rejected or Pending, keep/refresh Pending_Approval
-        if ($product->status === 'Rejected' || $product->status === 'Pending_Approval') {
+        // Approval workflow:
+        // If product was Rejected, editing it resolves the rejection and moves it to Pending_Approval.
+        // If product is already Active or Inactive, editing does NOT require admin approval (keeps current status).
+        if ($product->status === 'Rejected') {
             $validated['status'] = 'Pending_Approval';
             $validated['rejection_reason'] = null;
+            $product->rejectionReasons()->where('status', 'active')->update(['status' => 'resolved']);
+        } elseif ($product->status === 'Pending_Approval') {
+            $validated['status'] = 'Pending_Approval';
+        } else {
+            $validated['status'] = $product->status;
         }
-        // If product was Active, update details and preserve Active status to prevent live store disruption
 
         $validated['featured'] = $request->boolean('featured');
         $validated['trending'] = $request->boolean('trending');
         $validated['submitted_by'] = Auth::id();
+        $validated['has_options'] = $request->boolean('has_options');
+
+        if ($validated['has_options'] && $request->filled('option_keys') && $request->filled('option_values')) {
+            $keys = $request->input('option_keys', []);
+            $values = $request->input('option_values', []);
+            $stocksMap = [];
+            foreach ($keys as $idx => $keyName) {
+                $trimmedKey = trim($keyName);
+                if ($trimmedKey !== '') {
+                    $stocksMap[$trimmedKey] = max(0, (int) ($values[$idx] ?? 0));
+                }
+            }
+            $validated['option_stocks'] = $stocksMap;
+            if (!empty($stocksMap)) {
+                $validated['stock'] = array_sum($stocksMap);
+            }
+        } elseif (!$validated['has_options']) {
+            $validated['option_stocks'] = null;
+            $validated['option_type'] = null;
+        }
 
         $product->update($validated);
 

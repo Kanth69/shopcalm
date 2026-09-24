@@ -2,11 +2,16 @@
     <a href="{{ route('home') }}" class="auth-logo d-inline-flex justify-content-center mb-3 text-decoration-none">
         <x-logo height="42" />
     </a>
-    <h2 class="auth-title">Welcome to ShopCalm</h2>
+    <h2 class="auth-title">Welcome to {{ \App\Models\Setting::get('store_name', 'ShopCalm') }}</h2>
     <p class="auth-subtitle">Sign in or create your account</p>
 </div>
 
 <form id="form-initial" class="auth-form" onsubmit="return false;">
+    <div id="initial-alert" class="auth-alert error mb-3" style="display: none;">
+        <i class="bi bi-exclamation-triangle-fill me-2" id="initial-alert-icon"></i>
+        <span id="initial-alert-msg"></span>
+    </div>
+
     <div class="form-group">
         <label for="initial_identifier">Email or Mobile Number</label>
         <input
@@ -37,12 +42,10 @@
         </svg>
     </button>
 
-    <div class="auth-divider">
-        <span>OR</span>
-    </div>
-
-    <a href="{{ route('google.redirect') }}" class="google-btn">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-        <span>Continue with Google</span>
-    </a>
+    <p class="text-center text-muted mt-3 mb-0" style="font-size: 0.76rem; line-height: 1.5;">
+        By continuing, you agree to {{ \App\Models\Setting::get('store_name', 'ShopCalm') }}'s 
+        <a href="{{ route('page.terms') }}" target="_blank" class="text-primary text-decoration-none fw-semibold">Terms & Conditions</a> 
+        and 
+        <a href="{{ route('page.privacy') }}" target="_blank" class="text-primary text-decoration-none fw-semibold">Privacy Policy</a>.
+    </p>
 </form>

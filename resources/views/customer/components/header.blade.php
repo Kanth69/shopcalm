@@ -3,7 +3,7 @@
 @endphp
 
 @if($liveMegaSale)
-<div class="py-2 text-white text-center position-relative overflow-hidden" style="background: linear-gradient(135deg, {{ $liveMegaSale->theme_color ?? '#6366f1' }} 0%, #0f172a 100%); font-size: 0.88rem; z-index: 1050;">
+<div class="py-2 text-white text-center position-relative overflow-hidden" style="background: linear-gradient(135deg, {{ $liveMegaSale->theme_color ?? '#6366f1' }} 0%, #0f172a 100%); font-size: 0.88rem; z-index: 1030;">
     <div class="container d-flex align-items-center justify-content-center flex-wrap gap-2">
         <span class="badge bg-warning text-dark fw-bold text-uppercase px-2.5 py-1 rounded-pill me-1">
             {{ $liveMegaSale->badge_text ?? '🔥 SALE' }}
@@ -58,33 +58,53 @@ document.addEventListener('DOMContentLoaded', function() {
 @endif
 
 <!-- Clean Minimalist Header -->
-<header class="header-main bg-white border-bottom sticky-top py-2">
-    <div class="container-fluid px-3 px-lg-5">
-        <div class="d-flex align-items-center justify-content-between gap-4 py-1">
+<header class="header-main bg-white border-bottom sticky-top py-2" style="z-index: 1040;">
+    <div class="container px-2 px-sm-3 px-md-4">
+        {{-- Main Navigation Row --}}
+        <div class="d-flex align-items-center justify-content-between gap-1 gap-md-4 py-1">
 
             <!-- Left: Menu Trigger + Logo + Nav Links -->
-            <div class="d-flex align-items-center gap-4 flex-shrink-0">
+            <div class="d-flex align-items-center gap-1.5 gap-sm-2 gap-lg-4 flex-shrink-0">
                 <!-- Simple Clean Menu Button -->
-                <button class="btn btn-light border-0 rounded-circle p-2 d-flex align-items-center justify-content-center text-dark menu-trigger-btn" 
-                        type="button" data-bs-toggle="offcanvas" data-bs-target="#siteMenu" aria-controls="siteMenu" title="Open Menu" style="width: 40px; height: 40px;">
+                <button class="btn btn-light border-0 rounded-circle p-0 d-flex align-items-center justify-content-center text-dark menu-trigger-btn" 
+                        type="button" data-bs-toggle="offcanvas" data-bs-target="#siteMenu" aria-controls="siteMenu" title="Open Menu" style="width: 36px; height: 36px;">
                     <i class="bi bi-list fs-4"></i>
                 </button>
 
                 <!-- Brand Logo -->
                 <a href="{{ route('home') }}" class="text-decoration-none d-flex align-items-center flex-shrink-0">
-                    <x-logo height="32" />
+                    <x-logo height="28" />
                 </a>
 
                 <!-- Desktop Primary Links -->
-                <nav class="d-none d-lg-flex align-items-center gap-4 ms-2">
-                    <a href="{{ route('home') }}" class="nav-clean-link {{ request()->routeIs('home') ? 'active text-primary' : 'text-dark' }}">Home</a>
-                    <a href="{{ route('shop') }}" class="nav-clean-link {{ request()->routeIs('shop') ? 'active text-primary' : 'text-dark' }}">Shop</a>
-                    <a href="{{ route('offers.index') }}" class="nav-clean-link {{ request()->routeIs('offers.*') ? 'active text-primary' : 'text-dark' }}">Offers</a>
+                <nav class="d-none d-md-flex align-items-center gap-2.5 gap-lg-4 ms-1 ms-lg-2">
+                    <a href="{{ route('home') }}" class="nav-clean-link {{ request()->routeIs('home') ? 'active text-primary fw-bold' : 'text-dark' }}" style="font-size: 0.88rem;">Home</a>
+                    <a href="{{ route('shop') }}" class="nav-clean-link {{ request()->routeIs('shop') ? 'active text-primary fw-bold' : 'text-dark' }}" style="font-size: 0.88rem;">Shop</a>
+                    <a href="{{ route('categories.index') }}" class="nav-clean-link {{ request()->routeIs('categories.*') ? 'active text-primary fw-bold' : 'text-dark' }}" style="font-size: 0.88rem;">Categories</a>
+                    <a href="{{ route('offers.index') }}" class="nav-clean-link {{ request()->routeIs('offers.*') ? 'active text-primary fw-bold' : 'text-dark' }}" style="font-size: 0.88rem;">Offers</a>
                 </nav>
+
+                @php
+                    $deliveryLocation = app(\App\Services\DeliveryService::class)->getSessionLocation();
+                @endphp
+                <!-- Desktop Delivery Location Selector Pill -->
+                <button type="button" class="btn btn-light bg-transparent border-0 d-none d-md-flex align-items-center text-start p-1.5 rounded-3 header-location-btn flex-shrink-0" 
+                        data-bs-toggle="modal" data-bs-target="#deliveryLocationModal" style="cursor: pointer; gap: 0.5rem !important;" title="Select delivery location">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" 
+                         style="width: 34px; height: 34px; background: rgba(99, 102, 241, 0.1); color: #6366f1;">
+                        <i class="bi bi-geo-alt-fill"></i>
+                    </div>
+                    <div class="d-flex flex-column" style="line-height: 1.15;">
+                        <span class="text-muted small" style="font-size: 0.7rem;">Deliver to</span>
+                        <span class="fw-bold text-dark text-truncate" id="header-delivery-text" style="max-width: 140px; font-size: 0.82rem;">
+                            {{ $deliveryLocation['location_text'] ?? 'Select Pincode' }}
+                        </span>
+                    </div>
+                </button>
             </div>
 
-            <!-- Center: Clean Search Bar -->
-            <div class="flex-grow-1 d-none d-md-block" style="max-width: 460px;">
+            <!-- Center: Desktop Clean Search Bar -->
+            <div class="flex-grow-1 d-none d-md-block mx-2 mx-xl-4" style="max-width: 480px;">
                 <form action="{{ route('shop') }}" method="GET" class="position-relative" id="mainSearchForm" autocomplete="off">
                     <div class="input-group search-input-group">
                         <span class="input-group-text bg-light border-0 ps-3 text-muted">
@@ -95,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             name="q"
                             id="mainSearchInput"
                             class="form-control bg-light border-0 shadow-none ps-2 py-2"
-                            placeholder="Search products, brands…"
+                            placeholder="Search products, brands, categories…"
                             value="{{ request('q') }}"
                             style="font-size: 0.88rem;"
                             autocomplete="off"
@@ -109,13 +129,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 </form>
             </div>
 
-            <!-- Right Actions: Wishlist + Cart + Profile Avatar (with generous gaps) -->
-            <div class="d-flex align-items-center gap-3 gap-lg-4 flex-shrink-0 ms-2">
+            <!-- Right Actions: Wishlist + Cart + Profile Avatar -->
+            <div class="d-flex align-items-center gap-1.5 gap-md-3 gap-lg-4 flex-shrink-0">
 
-                <!-- Wishlist Icon -->
+                <!-- Mobile Location Quick Pill -->
+                <button type="button" class="btn btn-sm btn-light border-0 d-flex d-md-none align-items-center gap-1 px-2 py-1 rounded-pill text-primary fw-semibold flex-shrink-0" 
+                        data-bs-toggle="modal" data-bs-target="#deliveryLocationModal" style="font-size: 0.72rem; background: rgba(99, 102, 241, 0.08);">
+                    <i class="bi bi-geo-alt-fill text-primary" style="font-size: 0.76rem;"></i>
+                    <span class="text-truncate" style="max-width: 72px;">{{ $deliveryLocation['location_text'] ?? 'Pincode' }}</span>
+                </button>
+
+                <!-- Desktop Wishlist Icon -->
                 @auth('customer')
                     <a href="{{ route('wishlist.index') }}"
-                       class="text-dark text-decoration-none position-relative p-2 header-icon-link d-flex align-items-center justify-content-center"
+                       class="text-dark text-decoration-none position-relative p-2 header-icon-link d-none d-md-flex align-items-center justify-content-center"
                        title="Wishlist">
                         <i class="bi bi-heart fs-5"></i>
                         @if(isset($wishlistedProductIds) && count($wishlistedProductIds) > 0)
@@ -126,9 +153,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     </a>
                 @endauth
 
-                <!-- Cart Icon -->
+                <!-- Desktop Cart Icon -->
                 <a href="{{ route('cart.index') }}"
-                   class="text-dark text-decoration-none position-relative p-2 header-icon-link d-flex align-items-center justify-content-center"
+                   class="text-dark text-decoration-none position-relative p-2 header-icon-link d-none d-md-flex align-items-center justify-content-center"
                    title="Shopping Cart">
                     <i class="bi bi-bag fs-5"></i>
                     <span id="cart-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary cart-badge-count" 
@@ -137,20 +164,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     </span>
                 </a>
 
-                <!-- Profile Avatar Dropdown / Sign In Button (with generous left separation) -->
-                <div class="ps-3 border-start border-light-subtle">
+                <!-- Profile Avatar Dropdown / Sign In Button -->
+                <div class="ps-0 ps-md-3 border-start-0 border-md-start border-light-subtle flex-shrink-0">
                     @auth('customer')
                         @php
                             $userObj = Auth::guard('customer')->user();
                             $firstInitial = strtoupper(substr($userObj->name ?? 'C', 0, 1));
                         @endphp
                         <div class="dropdown">
-                            <a href="#" class="d-flex align-items-center gap-2 text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false" title="Account">
-                                <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm avatar-circle" 
-                                     style="width: 38px; height: 38px; background: #0d6efd; font-size: 0.95rem;">
+                            <a href="#" class="d-flex align-items-center gap-1 text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false" title="Account">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-xs avatar-circle flex-shrink-0" 
+                                     style="width: 34px; height: 34px; background: #0d6efd; font-size: 0.88rem;">
                                     {{ $firstInitial }}
                                 </div>
-                                <i class="bi bi-chevron-down text-muted small d-none d-sm-inline" style="font-size: 0.7rem;"></i>
+                                <i class="bi bi-chevron-down text-muted small d-none d-sm-inline" style="font-size: 0.68rem;"></i>
                             </a>
                             <div class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-2 mt-2" style="min-width: 220px;">
                                 <div class="px-3 py-2 border-bottom mb-2">
@@ -176,8 +203,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
                     @else
-                        <a href="{{ route('login') }}" class="btn btn-outline-primary rounded-pill px-3.5 py-1.5 fw-semibold" style="font-size: 0.85rem;">
-                            Sign In
+                        <a href="{{ route('login') }}" class="btn btn-outline-primary rounded-pill px-2.5 px-sm-3.5 py-1 fw-semibold d-flex align-items-center gap-1.5" style="font-size: 0.82rem;">
+                            <i class="bi bi-person"></i> <span class="d-none d-sm-inline">Sign In</span>
                         </a>
                     @endauth
                 </div>
@@ -185,14 +212,14 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         </div>
 
-        <!-- Mobile Search Bar -->
-        <div class="d-block d-md-none mt-2 pt-1 pb-1">
+        <!-- Mobile Search Bar (Clean Full Width) -->
+        <div class="d-block d-md-none pt-1.5 pb-0.5">
             <form action="{{ route('shop') }}" method="GET" class="position-relative">
-                <div class="input-group search-input-group">
-                    <span class="input-group-text bg-light border-0 ps-3 text-muted">
-                        <i class="bi bi-search"></i>
+                <div class="input-group rounded-pill overflow-hidden border shadow-xs" style="background: #f8fafc; border-color: #e2e8f0 !important;">
+                    <span class="input-group-text bg-transparent border-0 ps-3 text-muted">
+                        <i class="bi bi-search" style="font-size: 0.85rem;"></i>
                     </span>
-                    <input type="text" name="q" class="form-control bg-light border-0 shadow-none ps-2 py-1.5" placeholder="Search products, brands…" value="{{ request('q') }}" style="font-size: 0.88rem;">
+                    <input type="text" name="q" class="form-control bg-transparent border-0 shadow-none ps-1 py-2" placeholder="Search for products, brands..." value="{{ request('q') }}" style="font-size: 0.86rem;">
                 </div>
             </form>
         </div>
@@ -200,7 +227,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </header>
 
 <!-- Minimalist Clean Slide-Out Menu Drawer -->
-<div class="offcanvas offcanvas-start border-0 shadow" tabindex="-1" id="siteMenu" aria-labelledby="siteMenuLabel" style="width: 320px;">
+<div class="offcanvas offcanvas-start border-0 shadow" tabindex="-1" id="siteMenu" aria-labelledby="siteMenuLabel" style="width: 320px; z-index: 1095 !important;">
     <!-- Drawer Header -->
     <div class="offcanvas-header px-4 py-3.5 border-bottom d-flex align-items-center justify-content-between">
         <x-logo height="28" />
@@ -494,4 +521,204 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.key === 'Escape') { box.classList.add('d-none'); this.blur(); }
     });
 })();
+</script>
+
+<!-- Delivery Location Selector Modal -->
+<div class="modal fade" id="deliveryLocationModal" tabindex="-1" aria-labelledby="deliveryLocationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header border-0 pb-0 pt-4 px-4 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center" style="gap: 0.85rem !important;">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs" 
+                         style="width: 44px; height: 44px; background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); color: #6366f1; font-size: 1.2rem;">
+                        <i class="bi bi-geo-alt-fill"></i>
+                    </div>
+                    <div>
+                        <h6 class="modal-title fw-bold text-dark mb-0.5" id="deliveryLocationModalLabel" style="font-size: 1.05rem;">Choose Delivery Location</h6>
+                        <small class="text-muted" style="font-size: 0.78rem;">Check delivery speed & payment availability</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <!-- Pincode Input Box -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-dark mb-1.5" style="font-size: 0.82rem;">Enter a 6-digit Indian PIN code</label>
+                    <div class="input-group shadow-xs rounded-pill overflow-hidden border p-1" style="background: #f8fafc; border-color: #cbd5e1 !important;">
+                        <span class="input-group-text bg-transparent border-0 ps-3 pe-2 text-primary" style="font-size: 1.1rem;">
+                            <i class="bi bi-geo-alt-fill"></i>
+                        </span>
+                        <input type="text" id="modalPincodeInput" maxlength="6" 
+                               class="form-control bg-transparent border-0 font-monospace fw-bold ps-1 text-dark shadow-none" 
+                               placeholder="e.g. 500081" value="{{ $deliveryLocation['pincode'] ?? '' }}"
+                               style="font-size: 0.95rem; letter-spacing: 0.08em;">
+                        <button type="button" class="btn btn-primary rounded-pill px-4 fw-semibold shadow-xs d-inline-flex align-items-center" 
+                                style="gap: 0.4rem !important; font-size: 0.88rem;" id="modalApplyPincodeBtn">
+                            <span>Apply</span> <i class="bi bi-arrow-right-short fs-5"></i>
+                        </button>
+                    </div>
+                    <div id="modalPincodeFeedback" class="mt-2.5 small d-none"></div>
+                </div>
+
+                @auth('customer')
+                <!-- Saved Customer Addresses -->
+                <div class="mt-4 pt-3 border-top" id="modalSavedAddressesContainer">
+                    <div class="d-flex align-items-center justify-content-between mb-2.5">
+                        <span class="small fw-bold text-dark text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Or pick from saved addresses</span>
+                        <a href="{{ route('profile.edit') }}" class="small text-primary text-decoration-none fw-semibold" style="font-size: 0.78rem;">
+                            Manage Addresses <i class="bi bi-arrow-right-short"></i>
+                        </a>
+                    </div>
+                    <div class="d-flex flex-column gap-2.5" id="modalSavedAddressesList">
+                        <div class="text-center py-3 text-muted small">
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span> Loading saved addresses...
+                        </div>
+                    </div>
+                </div>
+                @endauth
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .address-picker-card:hover {
+        background-color: #f8fafc !important;
+        border-color: #6366f1 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08) !important;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const applyBtn = document.getElementById('modalApplyPincodeBtn');
+    const input = document.getElementById('modalPincodeInput');
+    const feedback = document.getElementById('modalPincodeFeedback');
+    const headerText = document.getElementById('header-delivery-text');
+
+    function checkAndSaveLocation(pincode) {
+        if (!pincode || pincode.length !== 6) {
+            feedback.className = 'mt-2.5 p-2.5 bg-danger bg-opacity-10 text-danger rounded-3 border border-danger border-opacity-25 small fw-semibold';
+            feedback.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i> Please enter a valid 6-digit PIN code.';
+            feedback.classList.remove('d-none');
+            return;
+        }
+
+        applyBtn.disabled = true;
+        applyBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+
+        fetch('{{ route("delivery.save") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ pincode: pincode })
+        })
+        .then(r => r.json())
+        .then(data => {
+            applyBtn.disabled = false;
+            applyBtn.innerHTML = '<span>Apply</span> <i class="bi bi-arrow-right-short fs-5"></i>';
+
+            if (data.success && data.location && data.location.is_serviceable) {
+                feedback.className = 'mt-2.5 p-2.5 bg-success bg-opacity-10 text-success rounded-3 border border-success border-opacity-25 small fw-semibold';
+                feedback.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> Delivering to <strong>${data.location.location_text}</strong> • ${data.location.estimated_delivery}`;
+                feedback.classList.remove('d-none');
+
+                if (headerText) {
+                    headerText.textContent = data.location.location_text;
+                }
+
+                // If product details page has delivery widget, update it too
+                if (typeof window.onDeliveryPincodeUpdated === 'function') {
+                    window.onDeliveryPincodeUpdated(data.location);
+                }
+
+                setTimeout(() => {
+                    const modalEl = document.getElementById('deliveryLocationModal');
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                }, 1000);
+            } else {
+                feedback.className = 'mt-2.5 p-2.5 bg-danger bg-opacity-10 text-danger rounded-3 border border-danger border-opacity-25 small fw-semibold';
+                feedback.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i> ${data.message || 'Location not serviceable.'}`;
+                feedback.classList.remove('d-none');
+            }
+        })
+        .catch(err => {
+            applyBtn.disabled = false;
+            applyBtn.innerHTML = '<span>Apply</span> <i class="bi bi-arrow-right-short fs-5"></i>';
+            feedback.className = 'mt-2.5 p-2.5 bg-danger bg-opacity-10 text-danger rounded-3 border border-danger border-opacity-25 small fw-semibold';
+            feedback.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i> Network error. Please try again.';
+            feedback.classList.remove('d-none');
+        });
+    }
+
+    if (applyBtn && input) {
+        applyBtn.addEventListener('click', () => checkAndSaveLocation(input.value.trim()));
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                checkAndSaveLocation(input.value.trim());
+            }
+        });
+    }
+
+    // Load saved addresses for logged-in customer when modal opens
+    const modalEl = document.getElementById('deliveryLocationModal');
+    if (modalEl) {
+        modalEl.addEventListener('show.bs.modal', function () {
+            const list = document.getElementById('modalSavedAddressesList');
+            if (!list) return;
+
+            fetch('{{ route("delivery.addresses") }}', {
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.addresses && data.addresses.length > 0) {
+                    list.innerHTML = data.addresses.map(addr => `
+                        <div class="p-3 rounded-4 border bg-white shadow-xs d-flex align-items-center justify-content-between address-picker-card" 
+                             style="cursor: pointer; transition: all 0.2s ease; border-color: #e2e8f0 !important; gap: 0.75rem !important;" 
+                             onclick="selectSavedAddress('${addr.zip}')">
+                            <div class="d-flex align-items-start" style="gap: 0.75rem !important; min-width: 0;">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 mt-0.5" 
+                                     style="width: 34px; height: 34px; background: #ede9fe; color: #6366f1;">
+                                    <i class="bi bi-house-door-fill" style="font-size: 0.95rem;"></i>
+                                </div>
+                                <div class="overflow-hidden">
+                                    <div class="fw-bold text-dark small mb-0.5 text-truncate" style="font-size: 0.86rem;">
+                                        ${addr.name} • <span class="font-monospace text-primary fw-bold">${addr.zip}</span>
+                                    </div>
+                                    <div class="text-muted small text-truncate" style="font-size: 0.76rem;">
+                                        ${addr.address ? addr.address + ', ' : ''}${addr.city}, ${addr.state}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex-shrink-0">
+                                ${addr.is_serviceable 
+                                    ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center" style="gap: 0.3rem !important; font-size: 0.72rem;"><i class="bi bi-check-circle-fill"></i> Available</span>'
+                                    : '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center" style="gap: 0.3rem !important; font-size: 0.72rem;"><i class="bi bi-x-circle-fill"></i> Unavailable</span>'
+                                }
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    list.innerHTML = '<div class="text-center py-3 text-muted small">No saved addresses yet.</div>';
+                }
+            })
+            .catch(() => {
+                list.innerHTML = '<div class="text-center py-3 text-muted small">Could not load addresses.</div>';
+            });
+        });
+    }
+
+    window.selectSavedAddress = function (zip) {
+        if (input) input.value = zip;
+        checkAndSaveLocation(zip);
+    };
+});
 </script>

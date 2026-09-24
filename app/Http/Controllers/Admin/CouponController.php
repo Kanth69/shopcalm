@@ -15,7 +15,7 @@ class CouponController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Coupon::with('creator');
+        $query = Coupon::with(['creator', 'targets']);
 
         if ($request->filled('search')) {
             $query->where('code', 'like', "%{$request->search}%")
@@ -46,48 +46,85 @@ class CouponController extends Controller
 
     public function store(CouponRequest $request)
     {
-        $coupon = Coupon::create(array_merge($request->validated(), [
+        $data = $request->validated();
+        $appType = $request->applicable_type;
+
+        // Auto fallback applicable_id
+        if ($appType === 'CATEGORY' && $request->filled('categories')) {
+            $data['applicable_id'] = $request->categories[0] ?? null;
+        } elseif ($appType === 'BRAND' && $request->filled('brands')) {
+            $data['applicable_id'] = $request->brands[0] ?? null;
+        } elseif ($appType === 'PRODUCT' && $request->filled('products')) {
+            $data['applicable_id'] = $request->products[0] ?? null;
+        }
+
+        $coupon = Coupon::create(array_merge($data, [
             'created_by' => auth()->id()
         ]));
 
-        if ($request->filled('categories')) {
-            $coupon->categories()->sync((array) $request->categories);
-        }
-        if ($request->filled('brands')) {
-            $coupon->brands()->sync((array) $request->brands);
-        }
-        if ($request->filled('products')) {
-            $coupon->products()->sync((array) $request->products);
-        }
+        $this->syncCouponTargets($coupon, $appType, $request);
 
         return redirect()->route('admin.coupons.index')->with('toast', ['type' => 'success', 'title' => 'Coupon Created', 'message' => 'Coupon added successfully.']);
     }
 
     public function edit(Coupon $coupon)
     {
-        $categories = Category::where('status', 'Active')->get();
-        $brands = Brand::where('status', 1)->get();
-        $products = Product::where('status', 'Active')->get();
+        $coupon->load(['targets']);
+        $categories = Category::where('status', 'Active')->orderBy('name')->get();
+        $brands = Brand::where('status', 1)->orderBy('name')->get();
+        $products = Product::where('status', 'Active')->orderBy('name')->get();
         return view('admin.coupons.edit', compact('coupon', 'categories', 'brands', 'products'));
     }
 
     public function update(CouponRequest $request, Coupon $coupon)
     {
-        $coupon->update(array_merge($request->validated(), [
+        $data = $request->validated();
+        $appType = $request->applicable_type;
+
+        // Auto fallback applicable_id
+        if ($appType === 'CATEGORY' && $request->filled('categories')) {
+            $data['applicable_id'] = $request->categories[0] ?? null;
+        } elseif ($appType === 'BRAND' && $request->filled('brands')) {
+            $data['applicable_id'] = $request->brands[0] ?? null;
+        } elseif ($appType === 'PRODUCT' && $request->filled('products')) {
+            $data['applicable_id'] = $request->products[0] ?? null;
+        }
+
+        $coupon->update(array_merge($data, [
             'updated_by' => auth()->id()
         ]));
 
-        if ($request->has('categories')) {
-            $coupon->categories()->sync((array) $request->categories);
-        }
-        if ($request->has('brands')) {
-            $coupon->brands()->sync((array) $request->brands);
-        }
-        if ($request->has('products')) {
-            $coupon->products()->sync((array) $request->products);
-        }
+        $this->syncCouponTargets($coupon, $appType, $request);
 
         return redirect()->route('admin.coupons.index')->with('toast', ['type' => 'success', 'title' => 'Coupon Updated', 'message' => 'Coupon updated successfully.']);
+    }
+
+    private function syncCouponTargets(Coupon $coupon, string $appType, Request $request): void
+    {
+        $coupon->targets()->delete();
+
+        if ($appType === 'CATEGORY') {
+            $ids = $request->filled('categories') ? (array) $request->categories : ($request->applicable_id ? [$request->applicable_id] : []);
+            foreach ($ids as $id) {
+                if ($id) {
+                    $coupon->targets()->create(['target_type' => 'category', 'target_id' => $id]);
+                }
+            }
+        } elseif ($appType === 'BRAND') {
+            $ids = $request->filled('brands') ? (array) $request->brands : ($request->applicable_id ? [$request->applicable_id] : []);
+            foreach ($ids as $id) {
+                if ($id) {
+                    $coupon->targets()->create(['target_type' => 'brand', 'target_id' => $id]);
+                }
+            }
+        } elseif ($appType === 'PRODUCT') {
+            $ids = $request->filled('products') ? (array) $request->products : ($request->applicable_id ? [$request->applicable_id] : []);
+            foreach ($ids as $id) {
+                if ($id) {
+                    $coupon->targets()->create(['target_type' => 'product', 'target_id' => $id]);
+                }
+            }
+        }
     }
 
     public function destroy(Request $request, Coupon $coupon)

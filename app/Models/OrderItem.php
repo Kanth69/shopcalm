@@ -19,6 +19,7 @@ class OrderItem extends Model
         'unit_price',
         'quantity',
         'total_price',
+        'selected_option',
     ];
 
     public function order(): BelongsTo
@@ -29,5 +30,27 @@ class OrderItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class)->withTrashed();
+    }
+
+    public function getCostPriceAttribute(): float
+    {
+        return (float) ($this->product?->cost_price ?? 0);
+    }
+
+    public function getTotalCostAttribute(): float
+    {
+        return (float) ($this->cost_price * $this->quantity);
+    }
+
+    public function getProfitAttribute(): float
+    {
+        return (float) ($this->total_price - $this->total_cost);
+    }
+
+    public function getProfitMarginAttribute(): float
+    {
+        return $this->total_price > 0 
+            ? round(($this->profit / $this->total_price) * 100, 1) 
+            : 0.0;
     }
 }

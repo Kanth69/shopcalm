@@ -1,6 +1,8 @@
-@extends('layouts.customer')
+@php
+    $storeName = \App\Models\Setting::get('store_name', 'ShopCalm');
+@endphp
 
-@section('title', 'Complete Your Profile - Shopcalm')
+@section('title', 'Complete Your Profile - ' . $storeName)
 
 @section('content')
 <div class="container my-5">
@@ -8,7 +10,7 @@
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm overflow-hidden">
                 <div class="card-header bg-primary text-white py-4 text-center">
-                    <h2 class="h4 mb-1 fw-bold">Welcome to Shopcalm!</h2>
+                    <h2 class="h4 mb-1 fw-bold">Welcome to {{ $storeName }}!</h2>
                     <p class="mb-0 opacity-75">Let's personalize your shopping experience. All fields are optional.</p>
                 </div>
                 <div class="card-body p-4 p-md-5">

@@ -19,6 +19,15 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function handleFilterChange(form) {
+        // Auto-close offcanvas drawer if open
+        const offcanvasEl = document.getElementById('offcanvasFilters');
+        if (offcanvasEl && typeof bootstrap !== 'undefined' && bootstrap.Offcanvas) {
+            const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
+            if (bsOffcanvas) {
+                bsOffcanvas.hide();
+            }
+        }
+
         const formData = new FormData(form);
         if (sortSelect) {
             formData.set('sort', sortSelect.value);
@@ -83,9 +92,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.body.addEventListener('click', function(e) {
         // Clear all filters from SIDEBAR (not chips)
-        if (e.target.matches('.clear-filters-btn')) {
-            const form = e.target.closest('.filter-form');
+        if (e.target.matches('.clear-filters-btn') || e.target.closest('.clear-filters-btn')) {
+            const form = e.target.closest('.filter-form') || document.querySelector('.filter-form');
             if (form) {
+                // Collapse all accordion sections
+                document.querySelectorAll('.filter-form .collapse.show').forEach(coll => {
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Collapse) {
+                        const bsColl = bootstrap.Collapse.getInstance(coll);
+                        if (bsColl) bsColl.hide();
+                        else coll.classList.remove('show');
+                    } else {
+                        coll.classList.remove('show');
+                    }
+                });
+                document.querySelectorAll('.filter-accordion-header').forEach(h => h.setAttribute('aria-expanded', 'false'));
+
+                // Close offcanvas drawer
+                const offcanvasEl = document.getElementById('offcanvasFilters');
+                if (offcanvasEl && typeof bootstrap !== 'undefined' && bootstrap.Offcanvas) {
+                    const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
+                    if (bsOffcanvas) bsOffcanvas.hide();
+                }
+
                 const defaultUrl = window.location.pathname + (sortSelect ? `?sort=${sortSelect.value}` : '');
                 syncFormsWithUrl(defaultUrl);
                 window.history.pushState({ path: defaultUrl }, '', defaultUrl);
@@ -111,6 +139,46 @@ document.addEventListener('DOMContentLoaded', function () {
                 window.history.pushState({ path: url }, '', url);
                 fetchProducts(url);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        // Custom Sort Dropdown Option Selection
+        const sortItem = e.target.closest('.sort-dropdown-item');
+        if (sortItem) {
+            e.preventDefault();
+            const sortVal = sortItem.dataset.value;
+            const targetSelect = document.getElementById('shopSortSelect') || document.querySelector('.filter-trigger[name="sort"]');
+            
+            // Update active states
+            document.querySelectorAll('.sort-dropdown-item').forEach(el => {
+                el.classList.remove('active', 'bg-primary', 'text-white');
+                el.classList.add('text-dark');
+                const chk = el.querySelector('.bi-check-lg');
+                if (chk) chk.remove();
+            });
+            sortItem.classList.add('active', 'bg-primary', 'text-white');
+            sortItem.classList.remove('text-dark');
+            if (!sortItem.querySelector('.bi-check-lg')) {
+                const chk = document.createElement('i');
+                chk.className = 'bi bi-check-lg';
+                sortItem.appendChild(chk);
+            }
+
+            // Update button label
+            const labelMap = {
+                'latest': '✨ Latest',
+                'price_asc': '💰 Low to High',
+                'price_desc': '💎 High to Low',
+                'rating_high': '⭐ Top Rated'
+            };
+            const labelEl = document.getElementById('currentSortText');
+            if (labelEl) {
+                labelEl.textContent = labelMap[sortVal] || '✨ Latest';
+            }
+
+            if (targetSelect) {
+                targetSelect.value = sortVal;
+                targetSelect.dispatchEvent(new Event('change', { bubbles: true }));
             }
         }
     });
@@ -153,6 +221,33 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function updateFilterCountBadge(url) {
+        try {
+            const urlObj = new URL(url, window.location.origin);
+            const params = urlObj.searchParams;
+            let count = 0;
+            count += params.getAll('category[]').length;
+            count += params.getAll('category').length;
+            count += params.getAll('brand[]').length;
+            count += params.getAll('brand').length;
+            if (params.get('min_price') || params.get('max_price')) count++;
+            if (params.get('only_discounted')) count++;
+            if (params.get('featured')) count++;
+
+            const badge = document.getElementById('filter-count-badge');
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        } catch (e) {
+            console.error('Error updating filter badge:', e);
+        }
+    }
+
     async function fetchProducts(url) {
         setButtonsLoading(true);
         productContainer.classList.add('is-loading');
@@ -163,10 +258,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
             productGrid.innerHTML = data.product_grid_html;
             paginationContainer.innerHTML = data.pagination_html;
-            productCountText.innerText = data.product_count;
-            if (activeFiltersContainer && data.active_filters_html) {
+            if (productCountText) {
+                productCountText.innerText = data.product_count;
+            }
+            if (activeFiltersContainer && data.active_filters_html !== undefined) {
                 activeFiltersContainer.innerHTML = data.active_filters_html;
             }
+            updateFilterCountBadge(url);
 
         } catch (error) {
             console.error('Error fetching products:', error);

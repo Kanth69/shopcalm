@@ -19,7 +19,8 @@ class AccountController extends Controller
         $activeCount    = $user->orders()->whereNotIn('status', ['delivered', 'cancelled'])->count();
 
         $recommendedProducts = \Illuminate\Support\Facades\Cache::remember('recommended_products', 600, function () {
-            return \App\Models\Product::with(['category', 'brand'])->where('status', 'Active')->inRandomOrder()->take(4)->get();
+            $products = \App\Models\Product::with(['category', 'brand'])->where('status', 'Active')->inRandomOrder()->take(4)->get();
+            return app(\App\Services\OfferService::class)->applyOfferDiscountsToProducts($products);
         });
 
         return view('customer.account.orders', compact('orders', 'recommendedProducts', 'totalCount', 'deliveredCount', 'activeCount'));
@@ -31,13 +32,30 @@ class AccountController extends Controller
             abort(404);
         }
 
-        $order->load(['items.product.category', 'items.product.brand', 'coupon']);
+        $order->load(['items.product.category', 'items.product.brand', 'coupon', 'feedback']);
 
         $recommendedProducts = \Illuminate\Support\Facades\Cache::remember('recommended_products', 600, function () {
-            return \App\Models\Product::with(['category', 'brand'])->where('status', 'Active')->inRandomOrder()->take(4)->get();
+            $products = \App\Models\Product::with(['category', 'brand'])->where('status', 'Active')->inRandomOrder()->take(4)->get();
+            return app(\App\Services\OfferService::class)->applyOfferDiscountsToProducts($products);
         });
 
         return view('customer.account.order_details', compact('order', 'recommendedProducts'));
+    }
+
+    public function invoice(Order $order)
+    {
+        if (Auth::check() && $order->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized access to this order invoice.');
+        }
+
+        $order->load(['user', 'items.product', 'coupon']);
+        return view('order-manager.orders.invoice', compact('order'));
+    }
+
+    public function publicInvoice(Order $order)
+    {
+        $order->load(['user', 'items.product', 'coupon']);
+        return view('order-manager.orders.invoice', compact('order'));
     }
 
     public function reviews()

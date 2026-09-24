@@ -55,27 +55,81 @@
 <div class="row g-3 mb-4">
     @php
         $secondaries = [
-            ['label' => 'Pending',     'value' => $stats['pending_orders'],      'color' => '#f59e0b', 'bg' => '#fffbeb'],
-            ['label' => 'Delivered',   'value' => $stats['delivered_orders'],    'color' => '#10b981', 'bg' => '#f0fdf4'],
-            ['label' => 'Cancelled',   'value' => $stats['cancelled_orders'],    'color' => '#ef4444', 'bg' => '#fef2f2'],
-            ['label' => 'Low Stock',   'value' => $stats['low_stock_products'],  'color' => '#f97316', 'bg' => '#fff7ed'],
-            ['label' => 'Out of Stock','value' => $stats['out_of_stock_products'],'color' => '#dc2626','bg' => '#fee2e2'],
-            ['label' => 'Pending Reviews','value' => $stats['pending_reviews'],  'color' => '#8b5cf6', 'bg' => '#ede9fe'],
+            ['label' => 'Pending Orders',     'value' => $stats['pending_orders'],      'color' => '#f59e0b', 'bg' => '#fffbeb', 'link' => route('admin.orders.index', ['status' => 'pending'])],
+            ['label' => 'Delivered Orders',   'value' => $stats['delivered_orders'],    'color' => '#10b981', 'bg' => '#f0fdf4', 'link' => route('admin.orders.index', ['status' => 'delivered'])],
+            ['label' => 'Cancelled Orders',   'value' => $stats['cancelled_orders'],    'color' => '#ef4444', 'bg' => '#fef2f2', 'link' => route('admin.orders.index', ['status' => 'cancelled'])],
+            ['label' => 'Pending Approvals',  'value' => $stats['pending_products'] ?? 0, 'color' => '#d97706', 'bg' => '#fef3c7', 'link' => route('admin.products.index', ['status' => 'Pending_Approval'])],
+            ['label' => 'Low Stock',          'value' => $stats['low_stock_products'],  'color' => '#f97316', 'bg' => '#fff7ed', 'link' => route('admin.stock.dashboard')],
+            ['label' => 'Pending Reviews',    'value' => $stats['pending_reviews'],    'color' => '#8b5cf6', 'bg' => '#ede9fe', 'link' => route('admin.reviews.index')],
         ];
     @endphp
     @foreach($secondaries as $s)
     <div class="col-6 col-md-4 col-lg-2">
-        <div class="card text-center" style="border-radius:12px !important;">
-            <div class="card-body py-3 px-2">
-                <div class="mx-auto mb-2" style="width:36px;height:36px;border-radius:10px;background:{{ $s['bg'] }};display:flex;align-items:center;justify-content:center;">
-                    <span style="font-size:1.1rem;font-weight:700;color:{{ $s['color'] }};">{{ number_format($s['value']) }}</span>
+        <a href="{{ $s['link'] }}" class="text-decoration-none">
+            <div class="card text-center h-100 transition-all hover-shadow" style="border-radius:12px !important; cursor:pointer;">
+                <div class="card-body py-3 px-2">
+                    <div class="mx-auto mb-2" style="width:36px;height:36px;border-radius:10px;background:{{ $s['bg'] }};display:flex;align-items:center;justify-content:center;">
+                        <span style="font-size:1.1rem;font-weight:700;color:{{ $s['color'] }};">{{ number_format($s['value']) }}</span>
+                    </div>
+                    <p class="mb-0 text-muted" style="font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">{{ $s['label'] }}</p>
                 </div>
-                <p class="mb-0 text-muted" style="font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">{{ $s['label'] }}</p>
             </div>
-        </div>
+        </a>
     </div>
     @endforeach
 </div>
+
+{{-- Pending Product Approvals Queue Card --}}
+@if(($stats['pending_products'] ?? 0) > 0)
+<div class="card mb-4 border-0 shadow-sm rounded-4 overflow-hidden" style="background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%); border: 1px solid #fde68a !important;">
+    <div class="card-header bg-white bg-opacity-75 py-3 px-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-warning text-dark rounded-pill px-2.5 py-1 fw-bold">
+                <i class="bi bi-hourglass-split me-1"></i> Action Needed
+            </span>
+            <h6 class="mb-0 fw-bold text-dark fs-6">Pending Product Approvals ({{ $stats['pending_products'] }})</h6>
+        </div>
+        <a href="{{ route('admin.products.index', ['status' => 'Pending_Approval']) }}" class="btn btn-sm btn-outline-warning text-dark fw-bold rounded-pill px-3">
+            View All Pending Queue →
+        </a>
+    </div>
+    <div class="card-body p-3">
+        <div class="row g-3">
+            @foreach($pendingProducts as $p)
+                <div class="col-md-6 col-xl-4">
+                    <div class="p-3 bg-white rounded-3 border shadow-xs d-flex align-items-center justify-content-between gap-3 h-100">
+                        <div class="d-flex align-items-center gap-2.5 overflow-hidden">
+                            @if($p->main_image)
+                                <img src="{{ asset('storage/' . $p->main_image) }}" class="rounded-2 border flex-shrink-0" style="width: 44px; height: 44px; object-fit: cover;">
+                            @else
+                                <div class="rounded-2 bg-light d-flex align-items-center justify-content-center text-muted border flex-shrink-0" style="width: 44px; height: 44px;">
+                                    <i class="bi bi-box-seam fs-5"></i>
+                                </div>
+                            @endif
+                            <div class="overflow-hidden">
+                                <a href="{{ route('admin.products.show', $p) }}" class="fw-bold text-dark text-decoration-none small text-truncate d-block mb-0.5">
+                                    {{ $p->name }}
+                                </a>
+                                <div class="text-muted" style="font-size: 0.72rem;">
+                                    ₹{{ number_format($p->price, 2) }} &bull; <span class="text-primary">{{ $p->category?->name ?? 'Category' }}</span>
+                                </div>
+                                <div class="text-muted" style="font-size: 0.68rem;">
+                                    By: {{ $p->submitter->name ?? 'Product Manager' }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-column gap-1 flex-shrink-0">
+                            <a href="{{ route('admin.products.show', $p) }}" class="btn btn-sm btn-primary rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
+                                <i class="bi bi-check2-circle me-1"></i>Review
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+</div>
+@endif
 
 {{-- Charts Row --}}
 <div class="row g-4 mb-4">

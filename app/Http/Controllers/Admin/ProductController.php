@@ -16,7 +16,7 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'brand']);
+        $query = Product::with(['category', 'brand', 'latestRejectionReason']);
 
         // Search
         if ($request->filled('search')) {
@@ -124,6 +124,9 @@ class ProductController extends Controller
 
     public function create()
     {
+        if (!auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized. Only Super Admin can create products directly.');
+        }
         $categories = Category::where('status', 'Active')->orderBy('name')->get();
         $brands = Brand::where('status', 1)->orderBy('name')->get();
         return view('admin.products.create', compact('categories', 'brands'));
@@ -131,6 +134,9 @@ class ProductController extends Controller
 
     public function store(ProductRequest $request)
     {
+        if (!auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized. Only Super Admin can create products directly.');
+        }
         $validated = $request->validated();
         $validated['slug'] = $validated['slug'] ?: Str::slug($validated['name']);
 
@@ -148,6 +154,26 @@ class ProductController extends Controller
 
         $validated['featured'] = $request->has('featured');
         $validated['trending'] = $request->has('trending');
+        $validated['has_options'] = $request->boolean('has_options');
+
+        if ($validated['has_options'] && $request->filled('option_keys') && $request->filled('option_values')) {
+            $keys = $request->input('option_keys', []);
+            $values = $request->input('option_values', []);
+            $stocksMap = [];
+            foreach ($keys as $idx => $keyName) {
+                $trimmedKey = trim($keyName);
+                if ($trimmedKey !== '') {
+                    $stocksMap[$trimmedKey] = max(0, (int) ($values[$idx] ?? 0));
+                }
+            }
+            $validated['option_stocks'] = $stocksMap;
+            if (!empty($stocksMap)) {
+                $validated['stock'] = array_sum($stocksMap);
+            }
+        } elseif (!$validated['has_options']) {
+            $validated['option_stocks'] = null;
+            $validated['option_type'] = null;
+        }
 
         $product = Product::create($validated);
 
@@ -163,13 +189,23 @@ class ProductController extends Controller
 
     public function show(Product $product, \App\Services\OfferService $offerService)
     {
-        $product->load(['category', 'brand', 'galleryImages', 'reviews.user']);
+        $product->load([
+            'category', 
+            'brand', 
+            'galleryImages', 
+            'reviews.user',
+            'stockMovements.createdBy',
+            'rejectionReasons.rejector'
+        ]);
         $product = $offerService->applyOfferDiscountToProduct($product);
         return view('admin.products.show', compact('product'));
     }
 
     public function edit(Product $product)
     {
+        if (!auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized. Only Super Admin can edit products directly.');
+        }
         $categories = Category::where('status', 'Active')->orderBy('name')->get();
         $brands = Brand::where('status', 1)->orderBy('name')->get();
         $product->load('galleryImages');
@@ -178,6 +214,9 @@ class ProductController extends Controller
 
     public function update(ProductRequest $request, Product $product)
     {
+        if (!auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized. Only Super Admin can edit products directly.');
+        }
         $validated = $request->validated();
         $validated['slug'] = $validated['slug'] ?: Str::slug($validated['name']);
 
@@ -198,6 +237,26 @@ class ProductController extends Controller
 
         $validated['featured'] = $request->has('featured');
         $validated['trending'] = $request->has('trending');
+        $validated['has_options'] = $request->boolean('has_options');
+
+        if ($validated['has_options'] && $request->filled('option_keys') && $request->filled('option_values')) {
+            $keys = $request->input('option_keys', []);
+            $values = $request->input('option_values', []);
+            $stocksMap = [];
+            foreach ($keys as $idx => $keyName) {
+                $trimmedKey = trim($keyName);
+                if ($trimmedKey !== '') {
+                    $stocksMap[$trimmedKey] = max(0, (int) ($values[$idx] ?? 0));
+                }
+            }
+            $validated['option_stocks'] = $stocksMap;
+            if (!empty($stocksMap)) {
+                $validated['stock'] = array_sum($stocksMap);
+            }
+        } elseif (!$validated['has_options']) {
+            $validated['option_stocks'] = null;
+            $validated['option_type'] = null;
+        }
 
         $product->update($validated);
 
@@ -227,6 +286,9 @@ class ProductController extends Controller
 
     public function deleteGalleryImage($id)
     {
+        if (!auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized. Only Super Admin can modify product gallery.');
+        }
         $image = ProductImage::findOrFail($id);
         Storage::disk('public')->delete($image->image);
         $image->delete();

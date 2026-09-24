@@ -89,16 +89,38 @@
                         <!-- Name & Applicability -->
                         <td>
                             <div class="fw-bold text-dark">{{ $coupon->name }}</div>
-                            <div class="small text-muted" style="font-size: 0.72rem;">
-                                Scope: 
-                                @if($coupon->applicable_type->value === 'ALL')
-                                    <span class="text-secondary fw-semibold">Storewide</span>
-                                @elseif($coupon->applicable_type->value === 'CATEGORY')
-                                    <span class="text-primary fw-semibold">Category ({{ $coupon->category?->name ?? 'Specified' }})</span>
-                                @elseif($coupon->applicable_type->value === 'BRAND')
-                                    <span class="text-primary fw-semibold">Brand ({{ $coupon->brand?->name ?? 'Specified' }})</span>
-                                @elseif($coupon->applicable_type->value === 'PRODUCT')
-                                    <span class="text-primary fw-semibold">Product ({{ Str::limit($coupon->product?->name ?? 'Specified', 25) }})</span>
+                            <div class="small text-muted mt-0.5" style="font-size: 0.73rem;">
+                                @php
+                                    $appType = is_object($coupon->applicable_type) ? $coupon->applicable_type->value : $coupon->applicable_type;
+                                @endphp
+                                @if($appType === 'ALL')
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+                                        🌐 Storewide (All Products)
+                                    </span>
+                                @elseif($appType === 'CATEGORY')
+                                    @php
+                                        $catIds = $coupon->getTargetIds('category');
+                                        $catCount = count($catIds);
+                                    @endphp
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+                                        📁 {{ $catCount > 0 ? $catCount . ' Specific Category(ies)' : 'Specific Category' }}
+                                    </span>
+                                @elseif($appType === 'BRAND')
+                                    @php
+                                        $brandIds = $coupon->getTargetIds('brand');
+                                        $brandCount = count($brandIds);
+                                    @endphp
+                                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+                                        🏷️ {{ $brandCount > 0 ? $brandCount . ' Specific Brand(s)' : 'Specific Brand' }}
+                                    </span>
+                                @elseif($appType === 'PRODUCT')
+                                    @php
+                                        $prodIds = $coupon->getTargetIds('product');
+                                        $prodCount = count($prodIds);
+                                    @endphp
+                                    <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+                                        📦 {{ $prodCount > 0 ? $prodCount . ' Specific Product(s)' : 'Specific Product' }}
+                                    </span>
                                 @endif
                             </div>
                         </td>

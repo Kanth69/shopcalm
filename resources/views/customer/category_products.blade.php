@@ -1,50 +1,86 @@
 @extends('layouts.customer')
 
-@section('title', $category->name . ' - Shopcalm')
+@section('title', $category->name . ' - ' . \App\Models\Setting::get('store_name', 'ShopCalm'))
+@section('meta_description', 'Explore top-rated ' . $category->name . ' at ' . \App\Models\Setting::get('store_name', 'ShopCalm') . '. Best prices, authentic brands, and fast doorstep delivery.')
 
 @section('content')
-<div class="container my-4">
-    <div class="row">
-        <!-- Main Content -->
-        <div class="col-12">
-            <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
-                <div class="card-body p-4">
-                    <div class="row align-items-center">
-                        <div class="col-md-6">
-                            <h4 class="fw-bold mb-1">{{ $category->name }}</h4>
-                            <p class="text-muted mb-0">{{ number_format($products->total()) }} products available</p>
+<div class="container my-2 my-md-4 px-2 px-md-3">
+    
+    {{-- 1. Breadcrumbs --}}
+    <nav aria-label="breadcrumb" class="mb-2 mb-md-3">
+        <ol class="breadcrumb small mb-0" style="font-size: 0.82rem;">
+            <li class="breadcrumb-item"><a href="{{ route('home') }}" class="text-decoration-none text-muted">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('categories.index') }}" class="text-decoration-none text-muted">Categories</a></li>
+            <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">{{ $category->name }}</li>
+        </ol>
+    </nav>
+
+    {{-- 2. Category Top Header (Clean Vibrant Gradient Banner) --}}
+    <div class="card border-0 shadow-sm rounded-4 mb-4 mb-md-5 overflow-hidden" 
+         style="background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #7c3aed 100%); box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25) !important;">
+        <div class="card-body p-3 p-md-3.5">
+            <div class="d-flex align-items-center justify-content-between gap-2">
+                {{-- Left: Back Arrow + Title + Count --}}
+                <div class="d-flex align-items-center min-w-0">
+                    <a href="{{ route('categories.index') }}" class="btn rounded-circle p-0 d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs" 
+                       style="width: 38px; height: 38px; color: #ffffff; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.35); backdrop-filter: blur(6px); margin-right: 14px !important;" 
+                       title="All Categories">
+                        <i class="bi bi-arrow-left fs-6"></i>
+                    </a>
+                    <div class="min-w-0">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <h1 class="h5 fw-bold text-white mb-0 text-truncate" style="font-size: clamp(1.1rem, 2.3vw, 1.4rem); letter-spacing: -0.01em;">
+                                {{ $category->name }}
+                            </h1>
+                            <span class="badge rounded-pill fw-bold" 
+                                  style="background: rgba(255, 255, 255, 0.22); color: #ffffff; font-size: 0.72rem; border: 1px solid rgba(255, 255, 255, 0.4); backdrop-filter: blur(4px);">
+                                {{ number_format($products->total()) }} {{ Str::plural('Item', $products->total()) }}
+                            </span>
                         </div>
-                        <div class="col-md-6 mt-3 mt-md-0 d-flex justify-content-md-end gap-2">
-                            <a href="{{ route('shop') }}" class="btn btn-light rounded-pill px-4 border shadow-sm d-flex align-items-center">
-                                <i class="bi bi-arrow-left me-2"></i> Back to Shop
-                            </a>
-                        </div>
+                        <p class="small mb-0 d-none d-md-block mt-0.5" style="color: rgba(255, 255, 255, 0.9); font-size: 0.8rem;">
+                            Browse verified {{ strtolower($category->name) }} with authentic brand warranty & fast doorstep delivery.
+                        </p>
                     </div>
                 </div>
-            </div>
 
-            @include('components.skeleton-loader', ['count' => 8, 'type' => 'card'])
-            <div class="row content-loaded d-none g-4">
-                @forelse($products as $product)
-                    <div class="col-lg-3 col-md-4 col-sm-6">
-                        @include('customer.components.product-card', ['product' => $product])
-                    </div>
-                @empty
-                    <div class="col-12 text-center py-5">
-                        <i class="bi bi-tags display-1 text-muted opacity-25"></i>
-                        <h3 class="mt-4 fw-bold">No Products Found</h3>
-                        <p class="text-muted">We are currently restocking this category. Please check back later.</p>
-                        <a href="{{ route('shop') }}" class="btn btn-primary rounded-pill px-5 mt-3">Explore All Products</a>
-                    </div>
-                @endforelse
-            </div>
-
-            @if($products->hasPages())
-                <div class="mt-5 d-flex justify-content-center content-loaded d-none">
-                    {{ $products->links('pagination::bootstrap-5') }}
+                {{-- Right: Quick Action Button --}}
+                <div class="d-flex align-items-center flex-shrink-0">
+                    <a href="{{ route('shop') }}" class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-xs transition-all hover-elevate" 
+                       style="font-size: 0.82rem; background: #ffffff; color: #4f46e5; border: none;">
+                        <i class="bi bi-shop me-1"></i> <span>Shop</span>
+                    </a>
                 </div>
-            @endif
+            </div>
         </div>
     </div>
+
+    {{-- 3. Skeleton Loading State --}}
+    @include('components.skeleton-loader', ['count' => 8, 'type' => 'card'])
+
+    {{-- 4. 2-Column Mobile & 4-Column Desktop Product Grid --}}
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-2 g-md-3 content-loaded d-none">
+        @forelse($products as $product)
+            <div class="col d-flex">
+                @include('customer.components.product-card', ['product' => $product])
+            </div>
+        @empty
+            <div class="col-12 text-center py-5 bg-white rounded-4 border p-4">
+                <i class="bi bi-box-seam display-3 text-muted opacity-25"></i>
+                <h4 class="mt-3 fw-bold text-dark">No Products Found</h4>
+                <p class="text-muted small mb-3">We are currently restocking products in {{ $category->name }}. Please check back shortly!</p>
+                <a href="{{ route('shop') }}" class="btn btn-primary rounded-pill px-4 fw-semibold btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Explore All Products
+                </a>
+            </div>
+        @endforelse
+    </div>
+
+    {{-- 5. Pagination --}}
+    @if($products->hasPages())
+        <div class="mt-4 mt-md-5 d-flex justify-content-center content-loaded d-none">
+            {{ $products->links('pagination::bootstrap-5') }}
+        </div>
+    @endif
+
 </div>
 @endsection

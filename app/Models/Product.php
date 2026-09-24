@@ -21,6 +21,7 @@ class Product extends Model
         'sku',
         'short_description',
         'description',
+        'cost_price',
         'price',
         'stock',
         'featured',
@@ -29,13 +30,46 @@ class Product extends Model
         'rejection_reason',
         'submitted_by',
         'main_image',
+        'weight',
+        'length',
+        'width',
+        'height',
+        'has_options',
+        'option_type',
+        'option_stocks',
+        'hsn_code',
+        'tax_rate',
     ];
 
     protected $casts = [
-        'featured' => 'boolean',
-        'trending' => 'boolean',
-        'price' => 'decimal:2',
+        'featured'      => 'boolean',
+        'trending'      => 'boolean',
+        'has_options'   => 'boolean',
+        'option_stocks' => 'array',
+        'cost_price'    => 'decimal:2',
+        'price'         => 'decimal:2',
+        'weight'        => 'decimal:2',
+        'length'        => 'decimal:2',
+        'width'         => 'decimal:2',
+        'height'        => 'decimal:2',
+        'tax_rate'      => 'decimal:2',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function ($product) {
+            if (empty($product->slug) && !empty($product->name)) {
+                $slug = \Illuminate\Support\Str::slug($product->name);
+                $originalSlug = $slug;
+                $count = 1;
+                while (static::where('slug', $slug)->exists()) {
+                    $slug = "{$originalSlug}-{$count}";
+                    $count++;
+                }
+                $product->slug = $slug;
+            }
+        });
+    }
 
     public function submitter(): BelongsTo
     {
@@ -129,5 +163,41 @@ class Product extends Model
             return $this->latestRejectionReason->reason;
         }
         return $this->latestRejectionReason()->value('reason') ?? $this->rejection_reason;
+    }
+
+    public function getWeightKg(): float
+    {
+        return (float) ($this->weight > 0 ? $this->weight : 0.50);
+    }
+
+    public function getDimensionsCm(): array
+    {
+        return [
+            'length' => (float) ($this->length > 0 ? $this->length : 15.00),
+            'width'  => (float) ($this->width > 0 ? $this->width : 10.00),
+            'height' => (float) ($this->height > 0 ? $this->height : 5.00),
+        ];
+    }
+
+    public function getOptionStock(?string $optionKey): int
+    {
+        if (!$this->has_options || empty($optionKey) || empty($this->option_stocks)) {
+            return (int) $this->stock;
+        }
+
+        $stocks = is_array($this->option_stocks) ? $this->option_stocks : json_decode($this->option_stocks, true);
+        return (int) ($stocks[$optionKey] ?? 0);
+    }
+
+    public function reduceOptionStock(?string $optionKey, int $quantity = 1): void
+    {
+        if ($this->has_options && !empty($optionKey) && !empty($this->option_stocks)) {
+            $stocks = is_array($this->option_stocks) ? $this->option_stocks : json_decode($this->option_stocks, true);
+            if (isset($stocks[$optionKey])) {
+                $stocks[$optionKey] = max(0, ((int) $stocks[$optionKey]) - $quantity);
+                $this->option_stocks = $stocks;
+            }
+        }
+        $this->decrement('stock', $quantity);
     }
 }

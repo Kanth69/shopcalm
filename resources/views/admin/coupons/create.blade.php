@@ -130,22 +130,23 @@
                     </h6>
                 </div>
                 <div class="card-body p-4">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark small">Applicable To <span class="text-danger">*</span></label>
-                            <select name="applicable_type" class="form-select" id="applicable_type" onchange="populateItems(); updatePreview();">
-                                <option value="ALL" {{ old('applicable_type') == 'ALL' ? 'selected' : '' }}>Entire Store (All Products)</option>
-                                <option value="CATEGORY" {{ old('applicable_type') == 'CATEGORY' ? 'selected' : '' }}>Specific Category</option>
-                                <option value="BRAND" {{ old('applicable_type') == 'BRAND' ? 'selected' : '' }}>Specific Brand</option>
-                                <option value="PRODUCT" {{ old('applicable_type') == 'PRODUCT' ? 'selected' : '' }}>Specific Product</option>
-                            </select>
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">Applicable To <span class="text-danger">*</span></label>
+                        <select name="applicable_type" class="form-select" id="applicable_type" onchange="populateItems(); updatePreview();">
+                            <option value="ALL" {{ old('applicable_type') == 'ALL' ? 'selected' : '' }}>Entire Store (All Products)</option>
+                            <option value="CATEGORY" {{ old('applicable_type') == 'CATEGORY' ? 'selected' : '' }}>Specific Categories (Multi-Select)</option>
+                            <option value="BRAND" {{ old('applicable_type') == 'BRAND' ? 'selected' : '' }}>Specific Brands (Multi-Select)</option>
+                            <option value="PRODUCT" {{ old('applicable_type') == 'PRODUCT' ? 'selected' : '' }}>Specific Products (Multi-Select)</option>
+                        </select>
+                    </div>
 
-                        <div class="col-md-6 d-none" id="applicable_id_container">
-                            <label class="form-label fw-bold text-dark small" id="applicable_id_label">Target Selection</label>
-                            <select name="applicable_id" class="form-select" id="applicable_id_select" onchange="updatePreview();">
-                                <option value="">Choose item...</option>
-                            </select>
+                    <div class="d-none" id="applicable_items_container">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-bold text-dark small mb-0" id="applicable_items_label">Select Target Scope</label>
+                            <span class="text-muted small" style="font-size: 0.72rem;">Select one or multiple items</span>
+                        </div>
+                        <div class="p-3 bg-light rounded-3 border" style="max-height: 220px; overflow-y: auto;" id="applicable_items_list">
+                            <!-- Populated via JS -->
                         </div>
                     </div>
                 </div>
@@ -268,12 +269,14 @@
 
     function populateItems() {
         const type = document.getElementById('applicable_type').value;
-        const container = document.getElementById('applicable_id_container');
-        const select = document.getElementById('applicable_id_select');
-        const label = document.getElementById('applicable_id_label');
-        const selectedId = "{{ old('applicable_id') }}";
+        const container = document.getElementById('applicable_items_container');
+        const list = document.getElementById('applicable_items_list');
+        const label = document.getElementById('applicable_items_label');
+        const selectedCategories = @json(old('categories', []));
+        const selectedBrands = @json(old('brands', []));
+        const selectedProducts = @json(old('products', []));
 
-        select.innerHTML = '<option value="">Choose item...</option>';
+        list.innerHTML = '';
 
         if (type === 'ALL') {
             container.classList.add('d-none');
@@ -283,22 +286,34 @@
         container.classList.remove('d-none');
 
         if (type === 'CATEGORY') {
-            label.innerText = 'Select Target Category';
+            label.innerText = 'Select Applicable Categories (Multi-Select)';
             categories.forEach(c => {
-                const isSelected = (c.id == selectedId) ? 'selected' : '';
-                select.innerHTML += `<option value="${c.id}" ${isSelected}>${c.name}</option>`;
+                const checked = (selectedCategories.includes(c.id) || selectedCategories.includes(String(c.id))) ? 'checked' : '';
+                list.innerHTML += `
+                    <div class="form-check form-check-inline me-3 mb-2">
+                        <input class="form-check-input" type="checkbox" name="categories[]" value="${c.id}" id="cat_${c.id}" ${checked} onchange="updatePreview();">
+                        <label class="form-check-label small fw-semibold text-dark" for="cat_${c.id}">${c.name}</label>
+                    </div>`;
             });
         } else if (type === 'BRAND') {
-            label.innerText = 'Select Target Brand';
+            label.innerText = 'Select Applicable Brands (Multi-Select)';
             brands.forEach(b => {
-                const isSelected = (b.id == selectedId) ? 'selected' : '';
-                select.innerHTML += `<option value="${b.id}" ${isSelected}>${b.name}</option>`;
+                const checked = (selectedBrands.includes(b.id) || selectedBrands.includes(String(b.id))) ? 'checked' : '';
+                list.innerHTML += `
+                    <div class="form-check form-check-inline me-3 mb-2">
+                        <input class="form-check-input" type="checkbox" name="brands[]" value="${b.id}" id="brand_${b.id}" ${checked} onchange="updatePreview();">
+                        <label class="form-check-label small fw-semibold text-dark" for="brand_${b.id}">${b.name}</label>
+                    </div>`;
             });
         } else if (type === 'PRODUCT') {
-            label.innerText = 'Select Target Product';
+            label.innerText = 'Select Applicable Products (Multi-Select)';
             products.forEach(p => {
-                const isSelected = (p.id == selectedId) ? 'selected' : '';
-                select.innerHTML += `<option value="${p.id}" ${isSelected}>${p.name}</option>`;
+                const checked = (selectedProducts.includes(p.id) || selectedProducts.includes(String(p.id))) ? 'checked' : '';
+                list.innerHTML += `
+                    <div class="form-check mb-1.5">
+                        <input class="form-check-input" type="checkbox" name="products[]" value="${p.id}" id="prod_${p.id}" ${checked} onchange="updatePreview();">
+                        <label class="form-check-label small fw-semibold text-dark" for="prod_${p.id}">${p.name} <span class="text-muted">(₹${p.price})</span></label>
+                    </div>`;
             });
         }
     }

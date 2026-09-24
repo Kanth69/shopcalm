@@ -62,29 +62,30 @@
             top: 0; bottom: 0; left: 0;
             width: var(--sidebar-width);
             background: var(--sidebar-bg);
-            background-image: linear-gradient(180deg, #0f172a 0%, #1a1040 100%);
+            background-image: linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%);
             z-index: 1040;
             transition: transform 0.3s cubic-bezier(.4,0,.2,1);
             overflow: hidden;
             display: flex;
             flex-direction: column;
             color: #fff;
-            border-right: 1px solid rgba(255,255,255,0.04);
+            border-right: 1px solid rgba(255,255,255,0.06);
         }
 
         .sidebar-brand {
             height: var(--navbar-height);
             display: flex;
             align-items: center;
-            padding: 0 1.5rem;
+            padding: 0 1.25rem;
             background: rgba(255,255,255,0.03);
             font-weight: 700;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: #fff;
             text-decoration: none;
             flex-shrink: 0;
             border-bottom: 1px solid rgba(255,255,255,0.06);
             letter-spacing: -0.3px;
+            gap: 0.75rem;
         }
 
         .sidebar-sticky {
@@ -94,58 +95,112 @@
             scrollbar-width: thin;
             scrollbar-color: rgba(255,255,255,0.1) transparent;
         }
-        .sidebar-sticky::-webkit-scrollbar { width: 3px; }
+        .sidebar-sticky::-webkit-scrollbar { width: 4px; }
         .sidebar-sticky::-webkit-scrollbar-track { background: transparent; }
-        .sidebar-sticky::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+        .sidebar-sticky::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
 
         .sidebar .nav-link {
-            color: #94a3b8;
-            padding: 0.6rem 1.25rem;
+            color: #cbd5e1;
+            padding: 0.65rem 1rem;
             display: flex;
             align-items: center;
             font-weight: 500;
-            font-size: 0.82rem;
+            font-size: 0.83rem;
             border-radius: 8px;
-            margin: 1px 0.75rem;
+            margin: 2px 0.75rem;
             transition: all 0.18s ease;
             text-decoration: none;
-            gap: 0.6rem;
+            gap: 0.75rem;
             letter-spacing: 0.01em;
+            position: relative;
         }
         .sidebar .nav-link:hover {
-            color: #e2e8f0;
-            background: var(--sidebar-hover);
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.08);
         }
         .sidebar .nav-link.active {
-            color: #fff;
+            color: #ffffff !important;
             background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            box-shadow: 0 4px 12px rgba(99,102,241,0.4);
+            box-shadow: 0 4px 12px rgba(99,102,241,0.45);
+            font-weight: 600;
         }
         .sidebar .nav-link i {
-            font-size: 1.05rem;
+            font-size: 1.1rem;
             flex-shrink: 0;
-            width: 20px;
+            width: 22px;
             text-align: center;
+            color: #94a3b8;
+            transition: color 0.18s ease;
         }
+        .sidebar .nav-link:hover i,
+        .sidebar .nav-link.active i {
+            color: #ffffff !important;
+        }
+
+        .sidebar .nav-link .nav-label {
+            flex: 1 1 auto;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .sidebar .nav-link .nav-badge {
+            margin-left: auto;
+            flex-shrink: 0;
+            font-size: 0.68rem;
+            padding: 0.2em 0.55em;
+            line-height: 1.2;
+            font-weight: 700;
+        }
+        
+        .sidebar .nav-link.has-submenu .nav-badge {
+            margin-right: 0.35rem;
+            margin-left: auto;
+        }
+
+        .sidebar .nav-link.has-submenu::after {
+            content: "\F282";
+            font-family: "bootstrap-icons";
+            font-size: 0.72rem;
+            transition: transform 0.25s ease;
+            opacity: 0.6;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+        .sidebar .nav-link.has-submenu:not(.collapsed)::after,
+        .sidebar .nav-link.has-submenu[aria-expanded="true"]::after {
+            transform: rotate(180deg);
+        }
+
         .sidebar .nav-header {
-            padding: 1.25rem 1.5rem 0.35rem;
-            font-size: 0.65rem;
+            padding: 1.25rem 1.25rem 0.35rem;
+            font-size: 0.68rem;
             font-weight: 700;
             text-transform: uppercase;
-            color: #475569;
+            color: #64748b;
             letter-spacing: 0.08em;
         }
+
         .sidebar .submenu {
             padding-left: 0.75rem;
+            margin-top: 2px;
+            margin-bottom: 4px;
         }
         .sidebar .submenu .nav-link {
             font-size: 0.8rem;
-            padding: 0.5rem 1rem;
-            color: #64748b;
+            padding: 0.5rem 0.85rem;
+            color: #94a3b8;
+            margin: 1px 0.75rem 1px 0;
+            gap: 0.6rem;
+        }
+        .sidebar .submenu .nav-link:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.06);
         }
         .sidebar .submenu .nav-link.active {
             background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            color: #fff;
+            color: #ffffff !important;
+            box-shadow: 0 3px 10px rgba(99,102,241,0.35);
         }
         .sidebar .submenu .nav-link::before {
             content: '';
@@ -157,16 +212,6 @@
             opacity: 0.5;
         }
         .sidebar .submenu .nav-link.active::before { opacity: 1; }
-
-        .sidebar .nav-link.has-submenu::after {
-            content: "\F282";
-            font-family: "bootstrap-icons";
-            margin-left: auto;
-            font-size: 0.7rem;
-            transition: transform 0.25s;
-            opacity: 0.5;
-        }
-        .sidebar .nav-link.has-submenu[aria-expanded="true"]::after { transform: rotate(180deg); }
 
         /* ── NAVBAR ── */
         .navbar-admin {
@@ -205,16 +250,18 @@
             box-shadow: var(--shadow-sm);
         }
 
-        .btn-primary {
+        .btn-primary, .btn-pm-primary {
             background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: #ffffff !important;
             border: none;
             font-weight: 600;
             letter-spacing: -0.2px;
             transition: all 0.2s ease;
         }
 
-        .btn-primary:hover {
+        .btn-primary:hover, .btn-pm-primary:hover {
             background: linear-gradient(135deg, #4f46e5, #4338ca);
+            color: #ffffff !important;
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(99,102,241,0.35);
         }
@@ -239,100 +286,151 @@
 <body>
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
+        <!-- Brand Logo -->
         <a href="{{ route('product-manager.dashboard') }}" class="sidebar-brand">
-            <i class="bi bi-box-seam me-2 text-primary" style="color: #818cf8 !important;"></i>
-            <span>Shopcalm <span class="badge rounded-pill bg-primary ms-1" style="font-size: 0.62rem; background: #6366f1 !important;">PM</span></span>
+            <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 34px; height: 34px; background: rgba(99, 102, 241, 0.25); border: 1px solid rgba(99, 102, 241, 0.4); color: #818cf8;">
+                <i class="bi bi-box-seam fs-5"></i>
+            </div>
+            <div class="d-flex flex-column">
+                <div class="d-flex align-items-center gap-1.5">
+                    <span class="fw-bold">ShopCalm</span>
+                    <span class="badge rounded-pill" style="font-size: 0.62rem; background: #6366f1; color: #fff;">PM</span>
+                </div>
+                <span class="text-white-50" style="font-size: 0.68rem; letter-spacing: 0.02em;">Product Manager</span>
+            </div>
         </a>
 
+        <!-- Navigation Links -->
         <div class="sidebar-sticky">
             <ul class="nav flex-column">
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('product-manager.dashboard') ? 'active' : '' }}" href="{{ route('product-manager.dashboard') }}">
-                        <i class="bi bi-speedometer2"></i> Dashboard
+                        <i class="bi bi-speedometer2"></i>
+                        <span class="nav-label">Dashboard</span>
                     </a>
                 </li>
 
+                <!-- CATALOG SECTION -->
                 <li class="nav-header">Catalog Management</li>
+                @php
+                    $isCatalogActive = request()->routeIs('product-manager.products.*') || request()->routeIs('product-manager.categories.*') || request()->routeIs('product-manager.brands.*');
+                    $catalogAlertCount = ($pmPendingApprovals ?? 0) + ($pmRejectedProducts ?? 0);
+                @endphp
                 <li class="nav-item">
-                    <a class="nav-link has-submenu {{ request()->routeIs('product-manager.products.*') || request()->routeIs('product-manager.categories.*') || request()->routeIs('product-manager.brands.*') ? '' : 'collapsed' }}"
+                    <a class="nav-link has-submenu {{ $isCatalogActive ? '' : 'collapsed' }}"
                        data-bs-toggle="collapse" href="#catalogSubmenu" role="button"
-                       aria-expanded="{{ request()->routeIs('product-manager.products.*') || request()->routeIs('product-manager.categories.*') || request()->routeIs('product-manager.brands.*') ? 'true' : 'false' }}">
-                        <i class="bi bi-grid"></i> Catalog
+                       aria-expanded="{{ $isCatalogActive ? 'true' : 'false' }}">
+                        <i class="bi bi-grid"></i>
+                        <span class="nav-label">Catalog</span>
+                        @if($catalogAlertCount > 0)
+                            <span class="badge rounded-pill bg-warning text-dark nav-badge">
+                                {{ $catalogAlertCount }}
+                            </span>
+                        @endif
                     </a>
-                    <div class="collapse {{ request()->routeIs('product-manager.products.*') || request()->routeIs('product-manager.categories.*') || request()->routeIs('product-manager.brands.*') ? 'show' : '' }}" id="catalogSubmenu">
+                    <div class="collapse {{ $isCatalogActive ? 'show' : '' }}" id="catalogSubmenu">
                         <ul class="nav flex-column submenu">
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('product-manager.products.index') || request()->routeIs('product-manager.products.edit') ? 'active' : '' }}" href="{{ route('product-manager.products.index') }}">
-                                    All Products
+                                    <span class="nav-label">All Products</span>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('product-manager.products.pending') ? 'active' : '' }}" href="{{ route('product-manager.products.pending') }}">
-                                    Pending Approvals
+                                    <span class="nav-label">Pending Approvals</span>
+                                    @if(($pmPendingApprovals ?? 0) > 0)
+                                        <span class="badge bg-warning text-dark rounded-pill nav-badge">{{ $pmPendingApprovals }}</span>
+                                    @endif
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('product-manager.products.rejected') ? 'active' : '' }}" href="{{ route('product-manager.products.rejected') }}">
-                                    Rejected Items
+                                    <span class="nav-label">Rejected Items</span>
+                                    @if(($pmRejectedProducts ?? 0) > 0)
+                                        <span class="badge bg-danger text-white rounded-pill nav-badge">{{ $pmRejectedProducts }}</span>
+                                    @endif
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('product-manager.products.create') ? 'active' : '' }}" href="{{ route('product-manager.products.create') }}">
-                                    Add New Product
+                                    <span class="nav-label">Add New Product</span>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('product-manager.categories.*') ? 'active' : '' }}" href="{{ route('product-manager.categories.index') }}">
-                                    Categories
+                                    <span class="nav-label">Categories</span>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('product-manager.brands.*') ? 'active' : '' }}" href="{{ route('product-manager.brands.index') }}">
-                                    Brands
+                                    <span class="nav-label">Brands</span>
                                 </a>
                             </li>
                         </ul>
                     </div>
                 </li>
 
+                <!-- INVENTORY SECTION -->
                 <li class="nav-header">Inventory</li>
+                @php
+                    $isStockActive = request()->routeIs('product-manager.stock.*');
+                @endphp
                 <li class="nav-item">
-                    <a class="nav-link has-submenu {{ request()->routeIs('product-manager.stock.*') ? '' : 'collapsed' }}"
+                    <a class="nav-link has-submenu {{ $isStockActive ? '' : 'collapsed' }}"
                        data-bs-toggle="collapse" href="#stockSubmenu" role="button"
-                       aria-expanded="{{ request()->routeIs('product-manager.stock.*') ? 'true' : 'false' }}">
-                        <i class="bi bi-boxes"></i> Inventory
+                       aria-expanded="{{ $isStockActive ? 'true' : 'false' }}">
+                        <i class="bi bi-boxes"></i>
+                        <span class="nav-label">Inventory</span>
+                        @if(($pmLowStockCount ?? 0) > 0)
+                            <span class="badge rounded-pill bg-danger text-white nav-badge">
+                                {{ $pmLowStockCount }} Low
+                            </span>
+                        @endif
                     </a>
-                    <div class="collapse {{ request()->routeIs('product-manager.stock.*') ? 'show' : '' }}" id="stockSubmenu">
+                    <div class="collapse {{ $isStockActive ? 'show' : '' }}" id="stockSubmenu">
                         <ul class="nav flex-column submenu">
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('product-manager.stock.dashboard') || request()->routeIs('product-manager.stock.form') ? 'active' : '' }}" href="{{ route('product-manager.stock.dashboard') }}">
-                                    Stock Management
+                                    <span class="nav-label">Stock Management</span>
+                                    @if(($pmLowStockCount ?? 0) > 0)
+                                        <span class="badge bg-danger text-white rounded-pill nav-badge">{{ $pmLowStockCount }}</span>
+                                    @endif
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('product-manager.stock.history') ? 'active' : '' }}" href="{{ route('product-manager.stock.history') }}">
-                                    Stock History
+                                    <span class="nav-label">Stock History</span>
                                 </a>
                             </li>
                         </ul>
                     </div>
                 </li>
 
+                <!-- QUALITY & INTELLIGENCE -->
                 <li class="nav-header">Quality & Intelligence</li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('product-manager.reviews.*') ? 'active' : '' }}" href="{{ route('product-manager.reviews.index') }}">
-                        <i class="bi bi-star"></i> Reviews
+                        <i class="bi bi-star"></i>
+                        <span class="nav-label">Reviews</span>
+                        @if(($pmPendingReviews ?? 0) > 0)
+                            <span class="badge bg-primary text-white rounded-pill nav-badge">
+                                {{ $pmPendingReviews }} New
+                            </span>
+                        @endif
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('product-manager.reports.*') ? 'active' : '' }}" href="{{ route('product-manager.reports.index') }}">
-                        <i class="bi bi-graph-up"></i> Reports
+                        <i class="bi bi-graph-up"></i>
+                        <span class="nav-label">Reports</span>
                     </a>
                 </li>
 
-                <li class="nav-item mt-4">
+                <!-- LOGOUT -->
+                <li class="nav-item mt-4 pt-2 border-top" style="border-color: rgba(255,255,255,0.06) !important;">
                     <a class="nav-link text-danger" href="#" onclick="event.preventDefault(); document.getElementById('pm-logout-form').submit();">
-                        <i class="bi bi-box-arrow-right"></i> Logout
+                        <i class="bi bi-box-arrow-right text-danger"></i>
+                        <span class="nav-label">Logout</span>
                     </a>
                     <form id="pm-logout-form" action="{{ route('product-manager.logout') }}" method="POST" class="d-none">
                         @csrf
@@ -357,17 +455,18 @@
 
             <ul class="navbar-nav ms-auto align-items-center">
                 <li class="nav-item me-2">
-                    <a href="{{ route('shop') }}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3" style="font-size: 0.78rem;">
-                        <i class="bi bi-box-arrow-up-right me-1"></i> Live Store
+                    <a href="{{ route('shop') }}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-inline-flex align-items-center" style="font-size: 0.78rem; gap: 0.4rem !important;">
+                        <i class="bi bi-box-arrow-up-right"></i> Live Store
                     </a>
                 </li>
                 <li class="nav-item">
-                    <div class="d-flex align-items-center gap-2 ms-2 px-3 py-1 rounded-3" style="background:#f1f5f9; border:1px solid #e2e8f0;">
-                        <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;color:#fff;flex-shrink:0;">
-                            {{ strtoupper(substr(Auth::guard('admin')->user()->name ?? 'PM', 0, 1)) }}
+                    @php $pmUser = Auth::guard('product_manager')->user() ?? Auth::guard('admin')->user(); @endphp
+                    <div class="d-flex align-items-center ms-2 px-3 py-1.5 rounded-3" style="background:#f1f5f9; border:1px solid #e2e8f0; gap: 0.65rem !important;">
+                        <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:#fff;flex-shrink:0;">
+                            {{ strtoupper(substr($pmUser->name ?? 'PM', 0, 1)) }}
                         </div>
                         <div>
-                            <div style="font-size:0.8rem;font-weight:600;color:#0f172a;line-height:1.1;">{{ Auth::guard('admin')->user()->name ?? 'Product Manager' }}</div>
+                            <div style="font-size:0.8rem;font-weight:600;color:#0f172a;line-height:1.1;">{{ $pmUser->name ?? 'Product Manager' }}</div>
                             <div style="font-size:0.65rem;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">Product Manager</div>
                         </div>
                     </div>
@@ -402,6 +501,8 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.20/dist/sweetalert2.all.min.js"></script>
     <script src="{{ asset('js/ui-interactions.js') }}?v={{ time() }}"></script>
     <script src="{{ asset('js/admin-filters.js') }}?v={{ time() }}"></script>
+
+    @include('components.staff-live-poller', ['endpoint' => route('admin.live-orders'), 'portal' => 'admin'])
 
     @stack('scripts')
 </body>

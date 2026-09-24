@@ -107,7 +107,17 @@
                                     <i class="bi bi-arrow-right mx-1 opacity-50"></i>
                                     <span class="fw-bold text-dark">{{ $movement->stock_after }}</span>
                                 </td>
-                                <td class="small">{{ $movement->createdBy->name ?? 'System' }}</td>
+                                <td class="small">
+                                    @if(!$movement->isSystemMovement() && $movement->createdBy)
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
+                                            <i class="bi bi-person-fill me-1"></i> {{ $movement->createdBy->name }} ({{ $movement->createdBy->role_name ?? 'Staff' }})
+                                        </span>
+                                    @else
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
+                                            <i class="bi bi-robot me-1"></i> System
+                                        </span>
+                                    @endif
+                                </td>
                             </tr>
                             @empty
                             <tr>

@@ -2,10 +2,9 @@
     <x-slot name="title">Reset Password</x-slot>
 
     <div class="auth-card-container">
-        <div class="auth-header">
-            <a href="{{ route('home') }}" class="auth-logo">
-                <span class="logo-w">W</span>
-                <div class="logo-text">Shopcalm<span>.in</span></div>
+        <div class="auth-header text-center">
+            <a href="{{ route('home') }}" class="auth-logo d-inline-flex justify-content-center mb-3 text-decoration-none">
+                <x-logo height="38" />
             </a>
             <h2 class="auth-title">Set New Password</h2>
             <p class="auth-subtitle">Enter your new password below to reset your account credentials.</p>
@@ -23,7 +22,7 @@
             <span id="reset-error-msg"></span>
         </div>
 
-        <form id="reset-password-form" method="POST" action="{{ route('password.store') }}" class="auth-form">
+        <form id="reset-password-form" method="POST" action="{{ route('password.reset-whatsapp') }}" class="auth-form">
             @csrf
 
             <!-- Password Reset Token -->

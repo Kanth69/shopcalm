@@ -13,7 +13,8 @@ class ProductRequest extends FormRequest
 
     public function rules(): array
     {
-        $productId = $this->route('product') ? $this->route('product')->id : null;
+        $product = $this->route('product');
+        $productId = $product instanceof \App\Models\Product ? $product->id : $product;
 
         return [
             'name' => 'required|string|max:255',
@@ -23,13 +24,24 @@ class ProductRequest extends FormRequest
             'slug' => 'nullable|string|max:255|unique:products,slug,' . $productId,
             'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
+            'cost_price' => 'nullable|numeric|min:0',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'featured' => 'nullable|boolean',
             'trending' => 'nullable|boolean',
-            'status' => 'required|in:Active,Inactive',
-            'main_image' => $productId ? 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048' : 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'gallery_images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'status' => 'nullable|string|in:Active,Inactive,Pending_Approval,Rejected',
+            'main_image'       => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:4096',
+            'gallery_images'   => 'nullable|array',
+            'gallery_images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:4096',
+            'weight'           => 'nullable|numeric|min:0',
+            'length'           => 'nullable|numeric|min:0',
+            'width'            => 'nullable|numeric|min:0',
+            'height'           => 'nullable|numeric|min:0',
+            'has_options'      => 'nullable|boolean',
+            'option_type'      => 'nullable|string|max:50',
+            'option_stocks'    => 'nullable|array',
+            'hsn_code'         => 'nullable|string|max:20',
+            'tax_rate'         => 'nullable|numeric|min:0|max:100',
         ];
     }
 }

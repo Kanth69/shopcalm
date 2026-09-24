@@ -22,5 +22,35 @@ class SuperAdminSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
+
+        User::updateOrCreate(
+            ['email' => 'productmanager@shopcalm.com'],
+            [
+                'name' => 'Product Manager Staff',
+                'password' => Hash::make('password123'),
+                'role_id' => User::ROLE_PRODUCT_MANAGER,
+                'email_verified_at' => now(),
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'ordermanager@shopcalm.com'],
+            [
+                'name' => 'Order Manager Staff',
+                'password' => Hash::make('password123'),
+                'role_id' => User::ROLE_ORDER_MANAGER,
+                'email_verified_at' => now(),
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'support@shopcalm.com'],
+            [
+                'name' => 'Customer Support Staff',
+                'password' => Hash::make('password123'),
+                'role_id' => User::ROLE_SUPPORT,
+                'email_verified_at' => now(),
+            ]
+        );
     }
 }

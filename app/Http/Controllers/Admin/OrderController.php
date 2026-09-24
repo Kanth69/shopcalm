@@ -39,14 +39,49 @@ class OrderController extends Controller
 
     public function show(Order $order)
     {
-        $order->load('items.product', 'user');
+        $order->load('items.product', 'user', 'coupon');
         return view('admin.orders.show', compact('order'));
     }
 
-    public function updateStatus(Request $request, Order $order)
+    public function cancelOrder(Request $request, Order $order)
     {
-        $request->validate(['status' => 'required|in:pending,confirmed,packed,shipped,out for delivery,delivered,cancelled']);
-        $this->orderService->updateOrderStatus($order, $request->status);
-        return back()->with('success', 'Order status updated successfully.');
+        $request->validate([
+            'cancellation_reason' => 'required|string|max:255',
+            'refund_method'       => 'required|in:wallet,bank',
+            'admin_notes'         => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            $cancellation = $this->orderService->cancelOrderByAdmin(
+                $order,
+                $request->cancellation_reason,
+                $request->refund_method,
+                $request->admin_notes
+            );
+
+            return back()->with('toast', [
+                'type'    => 'success',
+                'title'   => 'Order Cancelled',
+                'message' => "Order #{$order->order_number} has been cancelled by store admin. 100% refund credited & inventory restocked.",
+            ]);
+        } catch (\Exception $e) {
+            return back()->with('toast', [
+                'type'    => 'error',
+                'title'   => 'Cancellation Failed',
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function invoice(Order $order)
+    {
+        $order->load(['user', 'items.product', 'coupon']);
+        return view('order-manager.orders.invoice', compact('order'));
+    }
+
+    public function packingSlip(Order $order)
+    {
+        $order->load(['user', 'items.product']);
+        return view('order-manager.orders.packing-slip', compact('order'));
     }
 }

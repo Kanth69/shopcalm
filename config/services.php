@@ -47,4 +47,12 @@ return [
         'sender_email' => env('BREVO_SENDER_EMAIL'),
     ],
 
+    'cashfree' => [
+        'app_id'      => env('CASHFREE_APP_ID'),
+        'secret_key'  => env('CASHFREE_SECRET_KEY'),
+        'api_version' => env('CASHFREE_API_VERSION', '2023-08-01'),
+        'environment' => env('CASHFREE_ENVIRONMENT', 'TEST'), // TEST or PRODUCTION
+        'upi_vpa'     => env('CASHFREE_UPI_VPA', env('STORE_UPI_ID', 'shopcalm@upi')),
+    ],
+
 ];

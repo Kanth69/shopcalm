@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Shopcalm') }} - Admin</title>
+    <title>{{ \App\Models\Setting::get('store_name', 'ShopCalm') }} - Admin</title>
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -99,12 +99,12 @@
         .sidebar-sticky::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
 
         .sidebar .nav-link {
-            color: #94a3b8;
+            color: #cbd5e1;
             padding: 0.6rem 1.25rem;
             display: flex;
             align-items: center;
             font-weight: 500;
-            font-size: 0.82rem;
+            font-size: 0.83rem;
             border-radius: 8px;
             margin: 1px 0.75rem;
             transition: all 0.18s ease;
@@ -113,13 +113,14 @@
             letter-spacing: 0.01em;
         }
         .sidebar .nav-link:hover {
-            color: #e2e8f0;
-            background: var(--sidebar-hover);
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.08);
         }
         .sidebar .nav-link.active {
-            color: #fff;
+            color: #ffffff !important;
             background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            box-shadow: 0 4px 12px rgba(99,102,241,0.4);
+            box-shadow: 0 4px 12px rgba(99,102,241,0.45);
+            font-weight: 600;
         }
         .sidebar .nav-link i {
             font-size: 1.05rem;
@@ -127,46 +128,77 @@
             width: 20px;
             text-align: center;
         }
+        .sidebar .nav-link .nav-label {
+            flex: 1 1 auto;
+        }
+        .sidebar .nav-link .nav-badge {
+            margin-left: auto;
+            flex-shrink: 0;
+            font-size: 0.68rem;
+            padding: 0.22em 0.65em;
+            line-height: 1.2;
+            font-weight: 700;
+        }
+        .sidebar .nav-link.has-submenu .nav-badge {
+            margin-right: 0.4rem;
+            margin-left: auto;
+        }
         .sidebar .nav-header {
-            padding: 1.25rem 1.5rem 0.35rem;
-            font-size: 0.65rem;
+            padding: 1.35rem 1.25rem 0.4rem;
+            font-size: 0.68rem;
             font-weight: 700;
             text-transform: uppercase;
-            color: #475569;
-            letter-spacing: 0.08em;
+            color: #94a3b8;
+            letter-spacing: 0.09em;
         }
         .sidebar .submenu {
             padding-left: 0.75rem;
         }
         .sidebar .submenu .nav-link {
-            font-size: 0.8rem;
-            padding: 0.5rem 1rem;
-            color: #64748b;
+            font-size: 0.82rem;
+            padding: 0.55rem 1rem;
+            color: #cbd5e1;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .sidebar .submenu .nav-link:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.08);
         }
         .sidebar .submenu .nav-link.active {
             background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            color: #fff;
+            color: #ffffff !important;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(99,102,241,0.35);
         }
         .sidebar .submenu .nav-link::before {
             content: '';
-            width: 5px;
-            height: 5px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
-            background: currentColor;
+            background: #a5b4fc;
             flex-shrink: 0;
-            opacity: 0.5;
+            opacity: 0.8;
+            margin-right: 0.2rem;
         }
-        .sidebar .submenu .nav-link.active::before { opacity: 1; }
+        .sidebar .submenu .nav-link.active::before { 
+            background: #ffffff; 
+            opacity: 1; 
+        }
 
         .sidebar .nav-link.has-submenu::after {
             content: "\F282";
             font-family: "bootstrap-icons";
             margin-left: auto;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             transition: transform 0.25s;
-            opacity: 0.5;
+            opacity: 0.7;
+            flex-shrink: 0;
+            color: #cbd5e1;
         }
-        .sidebar .nav-link.has-submenu[aria-expanded="true"]::after { transform: rotate(180deg); }
+        .sidebar .nav-link.has-submenu[aria-expanded="true"]::after { transform: rotate(180deg); color: #ffffff; }
 
         /* ── NAVBAR ── */
         .navbar-admin {
@@ -397,23 +429,90 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* ── RESPONSIVE ── */
+        /* ── RESPONSIVE & MOBILE POLISH ── */
+        .sidebar-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 1039;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.25s cubic-bezier(.4,0,.2,1), visibility 0.25s cubic-bezier(.4,0,.2,1);
+        }
+        .sidebar-backdrop.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .table-responsive {
+            -webkit-overflow-scrolling: touch;
+            border-radius: var(--radius);
+        }
+
         @media (max-width: 991.98px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.show { transform: translateX(0); }
-            .navbar-admin { padding-left: 0; }
-            main.main-content { margin-left: 0; }
+            .sidebar { 
+                transform: translateX(-100%); 
+                z-index: 1045;
+                box-shadow: 0 0 40px rgba(0, 0, 0, 0.45);
+            }
+            .sidebar.show { 
+                transform: translateX(0); 
+            }
+            .navbar-admin { 
+                padding-left: 0; 
+            }
+            main.main-content { 
+                margin-left: 0; 
+                padding-top: calc(var(--navbar-height) + 1.25rem);
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            :root {
+                --navbar-height: 58px;
+            }
+            .navbar-admin .user-role-text {
+                display: none;
+            }
+            .card-body {
+                padding: 1.15rem !important;
+            }
+            .dropdown-menu-end {
+                position: fixed !important;
+                top: calc(var(--navbar-height) + 6px) !important;
+                left: 12px !important;
+                right: 12px !important;
+                width: auto !important;
+                max-width: none !important;
+                transform: none !important;
+            }
+            .table-responsive table {
+                min-width: 620px;
+            }
         }
     </style>
     @stack('styles')
 </head>
 <body>
 
+    <!-- Mobile Backdrop Overlay -->
+    <div class="sidebar-backdrop d-lg-none" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
-        <a href="{{ route('admin.dashboard') }}" class="sidebar-brand px-3 py-2 d-flex align-items-center">
-            <x-logo variant="light" height="28" />
-        </a>
+        <div class="sidebar-brand px-3 py-2 d-flex align-items-center justify-content-between">
+            <a href="{{ route('admin.dashboard') }}" class="d-flex align-items-center text-decoration-none">
+                <x-logo variant="light" height="28" />
+            </a>
+            <button type="button" class="btn btn-link text-white-50 p-1 d-lg-none" onclick="toggleSidebar()" title="Close Sidebar">
+                <i class="bi bi-x-lg fs-5"></i>
+            </button>
+        </div>
 
         <div class="sidebar-sticky pt-3">
             <ul class="nav flex-column">
@@ -423,17 +522,31 @@
                     </a>
                 </li>
 
-                <li class="nav-header">Catalog</li>
+                @php
+                    $globalPendingProductsCount = \App\Models\Product::where('status', 'Pending_Approval')->count();
+                @endphp
+
+                <li class="nav-header">Catalog & Approvals</li>
+                @if(optional(auth()->user())->isSuperAdmin())
                 <li class="nav-item">
-                    <a class="nav-link has-submenu {{ request()->routeIs('admin.products.*') || request()->routeIs('admin.categories.*') || request()->routeIs('admin.brands.*') || request()->routeIs('admin.banners.*') ? '' : 'collapsed' }}"
+                    <a class="nav-link has-submenu {{ request()->routeIs('admin.products.*') || request()->routeIs('admin.categories.*') || request()->routeIs('admin.brands.*') ? '' : 'collapsed' }}"
                        data-bs-toggle="collapse" href="#catalogSubmenu" role="button"
-                       aria-expanded="{{ request()->routeIs('admin.products.*') || request()->routeIs('admin.categories.*') || request()->routeIs('admin.brands.*') || request()->routeIs('admin.banners.*') ? 'true' : 'false' }}">
-                        <i class="bi bi-grid"></i> Catalog
+                       aria-expanded="{{ request()->routeIs('admin.products.*') || request()->routeIs('admin.categories.*') || request()->routeIs('admin.brands.*') ? 'true' : 'false' }}">
+                        <i class="bi bi-grid"></i>
+                        <span class="nav-label">Catalog</span>
+                        @if($globalPendingProductsCount > 0)
+                            <span class="badge bg-danger rounded-pill nav-badge">{{ $globalPendingProductsCount }}</span>
+                        @endif
                     </a>
-                    <div class="collapse {{ request()->routeIs('admin.products.*') || request()->routeIs('admin.categories.*') || request()->routeIs('admin.brands.*') || request()->routeIs('admin.banners.*') ? 'show' : '' }}" id="catalogSubmenu">
+                    <div class="collapse {{ request()->routeIs('admin.products.*') || request()->routeIs('admin.categories.*') || request()->routeIs('admin.brands.*') ? 'show' : '' }}" id="catalogSubmenu">
                         <ul class="nav flex-column submenu">
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="{{ route('admin.products.index') }}">Products</a>
+                                <a class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="{{ route('admin.products.index') }}">
+                                    <span>Products</span>
+                                    @if($globalPendingProductsCount > 0)
+                                        <span class="badge bg-warning text-dark rounded-pill ms-auto" style="font-size: 0.65rem; padding: 0.2em 0.55em;">{{ $globalPendingProductsCount }} Pending</span>
+                                    @endif
+                                </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}" href="{{ route('admin.categories.index') }}">Categories</a>
@@ -445,21 +558,67 @@
                     </div>
                 </li>
 
-                <li class="nav-header">Sales & Orders</li>
+                <li class="nav-header">Inventory & Warehouse</li>
+                <li class="nav-item">
+                    <a class="nav-link has-submenu {{ request()->routeIs('admin.stock.*') ? '' : 'collapsed' }}"
+                       data-bs-toggle="collapse" href="#inventorySubmenu" role="button"
+                       aria-expanded="{{ request()->routeIs('admin.stock.*') ? 'true' : 'false' }}">
+                        <i class="bi bi-boxes"></i>
+                        <span class="nav-label">Inventory & Stock</span>
+                    </a>
+                    <div class="collapse {{ request()->routeIs('admin.stock.*') ? 'show' : '' }}" id="inventorySubmenu">
+                        <ul class="nav flex-column submenu">
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.stock.dashboard') || request()->routeIs('admin.stock.show') || request()->routeIs('admin.stock.add-form') || request()->routeIs('admin.stock.reduce-form') || request()->routeIs('admin.stock.adjust-form') ? 'active' : '' }}" href="{{ route('admin.stock.dashboard') }}">
+                                    <span>Stock Overview</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.stock.history') ? 'active' : '' }}" href="{{ route('admin.stock.history') }}">
+                                    <span>Movement Audit Log</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                @else
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="{{ route('admin.products.index') }}">
+                        <i class="bi bi-check2-circle text-primary"></i>
+                        <span>Product Approvals</span>
+                        @if($globalPendingProductsCount > 0)
+                            <span class="badge bg-warning text-dark rounded-pill ms-auto" style="font-size: 0.65rem; padding: 0.2em 0.55em;">{{ $globalPendingProductsCount }} Pending</span>
+                        @endif
+                    </a>
+                </li>
+                @endif
+
+                <li class="nav-header">Sales &amp; Orders</li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}" href="{{ route('admin.orders.index') }}">
-                        <i class="bi bi-cart-check"></i> Orders
+                        <i class="bi bi-cart-check"></i> Orders Overview
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.refunds.*') ? 'active' : '' }}" href="{{ route('admin.refunds.index') }}">
+                        <i class="bi bi-wallet2 text-warning"></i>
+                        <span class="nav-label">Cancellations &amp; Refunds</span>
+                        @php $pendingUpiCount = \App\Models\OrderCancellation::where('refund_method', 'bank_upi')->where('refund_status', 'pending')->count(); @endphp
+                        @if($pendingUpiCount > 0)
+                            <span class="badge bg-warning text-dark rounded-pill nav-badge">{{ $pendingUpiCount }} Pending</span>
+                        @endif
                     </a>
                 </li>
 
-                <li class="nav-header">Promotions</li>
+                <li class="nav-header">Promotions & Marketing</li>
                 <li class="nav-item">
-                    <a class="nav-link has-submenu {{ request()->routeIs('admin.offers.*') || request()->routeIs('admin.coupons.*') || request()->routeIs('admin.banners.*') ? '' : 'collapsed' }}"
+                    <a class="nav-link has-submenu {{ request()->routeIs('admin.offers.*') || request()->routeIs('admin.coupons.*') || request()->routeIs('admin.banners.*') || request()->routeIs('admin.subscribers.*') ? '' : 'collapsed' }}"
                        data-bs-toggle="collapse" href="#promotionsSubmenu" role="button"
-                       aria-expanded="{{ request()->routeIs('admin.offers.*') || request()->routeIs('admin.coupons.*') || request()->routeIs('admin.banners.*') ? 'true' : 'false' }}">
-                        <i class="bi bi-megaphone"></i> Promotions
+                       aria-expanded="{{ request()->routeIs('admin.offers.*') || request()->routeIs('admin.coupons.*') || request()->routeIs('admin.banners.*') || request()->routeIs('admin.subscribers.*') ? 'true' : 'false' }}">
+                        <i class="bi bi-megaphone"></i>
+                        <span class="nav-label">Promotions</span>
                     </a>
-                    <div class="collapse {{ request()->routeIs('admin.offers.*') || request()->routeIs('admin.coupons.*') || request()->routeIs('admin.banners.*') ? 'show' : '' }}" id="promotionsSubmenu">
+                    <div class="collapse {{ request()->routeIs('admin.offers.*') || request()->routeIs('admin.coupons.*') || request()->routeIs('admin.banners.*') || request()->routeIs('admin.subscribers.*') ? 'show' : '' }}" id="promotionsSubmenu">
                         <ul class="nav flex-column submenu">
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('admin.offers.*') ? 'active' : '' }}" href="{{ route('admin.offers.index') }}">Mega Sales & Offers</a>
@@ -468,91 +627,132 @@
                                 <a class="nav-link {{ request()->routeIs('admin.coupons.*') ? 'active' : '' }}" href="{{ route('admin.coupons.index') }}">Coupons</a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.wallets.*') ? 'active' : '' }}" href="{{ route('admin.wallets.index') }}">Customer Wallets</a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('admin.banners.*') ? 'active' : '' }}" href="{{ route('admin.banners.index') }}">Banners</a>
                             </li>
                         </ul>
                     </div>
                 </li>
 
-                <li class="nav-header">Inventory</li>
+                @if(optional(auth()->user())->isSuperAdmin())
+                <li class="nav-header">Finance & Unit Economics</li>
                 <li class="nav-item">
-                    <a class="nav-link has-submenu {{ request()->routeIs('admin.stock.*') ? '' : 'collapsed' }}"
-                       data-bs-toggle="collapse" href="#stockSubmenu" role="button"
-                       aria-expanded="{{ request()->routeIs('admin.stock.*') ? 'true' : 'false' }}">
-                        <i class="bi bi-boxes"></i> Inventory
+                    <a class="nav-link has-submenu {{ request()->routeIs('admin.finance.*') || request()->routeIs('admin.reports.*') ? '' : 'collapsed' }}"
+                       data-bs-toggle="collapse" href="#financeSubmenu" role="button"
+                       aria-expanded="{{ request()->routeIs('admin.finance.*') || request()->routeIs('admin.reports.*') ? 'true' : 'false' }}">
+                        <i class="bi bi-graph-up text-warning"></i>
+                        <span class="nav-label">Finance & P&L</span>
+                        <span class="badge bg-warning text-dark nav-badge">SUPER</span>
                     </a>
-                    <div class="collapse {{ request()->routeIs('admin.stock.*') ? 'show' : '' }}" id="stockSubmenu">
+                    <div class="collapse {{ request()->routeIs('admin.finance.*') || request()->routeIs('admin.reports.*') ? 'show' : '' }}" id="financeSubmenu">
                         <ul class="nav flex-column submenu">
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('admin.stock.dashboard') ? 'active' : '' }}" href="{{ route('admin.stock.dashboard') }}">Stock Management</a>
+                                <a class="nav-link {{ request()->routeIs('admin.finance.*') ? 'active' : '' }}" href="{{ route('admin.finance.index') }}">
+                                    <span>Financial Dashboard</span>
+                                </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('admin.stock.history') ? 'active' : '' }}" href="{{ route('admin.stock.history') }}">Stock History</a>
+                                <a class="nav-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" href="{{ route('admin.reports.index') }}">
+                                    <span>Reports & Analytics</span>
+                                </a>
                             </li>
                         </ul>
                     </div>
                 </li>
-
-                <li class="nav-header">User Management</li>
-                <li class="nav-item">
-                    <a class="nav-link has-submenu {{ request()->routeIs('admin.customers.*') || request()->routeIs('admin.reviews.*') || request()->routeIs('admin.roles.*') ? '' : 'collapsed' }}"
-                       data-bs-toggle="collapse" href="#userSubmenu" role="button"
-                       aria-expanded="{{ request()->routeIs('admin.customers.*') || request()->routeIs('admin.reviews.*') || request()->routeIs('admin.roles.*') ? 'true' : 'false' }}">
-                        <i class="bi bi-people"></i> Users
-                    </a>
-                    <div class="collapse {{ request()->routeIs('admin.customers.*') || request()->routeIs('admin.reviews.*') || request()->routeIs('admin.roles.*') ? 'show' : '' }}" id="userSubmenu">
-                        <ul class="nav flex-column submenu">
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('admin.customers.*') ? 'active' : '' }}" href="{{ route('admin.customers.index') }}">Customers</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('admin.reviews.*') ? 'active' : '' }}" href="{{ route('admin.reviews.index') }}">Reviews</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('admin.subscribers.*') ? 'active' : '' }}" href="{{ route('admin.subscribers.index') }}">Newsletter Subscribers</a>
-                            </li>
-                            @if(auth()->user()->isSuperAdmin())
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}" href="{{ route('admin.roles.index') }}">Roles & Admins</a>
-                            </li>
-                            @endif
-                        </ul>
-                    </div>
-                </li>
-
-                <li class="nav-header">Content</li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.pages.*') ? 'active' : '' }}" href="{{ route('admin.pages.index') }}">
-                        <i class="bi bi-file-earmark-text"></i> Pages
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.enquiries.*') ? 'active' : '' }}" href="{{ route('admin.enquiries.index') }}">
-                        <i class="bi bi-chat-left-text"></i> Contact Enquiries
-                        @php
-                            $unreadCount = \App\Models\ContactEnquiry::where('is_read', false)->count();
-                        @endphp
-                        @if($unreadCount > 0)
-                            <span class="badge bg-danger ms-auto rounded-pill">{{ $unreadCount }}</span>
-                        @endif
-                    </a>
-                </li>
-
-                <li class="nav-header">Other</li>
+                @else
+                <li class="nav-header">Reports</li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" href="{{ route('admin.reports.index') }}">
-                        <i class="bi bi-graph-up"></i> Reports
+                        <i class="bi bi-file-earmark-bar-graph"></i> Reports & Analytics
                     </a>
                 </li>
+                @endif
+
+                <li class="nav-header">Governance & Control</li>
+                @if(optional(auth()->user())->isSuperAdmin())
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}" href="{{ route('admin.settings.index') }}">
-                        <i class="bi bi-gear"></i> Settings
+                    <a class="nav-link has-submenu {{ request()->routeIs('admin.roles.*') || request()->routeIs('admin.pages.*') ? '' : 'collapsed' }}"
+                       data-bs-toggle="collapse" href="#governanceSubmenu" role="button"
+                       aria-expanded="{{ request()->routeIs('admin.roles.*') || request()->routeIs('admin.pages.*') ? 'true' : 'false' }}">
+                        <i class="bi bi-shield-check"></i>
+                        <span class="nav-label">Governance</span>
+                    </a>
+                    <div class="collapse {{ request()->routeIs('admin.roles.*') || request()->routeIs('admin.pages.*') ? 'show' : '' }}" id="governanceSubmenu">
+                        <ul class="nav flex-column submenu">
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}" href="{{ route('admin.roles.index') }}">Staff & Roles</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.pages.*') ? 'active' : '' }}" href="{{ route('admin.pages.index') }}">CMS Pages</a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                @endif
+
+                @if(optional(auth()->user())->isSuperAdmin())
+                <li class="nav-header">Logistics & Delivery</li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.pincodes.*') ? 'active' : '' }}" href="{{ route('admin.pincodes.index') }}">
+                        <i class="bi bi-geo-alt"></i> Pincodes & Serviceability
                     </a>
                 </li>
+                @endif
+
+                @if(optional(auth()->user())->isSuperAdmin())
+                <li class="nav-header">Operations Portals</li>
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.profile.index') ? 'active' : '' }}" href="{{ route('admin.profile.index') }}">
-                        <i class="bi bi-person-circle"></i> Profile
+                    <a class="nav-link has-submenu collapsed" data-bs-toggle="collapse" href="#operationsSubmenu" role="button" aria-expanded="false">
+                        <i class="bi bi-layers"></i>
+                        <span class="nav-label">Operations Portals</span>
                     </a>
+                    <div class="collapse" id="operationsSubmenu">
+                        <ul class="nav flex-column submenu">
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center justify-content-between" href="{{ route('product-manager.dashboard') }}" target="_blank">
+                                    <span><i class="bi bi-box-seam me-2 text-primary"></i> Product Manager</span>
+                                    <i class="bi bi-box-arrow-up-right small text-white-50"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center justify-content-between" href="{{ route('order-manager.dashboard') }}" target="_blank">
+                                    <span><i class="bi bi-truck me-2 text-info"></i> Order Manager</span>
+                                    <i class="bi bi-box-arrow-up-right small text-white-50"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center justify-content-between" href="{{ route('support.dashboard') }}" target="_blank">
+                                    <span><i class="bi bi-headset me-2" style="color: #a855f7;"></i> Customer Support</span>
+                                    <i class="bi bi-box-arrow-up-right small text-white-50"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                @endif
+
+                <li class="nav-header">System Settings</li>
+                <li class="nav-item">
+                    <a class="nav-link has-submenu {{ request()->routeIs('admin.settings.*') || request()->routeIs('admin.profile.*') ? '' : 'collapsed' }}"
+                       data-bs-toggle="collapse" href="#settingsSubmenu" role="button"
+                       aria-expanded="{{ request()->routeIs('admin.settings.*') || request()->routeIs('admin.profile.*') ? 'true' : 'false' }}">
+                        <i class="bi bi-gear"></i>
+                        <span class="nav-label">Settings & Profile</span>
+                    </a>
+                    <div class="collapse {{ request()->routeIs('admin.settings.*') || request()->routeIs('admin.profile.*') ? 'show' : '' }}" id="settingsSubmenu">
+                        <ul class="nav flex-column submenu">
+                            @if(optional(auth()->user())->isSuperAdmin())
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}" href="{{ route('admin.settings.index') }}">Store Settings</a>
+                            </li>
+                            @endif
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.profile.*') ? 'active' : '' }}" href="{{ route('admin.profile.index') }}">Profile & Security</a>
+                            </li>
+                        </ul>
+                    </div>
                 </li>
                 <li class="nav-item mt-4">
                     <a class="nav-link text-danger" href="#" onclick="event.preventDefault(); document.getElementById('admin-logout-form').submit();">
@@ -569,8 +769,8 @@
     <!-- Top Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light navbar-admin fixed-top">
         <div class="container-fluid">
-            <button class="btn border-0 d-lg-none" type="button" onclick="document.getElementById('sidebar').classList.toggle('show')">
-                <i class="bi bi-list fs-4"></i>
+            <button class="btn btn-light border rounded-3 p-1.5 d-lg-none me-2 d-flex align-items-center justify-content-center shadow-xs" type="button" onclick="toggleSidebar()" style="width: 38px; height: 38px; background: #ffffff;" title="Toggle Navigation">
+                <i class="bi bi-list fs-4 text-dark"></i>
             </button>
 
             <nav aria-label="breadcrumb" class="d-none d-md-inline-block">
@@ -580,14 +780,87 @@
             </nav>
 
             <ul class="navbar-nav ms-auto align-items-center">
+                @php
+                    $navPendingProducts = \App\Models\Product::where('status', 'Pending_Approval')->with('submitter')->latest()->take(5)->get();
+                    $navPendingCount = $globalPendingProductsCount ?? \App\Models\Product::where('status', 'Pending_Approval')->count();
+                @endphp
+
+                <!-- Notifications Dropdown -->
+                <li class="nav-item dropdown me-2">
+                    <a class="btn btn-light position-relative p-2 rounded-3 border d-flex align-items-center justify-content-center shadow-xs" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 38px; height: 38px; background: #ffffff;">
+                        <i class="bi bi-bell fs-5 text-dark"></i>
+                        @if($navPendingCount > 0)
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-white" style="font-size: 0.65rem; padding: 0.25em 0.5em;">
+                                {{ $navPendingCount }}
+                                <span class="visually-hidden">pending approvals</span>
+                            </span>
+                        @endif
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 p-0 mt-2" style="width: 350px; max-width: 90vw; z-index: 1060;">
+                        <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-light rounded-top-4">
+                            <h6 class="mb-0 fw-bold text-dark fs-6">
+                                <i class="bi bi-bell-fill text-primary me-1.5"></i> Pending Approvals
+                            </h6>
+                            @if($navPendingCount > 0)
+                                <span class="badge bg-danger rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">
+                                    {{ $navPendingCount }} Action Required
+                                </span>
+                            @else
+                                <span class="badge bg-success rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">All Clean</span>
+                            @endif
+                        </div>
+                        <div class="p-2" style="max-height: 320px; overflow-y: auto;">
+                            @if($navPendingProducts->count() > 0)
+                                <div class="text-uppercase text-muted fw-bold px-2 py-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">Products Awaiting Review</div>
+                                @foreach($navPendingProducts as $pendProd)
+                                    <div class="d-flex align-items-center justify-content-between p-2 rounded-3 hover-bg-light mb-1 border">
+                                        <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                            @if($pendProd->main_image)
+                                                <img src="{{ asset('storage/' . $pendProd->main_image) }}" class="rounded-2 border flex-shrink-0" style="width: 38px; height: 38px; object-fit: cover;">
+                                            @else
+                                                <div class="rounded-2 bg-light d-flex align-items-center justify-content-center text-muted border flex-shrink-0" style="width: 38px; height: 38px;">
+                                                    <i class="bi bi-box-seam" style="font-size: 0.85rem;"></i>
+                                                </div>
+                                            @endif
+                                            <div class="overflow-hidden">
+                                                <a href="{{ route('admin.products.index', ['status' => 'Pending_Approval', 'search' => $pendProd->name]) }}" class="fw-bold text-dark text-decoration-none small text-truncate d-block" style="font-size: 0.78rem;">
+                                                    {{ $pendProd->name }}
+                                                </a>
+                                                <div class="text-muted" style="font-size: 0.68rem;">
+                                                    By: {{ $pendProd->submitter->name ?? 'Product Manager' }} &bull; {{ $pendProd->created_at->diffForHumans() }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <a href="{{ route('admin.products.show', $pendProd) }}" class="btn btn-sm btn-primary rounded-pill px-2.5 py-1 ms-2 flex-shrink-0" style="font-size: 0.72rem;">
+                                            Review
+                                        </a>
+                                    </div>
+                                @endforeach
+                            @else
+                                <div class="text-center py-4 text-muted">
+                                    <i class="bi bi-check-circle text-success fs-2 d-block mb-1 opacity-50"></i>
+                                    <div class="small fw-semibold">No Pending Approvals</div>
+                                    <div style="font-size: 0.7rem;">All product submissions have been reviewed.</div>
+                                </div>
+                            @endif
+                        </div>
+                        <div class="p-2.5 border-top bg-light rounded-bottom-4 text-center">
+                            <a href="{{ route('admin.products.index', ['status' => 'Pending_Approval']) }}" class="text-primary fw-bold small text-decoration-none" style="font-size: 0.75rem;">
+                                View All Pending Approvals ({{ $navPendingCount }}) <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </li>
+
                 <li class="nav-item">
+                    @php $adminNavbarUser = Auth::guard('admin')->user() ?? Auth::user() ?? Auth::guard('order_manager')->user(); @endphp
                     <div class="d-flex align-items-center gap-2 ms-2 px-3 py-1 rounded-3" style="background:#f1f5f9; border:1px solid #e2e8f0;">
                         <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;color:#fff;flex-shrink:0;">
-                            {{ strtoupper(substr(Auth::guard('admin')->user()->name, 0, 1)) }}
+                            {{ strtoupper(substr($adminNavbarUser->name ?? 'A', 0, 1)) }}
                         </div>
                         <div>
-                            <div style="font-size:0.8rem;font-weight:600;color:#0f172a;line-height:1.1;">{{ Auth::guard('admin')->user()->name }}</div>
-                            <div style="font-size:0.65rem;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">{{ Auth::guard('admin')->user()->role->name }}</div>
+                            <div style="font-size:0.8rem;font-weight:600;color:#0f172a;line-height:1.1;">{{ $adminNavbarUser->name ?? 'Admin' }}</div>
+                            <div style="font-size:0.65rem;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">{{ $adminNavbarUser->role?->name ?? 'Administrator' }}</div>
                         </div>
                     </div>
                 </li>
@@ -597,10 +870,10 @@
 
     <!-- Main Content -->
     <main class="main-content">
-        <div class="container-fluid px-4">
-            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center mb-4">
+        <div class="container-fluid px-3 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap align-items-center gap-2 mb-4">
                 <h1 class="h3 fw-bold mb-0">@yield('header', 'Dashboard')</h1>
-                <div class="btn-toolbar mb-2 mb-md-0">
+                <div class="btn-toolbar mb-0">
                     @yield('actions')
                 </div>
             </div>
@@ -624,6 +897,13 @@
     <script src="{{ asset('js/admin-filters.js') }}?v={{ time() }}"></script>
 
     <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            if (sidebar) sidebar.classList.toggle('show');
+            if (backdrop) backdrop.classList.toggle('show');
+        }
+
         function initTinyMCE() {
             if (document.getElementById('page-content')) {
                 // Remove existing instances if navigating via AJAX
@@ -753,6 +1033,9 @@
             })
         }
     </script>
+
+    @include('components.staff-live-poller', ['endpoint' => route('admin.live-orders'), 'portal' => 'admin'])
+
     @stack('scripts')
 </body>
 </html>

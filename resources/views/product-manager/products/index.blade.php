@@ -17,24 +17,24 @@
 
 {{-- Quick Status Filter Tabs --}}
 <div class="d-flex flex-wrap gap-2 mb-3">
-    <a href="{{ route('product-manager.products.index') }}" class="btn btn-sm rounded-pill px-3 py-1.5 fw-medium {{ !request('status') ? 'btn-dark' : 'btn-outline-secondary' }}">
+    <a href="{{ route('product-manager.products.index') }}" class="btn btn-sm rounded-pill px-3.5 py-1.5 fw-bold {{ !request('status') ? 'btn-dark text-white' : 'btn-light border text-secondary' }}">
         All Products <span class="badge bg-secondary ms-1">{{ $totalCount }}</span>
     </a>
-    <a href="{{ route('product-manager.products.index', array_merge(request()->query(), ['status' => 'Pending_Approval'])) }}" class="btn btn-sm rounded-pill px-3 py-1.5 fw-medium {{ request('status') === 'Pending_Approval' ? 'btn-warning text-dark' : 'btn-outline-warning text-dark' }}">
-        <i class="bi bi-hourglass-split me-1"></i> Pending Approvals 
+    <a href="{{ route('product-manager.products.index', array_merge(request()->query(), ['status' => 'Pending_Approval'])) }}" class="btn btn-sm rounded-pill px-3.5 py-1.5 fw-bold {{ request('status') === 'Pending_Approval' ? 'btn-warning text-dark' : 'btn-light border text-dark' }}">
+        <i class="bi bi-hourglass-split me-1 text-warning"></i> Pending Approvals 
         @if($pendingCount > 0)
             <span class="badge bg-danger text-white ms-1">{{ $pendingCount }}</span>
         @else
             <span class="badge bg-light text-muted ms-1">0</span>
         @endif
     </a>
-    <a href="{{ route('product-manager.products.index', array_merge(request()->query(), ['status' => 'Active'])) }}" class="btn btn-sm rounded-pill px-3 py-1.5 fw-medium {{ request('status') === 'Active' ? 'btn-success' : 'btn-outline-success' }}">
-        <i class="bi bi-check-circle me-1"></i> Live & Active <span class="badge bg-success bg-opacity-25 text-success ms-1">{{ $activeCount }}</span>
+    <a href="{{ route('product-manager.products.index', array_merge(request()->query(), ['status' => 'Active'])) }}" class="btn btn-sm rounded-pill px-3.5 py-1.5 fw-bold {{ request('status') === 'Active' ? 'btn-success text-white' : 'btn-light border text-secondary' }}">
+        <i class="bi bi-check-circle me-1 text-success"></i> Live & Active <span class="badge bg-success bg-opacity-25 text-success ms-1">{{ $activeCount }}</span>
     </a>
-    <a href="{{ route('product-manager.products.index', array_merge(request()->query(), ['status' => 'Rejected'])) }}" class="btn btn-sm rounded-pill px-3 py-1.5 fw-medium {{ request('status') === 'Rejected' ? 'btn-danger' : 'btn-outline-danger' }}">
-        <i class="bi bi-x-circle me-1"></i> Rejected <span class="badge bg-danger bg-opacity-25 text-danger ms-1">{{ $rejectedCount }}</span>
+    <a href="{{ route('product-manager.products.index', array_merge(request()->query(), ['status' => 'Rejected'])) }}" class="btn btn-sm rounded-pill px-3.5 py-1.5 fw-bold {{ request('status') === 'Rejected' ? 'btn-danger text-white' : 'btn-light border text-secondary' }}">
+        <i class="bi bi-x-circle me-1 text-danger"></i> Rejected <span class="badge bg-danger bg-opacity-25 text-danger ms-1">{{ $rejectedCount }}</span>
     </a>
-    <a href="{{ route('product-manager.products.index', array_merge(request()->query(), ['status' => 'Inactive'])) }}" class="btn btn-sm rounded-pill px-3 py-1.5 fw-medium {{ request('status') === 'Inactive' ? 'btn-secondary' : 'btn-outline-secondary' }}">
+    <a href="{{ route('product-manager.products.index', array_merge(request()->query(), ['status' => 'Inactive'])) }}" class="btn btn-sm rounded-pill px-3.5 py-1.5 fw-bold {{ request('status') === 'Inactive' ? 'btn-secondary text-white' : 'btn-light border text-secondary' }}">
         Inactive <span class="badge bg-light text-dark ms-1">{{ $inactiveCount }}</span>
     </a>
 </div>
@@ -199,8 +199,14 @@
                         </td>
                         <td class="pe-4 text-end">
                             <div class="btn-group" role="group">
+                                <a href="{{ route('product-manager.products.show', $product) }}" class="btn btn-sm btn-light text-info" style="border: 1px solid #cbd5e1; font-size:0.78rem;" title="View Product Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
                                 <a href="{{ route('product-manager.products.edit', $product) }}" class="btn btn-sm btn-light text-primary" style="border: 1px solid #cbd5e1; font-size:0.78rem;" title="Edit Product">
                                     <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{{ route('product-manager.stock.history', ['product_id' => $product->id]) }}" class="btn btn-sm btn-light text-success" style="border: 1px solid #cbd5e1; font-size:0.78rem;" title="Product Stock Movement History">
+                                    <i class="bi bi-clock-history"></i>
                                 </a>
                                 @if($product->status === 'Rejected')
                                     <form action="{{ route('product-manager.products.resubmit', $product) }}" method="POST" class="d-inline">
@@ -211,7 +217,7 @@
                                     </form>
                                 @endif
                                 <a href="{{ route('product-manager.stock.form', ['product' => $product, 'action' => 'adjust']) }}" class="btn btn-sm btn-light text-secondary" style="border: 1px solid #cbd5e1; font-size:0.78rem;" title="Adjust Stock">
-                                    <i class="bi bi-stack"></i>
+                                    <i class="bi bi-sliders"></i>
                                 </a>
                             </div>
                         </td>

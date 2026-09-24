@@ -11,8 +11,9 @@ class SettingController extends Controller
 {
     public function index()
     {
-        if (!auth()->user()->isAdmin()) {
-            abort(403);
+        $user = auth('admin')->user() ?? auth()->user();
+        if (!$user || !$user->isSuperAdmin()) {
+            abort(403, 'Unauthorized. Super Admin access required for Store Settings.');
         }
 
         $settings = Setting::all()->pluck('value', 'key')->toArray();
@@ -21,14 +22,19 @@ class SettingController extends Controller
 
     public function update(Request $request)
     {
-        if (!auth()->user()->isAdmin()) {
-            abort(403);
+        $user = auth('admin')->user() ?? auth()->user();
+        if (!$user || !$user->isSuperAdmin()) {
+            abort(403, 'Unauthorized. Super Admin access required for Store Settings.');
         }
 
         $validated = $request->validate([
             'store_name' => 'nullable|string|max:255',
+            'tagline' => 'nullable|string|max:500',
+            'copyright_text' => 'nullable|string|max:255',
+            'support_hours' => 'nullable|string|max:255',
             'contact_email' => 'nullable|email|max:255',
             'contact_phone' => 'nullable|string|max:20',
+            'whatsapp_number' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500',
             'currency' => 'nullable|string|max:10',
             'currency_symbol' => 'nullable|string|max:5',
@@ -36,9 +42,25 @@ class SettingController extends Controller
             'favicon' => 'nullable|image|max:1024',
             'enable_trust_badges' => 'nullable|string',
             'free_shipping_min' => 'nullable|numeric',
+            'cod_fee_enabled' => 'nullable|string',
+            'cod_flat_fee' => 'nullable|numeric|min:0',
             'enable_flash_sale' => 'nullable|string',
             'flash_sale_end_time' => 'nullable|string',
             'flash_sale_title' => 'nullable|string|max:255',
+            'trust_badge_1_title' => 'nullable|string|max:100',
+            'trust_badge_1_desc' => 'nullable|string|max:150',
+            'trust_badge_2_title' => 'nullable|string|max:100',
+            'trust_badge_2_desc' => 'nullable|string|max:150',
+            'trust_badge_3_title' => 'nullable|string|max:100',
+            'trust_badge_3_desc' => 'nullable|string|max:150',
+            'trust_badge_4_title' => 'nullable|string|max:100',
+            'trust_badge_4_desc' => 'nullable|string|max:150',
+            'allow_customer_cancellation' => 'nullable|string',
+            'facebook_url' => 'nullable|url|max:255',
+            'instagram_url' => 'nullable|url|max:255',
+            'twitter_url' => 'nullable|url|max:255',
+            'linkedin_url' => 'nullable|url|max:255',
+            'youtube_url' => 'nullable|url|max:255',
         ]);
 
         foreach ($validated as $key => $value) {

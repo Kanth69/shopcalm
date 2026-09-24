@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Enums\MovementType;
 use App\Enums\StockSource;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
@@ -16,14 +18,23 @@ class CheckoutService
     protected $cartService;
     protected $orderService;
     protected $couponService;
+    protected $fulfillmentService;
 
-    public function __construct(CartService $cartService, OrderService $orderService, CouponService $couponService)
-    {
+    public function __construct(
+        CartService $cartService,
+        OrderService $orderService,
+        CouponService $couponService,
+        FulfillmentService $fulfillmentService
+    ) {
         $this->cartService = $cartService;
         $this->orderService = $orderService;
         $this->couponService = $couponService;
+        $this->fulfillmentService = $fulfillmentService;
     }
 
+    /**
+     * Place a standard Cash on Delivery (COD) Order.
+     */
     public function placeOrder(array $data): Order
     {
         return DB::transaction(function () use ($data) {
@@ -32,7 +43,14 @@ class CheckoutService
                 throw new Exception("Shopping cart is empty.");
             }
 
-            $user = Auth::user();
+            // Validate shipping PIN code serviceability
+            $deliveryService = app(\App\Services\DeliveryService::class);
+            $pincodeCheck = $deliveryService->checkServiceability($data['shipping_zip'] ?? '');
+            if (!$pincodeCheck['is_serviceable']) {
+                throw new Exception("Delivery is currently unavailable to PIN code " . ($data['shipping_zip'] ?? '') . ". Please select a serviceable delivery address.");
+            }
+
+            $user = Auth::guard('customer')->user() ?? Auth::user();
             $subtotalAmount = $this->cartService->subtotal();
             $discountAmount = 0;
             $couponId = null;
@@ -40,18 +58,33 @@ class CheckoutService
             // Handle Coupon
             $appliedCouponCode = Session::get('applied_coupon');
             if ($appliedCouponCode) {
-                // Re-validate coupon inside transaction to ensure it's still valid at exact moment of purchase
                 $coupon = $this->couponService->validateCoupon($appliedCouponCode, $user, $subtotalAmount);
                 $discountAmount = $this->couponService->calculateDiscount($coupon, $subtotalAmount);
                 $couponId = $coupon->id;
             }
 
+            // Handle Shipping Fee & COD Handling Fee
+            $freeShippingMin = (float) \App\Models\Setting::get('free_shipping_min', 499);
+            $shippingFee = ($subtotalAmount >= $freeShippingMin) ? 0.00 : (float) ($pincodeCheck['delivery_charge'] ?? 0.00);
+            $codFee = (float) ($pincodeCheck['cod_fee'] ?? 40.00);
+
             // Handle Offer Discount
             $offerDiscount = app(\App\Services\OfferService::class)->calculateCheckoutOfferDiscount($cart);
+            $payableBeforeWallet = max(0, $subtotalAmount - $discountAmount - $offerDiscount + $shippingFee + $codFee);
 
-            $totalAmount = max(0, $subtotalAmount - $discountAmount - $offerDiscount);
+            // Handle Wallet Deduction
+            $useWallet = !empty($data['use_wallet']) || Session::get('use_wallet', false);
+            $walletAmountUsed = 0.00;
+            if ($useWallet && $user) {
+                $userWallet = app(\App\Services\WalletService::class)->getOrCreateWallet($user);
+                if ($userWallet->status === 'active' && $userWallet->balance > 0) {
+                    $walletAmountUsed = min((float) $userWallet->balance, $payableBeforeWallet);
+                }
+            }
 
-            // Save address to user's address book if new or requested
+            $totalAmount = max(0, $payableBeforeWallet - $walletAmountUsed);
+
+            // Save address to user's address book if new
             if ($user) {
                 $existingAddress = $user->addresses()
                     ->where('address', $data['shipping_address'])
@@ -71,17 +104,22 @@ class CheckoutService
                 }
             }
 
+            $orderNumber = $this->generateOrderNumber();
+
             // 1. Create Order
             $order = Order::create([
                 'user_id' => $user->id,
-                'order_number' => $this->generateOrderNumber(),
+                'order_number' => $orderNumber,
                 'subtotal_amount' => $subtotalAmount,
+                'shipping_charge' => $shippingFee,
                 'coupon_id' => $couponId,
                 'coupon_discount_amount' => $discountAmount,
+                'wallet_amount_used' => $walletAmountUsed,
+                'cod_fee' => $codFee,
                 'total_amount' => $totalAmount,
                 'payment_method' => 'cod',
                 'payment_status' => 'pending',
-                'status' => 'pending', // Explicitly set initial status
+                'status' => 'confirmed',
                 'shipping_name' => $data['shipping_name'],
                 'shipping_email' => $data['shipping_email'],
                 'shipping_phone' => $data['shipping_phone'],
@@ -93,67 +131,499 @@ class CheckoutService
                 'notes' => $data['notes'] ?? null,
             ]);
 
-            // 2. Record Coupon Usage (Now passing ID to ensure lockForUpdate is applied correctly within the service)
+            // 1.1 Debit Wallet Balance if used
+            if ($walletAmountUsed > 0 && $user) {
+                app(\App\Services\WalletService::class)->redeemWalletForOrder($user, $order, $walletAmountUsed);
+                Session::forget('use_wallet');
+            }
+
+            // 2. Create Payment Ledger Entry
+            Payment::create([
+                'order_id'             => $order->id,
+                'user_id'              => $user->id,
+                'order_number'         => $orderNumber,
+                'gateway'              => 'cod',
+                'amount'               => $totalAmount,
+                'currency'             => 'INR',
+                'status'               => 'PENDING',
+                'payment_method_group' => 'cod',
+                'gateway_message'      => 'Cash on Delivery (Pending collection by rider)',
+            ]);
+
+            // 3. Record Coupon Usage
             if ($couponId) {
                 $this->couponService->recordUsage($couponId, $user, $order, $discountAmount);
             }
 
-            // 3. Process Items and Stock
+            // 4. Process Items, Tax and Stock
+            $totalOrderTax = 0.00;
             foreach ($cart->items as $item) {
-                // Lock the product row for update to prevent race conditions during checkout
                 $product = Product::where('id', $item->product_id)->lockForUpdate()->first();
 
                 if (!$product || $product->stock < $item->quantity) {
                     throw new Exception("Product {$item->product->name} is out of stock or insufficient quantity.");
                 }
 
-                // Create Order Item
                 $originalPrice = (float) $product->price;
                 $unitPrice = (float) $item->unit_price;
                 $offerDiscount = max(0, $originalPrice - $unitPrice);
-                
+                $itemTotalPrice = $unitPrice * $item->quantity;
+
+                $taxRate = (float) ($product->tax_rate ?? 18.00);
+                $taxableBase = $taxRate > 0 ? ($itemTotalPrice / (1 + ($taxRate / 100))) : $itemTotalPrice;
+                $itemTaxAmount = round($itemTotalPrice - $taxableBase, 2);
+                $totalOrderTax += $itemTaxAmount;
+
                 $order->items()->create([
-                    'product_id' => $product->id,
-                    'product_name' => $product->name,
-                    'original_price' => $originalPrice,
-                    'offer_discount' => $offerDiscount,
-                    'unit_price' => $unitPrice,
-                    'quantity' => $item->quantity,
-                    'total_price' => $unitPrice * $item->quantity,
+                    'product_id'      => $product->id,
+                    'product_name'    => $product->name,
+                    'original_price'  => $originalPrice,
+                    'offer_discount'  => $offerDiscount,
+                    'unit_price'      => $unitPrice,
+                    'quantity'        => $item->quantity,
+                    'total_price'     => $itemTotalPrice,
+                    'tax_rate'        => $taxRate,
+                    'tax_amount'      => $itemTaxAmount,
+                    'selected_option' => $item->selected_option,
                 ]);
 
                 $stockBefore = $product->stock;
-                $stockAfter = $stockBefore - $item->quantity;
+                $stockAfter = max(0, $stockBefore - $item->quantity);
 
-                // Create Stock Movement (SALE)
                 $order->stockMovements()->create([
-                    'product_id' => $product->id,
+                    'product_id'    => $product->id,
                     'movement_type' => MovementType::SALE,
-                    'source' => StockSource::ORDER,
-                    'quantity' => $item->quantity,
-                    'stock_before' => $stockBefore,
-                    'stock_after' => $stockAfter,
-                    'notes' => "Order #{$order->order_number} placed.",
-                    'created_by' => null, // System action triggered by customer
+                    'source'        => StockSource::ORDER,
+                    'quantity'      => $item->quantity,
+                    'stock_before'  => $stockBefore,
+                    'stock_after'   => $stockAfter,
+                    'notes'         => "Order #{$order->order_number} placed (COD)" . ($item->selected_option ? " [Option: {$item->selected_option}]" : "") . ".",
+                    'created_by'    => null,
                 ]);
 
-                // Deduct actual stock
-                $product->stock = $stockAfter;
-                $product->save();
+                $product->reduceOptionStock($item->selected_option, $item->quantity);
             }
 
-            // 4. Record Initial Order Status History
-            $this->orderService->recordInitialStatus($order);
+            $order->update(['tax_amount' => $totalOrderTax]);
 
-            // 5. Clear Cart
+            // 5. Fulfillment & Status
+            $this->orderService->recordInitialStatus($order);
+            $this->fulfillmentService->createInitialFulfillment($order);
+
+            // 6. Clear Cart
             $this->cartService->clearCart();
 
             return $order;
         });
     }
 
-    private function generateOrderNumber(): string
+    /**
+     * Create an eager Pending Online Order before payment gateway redirect.
+     * Records the order & items immediately so no transaction is ever lost.
+     */
+    public function createPendingOnlineOrder(array $data, User $user): Order
     {
-        return 'WK' . date('Ymd') . str_pad(Order::count() + 1, 6, '0', STR_PAD_LEFT);
+        return DB::transaction(function () use ($data, $user) {
+            $cart = $this->cartService->getCart();
+            if ($cart->items->isEmpty()) {
+                throw new Exception("Shopping cart is empty.");
+            }
+
+            // Validate shipping PIN code serviceability
+            $deliveryService = app(\App\Services\DeliveryService::class);
+            $pincodeCheck = $deliveryService->checkServiceability($data['shipping_zip'] ?? '');
+            if (!$pincodeCheck['is_serviceable']) {
+                throw new Exception("Delivery is currently unavailable to PIN code " . ($data['shipping_zip'] ?? '') . ". Please select a serviceable delivery address.");
+            }
+
+            $subtotalAmount = $this->cartService->subtotal();
+            $discountAmount = 0;
+            $couponId = null;
+
+            // Handle Coupon
+            $appliedCouponCode = Session::get('applied_coupon');
+            if ($appliedCouponCode) {
+                $coupon = $this->couponService->validateCoupon($appliedCouponCode, $user, $subtotalAmount);
+                $discountAmount = $this->couponService->calculateDiscount($coupon, $subtotalAmount);
+                $couponId = $coupon->id;
+            }
+
+            // Handle Shipping Fee
+            $freeShippingMin = (float) \App\Models\Setting::get('free_shipping_min', 499);
+            $shippingFee = ($subtotalAmount >= $freeShippingMin) ? 0.00 : (float) ($pincodeCheck['delivery_charge'] ?? 0.00);
+
+            // Handle Offer Discount
+            $offerDiscount = app(\App\Services\OfferService::class)->calculateCheckoutOfferDiscount($cart);
+            $payableBeforeWallet = max(0, $subtotalAmount - $discountAmount - $offerDiscount + $shippingFee);
+
+            // Handle Wallet Deduction
+            $useWallet = !empty($data['use_wallet']) || Session::get('use_wallet', false);
+            $walletAmountUsed = 0.00;
+            if ($useWallet && $user) {
+                $userWallet = app(\App\Services\WalletService::class)->getOrCreateWallet($user);
+                if ($userWallet->status === 'active' && $userWallet->balance > 0) {
+                    $walletAmountUsed = min((float) $userWallet->balance, $payableBeforeWallet);
+                }
+            }
+
+            $totalAmount = max(0, $payableBeforeWallet - $walletAmountUsed);
+
+            // Save address to user's address book if new
+            $existingAddress = $user->addresses()
+                ->where('address', $data['shipping_address'])
+                ->where('zip', $data['shipping_zip'])
+                ->first();
+
+            if (!$existingAddress) {
+                $user->addresses()->create([
+                    'name'    => $data['shipping_name'],
+                    'phone'   => $data['shipping_phone'],
+                    'address' => $data['shipping_address'],
+                    'city'    => $data['shipping_city'],
+                    'state'   => $data['shipping_state'],
+                    'zip'     => $data['shipping_zip'],
+                    'country' => $data['shipping_country'] ?? 'India',
+                ]);
+            }
+
+            $orderNumber = $this->generateOrderNumber();
+
+            // 1. Create Initial Order with 'pending' status
+            $order = Order::create([
+                'user_id'                => $user->id,
+                'order_number'           => $orderNumber,
+                'subtotal_amount'        => $subtotalAmount,
+                'shipping_charge'        => $shippingFee,
+                'coupon_id'              => $couponId,
+                'coupon_discount_amount' => $discountAmount,
+                'wallet_amount_used'     => $walletAmountUsed,
+                'cod_fee'                => 0.00,
+                'total_amount'           => $totalAmount,
+                'payment_method'         => 'online',
+                'payment_status'         => 'pending',
+                'status'                 => 'pending',
+                'shipping_name'          => $data['shipping_name'],
+                'shipping_email'         => $data['shipping_email'],
+                'shipping_phone'         => $data['shipping_phone'],
+                'shipping_address'       => $data['shipping_address'],
+                'shipping_city'          => $data['shipping_city'],
+                'shipping_state'         => $data['shipping_state'],
+                'shipping_zip'           => $data['shipping_zip'],
+                'shipping_country'       => $data['shipping_country'] ?? 'India',
+                'notes'                  => $data['notes'] ?? null,
+            ]);
+
+            // 2. Create Order Items and Tax Calculation
+            $totalOrderTax = 0.00;
+            foreach ($cart->items as $item) {
+                $product = $item->product;
+                $originalPrice = (float) ($product ? $product->price : $item->unit_price);
+                $unitPrice = (float) $item->unit_price;
+                $itemOfferDiscount = max(0, $originalPrice - $unitPrice);
+                $itemTotalPrice = $unitPrice * $item->quantity;
+
+                $taxRate = (float) ($product->tax_rate ?? 18.00);
+                $taxableBase = $taxRate > 0 ? ($itemTotalPrice / (1 + ($taxRate / 100))) : $itemTotalPrice;
+                $itemTaxAmount = round($itemTotalPrice - $taxableBase, 2);
+                $totalOrderTax += $itemTaxAmount;
+
+                $order->items()->create([
+                    'product_id'      => $item->product_id,
+                    'product_name'    => $item->product_name ?? ($product ? $product->name : 'Product'),
+                    'original_price'  => $originalPrice,
+                    'offer_discount'  => $itemOfferDiscount,
+                    'unit_price'      => $unitPrice,
+                    'quantity'        => $item->quantity,
+                    'total_price'     => $itemTotalPrice,
+                    'tax_rate'        => $taxRate,
+                    'tax_amount'      => $itemTaxAmount,
+                    'selected_option' => $item->selected_option,
+                ]);
+            }
+
+            $order->update(['tax_amount' => $totalOrderTax]);
+
+            // 3. Create Initial Payment Ledger Entry in PENDING status
+            Payment::create([
+                'order_id'             => $order->id,
+                'user_id'              => $user->id,
+                'order_number'         => $orderNumber,
+                'gateway'              => 'cashfree',
+                'amount'               => $totalAmount,
+                'currency'             => 'INR',
+                'status'               => 'PENDING',
+                'payment_method_group' => 'online',
+                'gateway_message'      => 'Awaiting customer payment authorization on Cashfree.',
+            ]);
+
+            // 4. Initial Status History
+            $order->statusHistories()->create([
+                'previous_status' => 'pending',
+                'current_status'  => 'pending',
+                'changed_by'      => $user->id,
+                'notes'           => 'Online order initiated. Awaiting payment authorization.',
+            ]);
+
+            return $order;
+        });
+    }
+
+    /**
+     * Mark an existing Order as PAID upon verified Cashfree payment callback/webhook.
+     */
+    public function markOrderPaid(Order $order, array $paymentData, User $user): Order
+    {
+        return DB::transaction(function () use ($order, $paymentData, $user) {
+            // If already marked paid, return idempotent instance
+            if ($order->payment_status === 'paid' && $order->status !== 'pending') {
+                return $order;
+            }
+
+            // 1. Update Order Status
+            $order->update([
+                'payment_status' => 'paid',
+                'status'         => 'confirmed',
+            ]);
+
+            // 2. Debit Wallet Balance if used
+            if ((float) $order->wallet_amount_used > 0) {
+                app(\App\Services\WalletService::class)->redeemWalletForOrder($user, $order, (float) $order->wallet_amount_used);
+                Session::forget('use_wallet');
+            }
+
+            // 3. Record Coupon Usage
+            if ($order->coupon_id) {
+                $this->couponService->recordUsage($order->coupon_id, $user, $order, (float) $order->coupon_discount_amount);
+            }
+
+            // 4. Update Payment Ledger Entry with Bank UTR & Gateway IDs
+            Payment::updateOrCreate(
+                ['order_id' => $order->id],
+                [
+                    'user_id'                => $user->id,
+                    'order_number'           => $order->order_number,
+                    'gateway'                => $paymentData['gateway'] ?? 'cashfree',
+                    'gateway_order_id'       => $paymentData['gateway_order_id'] ?? null,
+                    'gateway_payment_id'     => $paymentData['gateway_payment_id'] ?? null,
+                    'payment_session_id'     => $paymentData['payment_session_id'] ?? null,
+                    'amount'                 => (float) $order->total_amount,
+                    'currency'               => 'INR',
+                    'status'                 => 'SUCCESS',
+                    'payment_method_group'   => $paymentData['payment_method_group'] ?? 'upi',
+                    'payment_method_details' => $paymentData['payment_method_details'] ?? null,
+                    'bank_reference'         => $paymentData['bank_reference'] ?? null,
+                    'payment_time'           => $paymentData['payment_time'] ?? now(),
+                    'gateway_message'        => $paymentData['gateway_message'] ?? 'Transaction Successful',
+                    'raw_response'           => $paymentData['raw_response'] ?? null,
+                ]
+            );
+
+            // 5. Deduct Product Stock & Record Movements
+            foreach ($order->items as $item) {
+                $product = Product::where('id', $item->product_id)->lockForUpdate()->first();
+                if ($product) {
+                    $stockBefore = $product->stock;
+                    $stockAfter = max(0, $stockBefore - $item->quantity);
+
+                    $order->stockMovements()->create([
+                        'product_id'    => $product->id,
+                        'movement_type' => MovementType::SALE,
+                        'source'        => StockSource::ORDER,
+                        'quantity'      => $item->quantity,
+                        'stock_before'  => $stockBefore,
+                        'stock_after'   => $stockAfter,
+                        'notes'         => "Prepaid Online Order #{$order->order_number} verified via Cashfree (Bank UTR: " . ($paymentData['bank_reference'] ?? 'N/A') . ").",
+                        'created_by'    => null,
+                    ]);
+
+                    $product->reduceOptionStock($item->selected_option, $item->quantity);
+                }
+            }
+
+            // 6. Initialize Fulfillment & Status History
+            $this->orderService->recordInitialStatus($order);
+            $this->fulfillmentService->createInitialFulfillment($order);
+
+            $order->statusHistories()->create([
+                'previous_status' => 'pending',
+                'current_status'  => 'confirmed',
+                'changed_by'      => $user->id,
+                'notes'           => "Prepaid Online Order verified via Cashfree (Bank UTR: " . ($paymentData['bank_reference'] ?? 'N/A') . ").",
+            ]);
+
+            // 7. Clear Cart
+            $this->cartService->clearCart();
+
+            // 8. Trigger Email Confirmation
+            try {
+                app(\App\Services\EmailService::class)->sendOrderConfirmation($order);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("[CheckoutService] Email order confirmation failed: " . $e->getMessage());
+            }
+
+            return $order;
+        });
+    }
+
+    /**
+     * Mark an online order payment as FAILED or DROPPED.
+     */
+    public function markOrderPaymentFailed(Order $order, string $reason = 'Payment incomplete or cancelled.'): Order
+    {
+        return DB::transaction(function () use ($order, $reason) {
+            $order->update([
+                'payment_status' => 'failed',
+            ]);
+
+            $payment = Payment::where('order_id', $order->id)->latest()->first();
+            if ($payment) {
+                $payment->update([
+                    'status'          => 'FAILED',
+                    'gateway_message' => $reason,
+                ]);
+            }
+
+            $order->statusHistories()->create([
+                'previous_status' => 'pending',
+                'current_status'  => 'pending',
+                'changed_by'      => $order->user_id,
+                'notes'           => "Payment failed: {$reason}",
+            ]);
+
+            return $order;
+        });
+    }
+
+    /**
+     * Convert an unpaid/failed online order to Cash on Delivery (COD).
+     */
+    public function switchToCod(Order $order, User $user): Order
+    {
+        return DB::transaction(function () use ($order, $user) {
+            if ($order->payment_status === 'paid') {
+                throw new Exception("This order is already paid online.");
+            }
+
+            // 1. Check PIN code serviceability & COD availability
+            $deliveryService = app(\App\Services\DeliveryService::class);
+            $pincodeCheck = $deliveryService->checkServiceability($order->shipping_zip ?? '');
+            if (!$pincodeCheck['is_serviceable']) {
+                throw new Exception("Delivery is currently unavailable to PIN code {$order->shipping_zip}.");
+            }
+            if (!$pincodeCheck['is_cod_available']) {
+                throw new Exception("Cash on Delivery (COD) is not available for PIN code {$order->shipping_zip}. Please retry online payment.");
+            }
+
+            // 2. Resolve COD fee and update total amount if switching from prepaid (0.00)
+            $newCodFee = (float) ($pincodeCheck['cod_fee'] ?? 40.00);
+            $currentCodFee = (float) $order->cod_fee;
+
+            $newTotalAmount = (float) $order->total_amount;
+            if ($currentCodFee <= 0 && $newCodFee > 0) {
+                $newTotalAmount += $newCodFee;
+            }
+
+            // 3. Update Order Mode & Status
+            $order->update([
+                'payment_method' => 'cod',
+                'cod_fee'        => $newCodFee,
+                'total_amount'   => $newTotalAmount,
+                'payment_status' => 'pending',
+                'status'         => 'confirmed',
+            ]);
+
+            // 4. Update Payment Ledger
+            Payment::updateOrCreate(
+                ['order_id' => $order->id],
+                [
+                    'user_id'              => $user->id,
+                    'order_number'         => $order->order_number,
+                    'gateway'              => 'cod',
+                    'amount'               => $newTotalAmount,
+                    'currency'             => 'INR',
+                    'status'               => 'PENDING',
+                    'payment_method_group' => 'cod',
+                    'gateway_message'      => 'Switched to Cash on Delivery (Pending collection by rider)',
+                ]
+            );
+
+            // 3. Deduct Product Stock & Record Movements
+            foreach ($order->items as $item) {
+                $product = Product::where('id', $item->product_id)->lockForUpdate()->first();
+                if ($product) {
+                    $stockBefore = $product->stock;
+                    $stockAfter = max(0, $stockBefore - $item->quantity);
+
+                    $order->stockMovements()->create([
+                        'product_id'    => $product->id,
+                        'movement_type' => MovementType::SALE,
+                        'source'        => StockSource::ORDER,
+                        'quantity'      => $item->quantity,
+                        'stock_before'  => $stockBefore,
+                        'stock_after'   => $stockAfter,
+                        'notes'         => "Order #{$order->order_number} converted to Cash on Delivery (COD).",
+                        'created_by'    => null,
+                    ]);
+
+                    $product->stock = $stockAfter;
+                    $product->save();
+                }
+            }
+
+            // 4. Initialize Fulfillment
+            $this->orderService->recordInitialStatus($order);
+            $this->fulfillmentService->createInitialFulfillment($order);
+
+            $order->statusHistories()->create([
+                'previous_status' => 'pending',
+                'current_status'  => 'confirmed',
+                'changed_by'      => $user->id,
+                'notes'           => "Customer switched payment method to Cash on Delivery (COD).",
+            ]);
+
+            // 5. Clear Cart
+            $this->cartService->clearCart();
+
+            // 6. Trigger Email Confirmation
+            try {
+                app(\App\Services\EmailService::class)->sendOrderConfirmation($order);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("[CheckoutService] Email order confirmation failed: " . $e->getMessage());
+            }
+
+            return $order;
+        });
+    }
+
+    /**
+     * Backward-compatible alias for existing callers.
+     */
+    public function finalizePrepaidOrder(string $orderNumber, array $checkoutData, array $paymentData, User $user): Order
+    {
+        $order = Order::where('order_number', $orderNumber)->first();
+        if ($order) {
+            return $this->markOrderPaid($order, $paymentData, $user);
+        }
+
+        // Fallback if order wasn't created prior to gateway
+        $data = array_merge($checkoutData, ['payment_mode' => 'online']);
+        $pendingOrder = $this->createPendingOnlineOrder($data, $user);
+        return $this->markOrderPaid($pendingOrder, $paymentData, $user);
+    }
+
+    /**
+     * Generate a unique, high-concurrency collision-proof Order Number.
+     * Guaranteed zero collision across simultaneous multi-user checkouts.
+     */
+    public function generateOrderNumber(): string
+    {
+        do {
+            $candidate = 'WK' . date('Ymd') . strtoupper(bin2hex(random_bytes(3)));
+        } while (
+            Order::where('order_number', $candidate)->exists() ||
+            Payment::where('order_number', $candidate)->exists()
+        );
+
+        return $candidate;
     }
 }

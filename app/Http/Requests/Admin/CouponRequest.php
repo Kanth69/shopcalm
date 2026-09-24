@@ -35,11 +35,13 @@ class CouponRequest extends FormRequest
             'stackable' => 'boolean',
             'priority' => 'required|integer|min:0',
             'applicable_type' => ['required', new Enum(CouponApplicableType::class)],
-            'applicable_id' => [
-                'nullable',
-                Rule::requiredIf(fn() => $this->applicable_type !== CouponApplicableType::ALL->value),
-                'integer'
-            ],
+            'applicable_id' => ['nullable', 'integer'],
+            'categories' => ['nullable', 'array'],
+            'categories.*' => ['integer', 'exists:categories,id'],
+            'brands' => ['nullable', 'array'],
+            'brands.*' => ['integer', 'exists:brands,id'],
+            'products' => ['nullable', 'array'],
+            'products.*' => ['integer', 'exists:products,id'],
         ];
     }
 

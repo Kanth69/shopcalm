@@ -21,8 +21,18 @@ class StockManagementController extends Controller
         $this->stockService = $stockService;
     }
 
+    private function checkSuperAdmin(): void
+    {
+        $user = Auth::guard('admin')->user() ?? Auth::user();
+        if (!$user || !$user->isSuperAdmin()) {
+            abort(403, 'Unauthorized access. Only Super Admin has permission to manage Stock & Inventory.');
+        }
+    }
+
     public function dashboard(Request $request)
     {
+        $this->checkSuperAdmin();
+
         $query = Product::with(['category', 'brand']);
 
         // Search
@@ -64,6 +74,8 @@ class StockManagementController extends Controller
 
     public function show(Product $product)
     {
+        $this->checkSuperAdmin();
+
         $product->load(['category', 'brand', 'stockMovements.createdBy']);
         $movements = $product->stockMovements()->latest()->paginate(10);
 
@@ -72,6 +84,8 @@ class StockManagementController extends Controller
 
     public function history(Request $request)
     {
+        $this->checkSuperAdmin();
+
         $query = StockMovement::with(['product', 'createdBy', 'reference']);
 
         if ($request->filled('search')) {
@@ -96,6 +110,8 @@ class StockManagementController extends Controller
 
     public function addStockForm(Product $product)
     {
+        $this->checkSuperAdmin();
+
         if ($product->status !== 'Active') {
             return redirect()->route('admin.stock.dashboard')->with('toast', ['type' => 'error', 'title' => 'Error', 'message' => 'Inactive products cannot receive stock.']);
         }
@@ -106,13 +122,16 @@ class StockManagementController extends Controller
 
     public function addStock(Request $request, Product $product)
     {
+        $this->checkSuperAdmin();
+
         $request->validate([
             'quantity' => 'required|integer|min:1',
             'notes' => 'nullable|string|max:500',
         ]);
 
         try {
-            $this->stockService->addStock($product, $request->quantity, $request->notes, Auth::id());
+            $adminId = Auth::guard('admin')->id() ?? Auth::id();
+            $this->stockService->addStock($product, $request->quantity, $request->notes, $adminId);
             return redirect()->route('admin.stock.dashboard')->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => "Successfully added {$request->quantity} stock to {$product->name}."]);
         } catch (\Exception $e) {
             return back()->with('toast', ['type' => 'error', 'title' => 'Error', 'message' => $e->getMessage()]);
@@ -121,12 +140,16 @@ class StockManagementController extends Controller
 
     public function reduceStockForm(Product $product)
     {
+        $this->checkSuperAdmin();
+
         $product->load(['category', 'brand']);
         return view('admin.stock.reduce', compact('product'));
     }
 
     public function reduceStock(Request $request, Product $product)
     {
+        $this->checkSuperAdmin();
+
         $request->validate([
             'quantity' => 'required|integer|min:1|max:' . $product->stock,
             'notes' => 'required|string|max:500',
@@ -134,7 +157,8 @@ class StockManagementController extends Controller
 
         try {
             $newStock = $product->stock - $request->quantity;
-            $this->stockService->adjustStock($product, $newStock, $request->notes, Auth::id());
+            $adminId = Auth::guard('admin')->id() ?? Auth::id();
+            $this->stockService->adjustStock($product, $newStock, $request->notes, $adminId);
             return redirect()->route('admin.stock.dashboard')->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => "Successfully reduced stock for {$product->name} by {$request->quantity}."]);
         } catch (\Exception $e) {
             return back()->with('toast', ['type' => 'error', 'title' => 'Error', 'message' => $e->getMessage()]);
@@ -143,19 +167,24 @@ class StockManagementController extends Controller
 
     public function adjustStockForm(Product $product)
     {
+        $this->checkSuperAdmin();
+
         $product->load(['category', 'brand']);
         return view('admin.stock.adjust', compact('product'));
     }
 
     public function adjustStock(Request $request, Product $product)
     {
+        $this->checkSuperAdmin();
+
         $request->validate([
             'new_stock' => 'required|integer|min:0',
             'notes' => 'required|string|max:500',
         ]);
 
         try {
-            $this->stockService->adjustStock($product, $request->new_stock, $request->notes, Auth::id());
+            $adminId = Auth::guard('admin')->id() ?? Auth::id();
+            $this->stockService->adjustStock($product, $request->new_stock, $request->notes, $adminId);
             return redirect()->route('admin.stock.dashboard')->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => "Stock adjusted successfully for {$product->name}."]);
         } catch (\Exception $e) {
             return back()->with('toast', ['type' => 'error', 'title' => 'Error', 'message' => $e->getMessage()]);

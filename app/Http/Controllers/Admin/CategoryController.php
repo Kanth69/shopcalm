@@ -11,11 +11,21 @@ use Illuminate\Support\Str;
 
 class CategoryController extends Controller
 {
+    private function checkSuperAdmin(): void
+    {
+        $user = auth('admin')->user() ?? auth()->user();
+        if (!$user || !$user->isSuperAdmin()) {
+            abort(403, 'Unauthorized. Only Super Admin can manage product categories directly in Admin panel.');
+        }
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
+        $this->checkSuperAdmin();
+
         $search = $request->input('search');
         $status = $request->input('status');
 
@@ -42,6 +52,7 @@ class CategoryController extends Controller
      */
     public function create()
     {
+        $this->checkSuperAdmin();
         return view('admin.categories.create');
     }
 
@@ -50,6 +61,7 @@ class CategoryController extends Controller
      */
     public function store(CategoryRequest $request)
     {
+        $this->checkSuperAdmin();
         $validated = $request->validated();
 
         if (empty($validated['slug'])) {
@@ -71,6 +83,7 @@ class CategoryController extends Controller
      */
     public function edit(Category $category)
     {
+        $this->checkSuperAdmin();
         return view('admin.categories.edit', compact('category'));
     }
 
@@ -79,6 +92,7 @@ class CategoryController extends Controller
      */
     public function update(CategoryRequest $request, Category $category)
     {
+        $this->checkSuperAdmin();
         $validated = $request->validated();
 
         if (empty($validated['slug'])) {
@@ -105,6 +119,7 @@ class CategoryController extends Controller
      */
     public function destroy(Request $request, Category $category)
     {
+        $this->checkSuperAdmin();
         if ($category->image) {
             Storage::disk('public')->delete($category->image);
         }

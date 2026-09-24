@@ -1,14 +1,13 @@
 <x-guest-layout>
-    <x-slot name="title">Forgot Password</x-slot>
+    <x-slot name="title">Reset Password via WhatsApp OTP</x-slot>
 
     <div class="auth-card-container">
-        <div class="auth-header">
-            <a href="{{ route('home') }}" class="auth-logo">
-                <span class="logo-w">W</span>
-                <div class="logo-text">Shopcalm<span>.in</span></div>
+        <div class="auth-header text-center">
+            <a href="{{ route('home') }}" class="auth-logo d-inline-flex justify-content-center mb-3 text-decoration-none">
+                <x-logo height="38" />
             </a>
             <h2 class="auth-title">Forgot Password</h2>
-            <p class="auth-subtitle">Enter your email address and we'll send you a link to reset your password.</p>
+            <p class="auth-subtitle">Enter your registered mobile number to receive a 6-digit WhatsApp OTP code.</p>
         </div>
 
         <!-- Red Error Banner Alert -->
@@ -17,21 +16,53 @@
             <span id="forgot-error-msg"></span>
         </div>
 
-        <div id="forgot-form-container">
-            <form id="forgot-password-form" method="POST" action="{{ route('password.email') }}" class="auth-form">
-                @csrf
+        <!-- Green Success Banner Alert -->
+        <div id="forgot-success-alert" class="auth-alert success mb-3" style="display: none; background-color: #d1fae5; color: #065f46; border: 1px solid #10b981; padding: 12px; border-radius: 8px;">
+            <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+            <span id="forgot-success-msg"></span>
+        </div>
 
-                <!-- Email Address -->
+        <div id="forgot-form-container">
+            <!-- Step 1: Request WhatsApp OTP Form -->
+            <form id="request-otp-form" class="auth-form">
+                @csrf
                 <div class="form-group">
-                    <label for="email">Email Address <span class="text-danger">*</span></label>
-                    <input id="email" class="auth-input" type="email" name="email" value="{{ old('email') }}" required autofocus placeholder="name@example.com">
+                    <label for="mobile_number">Mobile Number <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light fw-bold">+91</span>
+                        <input id="mobile_number" class="auth-input form-control" type="text" name="mobile_number" maxlength="10" required autofocus placeholder="9876543210">
+                    </div>
                 </div>
 
-                <button type="submit" id="btn-submit-forgot" class="auth-submit-btn">
-                    <span>Send Reset Link</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
+                <button type="submit" id="btn-send-otp" class="auth-submit-btn">
+                    <span>Send WhatsApp OTP</span>
+                    <i class="bi bi-whatsapp ms-2"></i>
+                </button>
+            </form>
+
+            <!-- Step 2: Reset Password Form (Hidden Initially) -->
+            <form id="reset-password-form" class="auth-form mt-4" style="display: none;">
+                @csrf
+                <input type="hidden" id="reset_mobile_number" name="mobile_number">
+
+                <div class="form-group mb-3">
+                    <label for="otp">WhatsApp 6-Digit OTP Code <span class="text-danger">*</span></label>
+                    <input id="otp" class="auth-input form-control" type="text" name="otp" maxlength="6" required placeholder="123456" style="letter-spacing: 4px; font-weight: bold; text-align: center;">
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="password">New Password <span class="text-danger">*</span></label>
+                    <input id="password" class="auth-input form-control" type="password" name="password" required placeholder="Minimum 8 characters">
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="password_confirmation">Confirm New Password <span class="text-danger">*</span></label>
+                    <input id="password_confirmation" class="auth-input form-control" type="password" name="password_confirmation" required placeholder="Re-enter new password">
+                </div>
+
+                <button type="submit" id="btn-submit-reset" class="auth-submit-btn">
+                    <span>Reset Password & Sign In</span>
+                    <i class="bi bi-shield-check ms-2"></i>
                 </button>
             </form>
         </div>
@@ -48,23 +79,80 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('forgot-password-form');
-        if (!form) return;
+        const reqOtpForm = document.getElementById('request-otp-form');
+        const resetPassForm = document.getElementById('reset-password-form');
+        const errAlert = document.getElementById('forgot-error-alert');
+        const succAlert = document.getElementById('forgot-success-alert');
 
-        form.addEventListener('submit', function(e) {
+        function showError(msg) {
+            if (succAlert) succAlert.style.display = 'none';
+            if (errAlert) {
+                document.getElementById('forgot-error-msg').textContent = msg;
+                errAlert.style.display = 'flex';
+            }
+        }
+
+        function showSuccess(msg) {
+            if (errAlert) errAlert.style.display = 'none';
+            if (succAlert) {
+                document.getElementById('forgot-success-msg').textContent = msg;
+                succAlert.style.display = 'flex';
+            }
+        }
+
+        // Step 1: Send WhatsApp OTP
+        reqOtpForm.addEventListener('submit', function(e) {
             e.preventDefault();
-
-            const btn = document.getElementById('btn-submit-forgot');
+            const btn = document.getElementById('btn-send-otp');
             const originalText = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending WhatsApp OTP...';
 
-            const errAlert = document.getElementById('forgot-error-alert');
-            if (errAlert) errAlert.style.display = 'none';
+            const mobile = document.getElementById('mobile_number').value;
 
-            const formData = new FormData(form);
+            fetch('{{ route("password.send-reset-otp") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ mobile_number: mobile })
+            })
+            .then(async res => {
+                const data = await res.json();
+                btn.disabled = false;
+                btn.innerHTML = originalText;
 
-            fetch(form.action, {
+                if (res.status === 200 && data.success) {
+                    showSuccess(data.message + (data.dev_otp ? ' (Dev OTP: ' + data.dev_otp + ')' : ''));
+                    document.getElementById('reset_mobile_number').value = mobile;
+                    reqOtpForm.style.display = 'none';
+                    resetPassForm.style.display = 'block';
+                } else {
+                    const msg = data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Mobile number not found.');
+                    showError(msg);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                showError('Network error occurred. Please try again.');
+            });
+        });
+
+        // Step 2: Reset Password & Auto-Login
+        resetPassForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-submit-reset');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Updating Password...';
+
+            const formData = new FormData(resetPassForm);
+
+            fetch('{{ route("password.reset-whatsapp") }}', {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -74,38 +162,23 @@
             })
             .then(async res => {
                 const data = await res.json();
-                if (res.status === 200 || data.success) {
-                    // Success -> Hide form and show tick mark success UI
-                    const container = document.getElementById('forgot-form-container');
-                    container.innerHTML = `
-                        <div class="text-center py-4">
-                            <div class="mb-4">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="#10b981" viewBox="0 0 16 16" class="mx-auto">
-                                  <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
-                                </svg>
-                            </div>
-                            <h3 class="fw-bold mb-3">Link Sent Successfully!</h3>
-                            <p class="text-muted mb-4">${data.status || 'If an account exists with this email, a password reset link has been sent.'}</p>
-                        </div>
-                    `;
+                if (res.status === 200 && data.success) {
+                    showSuccess('Password reset successfully! Redirecting...');
+                    setTimeout(() => {
+                        window.location.href = data.redirect || '{{ route("home") }}';
+                    }, 1000);
                 } else {
-                    const msg = data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Something went wrong.');
-                    if (errAlert) {
-                        document.getElementById('forgot-error-msg').textContent = msg;
-                        errAlert.style.display = 'flex';
-                    }
                     btn.disabled = false;
                     btn.innerHTML = originalText;
+                    const msg = data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Could not reset password.');
+                    showError(msg);
                 }
             })
             .catch(err => {
                 console.error(err);
-                if (errAlert) {
-                    document.getElementById('forgot-error-msg').textContent = 'An unexpected error occurred. Please try again.';
-                    errAlert.style.display = 'flex';
-                }
                 btn.disabled = false;
                 btn.innerHTML = originalText;
+                showError('Network error occurred. Please try again.');
             });
         });
     });

@@ -147,15 +147,28 @@
                                 @php 
                                     $q = $faqData['faqs'][$i-1]['question'] ?? '';
                                     $a = $faqData['faqs'][$i-1]['answer'] ?? '';
+                                    $cat = $faqData['faqs'][$i-1]['category'] ?? 'General';
                                     $isVisible = ($i <= 5 || $q !== '' || $a !== '');
                                 @endphp
                                 <div class="faq-section-block mb-3 p-3 border rounded-3 bg-light {{ $isVisible ? '' : 'd-none' }}" id="faq-block-{{ $i }}">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <span class="badge bg-white text-dark border font-monospace small">Q&A Item #{{ $i }}</span>
                                     </div>
-                                    <div class="mb-2">
-                                        <label class="form-label small text-muted fw-bold">Question</label>
-                                        <input type="text" id="faq_{{ $i }}_question" class="form-control fw-bold" placeholder="e.g., Do you offer free shipping across India?" value="{{ $q }}">
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-md-8">
+                                            <label class="form-label small text-muted fw-bold">Question</label>
+                                            <input type="text" id="faq_{{ $i }}_question" class="form-control fw-bold" placeholder="e.g., How long does shipping usually take?" value="{{ $q }}">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small text-muted fw-bold">Topic Category</label>
+                                            <select id="faq_{{ $i }}_category" class="form-select">
+                                                <option value="Shipping & Delivery" {{ $cat === 'Shipping & Delivery' ? 'selected' : '' }}>🚚 Shipping & Delivery</option>
+                                                <option value="Returns & Quality" {{ $cat === 'Returns & Quality' ? 'selected' : '' }}>🛡️ Returns & Quality</option>
+                                                <option value="Orders & Tracking" {{ $cat === 'Orders & Tracking' ? 'selected' : '' }}>📦 Orders & Tracking</option>
+                                                <option value="Payments & COD" {{ $cat === 'Payments & COD' ? 'selected' : '' }}>💳 Payments & COD</option>
+                                                <option value="General" {{ ($cat === 'General' || empty($cat)) ? 'selected' : '' }}>❓ General Inquiry</option>
+                                            </select>
+                                        </div>
                                     </div>
                                     <div>
                                         <label class="form-label small text-muted fw-bold">Answer</label>
@@ -323,11 +336,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } else if (slug === 'faq') {
             const faqs = [];
+            const categoryIconMap = {
+                'Shipping & Delivery': 'bi-truck',
+                'Returns & Quality': 'bi-patch-check',
+                'Orders & Tracking': 'bi-box-seam',
+                'Payments & COD': 'bi-credit-card-2-front',
+                'General': 'bi-question-circle'
+            };
             for (let i = 1; i <= 30; i++) {
                 const q = document.getElementById(`faq_${i}_question`)?.value.trim();
                 const a = document.getElementById(`faq_${i}_answer`)?.value.trim();
+                const cat = document.getElementById(`faq_${i}_category`)?.value.trim() || 'General';
                 if (q && a) {
-                    faqs.push({ question: q, answer: a });
+                    faqs.push({
+                        category: cat,
+                        icon: categoryIconMap[cat] || 'bi-question-circle',
+                        question: q,
+                        answer: a
+                    });
                 }
             }
             const data = {

@@ -75,7 +75,7 @@ function initializeDashboardCharts(chartData) {
 
 // AJAX auto-refresh for stats
 setInterval(function() {
-    fetch('{{ route("admin.dashboard.stats") }}' + window.location.search)
+    fetch('/admin/dashboard/stats' + window.location.search)
         .then(response => response.json())
         .then(data => {
             const container = document.getElementById('dashboard-stats-container');

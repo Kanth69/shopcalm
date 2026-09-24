@@ -40,11 +40,17 @@
                     {{-- Review Info --}}
                     <div class="flex-grow-1 min-w-0">
                         <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                            <a href="{{ route('product.show', $review->product->slug) }}"
-                               class="fw-bold text-dark text-decoration-none"
-                               style="font-size: 0.95rem;">
-                                {{ $review->product->name }}
-                            </a>
+                            @if($review->product)
+                                <a href="{{ route('product.show', $review->product->slug) }}"
+                                   class="fw-bold text-dark text-decoration-none"
+                                   style="font-size: 0.95rem;">
+                                    {{ $review->product->name }}
+                                </a>
+                            @else
+                                <span class="fw-bold text-secondary" style="font-size: 0.95rem;">
+                                    Product (Archived/Removed)
+                                </span>
+                            @endif
                             @if($review->status == 'Approved')
                                 <span class="badge rounded-pill px-2 py-1 fw-bold" style="background:#d1fae5; color:#065f46; font-size:0.7rem;">
                                     <i class="bi bi-check-circle me-1"></i>Approved

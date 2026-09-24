@@ -79,8 +79,9 @@
     </button>
     <div class="navbar-nav w-100 d-flex flex-row justify-content-end px-3">
         <div class="nav-item text-nowrap d-flex align-items-center">
-            <span class="text-white me-3">{{ Auth::user()->name }}</span>
-            <form method="POST" action="{{ route('logout') }}" class="m-0">
+            @php $currentStaff = Auth::user() ?? Auth::guard('order_manager')->user() ?? Auth::guard('product_manager')->user(); @endphp
+            <span class="text-white me-3">{{ $currentStaff->name ?? 'Admin / Staff' }}</span>
+            <form method="POST" action="{{ Auth::guard('order_manager')->check() ? route('order-manager.logout') : route('logout') }}" class="m-0">
                 @csrf
                 <button type="submit" class="nav-link px-3 bg-transparent border-0 text-white">Sign out</button>
             </form>
@@ -121,6 +122,22 @@
                         <a class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}" href="{{ route('admin.orders.index') }}">
                             <i class="bi bi-cart me-2"></i>
                             Orders
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('admin.refunds.*') ? 'active' : '' }}" href="{{ route('admin.refunds.index') }}">
+                            <i class="bi bi-wallet2 me-2"></i>
+                            Refund Requests
+                            @php $pendingCount = \App\Models\OrderCancellation::where('refund_method', 'bank_upi')->where('refund_status', 'pending')->count(); @endphp
+                            @if($pendingCount > 0)
+                                <span class="badge bg-warning text-dark rounded-pill ms-1">{{ $pendingCount }}</span>
+                            @endif
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('admin.wallets.*') ? 'active' : '' }}" href="{{ route('admin.wallets.index') }}">
+                            <i class="bi bi-gift me-2"></i>
+                            Wallets &amp; Referrals
                         </a>
                     </li>
                     <li class="nav-item">

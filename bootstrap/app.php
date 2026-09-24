@@ -15,12 +15,19 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'product.manager' => \App\Http\Middleware\ProductManagerMiddleware::class,
+            'order.manager' => \App\Http\Middleware\OrderManagerMiddleware::class,
+            'support.agent' => \App\Http\Middleware\SupportMiddleware::class,
+            'delivery.partner' => \App\Http\Middleware\DeliveryPartnerMiddleware::class,
             'guest.admin' => \App\Http\Middleware\RedirectIfAdmin::class,
             'profile.setup' => \App\Http\Middleware\CheckProfileSetup::class,
         ]);
 
+        $middleware->prepend(\App\Http\Middleware\EnsureDomainIsolation::class);
         $middleware->append(\App\Http\Middleware\CheckBlockedStatus::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

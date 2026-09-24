@@ -13,7 +13,14 @@ class RoleController extends Controller
     public function index()
     {
         $this->authorize('manage-admins', User::class);
-        $admins = User::whereIn('role_id', [User::ROLE_SUPER_ADMIN, User::ROLE_ADMIN])->latest()->get();
+        $admins = User::whereIn('role_id', [
+            User::ROLE_SUPER_ADMIN, 
+            User::ROLE_ADMIN, 
+            User::ROLE_PRODUCT_MANAGER, 
+            User::ROLE_ORDER_MANAGER, 
+            User::ROLE_SUPPORT,
+            User::ROLE_DELIVERY_PARTNER,
+        ])->latest()->get();
         return view('admin.roles.index', compact('admins'));
     }
 
@@ -32,7 +39,14 @@ class RoleController extends Controller
             'email' => 'required|email|unique:users,email',
             'mobile_number' => 'required|string|unique:users,mobile_number',
             'password' => ['required', 'confirmed', Password::min(6)],
-            'role_id' => 'required|in:' . User::ROLE_SUPER_ADMIN . ',' . User::ROLE_ADMIN,
+            'role_id' => 'required|in:' . implode(',', [
+                User::ROLE_SUPER_ADMIN, 
+                User::ROLE_ADMIN, 
+                User::ROLE_PRODUCT_MANAGER, 
+                User::ROLE_ORDER_MANAGER, 
+                User::ROLE_SUPPORT,
+                User::ROLE_DELIVERY_PARTNER,
+            ]),
         ]);
 
         User::create([
@@ -44,7 +58,7 @@ class RoleController extends Controller
             'status' => 'Active',
         ]);
 
-        return redirect()->route('admin.roles.index')->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => 'Admin account created successfully.']);
+        return redirect()->route('admin.roles.index')->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => 'Staff account created successfully.']);
     }
 
     public function edit($role)
@@ -63,7 +77,14 @@ class RoleController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $admin->id,
             'mobile_number' => 'required|string|unique:users,mobile_number,' . $admin->id,
-            'role_id' => 'required|in:' . User::ROLE_SUPER_ADMIN . ',' . User::ROLE_ADMIN,
+            'role_id' => 'required|in:' . implode(',', [
+                User::ROLE_SUPER_ADMIN, 
+                User::ROLE_ADMIN, 
+                User::ROLE_PRODUCT_MANAGER, 
+                User::ROLE_ORDER_MANAGER, 
+                User::ROLE_SUPPORT,
+                User::ROLE_DELIVERY_PARTNER,
+            ]),
             'password' => ['nullable', 'confirmed', Password::min(6)],
         ]);
 

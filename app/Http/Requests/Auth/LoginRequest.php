@@ -60,10 +60,10 @@ class LoginRequest extends FormRequest
              ]);
         }
 
-        // Exception: Account Blocked (Only shown if credentials are correct)
-        if ($user->status === 'Blocked') {
+        // Exception: Account Blocked or Deleted (Only shown if credentials match)
+        if ($user->status === 'Blocked' || $user->status === 'Deleted') {
             throw ValidationException::withMessages([
-                'login_identifier' => 'Your account has been blocked. Please contact support.',
+                'login_identifier' => 'This account has been closed or blocked.',
             ]);
         }
 

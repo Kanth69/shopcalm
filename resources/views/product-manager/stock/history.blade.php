@@ -139,8 +139,16 @@
                                     {{ $movement->notes ?? '—' }}
                                 </span>
                             </td>
-                            <td class="text-end pe-3 text-muted small">
-                                <i class="bi bi-person me-1"></i>{{ $movement->createdBy->name ?? 'System' }}
+                            <td class="text-end pe-3 small">
+                                @if(!$movement->isSystemMovement() && $movement->createdBy)
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
+                                        <i class="bi bi-person-fill me-1"></i> {{ $movement->createdBy->name }} ({{ $movement->createdBy->role_name ?? 'Staff' }})
+                                    </span>
+                                @else
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
+                                        <i class="bi bi-robot me-1"></i> System
+                                    </span>
+                                @endif
                             </td>
                         </tr>
                     @empty

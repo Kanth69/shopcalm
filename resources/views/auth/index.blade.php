@@ -2,13 +2,6 @@
     <x-slot name="title">Authentication</x-slot>
 
     <div id="auth-container" class="auth-card-container">
-        @if ($errors->any() || session('error'))
-            <div class="auth-alert error mb-3" style="display: flex;">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                <span>{{ session('error') ?? $errors->first() }}</span>
-            </div>
-        @endif
-
         <!-- Initial State -->
         <div id="state-initial">
             @include('auth.components.initial')
@@ -38,8 +31,8 @@
     <style>
         .auth-card-container {
             position: relative;
-            padding: 10px 5px;
-            min-height: 380px;
+            padding: 4px 2px;
+            min-height: 340px;
         }
 
         .auth-header {
@@ -247,44 +240,170 @@
             border: 1px solid #bfdbfe;
         }
 
-        .auth-alert.error {
-            background-color: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #fecaca;
+        .auth-alert.error,
+        .auth-alert.danger {
+            background-color: #fef2f2 !important;
+            color: #b91c1c !important;
+            border: 1px solid #fca5a5 !important;
+        }
+        .auth-alert.error i,
+        .auth-alert.danger i {
+            color: #dc2626 !important;
+        }
+
+        /* Modern 3-Step Indicator Bar */
+        .auth-stepper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            margin-bottom: 14px;
+        }
+        .step-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 9px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            background: #f1f5f9;
+            color: #94a3b8;
+            transition: all 0.25s;
+        }
+        .step-pill.active {
+            background: rgba(99, 102, 241, 0.12);
+            color: #4f46e5;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+        .step-pill.completed {
+            background: #ecfdf5;
+            color: #059669;
+        }
+        .step-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            background: #cbd5e1;
+            color: #fff;
+        }
+        .step-pill.active .step-dot {
+            background: #4f46e5;
+            color: #fff;
+        }
+        .step-pill.completed .step-dot {
+            background: #059669;
+            color: #fff;
+        }
+        .step-connector {
+            width: 12px;
+            height: 2px;
+            background: #e2e8f0;
+            border-radius: 1px;
+        }
+        .step-connector.active {
+            background: #4f46e5;
+        }
+
+        /* 6-Digit Individual OTP Input Boxes */
+        .otp-boxes-wrapper {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 10px 0;
+        }
+        .otp-digit-input {
+            width: 48px;
+            height: 52px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            outline: none;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            caret-color: #4f46e5;
+        }
+        .otp-digit-input:focus {
+            border-color: #4f46e5;
+            background: #ffffff;
+            box-shadow: 0 0 0 3.5px rgba(99, 102, 241, 0.18);
+            transform: translateY(-2px);
+        }
+        .otp-digit-input.filled {
+            border-color: #a5b4fc;
+            background: #ffffff;
+        }
+        .otp-digit-input.is-invalid {
+            border-color: #ef4444 !important;
+            background: #fff5f5 !important;
+            color: #dc2626 !important;
+            animation: shake 0.35s ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-4px); }
+            40%, 80% { transform: translateX(4px); }
+        }
+
+        /* Clean Centered Email Pill */
+        .email-banner-pill {
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 30px;
+            padding: 5px 14px;
+            max-width: 100%;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+        .email-banner-pill:hover {
+            border-color: #cbd5e1;
+            background: #f1f5f9;
+        }
+        .email-text {
+            color: #0f172a;
+            font-size: 13.5px;
+            letter-spacing: -0.2px;
+            max-width: 210px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .edit-pill-btn {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #4f46e5;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            line-height: 1.4;
+            transition: all 0.15s ease;
+            margin-left: 2px;
+            display: inline-flex;
+            align-items: center;
+        }
+        .edit-pill-btn:hover {
+            background: #4f46e5;
+            color: #ffffff;
+            border-color: #4f46e5;
+            transform: scale(1.04);
         }
 
         .field-hint {
             font-size: 12px;
             color: #94a3b8;
             margin-top: 2px;
-        }
-
-        .otp-input-group {
-            display: flex;
-            gap: 10px;
-        }
-
-        .otp-btn {
-            background-color: #f1f5f9;
-            border: 2px solid #e2e8f0;
-            color: #334155;
-            font-weight: 600;
-            font-size: 13px;
-            padding: 0 16px;
-            border-radius: 12px;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: all 0.2s;
-        }
-
-        .otp-btn:hover:not(:disabled) {
-            background-color: #e2e8f0;
-            border-color: #cbd5e1;
-        }
-
-        .otp-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
         }
 
         .auth-submit-btn {
@@ -408,12 +527,139 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
+
+        /* Mobile Single-Screen View Optimization */
+        @media (max-width: 576px) {
+            .auth-card-container {
+                padding: 0;
+                min-height: auto;
+            }
+            .auth-header {
+                margin-bottom: 12px;
+            }
+            .auth-logo {
+                margin-bottom: 6px;
+            }
+            .auth-logo img, .auth-logo svg {
+                height: 28px !important;
+            }
+            .auth-title {
+                font-size: 18px;
+                margin-bottom: 2px;
+                letter-spacing: -0.3px;
+            }
+            .auth-subtitle {
+                font-size: 12px;
+            }
+            .auth-form {
+                gap: 7px;
+            }
+            .form-row {
+                gap: 7px;
+            }
+            .form-group {
+                gap: 2px;
+            }
+            .form-group label {
+                font-size: 10.5px;
+                letter-spacing: 0.3px;
+            }
+            .auth-input {
+                padding: 7px 11px;
+                font-size: 13.5px;
+                border-radius: 9px;
+                min-height: 37px;
+            }
+            .password-toggle-btn {
+                font-size: 15px;
+                right: 8px;
+            }
+            .otp-input-group {
+                gap: 6px;
+            }
+            .otp-btn {
+                padding: 0 12px;
+                font-size: 12px;
+                border-radius: 9px;
+            }
+            .auth-submit-btn {
+                padding: 8.5px 12px;
+                font-size: 13px;
+                border-radius: 9px;
+                margin-top: 2px;
+                min-height: 38px;
+                gap: 6px;
+            }
+            .auth-divider {
+                margin: 4px 0;
+            }
+            .auth-divider span {
+                font-size: 10px;
+                padding: 0 8px;
+            }
+            .google-btn {
+                padding: 7px 12px;
+                font-size: 12px;
+                border-radius: 9px;
+                min-height: 35px;
+                gap: 8px;
+            }
+            .google-btn img {
+                width: 16px;
+            }
+            .auth-alert {
+                padding: 7px 11px;
+                font-size: 11.5px;
+                margin-bottom: 8px;
+                border-radius: 8px;
+            }
+            .back-nav-btn {
+                padding: 3px 8px;
+                font-size: 11px;
+                border-radius: 12px;
+            }
+            .field-hint {
+                font-size: 11px;
+            }
+            .form-options {
+                margin: 2px 0;
+            }
+            .otp-digit-input {
+                width: 38px;
+                height: 44px;
+                font-size: 18px;
+                border-radius: 9px;
+                border-width: 1.5px;
+            }
+            .otp-boxes-wrapper {
+                gap: 5px;
+                margin: 8px 0;
+            }
+            .step-pill {
+                padding: 2px 7px;
+                font-size: 10px;
+            }
+            .step-connector {
+                width: 8px;
+            }
+            .email-banner-pill {
+                padding: 4px 10px;
+            }
+            .email-text {
+                font-size: 12px;
+                max-width: 165px;
+            }
+            .edit-pill-btn {
+                padding: 1px 7px;
+                font-size: 10.5px;
+            }
+        }
     </style>
 
     @push('scripts')
         <script>
             window.csrfToken = "{{ csrf_token() }}";
         </script>
-        <script src="{{ asset('js/auth-flow.js') }}"></script>
+        <script src="{{ asset('js/auth-flow.js') }}?v={{ filemtime(public_path('js/auth-flow.js')) }}"></script>
     @endpush
 </x-guest-layout>

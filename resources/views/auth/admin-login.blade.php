@@ -1,7 +1,7 @@
 <x-guest-layout>
     <div class="text-center mb-4">
         <h2 class="h3 font-weight-bold">Admin Login</h2>
-        <p class="text-muted">Welcome to Shopcalm Admin</p>
+        <p class="text-muted">Welcome to {{ \App\Models\Setting::get('store_name', 'ShopCalm') }} Admin</p>
     </div>
 
     <!-- Session Status -->

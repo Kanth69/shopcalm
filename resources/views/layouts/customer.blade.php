@@ -5,7 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', config('app.name', 'ShopCalm') . ' - Shop More. Worry Less.')</title>
+    <title>@yield('title', \App\Models\Setting::get('store_name', 'ShopCalm') . ' - ' . \App\Models\Setting::get('tagline', 'Shop More. Worry Less.'))</title>
+    <meta name="description" content="@yield('meta_description', \App\Models\Setting::get('tagline', 'Discover genuine electronics, smartphones, fashion, and lifestyle essentials at best prices with fast doorstep delivery.'))">
+    <link rel="canonical" href="{{ url()->current() }}">
+    <link rel="icon" type="image/x-icon" href="{{ \App\Models\Setting::get('favicon') ? asset('storage/' . \App\Models\Setting::get('favicon')) : asset('favicon.ico') }}">
+
+    <!-- Open Graph / Social & WhatsApp Link Sharing Preview -->
+    <meta property="og:site_name" content="{{ \App\Models\Setting::get('store_name', 'ShopCalm') }}">
+    <meta property="og:title" content="@yield('title', \App\Models\Setting::get('store_name', 'ShopCalm'))">
+    <meta property="og:description" content="@yield('meta_description', \App\Models\Setting::get('tagline', 'Shop More. Worry Less.'))">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:type" content="website">
+    @yield('og_tags')
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -26,6 +37,8 @@
     </main>
 
     @include('customer.components.footer')
+
+    @include('customer.components.mobile-bottom-nav')
 
     @include('components.toast')
 

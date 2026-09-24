@@ -56,4 +56,32 @@ class StockMovement extends Model
     {
         return $this->morphTo();
     }
+
+    /**
+     * Determine if this stock movement was triggered automatically by the system (e.g. Orders/Checkout/Returns).
+     */
+    public function isSystemMovement(): bool
+    {
+        $sourceVal = is_object($this->source) ? $this->source->value : $this->source;
+        $typeVal   = is_object($this->movement_type) ? $this->movement_type->value : $this->movement_type;
+
+        return $sourceVal === 'ORDER' || $typeVal === 'SALE' || $this->reference_type === Order::class || !$this->created_by;
+    }
+
+    /**
+     * Get human-readable attribution label.
+     */
+    public function getUpdatedByLabelAttribute(): string
+    {
+        if ($this->isSystemMovement()) {
+            return 'System';
+        }
+
+        if ($this->createdBy) {
+            $role = $this->createdBy->role_name ?? ($this->createdBy->role->name ?? 'Staff');
+            return "{$this->createdBy->name} ({$role})";
+        }
+
+        return 'System';
+    }
 }

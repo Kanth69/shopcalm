@@ -21,10 +21,43 @@ class AdminMiddleware
 
         $user = Auth::guard('admin')->user();
 
-        // Final sanity check for roles
-        if (!$user->isAdmin()) {
+        // If Product Manager attempts to access Admin Console, logout from admin guard and redirect to PM portal
+        if ($user->isProductManager()) {
             Auth::guard('admin')->logout();
-            return redirect()->route('admin.login')->withErrors(['login_identifier' => 'Unauthorized access.']);
+            return redirect()->route('product-manager.dashboard')->with('toast', [
+                'type' => 'info',
+                'title' => 'Product Manager Portal',
+                'message' => 'Redirected to your designated Product Manager dashboard.'
+            ]);
+        }
+
+        // If Order Manager attempts to access Admin Console, logout from admin guard and redirect to OM portal
+        if ($user->isOrderManager()) {
+            Auth::guard('admin')->logout();
+            return redirect()->route('order-manager.dashboard')->with('toast', [
+                'type' => 'info',
+                'title' => 'Order Manager Portal',
+                'message' => 'Redirected to your designated Order Manager dashboard.'
+            ]);
+        }
+
+        // If Customer Support attempts to access Admin Console, logout from admin guard and redirect to Support portal
+        if ($user->isCustomerSupport()) {
+            Auth::guard('admin')->logout();
+            return redirect()->route('support.dashboard')->with('toast', [
+                'type' => 'info',
+                'title' => 'Customer Support Portal',
+                'message' => 'Redirected to your designated Customer Support dashboard.'
+            ]);
+        }
+
+        // Final sanity check for admin portal access
+        if (!$user->canAccessAdminPortal()) {
+            if ($user->isCustomer()) {
+                Auth::guard('admin')->logout();
+                return redirect()->route('admin.login')->withErrors(['login_identifier' => 'Unauthorized access.']);
+            }
+            abort(403, 'Unauthorized access to the Admin Portal.');
         }
 
         return $next($request);

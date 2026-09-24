@@ -19,35 +19,49 @@ class CartService
         return Cart::with('items.product')->firstOrCreate(['session_id' => $sessionId]);
     }
 
-    public function addProduct(int $productId, int $quantity = 1)
+    public function addProduct(int $productId, int $quantity = 1, ?string $selectedOption = null)
     {
         $cart = $this->getCart();
         $product = Product::findOrFail($productId);
 
-        if ($product->status !== 'Active' || $product->stock < $quantity) {
-            return ['success' => false, 'type' => 'error', 'title' => 'Unavailable', 'message' => 'Product is unavailable or out of stock.'];
+        if ($product->status !== 'Active') {
+            return ['success' => false, 'type' => 'error', 'title' => 'Unavailable', 'message' => 'Product is currently inactive.'];
         }
 
-        $cartItem = $cart->items()->where('product_id', $productId)->first();
+        // Check option stock if applicable
+        if ($product->has_options && $selectedOption) {
+            $availableStock = $product->getOptionStock($selectedOption);
+            if ($availableStock < $quantity) {
+                return ['success' => false, 'type' => 'warning', 'title' => 'Out of Stock', 'message' => "Selected option '{$selectedOption}' is out of stock."];
+            }
+        } elseif ($product->stock < $quantity) {
+            return ['success' => false, 'type' => 'error', 'title' => 'Unavailable', 'message' => 'Product is out of stock.'];
+        }
+
+        $query = $cart->items()->where('product_id', $productId);
+        if ($selectedOption) {
+            $query->where('selected_option', $selectedOption);
+        } else {
+            $query->whereNull('selected_option');
+        }
+        $cartItem = $query->first();
 
         if ($cartItem) {
-            $newQuantity = $cartItem->quantity + $quantity;
-            if ($product->stock < $newQuantity) {
-                return ['success' => false, 'type' => 'warning', 'title' => 'Limit Reached', 'message' => 'Cannot add more than available stock.'];
-            }
             $cartItem->increment('quantity', $quantity);
         } else {
             $offerService = app(\App\Services\OfferService::class);
             $productWithOffer = $offerService->applyOfferDiscountsToProducts(collect([$product]))->first();
             $price = $productWithOffer->sale_price ?? $product->price;
             $cart->items()->create([
-                'product_id' => $productId,
-                'quantity' => $quantity,
-                'unit_price' => $price,
+                'product_id'      => $productId,
+                'quantity'        => $quantity,
+                'unit_price'      => $price,
+                'selected_option' => $selectedOption,
             ]);
         }
 
-        return ['success' => true, 'type' => 'success', 'title' => 'Added to Bag', 'message' => "{$product->name} added to your cart."];
+        $optionLabel = $selectedOption ? " ({$selectedOption})" : "";
+        return ['success' => true, 'type' => 'success', 'title' => 'Added to Bag', 'message' => "{$product->name}{$optionLabel} added to your cart."];
     }
 
     public function updateQuantity(int $itemId, int $quantity)

@@ -77,33 +77,13 @@ class Coupon extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    public function categories(): BelongsToMany
+    public function targets(): HasMany
     {
-        return $this->belongsToMany(Category::class, 'coupon_category');
+        return $this->hasMany(CouponTarget::class);
     }
 
-    public function brands(): BelongsToMany
+    public function getTargetIds(string $type): array
     {
-        return $this->belongsToMany(Brand::class, 'coupon_brand');
-    }
-
-    public function products(): BelongsToMany
-    {
-        return $this->belongsToMany(Product::class, 'coupon_product');
-    }
-
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(Category::class, 'applicable_id');
-    }
-
-    public function brand(): BelongsTo
-    {
-        return $this->belongsTo(Brand::class, 'applicable_id');
-    }
-
-    public function product(): BelongsTo
-    {
-        return $this->belongsTo(Product::class, 'applicable_id');
+        return $this->targets->where('target_type', $type)->pluck('target_id')->toArray();
     }
 }

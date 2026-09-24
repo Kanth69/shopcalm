@@ -8,10 +8,9 @@
     <x-slot name="title">{{ $pageTitle }}</x-slot>
 
     <div class="auth-card-container">
-        <div class="auth-header">
-            <a href="{{ route('home') }}" class="auth-logo">
-                <span class="logo-w">W</span>
-                <div class="logo-text">Shopcalm<span>.in</span></div>
+        <div class="auth-header text-center">
+            <a href="{{ route('home') }}" class="auth-logo d-inline-flex justify-content-center mb-3 text-decoration-none">
+                <x-logo height="38" />
             </a>
             <h2 class="auth-title">{{ $pageTitle }}</h2>
             <p class="auth-subtitle">{{ $isAdminLogin ? 'Authorized personnel access' : 'Enter details to access your account' }}</p>
@@ -60,16 +59,7 @@
             </button>
 
             @if (!$isAdminLogin)
-                <div class="auth-divider">
-                    <span>OR</span>
-                </div>
-
-                <a href="{{ route('google.redirect') }}" class="google-btn">
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-                    <span>Continue with Google</span>
-                </a>
-
-                <div class="auth-footer">
+                <div class="auth-footer mt-4">
                     New to Shopcalm? <a href="{{ route('register') }}">Create Account</a>
                 </div>
             @endif
