@@ -11,9 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
+        try {
+            Schema::table('products', function (Blueprint $table) {
+                $table->dropForeign(['current_campaign_id']);
+            });
+        } catch (\Throwable $e) {
+            // Ignore if foreign key constraint does not exist
+        }
+
         Schema::table('products', function (Blueprint $table) {
-            $table->dropForeign(['current_campaign_id']);
-            $table->dropColumn(['discount_percentage', 'is_best_seller', 'current_campaign_id']);
+            $columnsToDrop = array_filter(
+                ['discount_percentage', 'is_best_seller', 'current_campaign_id'],
+                fn ($column) => Schema::hasColumn('products', $column)
+            );
+
+            if (!empty($columnsToDrop)) {
+                $table->dropColumn(array_values($columnsToDrop));
+            }
         });
     }
 
