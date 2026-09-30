@@ -19,7 +19,18 @@ class OrderItem extends Model
         'unit_price',
         'quantity',
         'total_price',
+        'tax_rate',
+        'tax_amount',
         'selected_option',
+    ];
+
+    protected $casts = [
+        'original_price' => 'decimal:2',
+        'offer_discount' => 'decimal:2',
+        'unit_price'     => 'decimal:2',
+        'total_price'    => 'decimal:2',
+        'tax_rate'       => 'decimal:2',
+        'tax_amount'     => 'decimal:2',
     ];
 
     public function order(): BelongsTo
