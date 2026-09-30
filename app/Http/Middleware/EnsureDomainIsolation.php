@@ -28,7 +28,6 @@ class EnsureDomainIsolation
         );
 
         $isStaffPath = !$isCustomerDeliveryPath && (
-            $path === '/staff' || str_starts_with($path, '/staff/') ||
             $path === '/admin' || str_starts_with($path, '/admin/') ||
             $path === '/order-manager' || str_starts_with($path, '/order-manager/') ||
             $path === '/product-manager' || str_starts_with($path, '/product-manager/') ||
@@ -39,14 +38,19 @@ class EnsureDomainIsolation
 
         if ($isHubHost) {
             // ── 1. HUB DOMAIN ISOLATION ──
-            // If attempting to access customer storefront pages on Hub domain, redirect to Staff Hub Login
+            // If attempting to access customer storefront pages on Hub domain, redirect to Admin Login
             if (!$isStaffPath && !str_starts_with($path, '/api/') && $path !== '/test-email' && $path !== '/up') {
-                return redirect()->route('staff.login');
+                return redirect()->route('admin.login');
             }
         } else {
             // ── 2. MAIN CUSTOMER DOMAIN ISOLATION ──
             // If attempting to access staff paths on Main domain, redirect to Hub domain
             if ($isStaffPath) {
+                // In local dev when accessing via IP/localhost, allow staff routes directly
+                if (app()->environment('local') && ($host === '127.0.0.1' || $host === 'localhost')) {
+                    return $next($request);
+                }
+
                 $port = $request->getPort();
                 $portStr = ($port && $port != 80 && $port != 443) ? ":{$port}" : "";
 

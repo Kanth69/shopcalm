@@ -137,6 +137,44 @@
                 </div>
             </div>
 
+            <!-- WhatsApp Cloud API Configuration -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-whatsapp text-success me-2"></i>WhatsApp Cloud API (OTP Integration)
+                    </h6>
+                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 fw-bold" style="font-size: 0.72rem;">Meta Verified Gateway</span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark small">WhatsApp Business Phone Number ID</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted"><i class="bi bi-telephone-inbound"></i></span>
+                                <input type="text" name="whatsapp_phone_number_id" class="form-control font-monospace" value="{{ $settings['whatsapp_phone_number_id'] ?? env('WHATSAPP_PHONE_NUMBER_ID', '') }}" placeholder="e.g. 104829104820194">
+                            </div>
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Meta Developer Console -> WhatsApp -> API Setup -> Phone Number ID</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark small">Authentication Template Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted"><i class="bi bi-file-earmark-code"></i></span>
+                                <input type="text" name="whatsapp_template_name" class="form-control font-monospace" value="{{ $settings['whatsapp_template_name'] ?? env('WHATSAPP_TEMPLATE_NAME', 'authentication_otp') }}" placeholder="authentication_otp">
+                            </div>
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Meta approved WhatsApp authentication template name (Default: <code>authentication_otp</code>)</div>
+                        </div>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-bold text-dark small">WhatsApp Cloud API Permanent Access Token</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted"><i class="bi bi-key-fill"></i></span>
+                            <input type="password" name="whatsapp_api_token" class="form-control font-monospace" value="{{ $settings['whatsapp_api_token'] ?? env('WHATSAPP_API_TOKEN', '') }}" placeholder="EAAG.....">
+                        </div>
+                        <div class="form-text text-muted" style="font-size: 0.72rem;">System User Permanent Token from Meta Business Manager. Leave blank in local dev for automatic log fallback mode.</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- 3. Storefront Branding -->
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
                 <div class="card-header bg-white py-3 border-bottom">

@@ -61,6 +61,9 @@ class SettingController extends Controller
             'twitter_url' => 'nullable|url|max:255',
             'linkedin_url' => 'nullable|url|max:255',
             'youtube_url' => 'nullable|url|max:255',
+            'whatsapp_api_token' => 'nullable|string|max:500',
+            'whatsapp_phone_number_id' => 'nullable|string|max:255',
+            'whatsapp_template_name' => 'nullable|string|max:255',
         ]);
 
         foreach ($validated as $key => $value) {

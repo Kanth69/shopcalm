@@ -39,13 +39,7 @@ use Illuminate\Support\Facades\Route;
 
 // ─── 1. STAFF HUB ROUTES ───────────────────────────────────────────────────
 $registerStaffRoutes = function () {
-    Route::get('/', fn() => redirect()->route('staff.login'));
     Route::get('/rider', fn() => redirect()->route('delivery.login'))->name('rider.alias');
-
-    // Unified Staff Hub Login Route
-    Route::get('/staff', [\App\Http\Controllers\StaffAuthController::class, 'showLogin'])->name('staff.login');
-    Route::get('/staff/login', fn() => redirect()->route('staff.login'));
-    Route::post('/staff/login', [\App\Http\Controllers\StaffAuthController::class, 'login'])->name('staff.login.submit');
 
     // Admin Login / Logout Routes
     Route::middleware('guest.admin:admin')->group(function () {

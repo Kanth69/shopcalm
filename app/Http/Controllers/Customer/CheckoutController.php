@@ -319,17 +319,54 @@ class CheckoutController extends Controller
                 return response()->json(['success' => false, 'message' => 'Please log in to place an order.'], 401);
             }
 
-            // 1. ONLINE PREPAID FLOW (Cashfree UPI / Cards / NetBanking)
-            // Order is NOT placed, stock is NOT deducted until payment is verified!
-            if ($paymentMethod === 'online' || $paymentMethod === 'online_cashfree') {
-                $cart = $this->cartService->getCart();
-                if ($cart->items->isEmpty()) {
-                    throw new \Exception("Your shopping cart is empty.");
+            // Check if wallet balance 100% covers the order (Zero remaining to pay)
+            $cart = $this->cartService->getCart();
+            if ($cart->items->isEmpty()) {
+                throw new \Exception("Your shopping cart is empty.");
+            }
+
+            $subtotalAmount = $this->cartService->subtotal();
+            $discountAmount = 0;
+            $appliedCouponCode = Session::get('applied_coupon');
+            if ($appliedCouponCode) {
+                $coupon = $this->couponService->validateCoupon($appliedCouponCode, $user, $subtotalAmount);
+                $discountAmount = $this->couponService->calculateDiscount($coupon, $subtotalAmount);
+            }
+            $offerDiscount = app(\App\Services\OfferService::class)->calculateCheckoutOfferDiscount($cart);
+
+            $deliveryService = app(\App\Services\DeliveryService::class);
+            $pincodeCheck = $deliveryService->checkServiceability($data['shipping_zip'] ?? '');
+            $freeShippingMin = (float) \App\Models\Setting::get('free_shipping_min', 499);
+            $shippingFee = ($subtotalAmount >= $freeShippingMin) ? 0.00 : (float) ($pincodeCheck['delivery_charge'] ?? 0.00);
+
+            $payableBeforeWallet = max(0, $subtotalAmount - $discountAmount - $offerDiscount + $shippingFee);
+            $useWallet = !empty($data['use_wallet']) || Session::get('use_wallet', false);
+            $userWallet = $user ? app(\App\Services\WalletService::class)->getOrCreateWallet($user) : null;
+            $walletBalance = ($userWallet && $userWallet->status === 'active') ? (float) $userWallet->balance : 0.00;
+
+            $isFullyPaidByWallet = ($useWallet && $walletBalance >= $payableBeforeWallet && $payableBeforeWallet > 0);
+
+            // IF 100% COVERED BY WALLET: Bypass payment gateway (no 0.00 gateway error!), debit wallet & confirm order immediately!
+            if ($isFullyPaidByWallet) {
+                $order = $this->checkoutService->placeOrder($data);
+                Session::forget('applied_coupon');
+
+                app(\App\Services\EmailService::class)->sendOrderConfirmation($order);
+
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json([
+                        'success'      => true,
+                        'payment_mode' => 'wallet',
+                        'redirect_url' => route('checkout.success', $order),
+                    ]);
                 }
 
+                return redirect()->route('checkout.success', $order);
+            }
+
+            // 1. ONLINE PREPAID FLOW (Cashfree UPI / Cards / NetBanking)
+            if ($paymentMethod === 'online' || $paymentMethod === 'online_cashfree') {
                 // Check serviceability
-                $deliveryService = app(\App\Services\DeliveryService::class);
-                $pincodeCheck = $deliveryService->checkServiceability($data['shipping_zip'] ?? '');
                 if (!$pincodeCheck['is_serviceable']) {
                     throw new \Exception("Delivery is currently unavailable to PIN code " . ($data['shipping_zip'] ?? '') . ".");
                 }

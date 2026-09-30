@@ -66,11 +66,11 @@ class CheckoutService
             // Handle Shipping Fee & COD Handling Fee
             $freeShippingMin = (float) \App\Models\Setting::get('free_shipping_min', 499);
             $shippingFee = ($subtotalAmount >= $freeShippingMin) ? 0.00 : (float) ($pincodeCheck['delivery_charge'] ?? 0.00);
-            $codFee = (float) ($pincodeCheck['cod_fee'] ?? 40.00);
+            $rawCodFee = (float) ($pincodeCheck['cod_fee'] ?? 40.00);
 
             // Handle Offer Discount
             $offerDiscount = app(\App\Services\OfferService::class)->calculateCheckoutOfferDiscount($cart);
-            $payableBeforeWallet = max(0, $subtotalAmount - $discountAmount - $offerDiscount + $shippingFee + $codFee);
+            $payableBeforeWalletAndCod = max(0, $subtotalAmount - $discountAmount - $offerDiscount + $shippingFee);
 
             // Handle Wallet Deduction
             $useWallet = !empty($data['use_wallet']) || Session::get('use_wallet', false);
@@ -78,11 +78,21 @@ class CheckoutService
             if ($useWallet && $user) {
                 $userWallet = app(\App\Services\WalletService::class)->getOrCreateWallet($user);
                 if ($userWallet->status === 'active' && $userWallet->balance > 0) {
-                    $walletAmountUsed = min((float) $userWallet->balance, $payableBeforeWallet);
+                    $walletAmountUsed = min((float) $userWallet->balance, $payableBeforeWalletAndCod + $rawCodFee);
                 }
             }
 
+            $isFullyPaidByWallet = ($walletAmountUsed >= $payableBeforeWalletAndCod && $payableBeforeWalletAndCod > 0);
+            $codFee = $isFullyPaidByWallet ? 0.00 : $rawCodFee;
+            $payableBeforeWallet = $payableBeforeWalletAndCod + $codFee;
+            
+            if ($isFullyPaidByWallet) {
+                $walletAmountUsed = $payableBeforeWalletAndCod;
+            }
+
             $totalAmount = max(0, $payableBeforeWallet - $walletAmountUsed);
+            $finalPaymentMethod = $isFullyPaidByWallet ? 'wallet' : 'cod';
+            $finalPaymentStatus = $isFullyPaidByWallet ? 'paid' : 'pending';
 
             // Save address to user's address book if new
             if ($user) {
@@ -117,8 +127,8 @@ class CheckoutService
                 'wallet_amount_used' => $walletAmountUsed,
                 'cod_fee' => $codFee,
                 'total_amount' => $totalAmount,
-                'payment_method' => 'cod',
-                'payment_status' => 'pending',
+                'payment_method' => $finalPaymentMethod,
+                'payment_status' => $finalPaymentStatus,
                 'status' => 'confirmed',
                 'shipping_name' => $data['shipping_name'],
                 'shipping_email' => $data['shipping_email'],
@@ -142,12 +152,12 @@ class CheckoutService
                 'order_id'             => $order->id,
                 'user_id'              => $user->id,
                 'order_number'         => $orderNumber,
-                'gateway'              => 'cod',
+                'gateway'              => $finalPaymentMethod,
                 'amount'               => $totalAmount,
                 'currency'             => 'INR',
-                'status'               => 'PENDING',
-                'payment_method_group' => 'cod',
-                'gateway_message'      => 'Cash on Delivery (Pending collection by rider)',
+                'status'               => $isFullyPaidByWallet ? 'SUCCESS' : 'PENDING',
+                'payment_method_group' => $finalPaymentMethod,
+                'gateway_message'      => $isFullyPaidByWallet ? '100% Covered by WiseKart Wallet Balance' : 'Cash on Delivery (Pending collection by rider)',
             ]);
 
             // 3. Record Coupon Usage
