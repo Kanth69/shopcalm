@@ -914,8 +914,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.redirect_url) {
                 window.location.href = data.redirect_url;
             } else if (data.payment_session_id) {
+                @php
+                    $cfEnv = strtolower(\App\Models\Setting::where('key', 'cashfree_environment')->value('value') ?? config('services.cashfree.environment', env('CASHFREE_ENVIRONMENT', 'TEST')));
+                    $cfMode = in_array($cfEnv, ['production', 'prod']) ? 'production' : 'sandbox';
+                @endphp
                 const cashfree = Cashfree({
-                    mode: "{{ config('services.cashfree.env', 'sandbox') === 'production' ? 'production' : 'sandbox' }}"
+                    mode: "{{ $cfMode }}"
                 });
 
                 cashfree.checkout({

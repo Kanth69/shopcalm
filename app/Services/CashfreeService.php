@@ -18,10 +18,16 @@ class CashfreeService
 
     public function __construct()
     {
-        $this->appId = config('services.cashfree.app_id') ?? env('CASHFREE_APP_ID', '');
-        $this->secretKey = config('services.cashfree.secret_key') ?? env('CASHFREE_SECRET_KEY', '');
+        $dbAppId = \App\Models\Setting::where('key', 'cashfree_app_id')->value('value');
+        $dbSecretKey = \App\Models\Setting::where('key', 'cashfree_secret_key')->value('value');
+        $dbEnv = \App\Models\Setting::where('key', 'cashfree_environment')->value('value');
+
+        $this->appId = !empty($dbAppId) ? $dbAppId : (config('services.cashfree.app_id') ?? env('CASHFREE_APP_ID', ''));
+        $this->secretKey = !empty($dbSecretKey) ? $dbSecretKey : (config('services.cashfree.secret_key') ?? env('CASHFREE_SECRET_KEY', ''));
         $this->apiVersion = config('services.cashfree.api_version') ?? env('CASHFREE_API_VERSION', '2023-08-01');
-        $this->environment = strtoupper(config('services.cashfree.environment') ?? env('CASHFREE_ENVIRONMENT', 'TEST'));
+
+        $envMode = !empty($dbEnv) ? $dbEnv : (config('services.cashfree.environment') ?? env('CASHFREE_ENVIRONMENT', 'TEST'));
+        $this->environment = strtoupper($envMode);
 
         $this->baseUrl = ($this->environment === 'PRODUCTION')
             ? 'https://api.cashfree.com/pg'
