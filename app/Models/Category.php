@@ -34,6 +34,16 @@ class Category extends Model
                 $category->slug = $slug;
             }
         });
+
+        static::saved(function () {
+            \Illuminate\Support\Facades\Cache::forget('home_categories');
+            \Illuminate\Support\Facades\Cache::forget('all_categories');
+        });
+
+        static::deleted(function () {
+            \Illuminate\Support\Facades\Cache::forget('home_categories');
+            \Illuminate\Support\Facades\Cache::forget('all_categories');
+        });
     }
 
     public function brands(): HasMany

@@ -69,6 +69,18 @@ class Product extends Model
                 $product->slug = $slug;
             }
         });
+
+        static::saved(function () {
+            \Illuminate\Support\Facades\Cache::forget('featured_products');
+            \Illuminate\Support\Facades\Cache::forget('trending_products');
+            \Illuminate\Support\Facades\Cache::forget('latest_products');
+        });
+
+        static::deleted(function () {
+            \Illuminate\Support\Facades\Cache::forget('featured_products');
+            \Illuminate\Support\Facades\Cache::forget('trending_products');
+            \Illuminate\Support\Facades\Cache::forget('latest_products');
+        });
     }
 
     public function submitter(): BelongsTo

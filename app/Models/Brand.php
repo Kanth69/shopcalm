@@ -40,6 +40,16 @@ class Brand extends Model
                 $brand->slug = $slug;
             }
         });
+
+        static::saved(function () {
+            \Illuminate\Support\Facades\Cache::forget('home_brands');
+            \Illuminate\Support\Facades\Cache::forget('all_brands');
+        });
+
+        static::deleted(function () {
+            \Illuminate\Support\Facades\Cache::forget('home_brands');
+            \Illuminate\Support\Facades\Cache::forget('all_brands');
+        });
     }
 
     public function category(): BelongsTo

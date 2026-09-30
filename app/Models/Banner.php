@@ -31,6 +31,17 @@ class Banner extends Model
         'is_active' => 'boolean',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            \Illuminate\Support\Facades\Cache::forget('home_banners');
+        });
+
+        static::deleted(function () {
+            \Illuminate\Support\Facades\Cache::forget('home_banners');
+        });
+    }
+
     public function offer(): BelongsTo
     {
         return $this->belongsTo(Offer::class);

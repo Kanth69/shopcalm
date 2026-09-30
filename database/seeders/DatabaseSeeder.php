@@ -22,5 +22,7 @@ class DatabaseSeeder extends Seeder
             CouponSeeder::class,
             PincodeSeeder::class,
         ]);
+
+        \Illuminate\Support\Facades\Cache::flush();
     }
 }
