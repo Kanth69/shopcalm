@@ -284,6 +284,53 @@ class PageSeeder extends Seeder
                 'meta_description' => 'Free order cancellation before dispatch with instant refund processing at ' . $storeName . '.',
                 'is_active' => true,
             ],
+            [
+                'title' => 'Help & Frequently Asked Questions',
+                'slug' => 'faq',
+                'content' => json_encode([
+                    'faqs' => [
+                        [
+                            'question' => 'How can I track my order status?',
+                            'answer' => '<p>Once your order is dispatched, real-time tracking updates are sent directly to your registered <strong>WhatsApp number and Email</strong>. You can also view live order progress anytime from your Account Dashboard under <strong>My Account &rarr; My Orders</strong>.</p>',
+                            'category' => 'Orders & Tracking',
+                            'icon' => 'bi-truck'
+                        ],
+                        [
+                            'question' => 'What are the delivery timelines and shipping charges?',
+                            'answer' => '<p>We offer <strong>Free Shipping on all orders above ₹499</strong>. Orders below ₹499 incur a nominal standard shipping fee of ₹49. Orders in metro cities deliver within 2-3 business days, while rest of India delivers within 3-5 business days.</p>',
+                            'category' => 'Shipping & Delivery',
+                            'icon' => 'bi-box-seam'
+                        ],
+                        [
+                            'question' => 'What is your Return and Replacement Policy?',
+                            'answer' => '<p>WiseKart (ShopCalm) follows a <strong>Strict No Return & No Replacement Policy</strong> once a package is dispatched and delivered. All items undergo rigorous multi-point quality inspection prior to packing. Free cancellation is permitted anytime before package dispatch.</p>',
+                            'category' => 'Returns & Quality',
+                            'icon' => 'bi-shield-check'
+                        ],
+                        [
+                            'question' => 'How do I cancel my order before dispatch?',
+                            'answer' => '<p>You can cancel your order free of cost anytime before dispatch by navigating to <strong>My Account &rarr; My Orders</strong> and clicking <em>Cancel Order</em>. Prepaid cancellations are refunded 100% instantly to your WiseKart Wallet or source payment account.</p>',
+                            'category' => 'Orders & Tracking',
+                            'icon' => 'bi-x-circle'
+                        ],
+                        [
+                            'question' => 'What payment methods do you accept?',
+                            'answer' => '<p>We accept all major <strong>UPI apps (GPay, PhonePe, Paytm, BHIM), Credit/Debit Cards, NetBanking</strong> via PCI-DSS compliant Cashfree payment gateway, <strong>WiseKart Wallet balance</strong>, and <strong>Cash on Delivery (COD)</strong>.</p>',
+                            'category' => 'Payments & COD',
+                            'icon' => 'bi-credit-card-2-front'
+                        ],
+                        [
+                            'question' => 'How does WiseKart Wallet balance work?',
+                            'answer' => '<p>Your WiseKart Wallet receives instant 100% credits for pre-dispatch cancellations and referral rewards. Wallet balance can be used at checkout with 1-click zero transaction fee checkout.</p>',
+                            'category' => 'Payments & COD',
+                            'icon' => 'bi-wallet2'
+                        ]
+                    ]
+                ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                'meta_title' => 'Help & Frequently Asked Questions (FAQ) | ' . $storeName,
+                'meta_description' => 'Find quick answers to common questions about orders, shipping, payments, returns, and wallet balance at ' . $storeName . '.',
+                'is_active' => true,
+            ],
         ];
 
         foreach ($pages as $page) {
