@@ -48,6 +48,14 @@ class Order extends Model
         'total_amount' => 'decimal:2',
     ];
 
+    /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'order_number';
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
