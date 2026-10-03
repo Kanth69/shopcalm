@@ -156,7 +156,7 @@
                 <i class="bi bi-info-circle-fill fs-5 flex-shrink-0"></i>
                 <div>
                     <strong class="d-block" style="font-size: 0.85rem;">Notice from Store Management:</strong>
-                    <span>This order was cancelled by store management. @if($order->payment_status === 'paid' || $order->wallet_amount_used > 0)A 100% full refund of <strong class="font-monospace">₹{{ number_format($cancellation->refund_amount ?? $order->total_amount, 2) }}</strong> has been initiated back to your original payment method / bank account.@else No payment was collected for this order.@endif</span>
+                    <span>This order was cancelled by store management. @if($order->payment_status === 'paid' || $order->wallet_amount_used > 0)A 100% full refund of <strong class="font-monospace">₹{{ number_format($cancellation?->refund_amount ?? $order->total_amount, 2) }}</strong> has been initiated back to your original payment method / bank account.@else No payment was collected for this order.@endif</span>
                 </div>
             </div>
         @endif
@@ -169,7 +169,7 @@
                     <div class="text-uppercase text-muted fw-bold mb-1.5" style="font-size: 0.67rem; letter-spacing: 0.06em;">Cancellation Reason</div>
                     <div class="fw-bold text-dark d-flex align-items-start gap-2" style="font-size: 0.88rem; line-height: 1.35;">
                         <i class="bi bi-chat-left-quote-fill text-danger opacity-75 fs-6 flex-shrink-0 mt-0.5"></i>
-                        <span>{{ $cancellation->cancellation_reason ?? ($isAdminCancelled ? 'Cancelled by store management' : 'Cancelled by customer') }}</span>
+                        <span>{{ $cancellation?->cancellation_reason ?? ($isAdminCancelled ? 'Cancelled by store management' : 'Cancelled by customer') }}</span>
                     </div>
                     @if($cancellation && $cancellation->admin_notes)
                         <div class="mt-2 text-muted small p-2 rounded bg-white border" style="font-size: 0.74rem;">
@@ -193,7 +193,7 @@
                                 <span class="badge bg-warning text-dark rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">⏳ Direct Refund Initiated</span>
                             @endif
                         </div>
-                        <div class="text-muted small mt-1" style="font-size: 0.73rem;">Refund of ₹{{ number_format($cancellation->refund_amount ?? 0, 2) }} is credited back to your original GPay/PhonePe UPI ID, Card, or Bank account in 5-7 business days.</div>
+                        <div class="text-muted small mt-1" style="font-size: 0.73rem;">Refund of ₹{{ number_format($cancellation?->refund_amount ?? 0, 2) }} is credited back to your original GPay/PhonePe UPI ID, Card, or Bank account in 5-7 business days.</div>
                     @elseif($cancellation && $cancellation->refund_method === 'bank_upi')
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5 mb-1">
                             <span class="fw-bold text-dark" style="font-size: 0.88rem;"><i class="bi bi-bank text-info me-1.5"></i> Bank UPI: <code class="text-dark bg-white px-2 py-0.5 rounded border font-monospace" style="font-size: 0.8rem;">{{ $cancellation->refund_upi_id }}</code></span>
@@ -237,14 +237,14 @@
 
             <div class="d-flex align-items-center justify-content-between py-1 text-danger" style="font-size: 0.84rem;">
                 <span>Retained Non-Refundable GST Tax Fee:</span>
-                <strong class="font-monospace">-₹{{ number_format($cancellation->cancellation_fee ?? 0, 2) }}</strong>
+                <strong class="font-monospace">-₹{{ number_format($cancellation?->cancellation_fee ?? 0, 2) }}</strong>
             </div>
 
             <hr class="my-2 border-secondary-subtle">
 
             <div class="d-flex align-items-center justify-content-between pt-1 fw-bold text-success flex-wrap gap-1">
                 <span class="fs-6" style="font-size: 0.92rem !important;">Net Refund Amount:</span>
-                <span class="font-monospace fs-5 text-success">₹{{ number_format($cancellation->refund_amount ?? 0, 2) }}</span>
+                <span class="font-monospace fs-5 text-success">₹{{ number_format($cancellation?->refund_amount ?? 0, 2) }}</span>
             </div>
         </div>
     </div>
