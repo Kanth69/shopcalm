@@ -7,7 +7,7 @@
                 <x-logo height="38" />
             </a>
             <h2 class="auth-title">Get Started</h2>
-            <p class="auth-subtitle">Join the WiseKart shopping community</p>
+            <p class="auth-subtitle">Join the ShopCalm shopping community</p>
         </div>
 
         <!-- Alert messages -->

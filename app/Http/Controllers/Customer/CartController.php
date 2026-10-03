@@ -22,16 +22,84 @@ class CartController extends Controller
         $cart = $this->cartService->getCart();
         $subtotal = $this->cartService->subtotal();
         
-        // Calculate Total MRP and Discount
-        $totalMrp = $cart->items->sum(function ($item) {
+        $selectedItems = $cart->items->where('is_selected', true);
+        // Calculate Total MRP and Discount for selected items
+        $totalMrp = $selectedItems->sum(function ($item) {
             return $item->quantity * $item->product->price;
         });
-        $totalDiscount = $totalMrp - $subtotal;
+        $totalDiscount = max(0, $totalMrp - $subtotal);
         
         $offerDiscount = app(\App\Services\OfferService::class)->calculateCheckoutOfferDiscount($cart);
         $grandTotal = max(0, $subtotal - $offerDiscount);
         
         return view('customer.cart', compact('cart', 'subtotal', 'totalMrp', 'totalDiscount', 'offerDiscount', 'grandTotal'));
+    }
+
+    public function toggleSelect($itemId, Request $request)
+    {
+        $isSelected = $request->has('is_selected') ? (bool) $request->is_selected : null;
+        $success = $this->cartService->toggleSelect($itemId, $isSelected);
+
+        if ($request->ajax()) {
+            $cart = $this->cartService->getCart();
+            $subtotal = $this->cartService->subtotal();
+            
+            $selectedItems = $cart->items->where('is_selected', true);
+            $totalMrp = $selectedItems->sum(function ($item) {
+                return $item->quantity * $item->product->price;
+            });
+            $totalDiscount = max(0, $totalMrp - $subtotal);
+            
+            $offerDiscount = app(\App\Services\OfferService::class)->calculateCheckoutOfferDiscount($cart);
+            $grandTotal = max(0, $subtotal - $offerDiscount);
+
+            return response()->json([
+                'success' => $success,
+                'cart_count' => $this->cartService->totalItems(),
+                'all_cart_count' => $this->cartService->allItemsCount(),
+                'item_id' => (int) $itemId,
+                'subtotal' => $subtotal,
+                'total_mrp' => $totalMrp,
+                'total_discount' => $totalDiscount,
+                'offer_discount' => $offerDiscount,
+                'grand_total' => $grandTotal,
+            ]);
+        }
+
+        return back();
+    }
+
+    public function toggleSelectAll(Request $request)
+    {
+        $isSelected = (bool) $request->input('is_selected', true);
+        $this->cartService->toggleSelectAll($isSelected);
+
+        if ($request->ajax()) {
+            $cart = $this->cartService->getCart();
+            $subtotal = $this->cartService->subtotal();
+            
+            $selectedItems = $cart->items->where('is_selected', true);
+            $totalMrp = $selectedItems->sum(function ($item) {
+                return $item->quantity * $item->product->price;
+            });
+            $totalDiscount = max(0, $totalMrp - $subtotal);
+            
+            $offerDiscount = app(\App\Services\OfferService::class)->calculateCheckoutOfferDiscount($cart);
+            $grandTotal = max(0, $subtotal - $offerDiscount);
+
+            return response()->json([
+                'success' => true,
+                'cart_count' => $this->cartService->totalItems(),
+                'all_cart_count' => $this->cartService->allItemsCount(),
+                'subtotal' => $subtotal,
+                'total_mrp' => $totalMrp,
+                'total_discount' => $totalDiscount,
+                'offer_discount' => $offerDiscount,
+                'grand_total' => $grandTotal,
+            ]);
+        }
+
+        return back();
     }
 
     public function add(StoreCartRequest $request)
@@ -77,10 +145,10 @@ class CartController extends Controller
             $cartItem = $cart->items->where('id', $itemId)->first();
 
             $subtotal = $this->cartService->subtotal();
-            $totalMrp = $cart->items->sum(function ($item) {
+            $totalMrp = $cart->items->where('is_selected', true)->sum(function ($item) {
                 return $item->quantity * $item->product->price;
             });
-            $totalDiscount = $totalMrp - $subtotal;
+            $totalDiscount = max(0, $totalMrp - $subtotal);
             
             $offerDiscount = app(\App\Services\OfferService::class)->calculateCheckoutOfferDiscount($cart);
             $grandTotal = max(0, $subtotal - $offerDiscount);
@@ -122,10 +190,10 @@ class CartController extends Controller
             $cart = $this->cartService->getCart();
             $subtotal = $this->cartService->subtotal();
             
-            $totalMrp = $cart->items->sum(function ($item) {
+            $totalMrp = $cart->items->where('is_selected', true)->sum(function ($item) {
                 return $item->quantity * $item->product->price;
             });
-            $totalDiscount = $totalMrp - $subtotal;
+            $totalDiscount = max(0, $totalMrp - $subtotal);
             
             $offerDiscount = app(\App\Services\OfferService::class)->calculateCheckoutOfferDiscount($cart);
             $grandTotal = max(0, $subtotal - $offerDiscount);
@@ -148,6 +216,69 @@ class CartController extends Controller
             return back()->with('toast', ['type' => 'success', 'title' => 'Removed', 'message' => 'Item removed from cart.']);
         }
         return back()->with('toast', ['type' => 'error', 'title' => 'Error', 'message' => 'Item not found.']);
+    }
+
+    public function moveToWishlist($itemId, Request $request)
+    {
+        if (!auth()->check()) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'require_login' => true,
+                    'message' => 'Please log in to save items to your wishlist.'
+                ], 401);
+            }
+            return redirect()->route('login')->with('toast', [
+                'type' => 'info',
+                'title' => 'Login Required',
+                'message' => 'Please log in to save items to your wishlist.'
+            ]);
+        }
+
+        $cart = $this->cartService->getCart();
+        $cartItem = $cart->items->where('id', $itemId)->first();
+
+        if (!$cartItem) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Cart item not found.']);
+            }
+            return back()->with('toast', ['type' => 'error', 'title' => 'Error', 'message' => 'Item not found in cart.']);
+        }
+
+        $wishlist = auth()->user()->wishlist()->firstOrCreate();
+        \App\Models\WishlistItem::firstOrCreate([
+            'wishlist_id' => $wishlist->id,
+            'product_id'  => $cartItem->product_id,
+        ]);
+
+        $this->cartService->removeItem($itemId);
+
+        if ($request->ajax()) {
+            $cart = $this->cartService->getCart();
+            $subtotal = $this->cartService->subtotal();
+            
+            $totalMrp = $cart->items->where('is_selected', true)->sum(function ($item) {
+                return $item->quantity * $item->product->price;
+            });
+            $totalDiscount = max(0, $totalMrp - $subtotal);
+            
+            $offerDiscount = app(\App\Services\OfferService::class)->calculateCheckoutOfferDiscount($cart);
+            $grandTotal = max(0, $subtotal - $offerDiscount);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Item moved to your wishlist.',
+                'cart_count' => $this->cartService->totalItems(),
+                'item_id' => (int) $itemId,
+                'subtotal' => $subtotal,
+                'total_mrp' => $totalMrp,
+                'total_discount' => $totalDiscount,
+                'offer_discount' => $offerDiscount,
+                'grand_total' => $grandTotal,
+            ]);
+        }
+
+        return back()->with('toast', ['type' => 'success', 'title' => 'Moved', 'message' => 'Item moved to your wishlist.']);
     }
 
     public function clear(Request $request)

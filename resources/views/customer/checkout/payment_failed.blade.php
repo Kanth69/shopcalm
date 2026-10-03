@@ -109,8 +109,8 @@
 
 </div>
 
-{{-- Cashfree SDK Loader --}}
-<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+{{-- Razorpay SDK Loader --}}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const btnRetry = document.getElementById('btn-retry-payment');
@@ -132,15 +132,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const data = await response.json();
 
-            if (data.success && data.payment_session_id) {
-                const cashfree = Cashfree({
-                    mode: data.environment === 'production' ? 'production' : 'sandbox'
-                });
-
-                cashfree.checkout({
-                    paymentSessionId: data.payment_session_id,
-                    redirectTarget: "_self"
-                });
+            if (data.success && data.razorpay_order_id) {
+                const options = {
+                    key: data.key_id,
+                    amount: data.amount,
+                    currency: data.currency || "INR",
+                    name: data.name || "ShopCalm",
+                    description: data.description || "Order #" + (data.order_number || ""),
+                    order_id: data.razorpay_order_id,
+                    prefill: data.prefill || {},
+                    theme: { color: "#4f46e5" },
+                    handler: function (res) {
+                        window.location.href = data.callback_url + "?razorpay_payment_id=" + res.razorpay_payment_id + "&razorpay_order_id=" + res.razorpay_order_id + "&razorpay_signature=" + res.razorpay_signature;
+                    },
+                    modal: {
+                        ondismiss: function () {
+                            btnRetry.disabled = false;
+                            btnRetry.innerHTML = '<i class="bi bi-arrow-repeat fs-5"></i><span>Retry Online Payment</span>';
+                        }
+                    }
+                };
+                const rzp = new Razorpay(options);
+                rzp.open();
             } else {
                 alert(data.message || "Failed to initialize payment retry.");
                 btnRetry.disabled = false;

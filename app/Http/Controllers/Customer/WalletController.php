@@ -59,7 +59,7 @@ class WalletController extends Controller
 
         // Shareable referral URL
         $referralUrl = route('register', ['ref' => $wallet->referral_code]);
-        $whatsappShareText = urlencode("Hey! Shop on WiseKart and get ₹50 instant wallet credit on your first order! Use my referral code {$wallet->referral_code} or click here: {$referralUrl}");
+        $whatsappShareText = urlencode("Hey! Shop on ShopCalm and get ₹50 instant wallet credit on your first order! Use my referral code {$wallet->referral_code} or click here: {$referralUrl}");
 
         return view('customer.account.wallet', compact(
             'wallet',

@@ -378,12 +378,10 @@
                 <!-- QR Code Display Container -->
                 <div id="upiQrArea" class="position-relative d-inline-block p-2.5 bg-white border rounded-4 shadow-xs mb-2">
                     @php
-                        $cashfree = app(\App\Services\CashfreeService::class);
-                        $upiData = $cashfree->createDoorstepUpiQr($order);
-                        $upiIntent = $upiData['qr_string'] ?? '';
+                        $upiIntent = "upi://pay?pa=shopcalm@razorpay&pn=ShopCalm&am=" . $order->total_amount . "&cu=INR&tn=" . urlencode("Order #" . $order->order_number);
                         $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" . urlencode($upiIntent);
                     @endphp
-                    <img id="upiQrImage" src="{{ $qrUrl }}" alt="Cashfree UPI QR Code" class="img-fluid rounded-3" style="width: 200px; height: 200px;">
+                    <img id="upiQrImage" src="{{ $qrUrl }}" alt="Razorpay UPI QR Code" class="img-fluid rounded-3" style="width: 200px; height: 200px;">
                     
                     <!-- Success Overlay (Initially Hidden) -->
                     <div id="upiSuccessOverlay" class="position-absolute top-0 start-0 w-100 h-100 rounded-4 d-none flex-column align-items-center justify-content-center text-white" 
@@ -392,14 +390,14 @@
                             <i class="bi bi-check2"></i>
                         </div>
                         <h6 class="fw-bold mb-0">Payment Received!</h6>
-                        <small class="text-white-50">₹{{ number_format($order->total_amount, 2) }} Paid via Cashfree</small>
+                        <small class="text-white-50">₹{{ number_format($order->total_amount, 2) }} Paid via Razorpay</small>
                     </div>
                 </div>
 
-                <!-- Cashfree Trust & Supported Apps -->
+                <!-- Razorpay Trust & Supported Apps -->
                 <div class="mb-2">
                     <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2.5 py-1 font-monospace" style="font-size: 0.7rem;">
-                        <i class="bi bi-shield-check text-primary me-1"></i> Cashfree Auto-Verified Gateway
+                        <i class="bi bi-shield-check text-primary me-1"></i> Razorpay Auto-Verified Gateway
                     </span>
                 </div>
 
@@ -717,9 +715,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div>
                             <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.65rem;">Payment Requirement</div>
                             <div class="fw-bolder text-success" style="font-size: 0.95rem;">
-                                ✅ Paid via Cashfree UPI &bull; Collect ₹0 Cash
+                                ✅ Paid via Razorpay UPI &bull; Collect ₹0 Cash
                             </div>
-                            <div class="text-secondary small" style="font-size: 0.72rem;">Zero cash liability on rider &bull; Verified via Cashfree</div>
+                            <div class="text-secondary small" style="font-size: 0.72rem;">Zero cash liability on rider &bull; Verified via Razorpay</div>
                         </div>
                         <div class="text-end">
                             <span class="badge bg-success rounded-pill px-2.5 py-1 fw-bold">PAID</span>
@@ -731,7 +729,7 @@ document.addEventListener('DOMContentLoaded', function () {
             Swal.fire({
                 icon: 'success',
                 title: 'Payment Received! 🎉',
-                text: '₹' + amount + ' received via Cashfree UPI. Please ask customer for Delivery OTP.',
+                text: '₹' + amount + ' received via Razorpay UPI. Please ask customer for Delivery OTP.',
                 confirmButtonColor: '#0f172a',
                 confirmButtonText: 'Enter OTP Now',
                 timer: 3500,

@@ -196,37 +196,33 @@ class DeliveryDashboardController extends Controller
             ]);
         }
 
-        // Real-time check via Cashfree Payment Gateway
+        // Real-time check via Razorpay Payment Gateway
         try {
-            $cashfree = app(\App\Services\CashfreeService::class);
-            $cfOrder = $cashfree->getOrder($order->order_number);
-            $cfStatus = strtoupper($cfOrder['order_status'] ?? '');
+            $razorpay = app(\App\Services\RazorpayService::class);
+            $rzpPayments = $razorpay->getPaymentsForOrder($order->order_number);
+            $successfulPayment = collect($rzpPayments)->firstWhere('status', 'captured');
 
-            if ($cfStatus === 'PAID') {
-                $payments = $cashfree->getOrderPayments($order->order_number);
-                $successfulPayment = collect($payments)->firstWhere('payment_status', 'SUCCESS');
-
-                DB::transaction(function () use ($order, $rider, $cfOrder, $successfulPayment) {
+            if ($successfulPayment) {
+                DB::transaction(function () use ($order, $rider, $successfulPayment) {
                     $order->update([
                         'payment_method' => 'doorstep_upi',
                         'payment_status' => 'paid',
                     ]);
 
                     \App\Models\Payment::updateOrCreate(
-                        ['order_id' => $order->id, 'gateway' => 'cashfree'],
+                        ['order_id' => $order->id, 'gateway' => 'razorpay'],
                         [
-                            'gateway_order_id'       => $cfOrder['cf_order_id'] ?? null,
-                            'gateway_payment_id'     => (string) ($successfulPayment['cf_payment_id'] ?? $cfOrder['cf_order_id'] ?? 'CF_POD_' . time()),
-                            'payment_session_id'     => $cfOrder['payment_session_id'] ?? null,
+                            'gateway_order_id'       => $successfulPayment['order_id'] ?? null,
+                            'gateway_payment_id'     => (string) ($successfulPayment['id'] ?? 'RZP_POD_' . time()),
                             'amount'                 => (float) $order->total_amount,
                             'currency'               => 'INR',
                             'status'                 => 'SUCCESS',
                             'payment_method_group'   => 'upi',
-                            'payment_method_details' => $successfulPayment['payment_method'] ?? ['type' => 'doorstep_upi'],
-                            'bank_reference'         => (string) ($successfulPayment['bank_reference'] ?? $successfulPayment['cf_payment_id'] ?? ''),
+                            'payment_method_details' => ['type' => 'doorstep_upi'],
+                            'bank_reference'         => (string) ($successfulPayment['acquirer_data']['rrn'] ?? $successfulPayment['id'] ?? ''),
                             'payment_time'           => now(),
-                            'gateway_message'        => 'Doorstep Cashfree UPI Payment Verified',
-                            'raw_response'           => $successfulPayment ?? $cfOrder,
+                            'gateway_message'        => 'Doorstep Razorpay UPI Payment Verified',
+                            'raw_response'           => $successfulPayment,
                         ]
                     );
 
@@ -234,7 +230,7 @@ class DeliveryDashboardController extends Controller
                         'previous_status' => $order->status,
                         'current_status'  => $order->status,
                         'changed_by'      => $rider->id,
-                        'notes'           => "Cashfree Doorstep UPI Payment of ₹" . number_format($order->total_amount, 2) . " auto-verified via Cashfree PG.",
+                        'notes'           => "Razorpay Doorstep UPI Payment of ₹" . number_format($order->total_amount, 2) . " auto-verified via Razorpay PG.",
                     ]);
                 });
 
@@ -248,7 +244,7 @@ class DeliveryDashboardController extends Controller
                 ]);
             }
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::info("Doorstep Cashfree poll check error: " . $e->getMessage());
+            \Illuminate\Support\Facades\Log::info("Doorstep Razorpay poll check error: " . $e->getMessage());
         }
 
         return response()->json([
@@ -294,21 +290,21 @@ class DeliveryDashboardController extends Controller
 
             if ($order->fulfillment) {
                 $order->fulfillment->update([
-                    'notes' => trim(($order->fulfillment->notes ?? '') . " | Paid via Cashfree Doorstep UPI (Txn: " . ($request->transaction_id ?? 'AUTO-VERIFIED') . ")"),
+                    'notes' => trim(($order->fulfillment->notes ?? '') . " | Paid via Razorpay Doorstep UPI (Txn: " . ($request->transaction_id ?? 'AUTO-VERIFIED') . ")"),
                 ]);
             }
 
             \App\Models\Payment::updateOrCreate(
-                ['order_id' => $order->id, 'gateway' => 'cashfree'],
+                ['order_id' => $order->id, 'gateway' => 'razorpay'],
                 [
                     'amount'                 => (float) $order->total_amount,
                     'currency'               => 'INR',
                     'status'                 => 'SUCCESS',
                     'payment_method_group'   => 'upi',
                     'payment_method_details' => ['type' => 'doorstep_upi', 'verified_by' => $rider->name],
-                    'bank_reference'         => (string) ($request->transaction_id ?? 'CF_POD_' . time()),
+                    'bank_reference'         => (string) ($request->transaction_id ?? 'RZP_POD_' . time()),
                     'payment_time'           => now(),
-                    'gateway_message'        => 'Doorstep UPI Payment Confirmed via Cashfree',
+                    'gateway_message'        => 'Doorstep UPI Payment Confirmed via Razorpay',
                 ]
             );
 
@@ -316,13 +312,13 @@ class DeliveryDashboardController extends Controller
                 'previous_status' => $order->status,
                 'current_status'  => $order->status,
                 'changed_by'      => $rider->id,
-                'notes'           => "Cashfree Doorstep UPI Payment of ₹" . number_format($order->total_amount, 2) . " verified by {$rider->name}. " . ($request->transaction_id ? "Ref: {$request->transaction_id}" : ""),
+                'notes'           => "Razorpay Doorstep UPI Payment of ₹" . number_format($order->total_amount, 2) . " verified by {$rider->name}. " . ($request->transaction_id ? "Ref: {$request->transaction_id}" : ""),
             ]);
         });
 
         return response()->json([
             'success'          => true,
-            'message'          => 'Payment of ₹' . number_format($order->total_amount, 2) . ' received successfully via Cashfree UPI!',
+            'message'          => 'Payment of ₹' . number_format($order->total_amount, 2) . ' received successfully via Razorpay UPI!',
             'payment_status'   => 'paid',
             'payment_method'   => 'doorstep_upi',
             'formatted_amount' => '₹' . number_format($order->total_amount, 2),

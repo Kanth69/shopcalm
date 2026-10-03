@@ -38,9 +38,9 @@ class CheckoutService
     public function placeOrder(array $data): Order
     {
         return DB::transaction(function () use ($data) {
-            $cart = $this->cartService->getCart();
+            $cart = $this->cartService->getSelectedCart();
             if ($cart->items->isEmpty()) {
-                throw new Exception("Shopping cart is empty.");
+                throw new Exception("Shopping cart has no items selected for checkout.");
             }
 
             // Validate shipping PIN code serviceability
@@ -157,7 +157,7 @@ class CheckoutService
                 'currency'             => 'INR',
                 'status'               => $isFullyPaidByWallet ? 'SUCCESS' : 'PENDING',
                 'payment_method_group' => $finalPaymentMethod,
-                'gateway_message'      => $isFullyPaidByWallet ? '100% Covered by WiseKart Wallet Balance' : 'Cash on Delivery (Pending collection by rider)',
+                'gateway_message'      => $isFullyPaidByWallet ? '100% Covered by ShopCalm Wallet Balance' : 'Cash on Delivery (Pending collection by rider)',
             ]);
 
             // 3. Record Coupon Usage
@@ -170,8 +170,9 @@ class CheckoutService
             foreach ($cart->items as $item) {
                 $product = Product::where('id', $item->product_id)->lockForUpdate()->first();
 
-                if (!$product || $product->stock < $item->quantity) {
-                    throw new Exception("Product {$item->product->name} is out of stock or insufficient quantity.");
+                $availStock = $product ? $product->getOptionStock($item->selected_option) : 0;
+                if (!$product || $availStock < $item->quantity) {
+                    throw new Exception("Product {$item->product->name} has insufficient stock (Only {$availStock} available).");
                 }
 
                 $originalPrice = (float) $product->price;
@@ -220,8 +221,8 @@ class CheckoutService
             $this->orderService->recordInitialStatus($order);
             $this->fulfillmentService->createInitialFulfillment($order);
 
-            // 6. Clear Cart
-            $this->cartService->clearCart();
+            // 6. Clear Selected Cart Items
+            $this->cartService->clearSelectedItems();
 
             return $order;
         });
@@ -234,9 +235,9 @@ class CheckoutService
     public function createPendingOnlineOrder(array $data, User $user): Order
     {
         return DB::transaction(function () use ($data, $user) {
-            $cart = $this->cartService->getCart();
+            $cart = $this->cartService->getSelectedCart();
             if ($cart->items->isEmpty()) {
-                throw new Exception("Shopping cart is empty.");
+                throw new Exception("Shopping cart has no items selected for checkout.");
             }
 
             // Validate shipping PIN code serviceability
@@ -358,12 +359,12 @@ class CheckoutService
                 'order_id'             => $order->id,
                 'user_id'              => $user->id,
                 'order_number'         => $orderNumber,
-                'gateway'              => 'cashfree',
+                'gateway'              => 'razorpay',
                 'amount'               => $totalAmount,
                 'currency'             => 'INR',
                 'status'               => 'PENDING',
                 'payment_method_group' => 'online',
-                'gateway_message'      => 'Awaiting customer payment authorization on Cashfree.',
+                'gateway_message'      => 'Awaiting customer payment authorization on Razorpay.',
             ]);
 
             // 4. Initial Status History
@@ -379,7 +380,7 @@ class CheckoutService
     }
 
     /**
-     * Mark an existing Order as PAID upon verified Cashfree payment callback/webhook.
+     * Mark an existing Order as PAID upon verified Razorpay payment callback/webhook.
      */
     public function markOrderPaid(Order $order, array $paymentData, User $user): Order
     {
@@ -412,7 +413,7 @@ class CheckoutService
                 [
                     'user_id'                => $user->id,
                     'order_number'           => $order->order_number,
-                    'gateway'                => $paymentData['gateway'] ?? 'cashfree',
+                    'gateway'                => $paymentData['gateway'] ?? 'razorpay',
                     'gateway_order_id'       => $paymentData['gateway_order_id'] ?? null,
                     'gateway_payment_id'     => $paymentData['gateway_payment_id'] ?? null,
                     'payment_session_id'     => $paymentData['payment_session_id'] ?? null,
@@ -442,7 +443,7 @@ class CheckoutService
                         'quantity'      => $item->quantity,
                         'stock_before'  => $stockBefore,
                         'stock_after'   => $stockAfter,
-                        'notes'         => "Prepaid Online Order #{$order->order_number} verified via Cashfree (Bank UTR: " . ($paymentData['bank_reference'] ?? 'N/A') . ").",
+                        'notes'         => "Prepaid Online Order #{$order->order_number} verified via Payment Gateway (Bank UTR: " . ($paymentData['bank_reference'] ?? 'N/A') . ").",
                         'created_by'    => null,
                     ]);
 
@@ -458,11 +459,11 @@ class CheckoutService
                 'previous_status' => 'pending',
                 'current_status'  => 'confirmed',
                 'changed_by'      => $user->id,
-                'notes'           => "Prepaid Online Order verified via Cashfree (Bank UTR: " . ($paymentData['bank_reference'] ?? 'N/A') . ").",
+                'notes'           => "Prepaid Online Order verified via Payment Gateway (Bank UTR: " . ($paymentData['bank_reference'] ?? 'N/A') . ").",
             ]);
 
-            // 7. Clear Cart
-            $this->cartService->clearCart();
+            // 7. Clear Selected Cart Items
+            $this->cartService->clearSelectedItems();
 
             // 8. Trigger Email Confirmation
             try {
@@ -591,8 +592,8 @@ class CheckoutService
                 'notes'           => "Customer switched payment method to Cash on Delivery (COD).",
             ]);
 
-            // 5. Clear Cart
-            $this->cartService->clearCart();
+            // 5. Clear Selected Cart Items
+            $this->cartService->clearSelectedItems();
 
             // 6. Trigger Email Confirmation
             try {

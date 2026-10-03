@@ -117,7 +117,7 @@ class PageSeeder extends Seeder
                     <ul>
                         <li><strong>Order Confirmation:</strong> Order confirmation is sent via SMS, WhatsApp, and email upon successful checkout.</li>
                         <li><strong>Free Pre-Dispatch Cancellation:</strong> You may cancel your order free of cost anytime before it is marked as "Dispatched" from your account order dashboard.</li>
-                        <li><strong>Prepaid Refund for Cancelled Orders:</strong> Prepaid orders cancelled prior to dispatch will receive an instant 100% refund credited to your WiseKart Wallet or original payment method within 3 to 5 business days.</li>
+                        <li><strong>Prepaid Refund for Cancelled Orders:</strong> Prepaid orders cancelled prior to dispatch will receive an instant 100% refund credited to your ShopCalm Wallet or original payment method within 3 to 5 business days.</li>
                     </ul>'
                 ],
                 [
@@ -171,7 +171,7 @@ class PageSeeder extends Seeder
                     'title' => 'Refund Processing for Pre-Dispatch Cancellations',
                     'content' => '<p>For eligible cancellations initiated <strong>before package dispatch</strong>:</p>
                     <ul>
-                        <li><strong>WiseKart Wallet Refund:</strong> Instant 100% credit to your WiseKart Wallet balance for immediate store shopping.</li>
+                        <li><strong>ShopCalm Wallet Refund:</strong> Instant 100% credit to your ShopCalm Wallet balance for immediate store shopping.</li>
                         <li><strong>Original Payment Method:</strong> Prepaid card, UPI, or netbanking payments will be refunded back to the source account within 3 to 5 business days.</li>
                     </ul>'
                 ]
@@ -303,25 +303,25 @@ class PageSeeder extends Seeder
                         ],
                         [
                             'question' => 'What is your Return and Replacement Policy?',
-                            'answer' => '<p>WiseKart (ShopCalm) follows a <strong>Strict No Return & No Replacement Policy</strong> once a package is dispatched and delivered. All items undergo rigorous multi-point quality inspection prior to packing. Free cancellation is permitted anytime before package dispatch.</p>',
+                            'answer' => '<p>ShopCalm follows a <strong>Strict No Return & No Replacement Policy</strong> once a package is dispatched and delivered. All items undergo rigorous multi-point quality inspection prior to packing. Free cancellation is permitted anytime before package dispatch.</p>',
                             'category' => 'Returns & Quality',
                             'icon' => 'bi-shield-check'
                         ],
                         [
                             'question' => 'How do I cancel my order before dispatch?',
-                            'answer' => '<p>You can cancel your order free of cost anytime before dispatch by navigating to <strong>My Account &rarr; My Orders</strong> and clicking <em>Cancel Order</em>. Prepaid cancellations are refunded 100% instantly to your WiseKart Wallet or source payment account.</p>',
+                            'answer' => '<p>You can cancel your order free of cost anytime before dispatch by navigating to <strong>My Account &rarr; My Orders</strong> and clicking <em>Cancel Order</em>. Prepaid cancellations are refunded 100% instantly to your ShopCalm Wallet or source payment account.</p>',
                             'category' => 'Orders & Tracking',
                             'icon' => 'bi-x-circle'
                         ],
                         [
                             'question' => 'What payment methods do you accept?',
-                            'answer' => '<p>We accept all major <strong>UPI apps (GPay, PhonePe, Paytm, BHIM), Credit/Debit Cards, NetBanking</strong> via PCI-DSS compliant Cashfree payment gateway, <strong>WiseKart Wallet balance</strong>, and <strong>Cash on Delivery (COD)</strong>.</p>',
+                            'answer' => '<p>We accept all major <strong>UPI apps (GPay, PhonePe, Paytm, BHIM), Credit/Debit Cards, NetBanking</strong> via PCI-DSS compliant Razorpay payment gateway, <strong>ShopCalm Wallet balance</strong>, and <strong>Cash on Delivery (COD)</strong>.</p>',
                             'category' => 'Payments & COD',
                             'icon' => 'bi-credit-card-2-front'
                         ],
                         [
-                            'question' => 'How does WiseKart Wallet balance work?',
-                            'answer' => '<p>Your WiseKart Wallet receives instant 100% credits for pre-dispatch cancellations and referral rewards. Wallet balance can be used at checkout with 1-click zero transaction fee checkout.</p>',
+                            'question' => 'How does ShopCalm Wallet balance work?',
+                            'answer' => '<p>Your ShopCalm Wallet receives instant 100% credits for pre-dispatch cancellations and referral rewards. Wallet balance can be used at checkout with 1-click zero transaction fee checkout.</p>',
                             'category' => 'Payments & COD',
                             'icon' => 'bi-wallet2'
                         ]

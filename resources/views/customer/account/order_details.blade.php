@@ -110,17 +110,13 @@
     $cancellation = $order->cancellation;
     $isAdminCancelled = false;
 
-    if ($cancellation && $cancellation->cancelled_by_type === 'admin') {
-        $isAdminCancelled = true;
-    } elseif ($cancellation && $cancellation->cancelledBy && $cancellation->cancelledBy->isSuperAdmin()) {
-        $isAdminCancelled = true;
+    if ($cancellation) {
+        $isAdminCancelled = ($cancellation->cancelled_by_type === 'admin');
     } else {
         $cancelHistory = $order->statusHistories()->where('current_status', 'cancelled')->latest()->first();
         if ($cancelHistory) {
             $notesLower = strtolower($cancelHistory->notes ?? '');
-            if (str_contains($notesLower, 'admin') || str_contains($notesLower, 'store') || str_contains($notesLower, 'staff') || str_contains($notesLower, 'management')) {
-                $isAdminCancelled = true;
-            } elseif ($cancelHistory->changedBy && $cancelHistory->changedBy->isSuperAdmin()) {
+            if (str_contains($notesLower, 'by store admin') || str_contains($notesLower, 'by store management')) {
                 $isAdminCancelled = true;
             }
         }
@@ -136,7 +132,7 @@
             <div>
                 <h6 class="fw-bold text-danger mb-0.5" style="font-size: 0.98rem; letter-spacing: -0.01em;">Order Cancellation Summary</h6>
                 <div class="text-secondary small" style="font-size: 0.76rem;">
-                    Cancelled on <span class="fw-semibold text-dark">{{ $cancellation ? $cancellation->created_at->format('d M, Y \a\t h:i A') : $order->updated_at->format('d M, Y \a\t h:i A') }}</span>
+                    Cancelled on <span class="fw-semibold text-dark">{{ $cancellation ? $cancellation->created_at->format('d M, Y \a\t h:i A') : ($order->updated_at ? $order->updated_at->format('d M, Y \a\t h:i A') : 'N/A') }}</span>
                 </div>
             </div>
         </div>
@@ -160,7 +156,7 @@
                 <i class="bi bi-info-circle-fill fs-5 flex-shrink-0"></i>
                 <div>
                     <strong class="d-block" style="font-size: 0.85rem;">Notice from Store Management:</strong>
-                    <span>This order was cancelled by store management. @if($order->payment_status === 'paid' || $order->wallet_amount_used > 0)A 100% full refund of <strong class="font-monospace">₹{{ number_format($cancellation->refund_amount ?? $order->total_amount, 2) }}</strong> has been credited to your Store Wallet with zero cancellation fee.@else No payment was collected for this order.@endif</span>
+                    <span>This order was cancelled by store management. @if($order->payment_status === 'paid' || $order->wallet_amount_used > 0)A 100% full refund of <strong class="font-monospace">₹{{ number_format($cancellation->refund_amount ?? $order->total_amount, 2) }}</strong> has been initiated back to your original payment method / bank account.@else No payment was collected for this order.@endif</span>
                 </div>
             </div>
         @endif
@@ -173,7 +169,7 @@
                     <div class="text-uppercase text-muted fw-bold mb-1.5" style="font-size: 0.67rem; letter-spacing: 0.06em;">Cancellation Reason</div>
                     <div class="fw-bold text-dark d-flex align-items-start gap-2" style="font-size: 0.88rem; line-height: 1.35;">
                         <i class="bi bi-chat-left-quote-fill text-danger opacity-75 fs-6 flex-shrink-0 mt-0.5"></i>
-                        <span>{{ $cancellation->cancellation_reason ?? 'Cancelled by customer' }}</span>
+                        <span>{{ $cancellation->cancellation_reason ?? ($isAdminCancelled ? 'Cancelled by store management' : 'Cancelled by customer') }}</span>
                     </div>
                     @if($cancellation && $cancellation->admin_notes)
                         <div class="mt-2 text-muted small p-2 rounded bg-white border" style="font-size: 0.74rem;">
@@ -188,12 +184,16 @@
                 <div class="p-3 rounded-4 bg-light-subtle border h-100 d-flex flex-column justify-content-center" style="background: #f8fafc; border-color: #e2e8f0 !important;">
                     <div class="text-uppercase text-muted fw-bold mb-1.5" style="font-size: 0.67rem; letter-spacing: 0.06em;">Refund Destination &amp; Status</div>
                     
-                    @if($cancellation && $cancellation->refund_method === 'wallet')
-                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5">
-                            <span class="fw-bold text-dark" style="font-size: 0.88rem;"><i class="bi bi-wallet2 text-primary me-1.5"></i> ShopCalm Store Wallet</span>
-                            <span class="badge bg-success text-white rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">⚡ Credited Instantly</span>
+                    @if($cancellation && ($cancellation->refund_method === 'original_source' || $cancellation->refund_method === 'online'))
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5 mb-1">
+                            <span class="fw-bold text-dark" style="font-size: 0.88rem;"><i class="bi bi-credit-card text-primary me-1.5"></i> Original Payment Method (Razorpay Direct Refund)</span>
+                            @if($cancellation->refund_status === 'processed')
+                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">✓ Refund Processed</span>
+                            @else
+                                <span class="badge bg-warning text-dark rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">⏳ Direct Refund Initiated</span>
+                            @endif
                         </div>
-                        <div class="text-muted small mt-1" style="font-size: 0.73rem;">Amount credited to your store wallet balance for future purchases.</div>
+                        <div class="text-muted small mt-1" style="font-size: 0.73rem;">Refund of ₹{{ number_format($cancellation->refund_amount ?? 0, 2) }} is credited back to your original GPay/PhonePe UPI ID, Card, or Bank account in 5-7 business days.</div>
                     @elseif($cancellation && $cancellation->refund_method === 'bank_upi')
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5 mb-1">
                             <span class="fw-bold text-dark" style="font-size: 0.88rem;"><i class="bi bi-bank text-info me-1.5"></i> Bank UPI: <code class="text-dark bg-white px-2 py-0.5 rounded border font-monospace" style="font-size: 0.8rem;">{{ $cancellation->refund_upi_id }}</code></span>
@@ -208,14 +208,16 @@
                         @else
                             <div class="text-muted small" style="font-size: 0.73rem;">Refund will be processed to your UPI handle within 2-3 business days.</div>
                         @endif
+                    @elseif($cancellation && $cancellation->refund_method === 'wallet')
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5">
+                            <span class="fw-bold text-dark" style="font-size: 0.88rem;"><i class="bi bi-wallet2 text-primary me-1.5"></i> Store Wallet</span>
+                            <span class="badge bg-success text-white rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">⚡ Credited Instantly</span>
+                        </div>
+                        <div class="text-muted small mt-1" style="font-size: 0.73rem;">Amount credited to your store wallet balance for future purchases.</div>
                     @else
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5">
-                            <span class="fw-bold text-dark" style="font-size: 0.88rem;"><i class="bi bi-receipt-cutoff text-secondary me-1.5"></i> COD Order GST Cancellation Fee</span>
-                            @if($cancellation && $cancellation->payment_status === 'paid')
-                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">✓ Fee Paid (Ref: {{ $cancellation->payment_reference }})</span>
-                            @else
-                                <span class="badge bg-secondary text-white rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">Cancelled</span>
-                            @endif
+                            <span class="fw-bold text-dark" style="font-size: 0.88rem;"><i class="bi bi-receipt-cutoff text-secondary me-1.5"></i> COD Order (100% Free Cancellation)</span>
+                            <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">✓ ₹0 Cancellation Fee</span>
                         </div>
                     @endif
                 </div>
@@ -1015,7 +1017,7 @@ function toggleFeedbackTag(btn, tag) {
 @endif
 
 @if($order->payment_status === 'failed' || ($order->status === 'pending' && $order->payment_method === 'online'))
-<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const btnRetry = document.getElementById('btn-order-retry-payment');
@@ -1037,15 +1039,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const data = await response.json();
 
-            if (data.success && data.payment_session_id) {
-                const cashfree = Cashfree({
-                    mode: data.environment === 'production' ? 'production' : 'sandbox'
-                });
-
-                cashfree.checkout({
-                    paymentSessionId: data.payment_session_id,
-                    redirectTarget: "_self"
-                });
+            if (data.success && data.razorpay_order_id) {
+                const options = {
+                    key: data.key_id,
+                    amount: data.amount,
+                    currency: data.currency || "INR",
+                    name: data.name || "ShopCalm",
+                    description: data.description || "Order #" + (data.order_number || ""),
+                    order_id: data.razorpay_order_id,
+                    prefill: data.prefill || {},
+                    theme: { color: "#4f46e5" },
+                    handler: function (res) {
+                        window.location.href = data.callback_url + "?razorpay_payment_id=" + res.razorpay_payment_id + "&razorpay_order_id=" + res.razorpay_order_id + "&razorpay_signature=" + res.razorpay_signature;
+                    },
+                    modal: {
+                        ondismiss: function () {
+                            btnRetry.disabled = false;
+                            btnRetry.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Retry Payment';
+                        }
+                    }
+                };
+                const rzp = new Razorpay(options);
+                rzp.open();
             } else {
                 alert(data.message || "Failed to initialize payment retry.");
                 btnRetry.disabled = false;

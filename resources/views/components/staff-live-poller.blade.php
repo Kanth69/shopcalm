@@ -65,9 +65,10 @@
     document.addEventListener('click', unlockAudio);
     document.addEventListener('keydown', unlockAudio);
 
-    // 1. Synthesize Loud 4-Tone Alert Siren for New Orders
+    // 1. Synthesize Loud 4-Tone Alert Siren for New Orders (Strictly reserved for Order Manager portal)
     function playOrderChime() {
         if (!soundEnabled) return;
+        if (portal !== 'order_manager') return;
         try {
             const ctx = getAudioContext();
             if (!ctx) return;
@@ -110,7 +111,7 @@
             text.textContent = soundEnabled ? 'Sound ON' : 'Muted';
         }
 
-        if (soundEnabled) playOrderChime();
+        if (soundEnabled && portal === 'order_manager') playOrderChime();
     };
 
     // 3. Dynamic Row Generator for New Incoming Order

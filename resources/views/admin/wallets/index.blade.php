@@ -476,7 +476,7 @@
                         </div>
                         <div>
                             <h5 class="modal-title fw-bold text-dark mb-0">Referral & Wallet Program Rules</h5>
-                            <small class="text-muted" style="font-size: 0.75rem;">Adjust reward amounts and milestone policies across WiseKart</small>
+                            <small class="text-muted" style="font-size: 0.75rem;">Adjust reward amounts and milestone policies across ShopCalm</small>
                         </div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

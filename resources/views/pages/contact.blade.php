@@ -3,7 +3,7 @@
 @php
     $storeName   = \App\Models\Setting::get('store_name', 'ShopCalm');
     $storePhone  = \App\Models\Setting::get('contact_phone', '+91 98765 43210');
-    $storeEmail  = \App\Models\Setting::get('contact_email', 'support@wisekart.com');
+    $storeEmail  = \App\Models\Setting::get('contact_email', 'support@shopcalm.com');
     $storeAddr   = \App\Models\Setting::get('address', 'ShopCalm HQ, Tech Park, Bangalore, India');
     $storeHours  = \App\Models\Setting::get('support_hours', 'Monday – Saturday: 9:00 AM – 8:00 PM');
     $fbUrl       = \App\Models\Setting::get('facebook_url');

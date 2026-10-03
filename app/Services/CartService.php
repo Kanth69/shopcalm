@@ -12,11 +12,43 @@ class CartService
     public function getCart()
     {
         if (Auth::check()) {
-            return Cart::with('items.product')->firstOrCreate(['user_id' => Auth::id()]);
+            $cart = Cart::with('items.product')->firstOrCreate(['user_id' => Auth::id()]);
+        } else {
+            $sessionId = Session::getId();
+            $cart = Cart::with('items.product')->firstOrCreate(['session_id' => $sessionId]);
         }
 
-        $sessionId = Session::getId();
-        return Cart::with('items.product')->firstOrCreate(['session_id' => $sessionId]);
+        $this->sanitizeCartQuantities($cart);
+        return $cart;
+    }
+
+    public function sanitizeCartQuantities(Cart $cart): void
+    {
+        if (!$cart->relationLoaded('items')) {
+            $cart->load('items.product');
+        }
+
+        foreach ($cart->items as $item) {
+            if (!$item->product || $item->product->status !== 'Active') {
+                continue;
+            }
+
+            $maxStock = $item->product->getOptionStock($item->selected_option);
+
+            if ($maxStock > 0 && $item->quantity > $maxStock) {
+                $item->quantity = $maxStock;
+                $item->save();
+            }
+        }
+    }
+
+    public function getSelectedCart()
+    {
+        $cart = $this->getCart();
+        $cart->load(['items' => function ($query) {
+            $query->where('is_selected', true)->with(['product.category', 'product.brand']);
+        }]);
+        return $cart;
     }
 
     public function addProduct(int $productId, int $quantity = 1, ?string $selectedOption = null)
@@ -28,14 +60,10 @@ class CartService
             return ['success' => false, 'type' => 'error', 'title' => 'Unavailable', 'message' => 'Product is currently inactive.'];
         }
 
-        // Check option stock if applicable
-        if ($product->has_options && $selectedOption) {
-            $availableStock = $product->getOptionStock($selectedOption);
-            if ($availableStock < $quantity) {
-                return ['success' => false, 'type' => 'warning', 'title' => 'Out of Stock', 'message' => "Selected option '{$selectedOption}' is out of stock."];
-            }
-        } elseif ($product->stock < $quantity) {
-            return ['success' => false, 'type' => 'error', 'title' => 'Unavailable', 'message' => 'Product is out of stock.'];
+        $maxStock = $product->getOptionStock($selectedOption);
+
+        if ($maxStock < 1) {
+            return ['success' => false, 'type' => 'error', 'title' => 'Out of Stock', 'message' => 'Product is currently out of stock.'];
         }
 
         $query = $cart->items()->where('product_id', $productId);
@@ -47,14 +75,33 @@ class CartService
         $cartItem = $query->first();
 
         if ($cartItem) {
+            $newQuantity = $cartItem->quantity + $quantity;
+            if ($newQuantity > $maxStock) {
+                if ($cartItem->quantity >= $maxStock) {
+                    return [
+                        'success' => false,
+                        'type'    => 'warning',
+                        'title'   => 'Stock Limit Reached',
+                        'message' => "You already have the maximum available stock ({$maxStock} items) in your cart."
+                    ];
+                }
+                $cartItem->update(['quantity' => $maxStock]);
+                return [
+                    'success' => true,
+                    'type'    => 'warning',
+                    'title'   => 'Quantity Adjusted',
+                    'message' => "Cart quantity set to maximum available stock ({$maxStock} items available)."
+                ];
+            }
             $cartItem->increment('quantity', $quantity);
         } else {
+            $finalQty = min($quantity, $maxStock);
             $offerService = app(\App\Services\OfferService::class);
             $productWithOffer = $offerService->applyOfferDiscountsToProducts(collect([$product]))->first();
             $price = $productWithOffer->sale_price ?? $product->price;
             $cart->items()->create([
                 'product_id'      => $productId,
-                'quantity'        => $quantity,
+                'quantity'        => $finalQty,
                 'unit_price'      => $price,
                 'selected_option' => $selectedOption,
             ]);
@@ -75,8 +122,10 @@ class CartService
             return ['success' => $success, 'type' => $success ? 'success' : 'error', 'title' => $success ? 'Removed' : 'Error', 'message' => $success ? 'Item removed from cart.' : 'Item not found.'];
         }
 
-        if ($product->stock < $quantity) {
-            return ['success' => false, 'type' => 'error', 'title' => 'Error', 'message' => 'Cannot update to more than available stock.'];
+        $maxStock = $product->getOptionStock($cartItem->selected_option);
+
+        if ($quantity > $maxStock) {
+            return ['success' => false, 'type' => 'error', 'title' => 'Stock Limit Reached', 'message' => "Cannot update to more than available stock ({$maxStock} available)."];
         }
 
         $cartItem->update(['quantity' => $quantity]);
@@ -95,14 +144,45 @@ class CartService
         return $cart->items()->delete() > 0;
     }
 
+    public function clearSelectedItems()
+    {
+        $cart = $this->getCart();
+        return $cart->items()->where('is_selected', true)->delete() > 0;
+    }
+
+    public function toggleSelect(int $itemId, ?bool $isSelected = null)
+    {
+        $cart = $this->getCart();
+        $cartItem = $cart->items()->find($itemId);
+        if (!$cartItem) {
+            return false;
+        }
+
+        $newVal = $isSelected !== null ? (bool) $isSelected : !$cartItem->is_selected;
+        $cartItem->update(['is_selected' => $newVal]);
+        return true;
+    }
+
+    public function toggleSelectAll(bool $isSelected)
+    {
+        $cart = $this->getCart();
+        $cart->items()->update(['is_selected' => (bool) $isSelected]);
+        return true;
+    }
+
     public function subtotal()
     {
-        return $this->getCart()->items->sum(function ($item) {
+        return $this->getCart()->items->where('is_selected', true)->sum(function ($item) {
             return $item->quantity * $item->unit_price;
         });
     }
 
     public function totalItems()
+    {
+        return $this->getCart()->items->where('is_selected', true)->sum('quantity');
+    }
+
+    public function allItemsCount()
     {
         return $this->getCart()->items->sum('quantity');
     }

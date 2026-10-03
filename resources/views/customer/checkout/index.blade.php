@@ -1,6 +1,6 @@
 @extends('layouts.customer')
 
-@section('title', 'Secure Checkout — ' . \App\Models\Setting::get('store_name', 'WiseKart'))
+@section('title', 'Secure Checkout — ' . \App\Models\Setting::get('store_name', 'ShopCalm'))
 
 @push('styles')
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -292,7 +292,7 @@
                     </div>
 
                     <div class="card-body p-3 p-md-4">
-                        <!-- Option 1: Cashfree Online Payment (Active) -->
+                        <!-- Option 1: Razorpay Online Payment (Active) -->
                         <div class="payment-tile active-tile mb-2.5" onclick="document.getElementById('pay_online').checked = true; document.getElementById('pay_online').dispatchEvent(new Event('change'));">
                             <div class="d-flex align-items-start gap-2.5">
                                 <input class="form-check-input mt-1 flex-shrink-0" type="radio" name="payment_method" id="pay_online" value="online" checked form="checkout-form">
@@ -427,12 +427,20 @@
                     <!-- Items List -->
                     <div class="checkout-items-wrapper mb-3" style="max-height: 240px; overflow-y: auto;">
                         @foreach($cart->items as $item)
+                        @php
+                            $origPrice = (float) ($item->product->price ?? $item->unit_price);
+                            $currPrice = (float) $item->unit_price;
+                            $hasItemDiscount = $origPrice > $currPrice;
+                            $itemDiscountPct = $hasItemDiscount ? round((($origPrice - $currPrice) / $origPrice) * 100) : 0;
+                            $lineTotal = $item->quantity * $currPrice;
+                            $lineOrigTotal = $item->quantity * $origPrice;
+                        @endphp
                         <div class="p-2.5 mb-2 bg-white rounded-3 border shadow-xs d-flex align-items-center justify-content-between gap-2.5" style="border-color: #f1f5f9 !important;">
                             <div class="d-flex align-items-center gap-2.5 min-w-0">
                                 @if($item->product->main_image)
-                                    <img src="{{ asset('storage/' . $item->product->main_image) }}" alt="{{ $item->product->name }}" class="rounded-2 border flex-shrink-0" style="width: 48px; height: 48px; object-fit: contain;">
+                                    <img src="{{ asset('storage/' . $item->product->main_image) }}" alt="{{ $item->product->name }}" class="rounded-2 border flex-shrink-0" style="width: 50px; height: 50px; object-fit: contain;">
                                 @else
-                                    <div class="rounded-2 bg-light border d-flex align-items-center justify-content-center flex-shrink-0 text-muted" style="width: 48px; height: 48px;">
+                                    <div class="rounded-2 bg-light border d-flex align-items-center justify-content-center flex-shrink-0 text-muted" style="width: 50px; height: 50px;">
                                         <i class="bi bi-box-seam fs-5"></i>
                                     </div>
                                 @endif
@@ -440,32 +448,50 @@
                                     <h6 class="mb-0.5 fw-bold text-dark text-truncate" style="font-size: 0.85rem;" title="{{ $item->product->name }}">
                                         {{ $item->product->name }}
                                     </h6>
-                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    @if(!empty($item->selected_option))
+                                        <div class="mb-0.5">
+                                            <span class="badge bg-light text-secondary border rounded px-1.5 py-0.5" style="font-size: 0.68rem;">
+                                                Option: {{ $item->selected_option }}
+                                            </span>
+                                        </div>
+                                    @endif
+                                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
                                         <span class="badge bg-light text-dark border px-2 py-0.5 fw-semibold" style="font-size: 0.68rem;">
                                             Qty: {{ $item->quantity }}
                                         </span>
-                                        <span class="small text-muted" style="font-size: 0.75rem;">
-                                            ₹{{ number_format($item->unit_price, 2) }} each
+                                        <span class="small" style="font-size: 0.75rem;">
+                                            @if($hasItemDiscount)
+                                                <del class="text-muted opacity-75 me-1">₹{{ number_format($origPrice, 2) }}</del>
+                                                <strong class="text-dark">₹{{ number_format($currPrice, 2) }}</strong>
+                                                <span class="badge bg-success bg-opacity-10 text-success fw-bold ms-1" style="font-size: 0.64rem;">-{{ $itemDiscountPct }}%</span>
+                                            @else
+                                                <span class="text-muted">₹{{ number_format($currPrice, 2) }} each</span>
+                                            @endif
                                         </span>
                                     </div>
                                 </div>
                             </div>
                             <div class="text-end flex-shrink-0">
                                 <span class="fw-bold text-dark font-monospace" style="font-size: 0.88rem;">
-                                    ₹{{ number_format($item->quantity * $item->unit_price, 2) }}
+                                    ₹{{ number_format($lineTotal, 2) }}
                                 </span>
+                                @if($hasItemDiscount)
+                                    <div class="small text-muted text-decoration-line-through font-monospace opacity-75" style="font-size: 0.72rem;">
+                                        ₹{{ number_format($lineOrigTotal, 2) }}
+                                    </div>
+                                @endif
                             </div>
                         </div>
                         @endforeach
                     </div>
 
-                    <!-- WiseKart Wallet Box -->
+                    <!-- ShopCalm Wallet Box -->
                     @if(isset($isWalletFrozen) && $isWalletFrozen)
                     <div class="card border-0 rounded-3 p-3 mb-3" style="background: #fff1f2; border: 1.5px dashed #f87171 !important;">
                         <div class="d-flex align-items-center gap-2.5">
                             <i class="bi bi-shield-lock-fill fs-5 text-danger flex-shrink-0"></i>
                             <div>
-                                <span class="fw-bold text-danger small d-block" style="font-size: 0.85rem;">WiseKart Wallet (Locked)</span>
+                                <span class="fw-bold text-danger small d-block" style="font-size: 0.85rem;">ShopCalm Wallet (Locked)</span>
                                 <small class="text-secondary" style="font-size: 0.75rem;">Balance (₹{{ number_format($userWallet->balance, 2) }}) temporarily locked.</small>
                             </div>
                         </div>
@@ -483,7 +509,7 @@
                                 </div>
                                 <div>
                                     <div class="d-flex align-items-center gap-1.5 mb-0.5">
-                                        <span class="fw-bold text-dark" style="font-size: 0.88rem;">WiseKart Wallet</span>
+                                        <span class="fw-bold text-dark" style="font-size: 0.88rem;">ShopCalm Wallet</span>
                                         <span class="badge bg-success text-white rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.68rem;">
                                             ₹{{ number_format($userWallet->balance, 2) }}
                                         </span>
@@ -796,8 +822,8 @@
     </div>
 </div>
 
-<!-- Cashfree DropJS SDK v3 -->
-<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+<!-- Razorpay Standard Checkout SDK -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -913,29 +939,62 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.redirect_url) {
                 window.location.href = data.redirect_url;
-            } else if (data.payment_session_id) {
-                @php
-                    $cfEnv = strtolower(\App\Models\Setting::where('key', 'cashfree_environment')->value('value') ?? config('services.cashfree.environment', env('CASHFREE_ENVIRONMENT', 'TEST')));
-                    $cfMode = in_array($cfEnv, ['production', 'prod']) ? 'production' : 'sandbox';
-                @endphp
-                const cashfree = Cashfree({
-                    mode: "{{ $cfMode }}"
-                });
+            } else if (data.gateway === 'razorpay' || data.razorpay_order_id) {
+                const options = {
+                    key: data.razorpay_key_id,
+                    amount: data.amount_paise,
+                    currency: data.currency || "INR",
+                    name: "{{ config('app.name', 'ShopCalm') }}",
+                    description: "Order #" + data.order_number,
+                    order_id: data.razorpay_order_id,
+                    prefill: data.prefill || {},
+                    theme: { color: "#4f46e5" },
+                    handler: function(response) {
+                        if (placeOrderBtn) placeOrderBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Verifying Payment...';
+                        fetch('{{ route("checkout.razorpay.verify") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                order_id: data.order_id,
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature
+                            })
+                        })
+                        .then(r => r.json())
+                        .then(verifyData => {
+                            if (verifyData.success && verifyData.redirect_url) {
+                                window.location.href = verifyData.redirect_url;
+                            } else {
+                                Swal.fire('Verification Failed', verifyData.message || 'Payment signature error.', 'error');
+                                if (placeOrderBtn) placeOrderBtn.disabled = false;
+                                if (mobPlaceOrderBtn) mobPlaceOrderBtn.disabled = false;
+                                updatePaymentButtonLabel();
+                            }
+                        })
+                        .catch(err => {
+                            console.error("Verification error:", err);
+                            Swal.fire('Error', 'Payment verification error.', 'error');
+                            if (placeOrderBtn) placeOrderBtn.disabled = false;
+                            if (mobPlaceOrderBtn) mobPlaceOrderBtn.disabled = false;
+                            updatePaymentButtonLabel();
+                        });
+                    },
+                    modal: {
+                        ondismiss: function() {
+                            if (placeOrderBtn) placeOrderBtn.disabled = false;
+                            if (mobPlaceOrderBtn) mobPlaceOrderBtn.disabled = false;
+                            updatePaymentButtonLabel();
+                        }
+                    }
+                };
 
-                cashfree.checkout({
-                    paymentSessionId: data.payment_session_id,
-                    redirectTarget: '_self'
-                }).catch(err => {
-                    console.error("DropJS error:", err);
-                    if (placeOrderBtn) { placeOrderBtn.disabled = false; }
-                    if (mobPlaceOrderBtn) { mobPlaceOrderBtn.disabled = false; }
-                    updatePaymentButtonLabel();
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Payment Gateway Error',
-                        text: err.message || 'Could not open Cashfree payment modal.'
-                    });
-                });
+                const rzp = new Razorpay(options);
+                rzp.open();
             }
         })
         .catch(err => {
@@ -1028,6 +1087,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (summaryDiscountVal) summaryDiscountVal.textContent = `- ₹${data.formatted_discount}`;
                     if (summaryGrandTotal) summaryGrandTotal.textContent = `₹${data.grand_total}`;
                     
+                    if (data.wallet_discount !== undefined) {
+                        const summaryWalletRow = document.getElementById('summary-wallet-row');
+                        const summaryWalletVal = document.getElementById('summary-wallet-val');
+                        const walletAppliedVal = document.getElementById('wallet-applied-val');
+                        if (parseFloat(data.wallet_discount.replace(/,/g, '')) > 0) {
+                            if (summaryWalletRow) summaryWalletRow.classList.remove('d-none');
+                            if (summaryWalletVal) summaryWalletVal.textContent = `- ₹${data.wallet_discount}`;
+                            if (walletAppliedVal) walletAppliedVal.textContent = `- ₹${data.wallet_discount}`;
+                        } else {
+                            if (summaryWalletRow) summaryWalletRow.classList.add('d-none');
+                        }
+                    }
+
                     updatePaymentButtonLabel();
                 } else {
                     if (errorBanner && errorText) {
@@ -1095,6 +1167,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (errorBanner) errorBanner.style.display = 'none';
                     if (summaryDiscountRow) summaryDiscountRow.classList.add('d-none');
                     if (summaryGrandTotal) summaryGrandTotal.textContent = `₹${data.grand_total}`;
+
+                    if (data.wallet_discount !== undefined) {
+                        const summaryWalletRow = document.getElementById('summary-wallet-row');
+                        const summaryWalletVal = document.getElementById('summary-wallet-val');
+                        const walletAppliedVal = document.getElementById('wallet-applied-val');
+                        if (parseFloat(data.wallet_discount.replace(/,/g, '')) > 0) {
+                            if (summaryWalletRow) summaryWalletRow.classList.remove('d-none');
+                            if (summaryWalletVal) summaryWalletVal.textContent = `- ₹${data.wallet_discount}`;
+                            if (walletAppliedVal) walletAppliedVal.textContent = `- ₹${data.wallet_discount}`;
+                        } else {
+                            if (summaryWalletRow) summaryWalletRow.classList.add('d-none');
+                        }
+                    }
 
                     updatePaymentButtonLabel();
                 }

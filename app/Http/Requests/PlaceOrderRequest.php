@@ -23,7 +23,7 @@ class PlaceOrderRequest extends FormRequest
             'shipping_state' => 'required|string|max:100',
             'shipping_zip' => 'required|string|max:20',
             'shipping_country' => 'required|string|max:100',
-            'payment_method' => 'nullable|string|in:cod,online,online_cashfree',
+            'payment_method' => 'nullable|string|in:cod,online,online_razorpay',
             'notes' => 'nullable|string',
             'save_address' => 'nullable|boolean',
         ];

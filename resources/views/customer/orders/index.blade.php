@@ -313,7 +313,7 @@
             <div class="modal-body p-4">
                 <div class="text-center py-4" id="cancelModalLoader">
                     <div class="spinner-border text-primary" role="status"></div>
-                    <div class="small text-muted mt-2">Calculating GST fee & refund breakdown...</div>
+                    <div class="small text-muted mt-2">Fetching cancellation details...</div>
                 </div>
 
                 <div id="cancelModalContent" style="display: none;">
@@ -334,10 +334,10 @@
                             </select>
                         </div>
 
-                        <!-- Financial Summary Box -->
-                        <div class="card border-0 bg-light rounded-3 p-3 mb-3" style="border: 1px solid #cbd5e1 !important;">
+                        <!-- Financial Summary Box (For Prepaid) -->
+                        <div id="prepaidFinancialSummaryBox" class="card border-0 bg-light rounded-3 p-3 mb-3" style="border: 1px solid #cbd5e1 !important;">
                             <div class="d-flex justify-content-between small mb-1">
-                                <span class="text-secondary">Order Amount:</span>
+                                <span class="text-secondary">Order Total Paid:</span>
                                 <span class="fw-bold text-dark font-monospace" id="summaryTotalAmount">₹0.00</span>
                             </div>
                             <div class="d-flex justify-content-between small mb-1 text-danger">
@@ -351,35 +351,24 @@
                             </div>
                         </div>
 
-                        <!-- Refund Destination Choice (For Prepaid) -->
+                        <!-- Prepaid Direct Refund Notice -->
                         <div id="prepaidRefundOptionsSection" class="mb-3" style="display: none;">
-                            <label class="form-label fw-bold text-dark small">Select Refund Destination <span class="text-danger">*</span></label>
-                            <div class="form-check border rounded-3 p-2.5 mb-2 bg-white shadow-xs">
-                                <input class="form-check-input" type="radio" name="refund_method" id="refund_method_wallet" value="wallet" checked onchange="toggleUpiInput()">
-                                <label class="form-check-label w-100" for="refund_method_wallet">
-                                    <div class="fw-bold text-dark small">⚡ ShopCalm Store Wallet <span class="badge bg-success rounded-pill ms-1" style="font-size: 0.65rem;">INSTANT 1-SEC</span></div>
-                                    <div class="text-muted" style="font-size: 0.72rem;">Refund credited immediately for your next purchase.</div>
-                                </label>
+                            <div class="alert alert-info border-0 rounded-3 p-3 shadow-xs bg-light border" style="border-color: #cbd5e1 !important; background: #f8fafc;">
+                                <div class="fw-bold text-dark small mb-1">
+                                    <i class="bi bi-shield-check text-primary me-1"></i> Direct Refund to Original Payment Source (Razorpay)
+                                </div>
+                                <div class="text-secondary small" style="font-size: 0.78rem; line-height: 1.4;">
+                                    Net refund will be credited automatically back to your original payment instrument (UPI / Credit Card / Debit Card / NetBanking) via <strong>Razorpay</strong> within 3-5 business days.
+                                </div>
                             </div>
-                            <div class="form-check border rounded-3 p-2.5 bg-white shadow-xs">
-                                <input class="form-check-input" type="radio" name="refund_method" id="refund_method_bank" value="bank_upi" onchange="toggleUpiInput()">
-                                <label class="form-check-label w-100" for="refund_method_bank">
-                                    <div class="fw-bold text-dark small">🏦 Original Bank UPI / Account</div>
-                                    <div class="text-muted" style="font-size: 0.72rem;">Processed back to your UPI VPA handle.</div>
-                                </label>
-                            </div>
-
-                            <div class="mt-2.5" id="upiIdInputGroup" style="display: none;">
-                                <label class="form-label fw-bold text-dark small">Enter Your UPI VPA Handle (e.g. mobile@paytm / user@ybl)</label>
-                                <input type="text" id="refundUpiIdInput" class="form-control form-control-sm font-monospace fw-bold" placeholder="username@upi">
-                            </div>
+                            <input type="hidden" name="refund_method" id="refund_method_input" value="original_source">
                         </div>
 
-                        <!-- COD GST Fee Notice -->
-                        <div id="codGstFeeNoticeSection" class="alert alert-warning border-0 rounded-3 p-3 mb-3 shadow-xs" style="display: none; background: #fffbeb; border: 1.5px solid #fde68a !important;">
-                            <div class="fw-bold text-dark small mb-1"><i class="bi bi-exclamation-triangle-fill text-warning me-1"></i> Cash on Delivery Cancellation Fee</div>
+                        <!-- COD Free Cancellation Notice -->
+                        <div id="codNoticeSection" class="alert alert-success border-0 rounded-3 p-3 mb-3 shadow-xs" style="display: none; background: #ecfdf5; border: 1.5px solid #a7f3d0 !important;">
+                            <div class="fw-bold text-emerald-900 small mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i> Cash on Delivery Order</div>
                             <div class="text-secondary small" style="font-size: 0.78rem; line-height: 1.35;">
-                                To cancel this confirmed COD order, please complete online payment of the non-refundable GST fee (<strong id="codGstFeeText">₹0.00</strong>).
+                                This COD order can be cancelled <strong>100% Free with ₹0 cancellation fee</strong>.
                             </div>
                         </div>
 
@@ -399,8 +388,6 @@
 @push('scripts')
 <!-- SweetAlert2 JS CDN -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<!-- Cashfree DropJS SDK v3 -->
-<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 <script>
 let currentCancelOrderData = null;
 
@@ -453,23 +440,20 @@ function openCancellationModal(orderId, orderNumber) {
 
                 if (data.is_cod && !data.is_paid) {
                     // COD Order
+                    document.getElementById('prepaidFinancialSummaryBox').style.display = 'none';
                     document.getElementById('prepaidRefundOptionsSection').style.display = 'none';
-                    document.getElementById('codGstFeeNoticeSection').style.display = 'block';
-                    document.getElementById('codGstFeeText').innerText = '₹' + data.summary.cancellation_fee.toFixed(2);
-                    document.getElementById('refundOrPayableLabel').innerText = 'GST Fee Payable Online:';
-                    document.getElementById('refundOrPayableLabel').className = 'text-danger';
-                    document.getElementById('refundOrPayableAmount').innerText = '₹' + data.summary.cancellation_fee.toFixed(2);
-                    document.getElementById('refundOrPayableAmount').className = 'text-danger font-monospace fs-6';
-                    document.getElementById('confirmCancelBtn').innerText = 'Pay GST Fee & Cancel Order';
+                    document.getElementById('codNoticeSection').style.display = 'block';
+                    document.getElementById('confirmCancelBtn').innerText = 'Confirm Free Cancellation';
                 } else {
-                    // Prepaid / Wallet / Paid COD Order
+                    // Prepaid / Paid Order
+                    document.getElementById('prepaidFinancialSummaryBox').style.display = 'block';
                     document.getElementById('prepaidRefundOptionsSection').style.display = 'block';
-                    document.getElementById('codGstFeeNoticeSection').style.display = 'none';
+                    document.getElementById('codNoticeSection').style.display = 'none';
                     document.getElementById('refundOrPayableLabel').innerText = 'Net Refund Amount:';
                     document.getElementById('refundOrPayableLabel').className = 'text-success';
                     document.getElementById('refundOrPayableAmount').innerText = '₹' + data.summary.net_refund.toFixed(2);
                     document.getElementById('refundOrPayableAmount').className = 'text-success font-monospace fs-6';
-                    document.getElementById('confirmCancelBtn').innerText = 'Confirm Cancellation';
+                    document.getElementById('confirmCancelBtn').innerText = 'Confirm Cancellation & Refund';
                 }
             } else {
                 showAlert('error', 'Error', data.message || 'Error fetching order details.');
@@ -481,25 +465,14 @@ function openCancellationModal(orderId, orderNumber) {
         });
 }
 
-function toggleUpiInput() {
-    const bankRadio = document.getElementById('refund_method_bank');
-    document.getElementById('upiIdInputGroup').style.display = bankRadio.checked ? 'block' : 'none';
-}
-
 function submitOrderCancellation(event) {
     event.preventDefault();
     const orderId = document.getElementById('cancelOrderId').value;
     const reason = document.getElementById('cancellationReasonSelect').value;
-    const refundMethod = document.querySelector('input[name="refund_method"]:checked')?.value || 'wallet';
-    const upiId = document.getElementById('refundUpiIdInput').value;
+    const refundMethod = 'original_source';
 
     if (!reason) {
         showAlert('warning', 'Cancellation Reason Required', 'Please select a cancellation reason.');
-        return;
-    }
-
-    if (refundMethod === 'bank_upi' && !upiId.trim() && document.getElementById('prepaidRefundOptionsSection').style.display !== 'none') {
-        showAlert('warning', 'UPI Handle Required', 'Please enter your UPI VPA handle for bank refund.');
         return;
     }
 
@@ -509,8 +482,7 @@ function submitOrderCancellation(event) {
 
     const payload = {
         cancellation_reason: reason,
-        refund_method: refundMethod,
-        refund_upi_id: upiId
+        refund_method: refundMethod
     };
 
     fetch(`/account/orders/${orderId}/cancel`, {
@@ -531,18 +503,6 @@ function submitOrderCancellation(event) {
         return data;
     })
     .then(data => {
-        if (data.cashfree_checkout && data.payment_session_id) {
-            // Launch Cashfree Payment SDK Modal for GST Fee payment
-            const cashfree = Cashfree({
-                mode: "{{ config('services.cashfree.environment', 'TEST') === 'PRODUCTION' ? 'production' : 'sandbox' }}"
-            });
-            cashfree.checkout({
-                paymentSessionId: data.payment_session_id,
-                redirectTarget: "_self"
-            });
-            return;
-        }
-
         if (data.success) {
             showAlert('success', 'Order Cancelled', data.message, () => {
                 location.reload();

@@ -16,6 +16,12 @@ class CartItem extends Model
         'quantity',
         'unit_price',
         'selected_option',
+        'is_selected',
+    ];
+
+    protected $casts = [
+        'is_selected' => 'boolean',
+        'unit_price'  => 'decimal:2',
     ];
 
     public function cart(): BelongsTo

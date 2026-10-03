@@ -174,40 +174,32 @@
                 </div>
             </div>
 
-            <!-- Cashfree Payment Gateway Configuration -->
+            <!-- Razorpay Payment Gateway Configuration -->
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
                 <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
                     <h6 class="mb-0 fw-bold text-dark">
-                        <i class="bi bi-credit-card-2-front-fill text-primary me-2"></i>Cashfree Payment Gateway API Keys
+                        <i class="bi bi-credit-card-2-front-fill text-primary me-2"></i>Razorpay Payment Gateway API Keys
                     </h6>
-                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1 fw-bold" style="font-size: 0.72rem;">Online Payments (UPI/Cards)</span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1 fw-bold" style="font-size: 0.72rem;">Active Online Gateway</span>
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark small">Cashfree App ID <span class="text-danger">*</span></label>
+                            <label class="form-label fw-bold text-dark small">Razorpay Key ID <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-person-badge"></i></span>
-                                <input type="text" name="cashfree_app_id" class="form-control font-monospace" value="{{ $settings['cashfree_app_id'] ?? env('CASHFREE_APP_ID', '') }}" placeholder="e.g. 10294837ab0...">
+                                <input type="text" name="razorpay_key_id" class="form-control font-monospace" value="{{ $settings['razorpay_key_id'] ?? env('RAZORPAY_KEY_ID', 'rzp_test_TiwC0gVacieKkn') }}" placeholder="e.g. rzp_test_...">
                             </div>
-                            <div class="form-text text-muted" style="font-size: 0.72rem;">Cashfree Merchant Dashboard -> API Keys -> App ID</div>
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Razorpay Dashboard -> Account Settings -> API Keys -> Key ID</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark small">Cashfree Environment Mode</label>
-                            <select name="cashfree_environment" class="form-select font-monospace fw-bold">
-                                <option value="TEST" {{ strtolower($settings['cashfree_environment'] ?? env('CASHFREE_ENVIRONMENT', 'TEST')) === 'test' ? 'selected' : '' }}>TEST (Sandbox / Staging)</option>
-                                <option value="PRODUCTION" {{ strtolower($settings['cashfree_environment'] ?? env('CASHFREE_ENVIRONMENT', 'TEST')) === 'production' ? 'selected' : '' }}>PRODUCTION (Live Payments)</option>
-                            </select>
-                            <div class="form-text text-muted" style="font-size: 0.72rem;">Select PRODUCTION for live customer payments.</div>
+                            <label class="form-label fw-bold text-dark small">Razorpay Key Secret <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted"><i class="bi bi-key-fill"></i></span>
+                                <input type="password" name="razorpay_key_secret" class="form-control font-monospace" value="{{ $settings['razorpay_key_secret'] ?? env('RAZORPAY_KEY_SECRET', 'nuKs1b9OeDT5p0Jxr4pUKcUR') }}" placeholder="Secret key...">
+                            </div>
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Razorpay Dashboard -> Account Settings -> API Keys -> Key Secret</div>
                         </div>
-                    </div>
-                    <div class="mb-0">
-                        <label class="form-label fw-bold text-dark small">Cashfree Secret Key <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light text-muted"><i class="bi bi-key-fill"></i></span>
-                            <input type="password" name="cashfree_secret_key" class="form-control font-monospace" value="{{ $settings['cashfree_secret_key'] ?? env('CASHFREE_SECRET_KEY', '') }}" placeholder="cfsk_ma_test_...">
-                        </div>
-                        <div class="form-text text-muted" style="font-size: 0.72rem;">Cashfree Merchant Dashboard -> API Keys -> Secret Key</div>
                     </div>
                 </div>
             </div>

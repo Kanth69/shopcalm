@@ -149,7 +149,11 @@
                             ₹{{ number_format($item->refund_amount, 2) }}
                         </td>
                         <td>
-                            @if($item->refund_method === 'bank_upi')
+                            @if($item->refund_method === 'original_source' || $item->refund_method === 'online')
+                                <span class="badge bg-primary bg-opacity-25 text-primary-emphasis border border-primary px-2.5 py-1">
+                                    💳 Original Source (Razorpay PG)
+                                </span>
+                            @elseif($item->refund_method === 'bank_upi')
                                 <span class="badge bg-warning bg-opacity-25 text-warning-emphasis border border-warning px-2.5 py-1">
                                     🏦 Bank UPI
                                 </span>
@@ -255,10 +259,10 @@
                     <div class="mb-3">
                         <label class="form-label fw-bold text-dark small">Payout Method / Channel Used <span class="text-danger">*</span></label>
                         <select name="payout_channel" class="form-select fw-semibold" required>
-                            <option value="manual_upi" selected>Manual Bank UPI (GPay / PhonePe / Paytm)</option>
+                            <option value="razorpay_direct" selected>Razorpay Direct Refund API</option>
+                            <option value="manual_upi">Manual Bank UPI (GPay / PhonePe / Paytm)</option>
                             <option value="hdfc_netbanking">HDFC / ICICI NetBanking Portal</option>
                             <option value="phonepe_business">PhonePe Business Payout</option>
-                            <option value="cashfree_payouts">Cashfree Payouts API</option>
                         </select>
                     </div>
 

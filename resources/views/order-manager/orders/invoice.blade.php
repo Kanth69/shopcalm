@@ -249,7 +249,7 @@
                     <div class="text-secondary small" style="line-height: 1.6; font-size: 0.82rem;">
                         <strong>Payment Mode:</strong> 
                         @if($order->payment_method === 'online')
-                            ⚡ Cashfree PG ({{ $payment?->method_display ?? 'Online UPI' }})
+                            ⚡ Razorpay PG ({{ $payment?->method_display ?? 'Online UPI' }})
                         @else
                             💵 Cash on Delivery (COD)
                         @endif

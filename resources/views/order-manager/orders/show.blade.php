@@ -690,7 +690,7 @@
                     <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.68rem;">Payment Channel</div>
                     <div class="fw-bold text-dark mt-0.5" style="font-size: 0.92rem;">
                         @if($order->payment_method === 'online')
-                            ⚡ Cashfree PG ({{ $payment?->method_display ?? 'Online UPI / Card' }})
+                            ⚡ Razorpay PG ({{ $payment?->method_display ?? 'Online UPI / Card' }})
                         @else
                             💵 Cash on Delivery (COD)
                         @endif
@@ -717,7 +717,7 @@
 
                 @if($payment && $payment->gateway_order_id)
                     <div class="mb-3">
-                        <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.68rem;">Cashfree Order Ref</div>
+                        <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.68rem;">Razorpay Order Ref</div>
                         <div class="text-secondary font-monospace small">
                             {{ $payment->gateway_order_id }}
                         </div>

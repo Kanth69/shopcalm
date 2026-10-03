@@ -296,7 +296,10 @@ $registerCustomerRoutes = function () {
     Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
     Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
     Route::patch('/cart/update/{itemId}', [CartController::class, 'update'])->name('cart.update');
+    Route::post('/cart/toggle-select/{itemId}', [CartController::class, 'toggleSelect'])->name('cart.toggle-select');
+    Route::post('/cart/toggle-select-all', [CartController::class, 'toggleSelectAll'])->name('cart.toggle-select-all');
     Route::delete('/cart/remove/{itemId}', [CartController::class, 'remove'])->name('cart.remove');
+    Route::post('/cart/move-to-wishlist/{itemId}', [CartController::class, 'moveToWishlist'])->name('cart.move-to-wishlist');
     Route::delete('/cart/clear-all', [CartController::class, 'clear'])->name('cart.clear');
 
     // Delivery & Pincode Checker Routes
@@ -355,8 +358,7 @@ $registerCustomerRoutes = function () {
         Route::post('/checkout/remove-coupon', [CheckoutController::class, 'removeCoupon'])->name('checkout.remove-coupon');
         Route::post('/checkout/toggle-wallet', [CheckoutController::class, 'toggleWallet'])->name('checkout.toggle-wallet');
         Route::post('/checkout', [CheckoutController::class, 'placeOrder'])->name('checkout.place-order');
-        Route::post('/checkout/cashfree/initiate', [CheckoutController::class, 'initiateCashfreePayment'])->name('checkout.cashfree.initiate');
-        Route::get('/checkout/cashfree/return', [CheckoutController::class, 'cashfreeReturn'])->name('checkout.cashfree.return');
+        Route::post('/checkout/razorpay/verify', [CheckoutController::class, 'verifyRazorpayPayment'])->name('checkout.razorpay.verify');
         Route::get('/order-success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
         Route::get('/checkout/payment-failed/{order}', [CheckoutController::class, 'paymentFailed'])->name('checkout.payment_failed');
         Route::post('/checkout/orders/{order}/retry-payment', [CheckoutController::class, 'retryPayment'])->name('checkout.retry_payment');
@@ -382,8 +384,8 @@ $registerCustomerRoutes = function () {
     Route::post('/auth/send-otp', [OtpController::class, 'sendOtp'])->name('auth.otp.send');
     Route::post('/auth/verify-otp', [OtpController::class, 'verifyOtp'])->name('auth.otp.verify');
 
-    // Cashfree Webhook Route (Exempt from Session Auth)
-    Route::post('/checkout/cashfree/webhook', [\App\Http\Controllers\Customer\CheckoutController::class, 'cashfreeWebhook'])->name('checkout.cashfree.webhook');
+    // Webhook Routes (Exempt from Session Auth)
+    Route::post('/checkout/razorpay/webhook', [\App\Http\Controllers\Customer\CheckoutController::class, 'razorpayWebhook'])->name('checkout.razorpay.webhook');
 
     require __DIR__.'/auth.php';
 };

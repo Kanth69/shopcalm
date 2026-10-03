@@ -121,116 +121,102 @@ class OrderService
     }
 
     /**
-     * Cancel a Prepaid Order (Paid Online or Wallet) & Record Cancellation Entry.
+     * Cancel a Prepaid Order (Paid Online) & Trigger Direct PG Refund (Less GST Fee).
+     * Bypasses wallet completely as wallet is reserved for referrals.
      */
-    public function cancelPrepaidOrder(Order $order, string $reason, string $refundMethod = 'wallet', ?string $upiId = null): \App\Models\OrderCancellation
+    public function cancelPrepaidOrder(Order $order, string $reason, string $refundMethod = 'original_source', ?string $upiId = null): \App\Models\OrderCancellation
     {
         if (!in_array($order->status, ['pending', 'confirmed'])) {
-            throw new Exception("Order #{$order->order_number} cannot be cancelled as it is already being processed or shipped.");
+            throw new Exception("Order #{$order->order_number} cannot be cancelled as it is in '{$order->status}' status. Cancellations are only allowed during Pending or Confirmed stage.");
         }
 
         return DB::transaction(function () use ($order, $reason, $refundMethod, $upiId) {
             $summary = $this->calculateCancellationSummary($order);
             $user = $order->user;
 
-            $refundStatus = 'none';
+            $refundStatus = 'pending';
+            $refundRef = null;
+
             if ($summary['net_refund'] > 0) {
-                if ($refundMethod === 'wallet') {
-                    app(\App\Services\WalletService::class)->getOrCreateWallet($user)->credit(
+                // Trigger Direct Gateway Refund via Razorpay API back to Original Payment Method
+                try {
+                    $targetRef = $order->payment_reference ?: $order->order_number;
+                    $razorpay = app(\App\Services\RazorpayService::class);
+                    $rzResult = $razorpay->createRefund(
+                        $targetRef,
                         $summary['net_refund'],
-                        'ORDER_REFUND',
-                        "Refund for cancelled Order #{$order->order_number} (Less GST Fee)",
-                        $order->id
+                        "Prepaid Cancellation Refund for Order #{$order->order_number} (Less GST Fee)"
                     );
-                    $refundStatus = 'processed';
-                } else {
+
+                    if (!empty($rzResult['success'])) {
+                        $refundStatus = ($rzResult['refund_status'] === 'success' || $rzResult['refund_status'] === 'processed') ? 'processed' : 'pending';
+                        $refundRef = $rzResult['razorpay_refund_id'] ?? ('RFD-' . time());
+                    }
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("Direct Razorpay Refund attempt error for #{$order->order_number}: " . $e->getMessage());
                     $refundStatus = 'pending';
                 }
+            } else {
+                $refundStatus = 'none';
             }
 
-            // Record in dedicated order_cancellations table
+            // Record in order_cancellations table
             $cancellation = \App\Models\OrderCancellation::create([
                 'order_id'            => $order->id,
-                'user_id'             => $user->id,
+                'user_id'             => $user ? $user->id : $order->user_id,
                 'cancelled_by_type'   => 'customer',
-                'cancelled_by_id'     => $user->id,
+                'cancelled_by_id'     => $user ? $user->id : null,
                 'cancellation_reason' => $reason,
                 'cancellation_fee'    => $summary['cancellation_fee'],
                 'refund_amount'       => $summary['net_refund'],
                 'refund_status'       => $refundStatus,
-                'refund_method'       => $refundMethod,
+                'refund_method'       => $refundMethod ?: 'original_source',
                 'refund_upi_id'       => $upiId,
+                'payment_reference'   => $refundRef,
             ]);
 
             // Restore product & option stocks
             $this->restoreOrderProductStocks($order);
 
             // Update order status
-            $this->updateOrderStatus($order, 'cancelled', "Cancelled by customer: {$reason}");
+            $this->updateOrderStatus($order, 'cancelled', "Cancelled by customer (Prepaid direct refund to payment source): {$reason}");
 
             return $cancellation;
         });
     }
 
     /**
-     * Record intent for COD order cancellation before GST fee payment gateway redirect.
+     * Cancel a COD Order (100% Free Cancellation, Zero Fee).
      */
-    public function initiateCodCancellationGstPayment(Order $order, string $reason, string $paymentReference): \App\Models\OrderCancellation
-    {
-        $summary = $this->calculateCancellationSummary($order);
-
-        return \App\Models\OrderCancellation::updateOrCreate(
-            ['order_id' => $order->id],
-            [
-                'user_id'             => $order->user_id,
-                'cancelled_by_type'   => 'customer',
-                'cancelled_by_id'     => Auth::id(),
-                'cancellation_reason' => $reason,
-                'cancellation_fee'    => $summary['cancellation_fee'],
-                'refund_amount'       => 0.00,
-                'refund_status'       => 'none',
-                'refund_method'       => 'none',
-                'payment_reference'   => $paymentReference,
-                'payment_status'      => 'pending',
-            ]
-        );
-    }
-
-    /**
-     * Cancel a COD Order when GST Fee payment is verified.
-     */
-    public function cancelCodOrderWithGstFee(Order $order, string $reason, string $paymentReference, string $paymentStatus = 'paid'): \App\Models\OrderCancellation
+    public function cancelCodOrderFree(Order $order, string $reason): \App\Models\OrderCancellation
     {
         if (!in_array($order->status, ['pending', 'confirmed'])) {
-            throw new Exception("Order #{$order->order_number} cannot be cancelled as it is already being processed or shipped.");
+            throw new Exception("Order #{$order->order_number} cannot be cancelled as it is in '{$order->status}' status. Cancellations are only allowed during Pending or Confirmed stage.");
         }
 
-        return DB::transaction(function () use ($order, $reason, $paymentReference, $paymentStatus) {
-            $summary = $this->calculateCancellationSummary($order);
+        return DB::transaction(function () use ($order, $reason) {
+            $user = $order->user;
 
             $cancellation = \App\Models\OrderCancellation::updateOrCreate(
                 ['order_id' => $order->id],
                 [
                     'user_id'             => $order->user_id,
                     'cancelled_by_type'   => 'customer',
-                    'cancelled_by_id'     => Auth::id(),
+                    'cancelled_by_id'     => Auth::id() ?: $order->user_id,
                     'cancellation_reason' => $reason,
-                    'cancellation_fee'    => $summary['cancellation_fee'],
+                    'cancellation_fee'    => 0.00, // 100% Free for COD
                     'refund_amount'       => 0.00,
                     'refund_status'       => 'none',
                     'refund_method'       => 'none',
-                    'payment_reference'   => $paymentReference,
-                    'payment_status'      => $paymentStatus,
+                    'payment_status'      => 'waived',
                 ]
             );
 
-            if ($paymentStatus === 'paid') {
-                // Restore product & option stocks only upon confirmed payment
-                $this->restoreOrderProductStocks($order);
+            // Restore product & option stocks
+            $this->restoreOrderProductStocks($order);
 
-                // Update order status
-                $this->updateOrderStatus($order, 'cancelled', "Cancelled by customer via COD GST Fee Payment: {$reason}");
-            }
+            // Update order status
+            $this->updateOrderStatus($order, 'cancelled', "Cancelled by customer (100% Free COD Cancellation): {$reason}");
 
             return $cancellation;
         });
@@ -249,6 +235,15 @@ class OrderService
             $adminUser = Auth::guard('admin')->user() ?? Auth::user();
             $adminId = $adminUser ? $adminUser->id : null;
             $customer = $order->user;
+
+            $existing = \App\Models\OrderCancellation::where('order_id', $order->id)->first();
+            if ($existing) {
+                // Preserve existing customer cancellation details
+                if ($adminNotes) {
+                    $existing->update(['admin_notes' => $adminNotes]);
+                }
+                return $existing;
+            }
 
             $totalPaid = (float) $order->total_amount;
             $refundAmount = 0.00;
@@ -271,20 +266,18 @@ class OrderService
             }
 
             // Record in order_cancellations table
-            $cancellation = \App\Models\OrderCancellation::updateOrCreate(
-                ['order_id' => $order->id],
-                [
-                    'user_id'             => $customer->id,
-                    'cancelled_by_type'   => 'admin',
-                    'cancelled_by_id'     => $adminId,
-                    'cancellation_reason' => $reason,
-                    'admin_notes'         => $adminNotes,
-                    'cancellation_fee'    => 0.00, // Zero fee for admin cancellations
-                    'refund_amount'       => $refundAmount,
-                    'refund_status'       => $refundStatus,
-                    'refund_method'       => $refundMethod,
-                ]
-            );
+            $cancellation = \App\Models\OrderCancellation::create([
+                'order_id'            => $order->id,
+                'user_id'             => $customer ? $customer->id : $order->user_id,
+                'cancelled_by_type'   => 'admin',
+                'cancelled_by_id'     => $adminId,
+                'cancellation_reason' => $reason,
+                'admin_notes'         => $adminNotes,
+                'cancellation_fee'    => 0.00, // Zero fee for admin cancellations
+                'refund_amount'       => $refundAmount,
+                'refund_status'       => $refundStatus,
+                'refund_method'       => $refundMethod,
+            ]);
 
             // Restore product & option stocks
             $this->restoreOrderProductStocks($order);

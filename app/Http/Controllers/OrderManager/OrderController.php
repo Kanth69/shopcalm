@@ -169,7 +169,9 @@ class OrderController extends Controller
             }
 
             if ($newStatus === 'cancelled' && $previousStatus !== 'cancelled') {
-                app(\App\Services\OrderService::class)->cancelOrderByAdmin($order, $notes ?: 'Cancelled by store management', 'wallet', $notes);
+                if (!$order->cancellation) {
+                    app(\App\Services\OrderService::class)->cancelOrderByAdmin($order, $notes ?: 'Cancelled by store management', 'wallet', $notes);
+                }
             } else {
                 $order->update($updateData);
             }
