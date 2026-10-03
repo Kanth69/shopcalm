@@ -843,6 +843,25 @@ document.addEventListener('DOMContentLoaded', function() {
     const mobPlaceOrderBtnText = document.getElementById('mobile-btn-place-order-text');
 
     window.updatePaymentButtonLabel = function() {
+        const placeOrderBtn = document.getElementById('btn-place-order');
+        const mobPlaceOrderBtn = document.getElementById('mobile-btn-place-order');
+
+        if (placeOrderBtn) {
+            placeOrderBtn.disabled = false;
+            let txtEl = document.getElementById('btn-place-order-text');
+            if (!txtEl) {
+                placeOrderBtn.innerHTML = `<span id="btn-place-order-text" class="fw-bold text-white fs-6"></span><i class="bi bi-arrow-right-short ms-1 text-lg opacity-80"></i>`;
+            }
+        }
+
+        if (mobPlaceOrderBtn) {
+            mobPlaceOrderBtn.disabled = false;
+            let mobTxtEl = document.getElementById('mobile-btn-place-order-text');
+            if (!mobTxtEl) {
+                mobPlaceOrderBtn.innerHTML = `<span id="mobile-btn-place-order-text"></span> <i class="bi bi-arrow-right ms-1"></i>`;
+            }
+        }
+
         const selectedVal = document.querySelector('input[name="payment_method"]:checked')?.value;
         const isOnline = (selectedVal === 'online');
         const grandTotalRaw = document.getElementById('summary-grand-total')?.textContent.replace(/[^0-9.]/g, '') || '0';
@@ -852,6 +871,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const mobGrandEl = document.getElementById('mobile-summary-grand-total');
         if (mobGrandEl) mobGrandEl.textContent = grandTotalFmt;
 
+        const placeOrderBtnText = document.getElementById('btn-place-order-text');
         if (placeOrderBtnText) {
             if (grandTotalVal <= 0) {
                 placeOrderBtnText.textContent = `Confirm & Place Order (Wallet Paid)`;
@@ -862,6 +882,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        const mobPlaceOrderBtnText = document.getElementById('mobile-btn-place-order-text');
         if (mobPlaceOrderBtnText) {
             if (grandTotalVal <= 0) {
                 mobPlaceOrderBtnText.textContent = `Place Order (Wallet)`;
@@ -971,24 +992,18 @@ document.addEventListener('DOMContentLoaded', function() {
                                 window.location.href = verifyData.redirect_url;
                             } else {
                                 Swal.fire('Verification Failed', verifyData.message || 'Payment signature error.', 'error');
-                                if (placeOrderBtn) placeOrderBtn.disabled = false;
-                                if (mobPlaceOrderBtn) mobPlaceOrderBtn.disabled = false;
-                                updatePaymentButtonLabel();
+                                window.updatePaymentButtonLabel();
                             }
                         })
                         .catch(err => {
                             console.error("Verification error:", err);
                             Swal.fire('Error', 'Payment verification error.', 'error');
-                            if (placeOrderBtn) placeOrderBtn.disabled = false;
-                            if (mobPlaceOrderBtn) mobPlaceOrderBtn.disabled = false;
-                            updatePaymentButtonLabel();
+                            window.updatePaymentButtonLabel();
                         });
                     },
                     modal: {
                         ondismiss: function() {
-                            if (placeOrderBtn) placeOrderBtn.disabled = false;
-                            if (mobPlaceOrderBtn) mobPlaceOrderBtn.disabled = false;
-                            updatePaymentButtonLabel();
+                            window.updatePaymentButtonLabel();
                         }
                     }
                 };
