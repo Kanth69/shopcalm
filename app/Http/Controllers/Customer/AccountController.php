@@ -26,13 +26,23 @@ class AccountController extends Controller
         return view('customer.account.orders', compact('orders', 'recommendedProducts', 'totalCount', 'deliveredCount', 'activeCount'));
     }
 
-    public function showOrder(Order $order)
+    public function showOrder($orderId)
     {
-        if ($order->user_id !== Auth::id()) {
-            abort(404);
+        $query = Order::with(['items.product.category', 'items.product.brand', 'coupon', 'feedback']);
+
+        if (is_numeric($orderId)) {
+            $query->where(function ($q) use ($orderId) {
+                $q->where('id', $orderId)->orWhere('order_number', $orderId);
+            });
+        } else {
+            $query->where('order_number', $orderId);
         }
 
-        $order->load(['items.product.category', 'items.product.brand', 'coupon', 'feedback']);
+        $order = $query->first();
+
+        if (!$order || $order->user_id !== Auth::id()) {
+            return redirect()->route('account.orders.index')->with('error', 'The requested order was not found in your account.');
+        }
 
         $recommendedProducts = \Illuminate\Support\Facades\Cache::remember('recommended_products', 600, function () {
             $products = \App\Models\Product::with(['category', 'brand'])->where('status', 'Active')->inRandomOrder()->take(4)->get();
@@ -42,13 +52,28 @@ class AccountController extends Controller
         return view('customer.account.order_details', compact('order', 'recommendedProducts'));
     }
 
-    public function invoice(Order $order)
+    public function invoice($orderId)
     {
-        if (Auth::check() && $order->user_id !== Auth::id()) {
-            abort(403, 'Unauthorized access to this order invoice.');
+        $query = Order::with(['user', 'items.product', 'coupon']);
+
+        if (is_numeric($orderId)) {
+            $query->where(function ($q) use ($orderId) {
+                $q->where('id', $orderId)->orWhere('order_number', $orderId);
+            });
+        } else {
+            $query->where('order_number', $orderId);
         }
 
-        $order->load(['user', 'items.product', 'coupon']);
+        $order = $query->first();
+
+        if (!$order) {
+            return redirect()->route('account.orders.index')->with('error', 'Invoice not found.');
+        }
+
+        if (Auth::check() && $order->user_id !== Auth::id()) {
+            return redirect()->route('account.orders.index')->with('error', 'Unauthorized access to this order invoice.');
+        }
+
         return view('order-manager.orders.invoice', compact('order'));
     }
 
