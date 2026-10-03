@@ -130,9 +130,7 @@ class Order extends Model
 
     public function primaryPayment(): HasOne
     {
-        return $this->hasOne(Payment::class)->ofMany([], function ($query) {
-            $query->whereIn('status', ['SUCCESS', 'PAID', 'PENDING'])->orderByDesc('id');
-        });
+        return $this->hasOne(Payment::class)->latestOfMany();
     }
 
     /**
