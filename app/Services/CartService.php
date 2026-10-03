@@ -51,7 +51,7 @@ class CartService
         return $cart;
     }
 
-    public function addProduct(int $productId, int $quantity = 1, ?string $selectedOption = null)
+    public function addProduct(int $productId, int $quantity = 1, ?string $selectedOption = null, bool $isBuyNow = false)
     {
         $cart = $this->getCart();
         $product = Product::findOrFail($productId);
@@ -66,6 +66,11 @@ class CartService
             return ['success' => false, 'type' => 'error', 'title' => 'Out of Stock', 'message' => 'Product is currently out of stock.'];
         }
 
+        if ($isBuyNow) {
+            // Deselect all existing cart items so ONLY this product is checked out
+            $cart->items()->update(['is_selected' => false]);
+        }
+
         $query = $cart->items()->where('product_id', $productId);
         if ($selectedOption) {
             $query->where('selected_option', $selectedOption);
@@ -78,14 +83,15 @@ class CartService
             $newQuantity = $cartItem->quantity + $quantity;
             if ($newQuantity > $maxStock) {
                 if ($cartItem->quantity >= $maxStock) {
+                    $cartItem->update(['is_selected' => true]);
                     return [
-                        'success' => false,
+                        'success' => true,
                         'type'    => 'warning',
                         'title'   => 'Stock Limit Reached',
-                        'message' => "You already have the maximum available stock ({$maxStock} items) in your cart."
+                        'message' => "Selected maximum available stock ({$maxStock} items) for checkout."
                     ];
                 }
-                $cartItem->update(['quantity' => $maxStock]);
+                $cartItem->update(['quantity' => $maxStock, 'is_selected' => true]);
                 return [
                     'success' => true,
                     'type'    => 'warning',
@@ -94,6 +100,7 @@ class CartService
                 ];
             }
             $cartItem->increment('quantity', $quantity);
+            $cartItem->update(['is_selected' => true]);
         } else {
             $finalQty = min($quantity, $maxStock);
             $offerService = app(\App\Services\OfferService::class);
@@ -104,6 +111,7 @@ class CartService
                 'quantity'        => $finalQty,
                 'unit_price'      => $price,
                 'selected_option' => $selectedOption,
+                'is_selected'     => true,
             ]);
         }
 

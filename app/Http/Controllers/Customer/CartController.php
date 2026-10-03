@@ -104,10 +104,13 @@ class CartController extends Controller
 
     public function add(StoreCartRequest $request)
     {
+        $isBuyNow = $request->has('buy_now') && (bool) $request->buy_now;
+
         $result = $this->cartService->addProduct(
             (int) $request->product_id,
             (int) ($request->quantity ?? 1),
-            $request->selected_option
+            $request->selected_option,
+            $isBuyNow
         );
 
         if ($request->ajax()) {
