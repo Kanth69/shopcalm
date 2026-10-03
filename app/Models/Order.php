@@ -56,6 +56,18 @@ class Order extends Model
         return 'order_number';
     }
 
+    /**
+     * Retrieve the model for a bound value (resolves by id OR order_number).
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if (is_numeric($value)) {
+            return $this->where('id', $value)->orWhere('order_number', $value)->first();
+        }
+
+        return $this->where('order_number', $value)->first();
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
