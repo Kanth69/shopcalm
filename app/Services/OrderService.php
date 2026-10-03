@@ -12,7 +12,12 @@ class OrderService
 {
     public function getCustomerOrders(Request $request)
     {
-        $query = Auth::user()->orders()->with('items.product');
+        $user = Auth::guard('customer')->user() ?? Auth::user();
+        if (!$user) {
+            return Order::whereRaw('1 = 0')->paginate(10);
+        }
+
+        $query = $user->orders()->with('items.product');
 
         if ($request->filled('search')) {
             $query->where('order_number', 'like', '%' . $request->search . '%');
