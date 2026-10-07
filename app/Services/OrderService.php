@@ -163,7 +163,7 @@ class OrderService
      */
     public function cancelPrepaidOrder(Order $order, string $reason, string $refundMethod = 'original_source', ?string $upiId = null): \App\Models\OrderCancellation
     {
-        if (!in_array($order->status, ['pending', 'failed', 'confirmed'])) {
+        if (!in_array($order->status, ['pending', 'failed', 'confirmed', ''])) {
             throw new Exception("Order #{$order->order_number} cannot be cancelled as it is in '{$order->status}' status. Cancellations are only allowed during Pending or Confirmed stage.");
         }
 
@@ -232,23 +232,25 @@ class OrderService
                 : ($walletRefund > 0 ? 'wallet' : ($prepaidRefund > 0 ? ($refundMethod ?: 'original_source') : 'none'));
 
             // Record in order_cancellations table
-            $cancellation = \App\Models\OrderCancellation::create([
-                'order_id'             => $order->id,
-                'user_id'              => $user ? $user->id : $order->user_id,
-                'cancelled_by_type'    => 'customer',
-                'cancelled_by_id'      => $user ? $user->id : null,
-                'cancellation_reason'  => $reason,
-                'cancellation_fee'     => $summary['cancellation_fee'],
-                'wallet_refund_amount' => $walletRefund,
-                'online_refund_amount' => $prepaidRefund,
-                'refund_amount'        => $totalRefundRecorded,
-                'refund_status'        => $refundStatus,
-                'online_refund_status' => $prepaidRefund > 0 ? $refundStatus : 'none',
-                'refund_method'        => $recordedMethod,
-                'refund_upi_id'        => $upiId,
-                'payment_reference'    => $refundRef,
-                'razorpay_refund_id'   => $refundRef,
-            ]);
+            $cancellation = \App\Models\OrderCancellation::updateOrCreate(
+                ['order_id' => $order->id],
+                [
+                    'user_id'              => $user ? $user->id : $order->user_id,
+                    'cancelled_by_type'    => 'customer',
+                    'cancelled_by_id'      => $user ? $user->id : null,
+                    'cancellation_reason'  => $reason,
+                    'cancellation_fee'     => $summary['cancellation_fee'],
+                    'wallet_refund_amount' => $walletRefund,
+                    'online_refund_amount' => $prepaidRefund,
+                    'refund_amount'        => $totalRefundRecorded,
+                    'refund_status'        => $refundStatus,
+                    'online_refund_status' => $prepaidRefund > 0 ? $refundStatus : 'none',
+                    'refund_method'        => $recordedMethod,
+                    'refund_upi_id'        => $upiId,
+                    'payment_reference'    => $refundRef,
+                    'razorpay_refund_id'   => $refundRef,
+                ]
+            );
 
             // Restore product & option stocks
             $this->restoreOrderProductStocks($order);
@@ -279,7 +281,7 @@ class OrderService
      */
     public function cancelCodOrderFree(Order $order, string $reason): \App\Models\OrderCancellation
     {
-        if (!in_array($order->status, ['pending', 'failed', 'confirmed'])) {
+        if (!in_array($order->status, ['pending', 'failed', 'confirmed', ''])) {
             throw new Exception("Order #{$order->order_number} cannot be cancelled as it is in '{$order->status}' status. Cancellations are only allowed during Pending or Confirmed stage.");
         }
 

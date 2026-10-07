@@ -82,6 +82,18 @@ class Order extends Model
         return $this->where('order_number', $value)->first();
     }
 
+    /**
+     * Normalize empty/null status (caused by legacy MySQL enum coercion of 'failed') to 'pending'.
+     */
+    public function getStatusAttribute($value): string
+    {
+        if ($value === null || trim((string) $value) === '') {
+            return 'pending';
+        }
+
+        return (string) $value;
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

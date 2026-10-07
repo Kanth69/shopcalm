@@ -44,7 +44,10 @@ class CheckoutService
         }
 
         return Order::where('user_id', $user->id)
-            ->whereIn('status', ['pending', 'failed'])
+            ->where(function ($q) {
+                $q->whereIn('status', ['pending', 'failed', ''])
+                  ->orWhereNull('status');
+            })
             ->with('items.product')
             ->latest()
             ->first();

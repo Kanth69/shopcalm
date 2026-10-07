@@ -34,7 +34,7 @@ class OrderController extends Controller
      */
     public function cancellationSummary(Order $order)
     {
-        $isPendingUnpaid = in_array($order->status, ['pending', 'failed']) || $order->payment_status === 'failed';
+        $isPendingUnpaid = in_array($order->status, ['pending', 'failed', '']) || $order->payment_status === 'failed';
 
         if (!$isPendingUnpaid && \App\Models\Setting::get('allow_customer_cancellation', '1') != '1') {
             return response()->json([
@@ -68,7 +68,7 @@ class OrderController extends Controller
     public function cancel(Request $request, Order $order)
     {
         $wantsJson = $request->ajax() || $request->wantsJson() || $request->expectsJson();
-        $isPendingUnpaid = in_array($order->status, ['pending', 'failed']) || $order->payment_status === 'failed';
+        $isPendingUnpaid = in_array($order->status, ['pending', 'failed', '']) || $order->payment_status === 'failed';
 
         if (!$isPendingUnpaid && \App\Models\Setting::get('allow_customer_cancellation', '1') != '1') {
             if ($wantsJson) {
@@ -99,7 +99,7 @@ class OrderController extends Controller
         ]);
 
         try {
-            if (!in_array($order->status, ['pending', 'failed', 'confirmed'])) {
+            if (!in_array($order->status, ['pending', 'failed', 'confirmed', ''])) {
                 $errMsg = "Order #{$order->order_number} cannot be cancelled as it is currently in '{$order->status}' status. Cancellations are only allowed during Pending or Confirmed stage.";
                 if ($wantsJson) {
                     return response()->json([
