@@ -84,7 +84,7 @@
                 <div>
                     <h6 class="fw-bold text-dark mb-0.5" style="font-size: 0.95rem;">Payment Incomplete for this Order</h6>
                     <p class="text-muted small mb-0" style="font-size: 0.8rem;">
-                        Online payment of <strong class="text-dark font-monospace">₹{{ number_format($order->total_amount, 2) }}</strong> was not completed. You can retry online or switch to Cash on Delivery.
+                        Online payment of <strong class="text-dark font-monospace">₹{{ number_format($order->total_amount, 2) }}</strong> was not completed. You cannot place a new order until you retry payment, switch to COD, or cancel this order.
                     </p>
                 </div>
             </div>
@@ -99,6 +99,9 @@
                         <i class="bi bi-cash me-1 text-success"></i> Switch to COD
                     </button>
                 </form>
+                <button type="button" id="btn-order-cancel-pending" onclick="cancelPendingOrderFromDetails()" class="btn btn-outline-danger rounded-pill px-3 py-1.5 fw-semibold btn-sm" style="font-size: 0.8rem;">
+                    <i class="bi bi-x-circle me-1"></i> Cancel Order
+                </button>
             </div>
         </div>
     </div>
@@ -1101,8 +1104,70 @@ function toggleFeedbackTag(btn, tag) {
 @endif
 
 @if($order->payment_status === 'failed' || ($order->status === 'pending' && $order->payment_method === 'online'))
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
+function cancelPendingOrderFromDetails() {
+    Swal.fire({
+        title: 'Cancel Order #{{ $order->order_number }}?',
+        text: 'Cancelling this unpaid pending order is 100% free and will allow you to place a new order immediately.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Yes, Cancel Order',
+        cancelButtonText: 'Back'
+    }).then((result) => {
+        if (!result.isConfirmed) return;
+
+        const btnCancel = document.getElementById('btn-order-cancel-pending');
+        if (btnCancel) {
+            btnCancel.disabled = true;
+            btnCancel.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Cancelling...';
+        }
+
+        fetch("{{ route('account.orders.cancel', $order) }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({
+                cancellation_reason: "Customer cancelled pending online order",
+                refund_method: "wallet"
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Order Cancelled!',
+                    text: data.message || 'Your pending order has been cancelled.',
+                    confirmButtonColor: '#10b981'
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                if (btnCancel) {
+                    btnCancel.disabled = false;
+                    btnCancel.innerHTML = '<i class="bi bi-x-circle me-1"></i> Cancel Order';
+                }
+                Swal.fire('Error', data.message || 'Could not cancel order.', 'error');
+            }
+        })
+        .catch(err => {
+            console.error("Cancel error:", err);
+            if (btnCancel) {
+                btnCancel.disabled = false;
+                btnCancel.innerHTML = '<i class="bi bi-x-circle me-1"></i> Cancel Order';
+            }
+            Swal.fire('Error', 'Network error while cancelling order.', 'error');
+        });
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const btnRetry = document.getElementById('btn-order-retry-payment');
     if (!btnRetry) return;
@@ -1134,7 +1199,37 @@ document.addEventListener('DOMContentLoaded', function() {
                     prefill: data.prefill || {},
                     theme: { color: "#4f46e5" },
                     handler: function (res) {
-                        window.location.href = data.callback_url + "?razorpay_payment_id=" + res.razorpay_payment_id + "&razorpay_order_id=" + res.razorpay_order_id + "&razorpay_signature=" + res.razorpay_signature;
+                        btnRetry.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Verifying...';
+                        fetch("{{ route('checkout.razorpay.verify') }}", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                                "Accept": "application/json"
+                            },
+                            body: JSON.stringify({
+                                order_id: {{ $order->id }},
+                                razorpay_order_id: res.razorpay_order_id,
+                                razorpay_payment_id: res.razorpay_payment_id,
+                                razorpay_signature: res.razorpay_signature
+                            })
+                        })
+                        .then(r => r.json())
+                        .then(verifyData => {
+                            if (verifyData.success && verifyData.redirect_url) {
+                                window.location.href = verifyData.redirect_url;
+                            } else {
+                                btnRetry.disabled = false;
+                                btnRetry.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Retry Payment';
+                                Swal.fire('Verification Failed', verifyData.message || 'Payment verification failed.', 'error');
+                            }
+                        })
+                        .catch(err => {
+                            console.error("Verify retry error:", err);
+                            btnRetry.disabled = false;
+                            btnRetry.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Retry Payment';
+                            Swal.fire('Error', 'Payment verification error.', 'error');
+                        });
                     },
                     modal: {
                         ondismiss: function () {
@@ -1154,16 +1249,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error("Razorpay retry open error:", rzpErr);
                     btnRetry.disabled = false;
                     btnRetry.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Retry Payment';
-                    alert(rzpErr.message || "Could not open Razorpay modal.");
+                    Swal.fire('Error', rzpErr.message || "Could not open Razorpay modal.", 'error');
                 }
             } else {
-                alert(data.message || "Failed to initialize payment retry.");
+                Swal.fire('Error', data.message || "Failed to initialize payment retry.", 'error');
                 btnRetry.disabled = false;
                 btnRetry.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Retry Payment';
             }
         } catch (err) {
             console.error("Retry error:", err);
-            alert("Error communicating with payment gateway.");
+            Swal.fire('Error', "Error communicating with payment gateway.", 'error');
             btnRetry.disabled = false;
             btnRetry.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Retry Payment';
         }

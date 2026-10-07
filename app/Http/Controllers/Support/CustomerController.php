@@ -81,7 +81,7 @@ class CustomerController extends Controller
         ]);
 
         $enquiries = ContactEnquiry::where('email', $customer->email)->latest()->get();
-        $lifetimeSpend = $customer->orders->where('status', '!=', 'cancelled')->sum('total_amount');
+        $lifetimeSpend = $customer->orders->whereIn('status', \App\Models\Order::INCOME_STATUSES)->sum('total_amount');
 
         return view('support.customers.show', compact('customer', 'enquiries', 'lifetimeSpend'));
     }

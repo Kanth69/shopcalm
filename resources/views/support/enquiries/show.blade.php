@@ -135,7 +135,7 @@
                     </div>
                     <div class="mb-3 d-flex justify-content-between small">
                         <span class="text-muted">Lifetime Spend:</span>
-                        <span class="fw-bold text-primary">₹{{ number_format($customer->orders->where('status', '!=', 'cancelled')->sum('total_amount'), 2) }}</span>
+                        <span class="fw-bold text-primary">₹{{ number_format($customer->orders->whereIn('status', \App\Models\Order::INCOME_STATUSES)->sum('total_amount'), 2) }}</span>
                     </div>
 
                     <a href="{{ route('support.customers.show', $customer) }}" class="btn btn-outline-primary btn-sm w-100 rounded-pill fw-bold">

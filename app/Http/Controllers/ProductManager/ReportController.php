@@ -18,7 +18,7 @@ class ReportController extends Controller
      */
     public function index(Request $request): View
     {
-        // 1. Top Selling Products (Velocity)
+        // 1. Top Selling Products (Velocity — only Confirmed to Delivered orders)
         $topSelling = Product::select(
                 'products.id',
                 'products.name',
@@ -29,7 +29,15 @@ class ReportController extends Controller
                 DB::raw('COALESCE(SUM(order_items.quantity), 0) as total_units_sold'),
                 DB::raw('COALESCE(SUM(order_items.total_price), 0) as total_revenue')
             )
-            ->leftJoin('order_items', 'products.id', '=', 'order_items.product_id')
+            ->leftJoin('order_items', function ($join) {
+                $join->on('products.id', '=', 'order_items.product_id')
+                     ->whereExists(function ($q) {
+                         $q->select(DB::raw(1))
+                           ->from('orders')
+                           ->whereColumn('orders.id', 'order_items.order_id')
+                           ->whereIn('orders.status', \App\Models\Order::INCOME_STATUSES);
+                     });
+            })
             ->groupBy('products.id', 'products.name', 'products.sku', 'products.price', 'products.stock', 'products.status')
             ->orderBy('total_units_sold', 'desc')
             ->take(10)

@@ -118,8 +118,9 @@ class AccountController extends BaseApiController
             ];
         }
 
+        $isPendingUnpaid = in_array($order->status, ['pending', 'failed']) || $order->payment_status === 'failed';
         $allowCancellationSetting = Setting::get('allow_customer_cancellation', '1') == '1';
-        $canCustomerCancel = $allowCancellationSetting && in_array($order->status, ['pending', 'confirmed']);
+        $canCustomerCancel = $isPendingUnpaid || ($allowCancellationSetting && $order->status === 'confirmed');
 
         return $this->sendResponse([
             'id'                       => $order->id,
@@ -187,8 +188,9 @@ class AccountController extends BaseApiController
     public function cancellationSummary(Request $request, Order $order): JsonResponse
     {
         $user = $request->user();
+        $isPendingUnpaid = in_array($order->status, ['pending', 'failed']) || $order->payment_status === 'failed';
 
-        if (Setting::get('allow_customer_cancellation', '1') != '1') {
+        if (!$isPendingUnpaid && Setting::get('allow_customer_cancellation', '1') != '1') {
             return $this->sendError('Customer order cancellation is currently disabled by store management.', [], 403);
         }
 
@@ -210,8 +212,9 @@ class AccountController extends BaseApiController
     public function cancelOrder(Request $request, Order $order): JsonResponse
     {
         $user = $request->user();
+        $isPendingUnpaid = in_array($order->status, ['pending', 'failed']) || $order->payment_status === 'failed';
 
-        if (Setting::get('allow_customer_cancellation', '1') != '1') {
+        if (!$isPendingUnpaid && Setting::get('allow_customer_cancellation', '1') != '1') {
             return $this->sendError('Customer order cancellation is currently disabled by store management.', [], 403);
         }
 
@@ -230,17 +233,17 @@ class AccountController extends BaseApiController
             $upiId = null;
 
             if ($order->payment_method === 'cod' && $order->payment_status !== 'paid') {
-                return $this->sendError('For unpaid COD orders, please pay the GST cancellation fee or contact support.', [], 400);
+                $cancellation = $this->orderService->cancelCodOrderFree($order, $reason);
+            } else {
+                $cancellation = $this->orderService->cancelPrepaidOrder($order, $reason, $refundMethod, $upiId);
             }
-
-            $cancellation = $this->orderService->cancelPrepaidOrder($order, $reason, $refundMethod, $upiId);
 
             return $this->sendResponse([
                 'cancellation_id' => $cancellation->id,
                 'order_number'    => $order->order_number,
                 'refund_amount'   => (float) $cancellation->refund_amount,
                 'refund_status'   => $cancellation->refund_status,
-            ], 'Order cancelled successfully. Refund processed to Store Wallet.');
+            ], 'Order cancelled successfully.');
         } catch (\Exception $e) {
             return $this->sendError($e->getMessage(), [], 422);
         }

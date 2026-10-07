@@ -75,7 +75,7 @@ class ReportController extends Controller
     private function getSalesReport($start, $end)
     {
         return Order::with(['user', 'items.product'])
-            ->whereNotIn('status', ['cancelled', 'returned'])
+            ->whereIn('status', Order::INCOME_STATUSES)
             ->whereBetween('created_at', [$start . ' 00:00:00', $end . ' 23:59:59'])
             ->latest()
             ->get();
@@ -88,7 +88,7 @@ class ReportController extends Controller
                 DB::raw('COUNT(id) as orders_count'),
                 DB::raw('SUM(total_amount) as revenue')
             )
-            ->whereNotIn('status', ['cancelled', 'returned'])
+            ->whereIn('status', Order::INCOME_STATUSES)
             ->whereBetween('created_at', [$start . ' 00:00:00', $end . ' 23:59:59'])
             ->groupBy('date')
             ->orderBy('date', 'desc')
@@ -98,8 +98,8 @@ class ReportController extends Controller
     private function getCustomersReport($start, $end)
     {
         return User::where('role_id', User::ROLE_CUSTOMER)
-            ->withCount(['orders as orders_count' => fn($q) => $q->whereBetween('created_at', [$start . ' 00:00:00', $end . ' 23:59:59'])])
-            ->withSum(['orders as total_spent' => fn($q) => $q->whereBetween('created_at', [$start . ' 00:00:00', $end . ' 23:59:59'])], 'total_amount')
+            ->withCount(['orders as orders_count' => fn($q) => $q->whereIn('status', Order::INCOME_STATUSES)->whereBetween('created_at', [$start . ' 00:00:00', $end . ' 23:59:59'])])
+            ->withSum(['orders as total_spent' => fn($q) => $q->whereIn('status', Order::INCOME_STATUSES)->whereBetween('created_at', [$start . ' 00:00:00', $end . ' 23:59:59'])], 'total_amount')
             ->latest()
             ->get();
     }
@@ -107,11 +107,13 @@ class ReportController extends Controller
     private function getProductsReport($start, $end)
     {
         return Product::with('category')
-            ->withCount(['orderItems as total_qty' => function($q) use ($start, $end) {
-                $q->whereBetween('created_at', [$start . ' 00:00:00', $end . ' 23:59:59']);
-            }])
+            ->withSum(['orderItems as total_qty' => function($q) use ($start, $end) {
+                $q->whereHas('order', fn($oq) => $oq->whereIn('status', Order::INCOME_STATUSES))
+                  ->whereBetween('created_at', [$start . ' 00:00:00', $end . ' 23:59:59']);
+            }], 'quantity')
             ->withSum(['orderItems as revenue' => function($q) use ($start, $end) {
-                $q->whereBetween('created_at', [$start . ' 00:00:00', $end . ' 23:59:59']);
+                $q->whereHas('order', fn($oq) => $oq->whereIn('status', Order::INCOME_STATUSES))
+                  ->whereBetween('created_at', [$start . ' 00:00:00', $end . ' 23:59:59']);
             }], 'total_price')
             ->orderBy('total_qty', 'desc')
             ->get();
@@ -120,7 +122,7 @@ class ReportController extends Controller
     private function getProfitLossReport($start, $end)
     {
         return Order::with(['user', 'items.product'])
-            ->whereNotIn('status', ['cancelled', 'returned'])
+            ->whereIn('status', Order::INCOME_STATUSES)
             ->whereBetween('created_at', [$start . ' 00:00:00', $end . ' 23:59:59'])
             ->latest()
             ->get();

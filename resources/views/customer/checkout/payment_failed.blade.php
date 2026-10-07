@@ -57,6 +57,16 @@
                     </form>
                 @endif
 
+                {{-- Action 3: Cancel Pending Order --}}
+                @if(in_array($order->status, ['pending', 'failed', 'confirmed']))
+                <button type="button" id="btn-cancel-pending-order" onclick="handleCancelPendingOrder()"
+                        class="btn btn-outline-danger btn-lg rounded-pill py-2.5 fw-bold w-100 d-flex align-items-center justify-content-center gap-2"
+                        style="font-size: 0.9rem;">
+                    <i class="bi bi-x-circle fs-5"></i>
+                    <span>Cancel This Pending Order (100% Free)</span>
+                </button>
+                @endif
+
                 <div class="text-center mt-2">
                     <a href="{{ route('account.orders.show', $order) }}" class="text-decoration-none text-muted small fw-semibold" style="font-size: 0.82rem;">
                         <i class="bi bi-box-seam me-1"></i> View in My Orders
@@ -109,9 +119,71 @@
 
 </div>
 
-{{-- Razorpay SDK Loader --}}
+{{-- Razorpay SDK Loader & SweetAlert2 --}}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
+function handleCancelPendingOrder() {
+    Swal.fire({
+        title: 'Cancel Order #{{ $order->order_number }}?',
+        text: 'Cancelling this unpaid pending order is 100% free. Once cancelled, you can place a new order anytime.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Yes, Cancel Order',
+        cancelButtonText: 'Back'
+    }).then((result) => {
+        if (!result.isConfirmed) return;
+
+        const btnCancel = document.getElementById('btn-cancel-pending-order');
+        if (btnCancel) {
+            btnCancel.disabled = true;
+            btnCancel.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Cancelling Order...';
+        }
+
+        fetch("{{ route('account.orders.cancel', $order) }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({
+                cancellation_reason: "Customer cancelled pending online order",
+                refund_method: "wallet"
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Order Cancelled!',
+                    text: data.message || 'Your pending order has been cancelled.',
+                    confirmButtonColor: '#10b981'
+                }).then(() => {
+                    window.location.href = "{{ route('account.orders.show', $order) }}";
+                });
+            } else {
+                if (btnCancel) {
+                    btnCancel.disabled = false;
+                    btnCancel.innerHTML = '<i class="bi bi-x-circle fs-5"></i><span>Cancel This Pending Order (100% Free)</span>';
+                }
+                Swal.fire('Error', data.message || 'Could not cancel order.', 'error');
+            }
+        })
+        .catch(err => {
+            console.error("Cancel order error:", err);
+            if (btnCancel) {
+                btnCancel.disabled = false;
+                btnCancel.innerHTML = '<i class="bi bi-x-circle fs-5"></i><span>Cancel This Pending Order (100% Free)</span>';
+            }
+            Swal.fire('Error', 'Network error while cancelling order.', 'error');
+        });
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const btnRetry = document.getElementById('btn-retry-payment');
     if (!btnRetry) return;
@@ -143,27 +215,57 @@ document.addEventListener('DOMContentLoaded', function() {
                     prefill: data.prefill || {},
                     theme: { color: "#4f46e5" },
                     handler: function (res) {
-                        window.location.href = data.callback_url + "?razorpay_payment_id=" + res.razorpay_payment_id + "&razorpay_order_id=" + res.razorpay_order_id + "&razorpay_signature=" + res.razorpay_signature;
+                        btnRetry.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Verifying Payment...';
+                        fetch("{{ route('checkout.razorpay.verify') }}", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                                "Accept": "application/json"
+                            },
+                            body: JSON.stringify({
+                                order_id: {{ $order->id }},
+                                razorpay_order_id: res.razorpay_order_id,
+                                razorpay_payment_id: res.razorpay_payment_id,
+                                razorpay_signature: res.razorpay_signature
+                            })
+                        })
+                        .then(r => r.json())
+                        .then(verifyData => {
+                            if (verifyData.success && verifyData.redirect_url) {
+                                window.location.href = verifyData.redirect_url;
+                            } else {
+                                btnRetry.disabled = false;
+                                btnRetry.innerHTML = '<i class="bi bi-arrow-repeat fs-5"></i><span>Retry Online Payment (UPI / Cards)</span>';
+                                Swal.fire('Verification Failed', verifyData.message || 'Payment signature verification failed.', 'error');
+                            }
+                        })
+                        .catch(err => {
+                            console.error("Verify retry error:", err);
+                            btnRetry.disabled = false;
+                            btnRetry.innerHTML = '<i class="bi bi-arrow-repeat fs-5"></i><span>Retry Online Payment (UPI / Cards)</span>';
+                            Swal.fire('Error', 'Payment verification error. Please refresh the page.', 'error');
+                        });
                     },
                     modal: {
                         ondismiss: function () {
                             btnRetry.disabled = false;
-                            btnRetry.innerHTML = '<i class="bi bi-arrow-repeat fs-5"></i><span>Retry Online Payment</span>';
+                            btnRetry.innerHTML = '<i class="bi bi-arrow-repeat fs-5"></i><span>Retry Online Payment (UPI / Cards)</span>';
                         }
                     }
                 };
                 const rzp = new Razorpay(options);
                 rzp.open();
             } else {
-                alert(data.message || "Failed to initialize payment retry.");
+                Swal.fire('Gateway Notice', data.message || "Failed to initialize payment retry.", 'error');
                 btnRetry.disabled = false;
-                btnRetry.innerHTML = '<i class="bi bi-arrow-repeat fs-5"></i><span>Retry Online Payment</span>';
+                btnRetry.innerHTML = '<i class="bi bi-arrow-repeat fs-5"></i><span>Retry Online Payment (UPI / Cards)</span>';
             }
         } catch (err) {
             console.error("Retry payment error:", err);
-            alert("Error communicating with payment gateway. Please try again.");
+            Swal.fire('Error', "Error communicating with payment gateway. Please try again.", 'error');
             btnRetry.disabled = false;
-            btnRetry.innerHTML = '<i class="bi bi-arrow-repeat fs-5"></i><span>Retry Online Payment</span>';
+            btnRetry.innerHTML = '<i class="bi bi-arrow-repeat fs-5"></i><span>Retry Online Payment (UPI / Cards)</span>';
         }
     });
 });

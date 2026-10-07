@@ -26,7 +26,7 @@ class DashboardController extends Controller
             'delivered'          => Order::where('status', 'delivered')->count(),
             'cancelled'          => Order::whereIn('status', ['cancelled', 'returned'])->count(),
             'today_orders'       => Order::whereDate('created_at', today())->count(),
-            'today_revenue'      => Order::whereDate('created_at', today())->where('status', '!=', 'cancelled')->sum('total_amount'),
+            'today_revenue'      => Order::whereDate('created_at', today())->whereIn('status', Order::INCOME_STATUSES)->sum('total_amount'),
         ];
 
         // Priority queue for warehouse pack & dispatch

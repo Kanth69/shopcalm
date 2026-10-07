@@ -61,12 +61,12 @@ class FinanceController extends Controller
         if ($statusScope === 'delivered') {
             $query->where('status', 'delivered');
         } elseif ($statusScope === 'paid') {
-            $query->where('payment_status', 'paid');
+            $query->where('payment_status', 'paid')->whereIn('status', Order::INCOME_STATUSES);
         } elseif ($statusScope === 'all_active') {
-            $query->whereNotIn('status', ['cancelled', 'returned']);
+            $query->whereIn('status', Order::INCOME_STATUSES);
         } else {
-            // 'realized' default: Delivered OR Paid OR Shipped (active fulfillments)
-            $query->whereNotIn('status', ['cancelled', 'returned']);
+            // 'realized' default: Confirmed until Delivered (excludes pending, failed, cancelled, returned)
+            $query->whereIn('status', Order::INCOME_STATUSES);
         }
 
         $orders = $query->latest()->get();

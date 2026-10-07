@@ -13,6 +13,20 @@ class Order extends Model
 {
     use HasFactory;
 
+    /**
+     * Order statuses that count toward realized store income, revenue, sales, and profit
+     * (from Confirmed through Delivered; excludes pending, failed, cancelled, returned).
+     */
+    public const INCOME_STATUSES = [
+        'confirmed',
+        'processing',
+        'packed',
+        'shipped',
+        'out for delivery',
+        'out_for_delivery',
+        'delivered',
+    ];
+
     protected $fillable = [
         'user_id',
         'order_number',
@@ -227,13 +241,19 @@ class Order extends Model
 
     public function getGrossProfitAttribute(): float
     {
+        if (!in_array($this->status, self::INCOME_STATUSES)) {
+            return 0.0;
+        }
+
         return (float) ($this->total_amount - $this->total_cost);
     }
 
     public function getProfitMarginAttribute(): float
     {
-        return $this->total_amount > 0 
-            ? round(($this->gross_profit / $this->total_amount) * 100, 1) 
-            : 0.0;
+        if (!in_array($this->status, self::INCOME_STATUSES) || $this->total_amount <= 0) {
+            return 0.0;
+        }
+
+        return round(($this->gross_profit / $this->total_amount) * 100, 1);
     }
 }

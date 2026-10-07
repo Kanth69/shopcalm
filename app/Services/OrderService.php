@@ -24,7 +24,11 @@ class OrderService
         }
 
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            if ($request->status === 'pending') {
+                $query->whereIn('status', ['pending', 'failed']);
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         return $query->latest()->paginate(10);
@@ -159,7 +163,7 @@ class OrderService
      */
     public function cancelPrepaidOrder(Order $order, string $reason, string $refundMethod = 'original_source', ?string $upiId = null): \App\Models\OrderCancellation
     {
-        if (!in_array($order->status, ['pending', 'confirmed'])) {
+        if (!in_array($order->status, ['pending', 'failed', 'confirmed'])) {
             throw new Exception("Order #{$order->order_number} cannot be cancelled as it is in '{$order->status}' status. Cancellations are only allowed during Pending or Confirmed stage.");
         }
 
@@ -170,14 +174,18 @@ class OrderService
             $walletRefund = $summary['wallet_refund'];
             $prepaidRefund = $summary['net_refund'];
 
-            // 1. Credit 100% of wallet amount used back to customer's wallet
+            // 1. Credit 100% of wallet amount used back to customer's wallet (only if debited and not already refunded)
             if ($walletRefund > 0 && $user) {
-                app(\App\Services\WalletService::class)->getOrCreateWallet($user)->credit(
-                    $walletRefund,
-                    'ORDER_CANCELLED_REFUND',
-                    "100% Wallet refund for cancelled Order #{$order->order_number}",
-                    $order->id
-                );
+                $debitedCount = \App\Models\WalletTransaction::where('order_id', $order->id)->where('type', 'DEBIT')->count();
+                $creditedCount = \App\Models\WalletTransaction::where('order_id', $order->id)->where('type', 'CREDIT')->count();
+                if ($debitedCount > $creditedCount) {
+                    app(\App\Services\WalletService::class)->getOrCreateWallet($user)->credit(
+                        $walletRefund,
+                        'ORDER_CANCELLED_REFUND',
+                        "100% Wallet refund for cancelled Order #{$order->order_number}",
+                        $order->id
+                    );
+                }
             }
 
             // 2. Handle Prepaid Online portion (Razorpay PG refund)
@@ -271,7 +279,7 @@ class OrderService
      */
     public function cancelCodOrderFree(Order $order, string $reason): \App\Models\OrderCancellation
     {
-        if (!in_array($order->status, ['pending', 'confirmed'])) {
+        if (!in_array($order->status, ['pending', 'failed', 'confirmed'])) {
             throw new Exception("Order #{$order->order_number} cannot be cancelled as it is in '{$order->status}' status. Cancellations are only allowed during Pending or Confirmed stage.");
         }
 
@@ -422,6 +430,15 @@ class OrderService
      */
     protected function restoreOrderProductStocks(Order $order): void
     {
+        // Only restore stock if stock was actually deducted (e.g., confirmed COD or paid online order)
+        $wasStockDeducted = $order->stockMovements()
+            ->where('movement_type', \App\Enums\MovementType::SALE)
+            ->exists();
+
+        if (!$wasStockDeducted && in_array($order->status, ['pending', 'failed']) && $order->payment_status !== 'paid') {
+            return;
+        }
+
         foreach ($order->items as $item) {
             $product = \App\Models\Product::find($item->product_id);
             if ($product) {

@@ -33,7 +33,7 @@
                 </div>
             </div>
             <div class="h3 fw-bold text-dark mb-0">₹{{ number_format($stats['total_revenue'], 2) }}</div>
-            <div class="small text-success mt-1" style="font-size: 0.75rem;">Gross non-cancelled revenue</div>
+            <div class="small text-success mt-1" style="font-size: 0.75rem;">Confirmed to delivered revenue</div>
         </div>
     </div>
 

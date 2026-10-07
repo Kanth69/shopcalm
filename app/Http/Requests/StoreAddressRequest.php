@@ -20,7 +20,7 @@ class StoreAddressRequest extends FormRequest
             'city' => 'required|string|max:100',
             'state' => 'required|string|max:100',
             'zip' => 'required|string|max:20',
-            'country' => 'required|string|max:100',
+            'country' => 'nullable|string|max:100',
             'is_default' => 'nullable|boolean',
         ];
     }

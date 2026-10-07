@@ -217,7 +217,18 @@
                             @endif
                         </div>
                     </div>
-                    @if((\App\Models\Setting::get('allow_customer_cancellation', '1') == '1') && in_array($order->status, ['pending', 'confirmed']))
+                    @if(in_array($order->status, ['pending', 'failed']) && $order->payment_method === 'online' && $order->payment_status !== 'paid')
+                        <a href="{{ route('checkout.payment_failed', $order) }}"
+                           class="btn btn-sm btn-warning text-dark rounded-pill px-3 py-2 fw-bold shadow-xs"
+                           style="font-size:0.8rem; white-space:nowrap;">
+                            <i class="bi bi-credit-card-2-front me-1"></i> Proceed / Pay
+                        </a>
+                    @endif
+                    @php
+                        $isPendingUnpaid = in_array($order->status, ['pending', 'failed']) || $order->payment_status === 'failed';
+                        $canShowCancelBtn = $isPendingUnpaid || ((\App\Models\Setting::get('allow_customer_cancellation', '1') == '1') && $order->status === 'confirmed');
+                    @endphp
+                    @if($canShowCancelBtn && !in_array($order->status, ['cancelled', 'delivered']))
                         <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-2 fw-semibold" 
                                 style="font-size:0.8rem;"
                                 onclick="openCancellationModal({{ $order->id }}, '{{ $order->order_number }}')">

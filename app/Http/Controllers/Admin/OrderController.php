@@ -22,7 +22,7 @@ class OrderController extends Controller
 
         $stats = [
             'total_orders'     => Order::count(),
-            'total_revenue'    => Order::where('status', '!=', 'cancelled')->sum('total_amount'),
+            'total_revenue'    => Order::whereIn('status', Order::INCOME_STATUSES)->sum('total_amount'),
             'pending_count'    => Order::where('status', 'pending')->count(),
             'processing_count' => Order::whereIn('status', ['confirmed', 'packed', 'shipped', 'out for delivery'])->count(),
             'delivered_count'  => Order::where('status', 'delivered')->count(),

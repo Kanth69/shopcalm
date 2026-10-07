@@ -33,11 +33,35 @@ class CheckoutService
     }
 
     /**
+     * Retrieve any active pending/uncompleted order for the user.
+     * A user cannot place a new order while they have a pending order until they
+     * either cancel it or complete/proceed with it (Pay Online or Switch to COD).
+     */
+    public function getActivePendingOrder(?User $user): ?Order
+    {
+        if (!$user) {
+            return null;
+        }
+
+        return Order::where('user_id', $user->id)
+            ->whereIn('status', ['pending', 'failed'])
+            ->with('items.product')
+            ->latest()
+            ->first();
+    }
+
+    /**
      * Place a standard Cash on Delivery (COD) Order.
      */
     public function placeOrder(array $data): Order
     {
         return DB::transaction(function () use ($data) {
+            $user = Auth::guard('customer')->user() ?? (Auth::user() ?? (Auth::guard('sanctum')->user() ?? request()->user('sanctum')));
+            $existingPending = $this->getActivePendingOrder($user);
+            if ($existingPending) {
+                throw new Exception("You already have a pending order (#{$existingPending->order_number}). You cannot place a new order until you cancel or proceed with that order.");
+            }
+
             $cart = $this->cartService->getSelectedCart();
             if ($cart->items->isEmpty()) {
                 throw new Exception("Shopping cart has no items selected for checkout.");
@@ -51,7 +75,6 @@ class CheckoutService
                 throw new Exception("Delivery is currently unavailable to PIN code {$shippingZip}. Please select a serviceable delivery address.");
             }
 
-            $user = Auth::guard('customer')->user() ?? (Auth::user() ?? (Auth::guard('sanctum')->user() ?? request()->user('sanctum')));
             $subtotalAmount = $this->cartService->subtotal();
             $discountAmount = 0;
             $couponId = null;
@@ -243,6 +266,11 @@ class CheckoutService
     public function createPendingOnlineOrder(array $data, User $user): Order
     {
         return DB::transaction(function () use ($data, $user) {
+            $existingPending = $this->getActivePendingOrder($user);
+            if ($existingPending) {
+                throw new Exception("You already have a pending order (#{$existingPending->order_number}). You cannot place a new order until you cancel or proceed with that order.");
+            }
+
             $cart = $this->cartService->getSelectedCart();
             if ($cart->items->isEmpty()) {
                 throw new Exception("Shopping cart has no items selected for checkout.");
@@ -304,30 +332,6 @@ class CheckoutService
                     'zip'     => $data['shipping_zip'],
                     'country' => $data['shipping_country'] ?? 'India',
                 ]);
-            }
-
-            // Check for existing active pending online order for this user to avoid duplicate order creation
-            $existingPending = Order::where('user_id', $user->id)
-                ->where('payment_method', 'online')
-                ->where('payment_status', 'pending')
-                ->where('status', 'pending')
-                ->where('created_at', '>=', now()->subMinutes(30))
-                ->latest()
-                ->first();
-
-            if ($existingPending && abs((float)$existingPending->subtotal_amount - (float)$subtotalAmount) < 0.01) {
-                return $existingPending;
-            }
-
-            // Mark any older pending online orders as failed/abandoned so they don't clutter the user's order history
-            $oldPendingOrders = Order::where('user_id', $user->id)
-                ->where('payment_method', 'online')
-                ->where('payment_status', 'pending')
-                ->where('status', 'pending')
-                ->get();
-
-            foreach ($oldPendingOrders as $oldOrder) {
-                $this->markOrderPaymentFailed($oldOrder, 'Superseded by new checkout attempt.');
             }
 
             $orderNumber = $this->generateOrderNumber();
@@ -530,7 +534,7 @@ class CheckoutService
             $prevStatus = $order->status;
             $order->update([
                 'payment_status' => 'failed',
-                'status'         => 'failed',
+                'status'         => 'pending',
             ]);
 
             // Release/Refund wallet amount back to customer if it was debited for this failed order
@@ -567,9 +571,9 @@ class CheckoutService
 
             $order->statusHistories()->create([
                 'previous_status' => $prevStatus,
-                'current_status'  => 'failed',
+                'current_status'  => 'pending',
                 'changed_by'      => $order->user_id,
-                'notes'           => "Payment failed: {$reason}",
+                'notes'           => "Payment incomplete: {$reason}",
             ]);
 
             return $order;

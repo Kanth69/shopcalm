@@ -142,8 +142,10 @@
 @php
     $recordCount = is_countable($data) ? count($data) : 0;
     $sumAmount = 0;
-    if ($type === 'sales' || $type === 'orders') {
+    if ($type === 'sales') {
         $sumAmount = $data->sum('total_amount');
+    } elseif ($type === 'orders') {
+        $sumAmount = $data->whereIn('status', \App\Models\Order::INCOME_STATUSES)->sum('total_amount');
     } elseif ($type === 'revenue') {
         $sumAmount = $data->sum('revenue');
     } elseif ($type === 'products') {

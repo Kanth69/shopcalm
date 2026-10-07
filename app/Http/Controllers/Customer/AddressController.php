@@ -12,7 +12,8 @@ class AddressController extends Controller
 {
     public function index()
     {
-        $addresses = Auth::user()->addresses;
+        $user = Auth::guard('customer')->user() ?? Auth::user();
+        $addresses = $user ? $user->addresses()->latest()->get() : collect();
         return view('customer.account.addresses', compact('addresses'));
     }
 
@@ -23,13 +24,35 @@ class AddressController extends Controller
 
     public function store(StoreAddressRequest $request)
     {
-        Auth::user()->addresses()->create($request->validated());
+        $user = Auth::guard('customer')->user() ?? Auth::user();
+        if (!$user) {
+            if ($request->ajax() || $request->wantsJson() || $request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Please log in to save your address.'], 401);
+            }
+            return redirect()->route('login');
+        }
+
+        $data = $request->validated();
+        $data['country'] = $data['country'] ?? 'India';
+
+        $address = $user->addresses()->create($data);
+
+        if ($request->ajax() || $request->wantsJson() || $request->expectsJson()) {
+            return response()->json([
+                'success'       => true,
+                'message'       => 'Address saved successfully.',
+                'address'       => $address,
+                'all_addresses' => $user->addresses()->latest()->get(),
+            ]);
+        }
+
         return redirect()->route('account.addresses.index')->with('success', 'Address saved successfully.');
     }
 
     public function edit(Address $address)
     {
-        if ($address->user_id !== Auth::id()) {
+        $user = Auth::guard('customer')->user() ?? Auth::user();
+        if (!$user || (int) $address->user_id !== (int) $user->id) {
             abort(404);
         }
         return view('customer.account.addresses.edit', compact('address'));
@@ -37,10 +60,26 @@ class AddressController extends Controller
 
     public function update(StoreAddressRequest $request, Address $address)
     {
-        if ($address->user_id !== Auth::id()) {
+        $user = Auth::guard('customer')->user() ?? Auth::user();
+        if (!$user || (int) $address->user_id !== (int) $user->id) {
+            if ($request->ajax() || $request->wantsJson() || $request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
             abort(404);
         }
-        $address->update($request->validated());
+
+        $data = $request->validated();
+        $data['country'] = $data['country'] ?? 'India';
+        $address->update($data);
+
+        if ($request->ajax() || $request->wantsJson() || $request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Address updated successfully.',
+                'address' => $address->fresh(),
+            ]);
+        }
+
         return redirect()->route('account.addresses.index')->with('success', 'Address updated successfully.');
     }
 

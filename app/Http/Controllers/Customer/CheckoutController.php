@@ -143,10 +143,13 @@ class CheckoutController extends Controller
             }
         }
 
+        $pendingOrder = $this->checkoutService->getActivePendingOrder($user);
+
         return view('customer.checkout.index', array_merge([
             'cart' => $cart,
             'addresses' => $addresses,
             'availableCoupons' => $availableCoupons,
+            'pendingOrder' => $pendingOrder,
         ], $totals));
     }
 
@@ -314,6 +317,28 @@ class CheckoutController extends Controller
                 return response()->json(['success' => false, 'message' => 'Please log in to place an order.'], 401);
             }
 
+            // Enforce rule: Customer with any pending order cannot place a new order until they cancel or proceed with it
+            $pendingOrder = $this->checkoutService->getActivePendingOrder($user);
+            if ($pendingOrder) {
+                $msg = "You already have a pending order (#{$pendingOrder->order_number}). You cannot place a new order until you cancel or proceed with that order.";
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json([
+                        'success'              => false,
+                        'has_pending_order'    => true,
+                        'pending_order_id'     => $pendingOrder->id,
+                        'pending_order_number' => $pendingOrder->order_number,
+                        'pending_order_total'  => number_format((float) $pendingOrder->total_amount, 2),
+                        'proceed_url'          => route('checkout.payment_failed', $pendingOrder),
+                        'order_url'            => route('account.orders.show', $pendingOrder),
+                        'cancel_url'           => route('account.orders.cancel', $pendingOrder),
+                        'message'              => $msg,
+                    ], 422);
+                }
+
+                return redirect()->route('checkout.payment_failed', $pendingOrder)
+                    ->with('toast', ['type' => 'warning', 'title' => 'Pending Order Exists', 'message' => $msg]);
+            }
+
             // Check if wallet balance 100% covers the order (Zero remaining to pay)
             $cart = $this->cartService->getSelectedCart();
             if ($cart->items->isEmpty()) {
@@ -409,6 +434,7 @@ class CheckoutController extends Controller
                         'currency'          => $rzResult['currency'],
                         'order_number'      => $order->order_number,
                         'order_id'          => $order->id,
+                        'failed_url'        => route('checkout.payment_failed', $order),
                         'prefill'           => [
                             'name'    => $order->shipping_name,
                             'email'   => $order->shipping_email,
@@ -523,6 +549,7 @@ class CheckoutController extends Controller
 
             return response()->json([
                 'success'           => true,
+                'order_id'          => $order->id,
                 'razorpay_order_id' => $rzpOrderId,
                 'key_id'            => $razorpay->getKeyId(),
                 'amount'            => $rzpOrder['amount'],
@@ -534,6 +561,7 @@ class CheckoutController extends Controller
                     'email'   => $order->shipping_email,
                     'contact' => $order->shipping_phone,
                 ],
+                'verify_url'        => route('checkout.razorpay.verify'),
                 'callback_url'      => route('account.orders.show', $order),
             ]);
         } catch (\Exception $e) {

@@ -215,24 +215,30 @@
                 </div>
 
                 {{-- Amount + Desktop CTA --}}
-                <div class="d-flex align-items-center gap-3 ms-auto ms-sm-0">
-                    <div class="text-end">
+                <div class="d-flex align-items-center gap-2 ms-auto ms-sm-0 flex-wrap justify-content-end">
+                    <div class="text-end me-1">
                         <div class="fw-bolder text-dark font-monospace" style="font-size: 0.98rem;">₹{{ number_format($order->total_amount, 2) }}</div>
                         <div class="text-muted small" style="font-size: 0.68rem;">Total Amount</div>
                     </div>
-                    @if($order->payment_status === 'failed' || ($order->status === 'pending' && $order->payment_method === 'online'))
+                    @if(in_array($order->status, ['pending', 'failed']) || $order->payment_status === 'failed')
                     <a href="{{ route('checkout.payment_failed', $order) }}"
                        class="btn btn-sm fw-semibold rounded-pill px-3 py-1.5 d-none d-sm-inline-flex align-items-center gap-1 shadow-xs text-white"
                        style="background: #ea580c; border: none; font-size: 0.78rem; white-space: nowrap;">
-                        <i class="bi bi-arrow-repeat"></i> <span>Complete Payment</span>
+                        <i class="bi bi-arrow-repeat"></i> <span>Proceed / Pay</span>
                     </a>
-                    @else
+                    <form action="{{ route('customer.orders.cancel', $order->id) }}" method="POST" class="d-none d-sm-inline" onsubmit="return confirm('Are you sure you want to cancel this pending order #{{ $order->order_number }}?');">
+                        @csrf
+                        <input type="hidden" name="cancellation_reason" value="Cancelled pending order from My Orders">
+                        <button type="submit" class="btn btn-sm btn-outline-danger fw-semibold rounded-pill px-2.5 py-1.5 d-inline-flex align-items-center gap-1" style="font-size: 0.76rem; white-space: nowrap;">
+                            <i class="bi bi-x-circle"></i> <span>Cancel</span>
+                        </button>
+                    </form>
+                    @endif
                     <a href="{{ route('account.orders.show', $order) }}"
                        class="btn btn-sm fw-semibold rounded-pill px-3 py-1.5 d-none d-sm-inline-flex align-items-center gap-1 shadow-xs text-white"
                        style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none; font-size: 0.78rem; white-space: nowrap;">
-                        <span>View Details</span> <i class="bi bi-arrow-right"></i>
+                        <span>Details</span> <i class="bi bi-arrow-right"></i>
                     </a>
-                    @endif
                 </div>
 
             </div>
@@ -285,17 +291,25 @@
 
             {{-- Mobile Full-Width Action Button --}}
             <div class="d-block d-sm-none mt-3 pt-2.5 border-top">
-                @if($order->payment_status === 'failed' || ($order->status === 'pending' && $order->payment_method === 'online'))
-                <a href="{{ route('checkout.payment_failed', $order) }}"
-                   class="btn btn-warning w-100 rounded-pill py-2 fw-bold text-dark d-flex align-items-center justify-content-center gap-1.5 shadow-xs" style="font-size: 0.82rem; background: #ea580c; color: #ffffff !important;">
-                    <i class="bi bi-arrow-repeat"></i> <span>Complete Payment</span>
-                </a>
-                @else
+                @if(in_array($order->status, ['pending', 'failed']) || $order->payment_status === 'failed')
+                <div class="d-flex gap-2 mb-2">
+                    <a href="{{ route('checkout.payment_failed', $order) }}"
+                       class="btn btn-warning flex-grow-1 rounded-pill py-2 fw-bold text-dark d-flex align-items-center justify-content-center gap-1.5 shadow-xs" style="font-size: 0.82rem; background: #ea580c; color: #ffffff !important;">
+                        <i class="bi bi-arrow-repeat"></i> <span>Proceed / Pay</span>
+                    </a>
+                    <form action="{{ route('customer.orders.cancel', $order->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this pending order #{{ $order->order_number }}?');">
+                        @csrf
+                        <input type="hidden" name="cancellation_reason" value="Cancelled pending order from My Orders">
+                        <button type="submit" class="btn btn-outline-danger rounded-pill py-2 px-3 fw-bold d-flex align-items-center justify-content-center gap-1" style="font-size: 0.8rem;">
+                            <i class="bi bi-x-circle"></i> <span>Cancel</span>
+                        </button>
+                    </form>
+                </div>
+                @endif
                 <a href="{{ route('account.orders.show', $order) }}"
                    class="btn btn-light border w-100 rounded-pill py-2 fw-semibold text-primary d-flex align-items-center justify-content-center gap-1.5 shadow-xs" style="font-size: 0.8rem;">
                     <span>View Order Details</span> <i class="bi bi-arrow-right"></i>
                 </a>
-                @endif
             </div>
 
         </div>

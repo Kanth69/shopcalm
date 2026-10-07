@@ -148,6 +148,54 @@
         </div>
     </div>
 
+    @if(isset($pendingOrder) && $pendingOrder)
+    <!-- Pending Order Restriction Alert Banner -->
+    <div id="pending-order-restriction-banner" class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 2px solid #f59e0b !important;">
+        <div class="p-3 p-md-4" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);">
+            <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs"
+                         style="width: 48px; height: 48px; background: #ea580c; color: #ffffff; font-size: 1.4rem;">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <h6 class="fw-bolder text-dark mb-0" style="font-size: 1rem;">Action Required: You Have a Pending Order (#{{ $pendingOrder->order_number }})</h6>
+                            <span class="badge bg-warning text-dark border border-warning rounded-pill px-2.5 py-0.5 fw-bold font-monospace" style="font-size: 0.75rem;">
+                                ₹{{ number_format($pendingOrder->total_amount, 2) }}
+                            </span>
+                        </div>
+                        <p class="text-secondary small mb-0" style="font-size: 0.84rem; line-height: 1.45;">
+                            You cannot place a new order while you have an active pending order (<strong class="text-dark">#{{ $pendingOrder->order_number }}</strong>, {{ $pendingOrder->items->count() }} item{{ $pendingOrder->items->count() !== 1 ? 's' : '' }}).
+                            Please either <strong>Proceed</strong> with that order (complete online payment / switch to COD) or <strong>Cancel</strong> it first.
+                        </p>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
+                    <a href="{{ route('checkout.payment_failed', $pendingOrder) }}"
+                       class="btn btn-primary rounded-pill px-4 py-2 fw-bold btn-sm shadow-xs d-inline-flex align-items-center gap-1.5"
+                       style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none; font-size: 0.82rem;">
+                        <i class="bi bi-credit-card-2-front"></i>
+                        <span>Proceed with Order #{{ $pendingOrder->order_number }}</span>
+                    </a>
+                    <button type="button" id="btn-cancel-pending-banner"
+                            onclick="cancelPendingOrderOnCheckout({{ $pendingOrder->id }}, '{{ $pendingOrder->order_number }}')"
+                            class="btn btn-outline-danger rounded-pill px-3.5 py-2 fw-bold btn-sm d-inline-flex align-items-center gap-1.5"
+                            style="font-size: 0.82rem; background: #ffffff;">
+                        <i class="bi bi-x-circle"></i>
+                        <span>Cancel Pending Order</span>
+                    </button>
+                    <a href="{{ route('account.orders.show', $pendingOrder) }}"
+                       class="btn btn-light border rounded-pill px-3 py-2 fw-semibold btn-sm text-secondary"
+                       style="font-size: 0.8rem;">
+                        <i class="bi bi-box-seam me-1"></i> View Order
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- Hidden Checkout Form -->
     <form action="{{ route('checkout.place-order') }}" method="POST" id="checkout-form">
         @csrf
@@ -185,11 +233,9 @@
                                 <small class="text-muted" style="font-size: 0.74rem;">Where should we send your package?</small>
                             </div>
                         </div>
-                        @if($addresses->count() > 0)
-                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold" onclick="showAddressSelectorModal()" style="font-size: 0.78rem;">
-                            <i class="bi bi-geo-alt me-1"></i> Saved Addresses ({{ $addresses->count() }})
+                        <button type="button" id="btn-saved-addresses-header" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold" onclick="showAddressSelectorModal()" style="font-size: 0.78rem; display: {{ $addresses->count() > 0 ? 'inline-block' : 'none' }};">
+                            <i class="bi bi-geo-alt me-1"></i> <span id="saved-addresses-count-text">Saved Addresses ({{ $addresses->count() }})</span>
                         </button>
-                        @endif
                     </div>
 
                     <div class="card-body p-3 p-md-4">
@@ -205,7 +251,7 @@
                         <div id="active-address-display" class="p-3 p-md-3.5 rounded-3 border address-card-selected mb-3">
                             <div id="no-address-msg" style="display: {{ $addresses->count() > 0 ? 'none' : 'block' }};" class="text-center py-3 text-muted">
                                 <i class="bi bi-building-add fs-2 text-primary d-block mb-1.5"></i>
-                                <span class="small fw-semibold text-dark">No saved address found. Click <strong>"+ Add New Address"</strong> below to add one.</span>
+                                <span class="small fw-semibold text-dark">No saved address found. Fill in the form below or click <strong>"+ Add New Address"</strong> to add one.</span>
                             </div>
 
                             @php $activeAddr = $addresses->count() > 0 ? ($addresses->firstWhere('is_default', true) ?? $addresses->first()) : null; @endphp
@@ -215,11 +261,9 @@
                                         <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.92rem;" id="display-name">{{ $activeAddr ? $activeAddr->name : '' }}</h6>
                                         <span class="badge bg-success text-white rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.68rem;">✓ Selected</span>
                                     </div>
-                                    @if($addresses->count() > 1)
-                                    <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="showAddressSelectorModal()" style="font-size: 0.78rem;">
+                                    <button type="button" id="btn-switch-address" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="showAddressSelectorModal()" style="font-size: 0.78rem; display: {{ $addresses->count() > 1 ? 'inline-block' : 'none' }};">
                                         <i class="bi bi-arrow-repeat me-1"></i> Switch Address
                                     </button>
-                                    @endif
                                 </div>
                                 <p class="text-secondary mb-1.5" id="display-street-city" style="line-height: 1.5; font-size: 0.85rem;">
                                     {{ $activeAddr ? "{$activeAddr->address}, {$activeAddr->city}, {$activeAddr->state} - {$activeAddr->zip}" : '' }}
@@ -234,57 +278,53 @@
                         <!-- Add New Address Button Action Bar -->
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 fw-semibold" onclick="openNewAddressForm()" style="font-size: 0.8rem;">
-                                <i class="bi bi-plus-lg me-1"></i> + Add New Address
+                                <i class="bi bi-plus-lg me-1"></i> Add New Address
                             </button>
                         </div>
 
-                        <!-- Collapsible Add New Address Form -->
+                        <!-- Collapsible Add New Address Card (Note: MUST be a div, NOT a nested form!) -->
                         <div class="card border rounded-3 mb-3.5 overflow-hidden shadow-xs" id="new-address-card" style="display: {{ $addresses->count() === 0 ? 'block' : 'none' }}; border-color: #cbd5e1 !important; background: #f8fafc;">
                             <div class="card-header bg-white py-2.5 px-3 d-flex justify-content-between align-items-center border-bottom">
                                 <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.88rem;"><i class="bi bi-house-add text-primary me-2"></i>Add New Delivery Address</h6>
-                                @if($addresses->count() > 0)
-                                    <button type="button" class="btn-close" onclick="closeNewAddressForm()"></button>
-                                @endif
+                                <button type="button" class="btn-close" id="btn-close-new-address-header" onclick="closeNewAddressForm()" style="display: {{ $addresses->count() > 0 ? 'inline-block' : 'none' }};"></button>
                             </div>
                             <div class="card-body p-3 p-md-3.5">
-                                <form id="new-address-form" onsubmit="handleSaveAddress(event)">
-                                    @csrf
+                                <div id="new-address-form">
                                     <div class="row g-2.5">
                                         <div class="col-12">
                                             <label for="new_name" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Full Name <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control rounded-3" id="new_name" required value="{{ auth()->user()->name ?? '' }}" style="font-size: 0.88rem;">
+                                            <input type="text" class="form-control rounded-3" id="new_name" value="{{ auth()->user()->name ?? '' }}" placeholder="Enter full name" style="font-size: 0.88rem;">
                                         </div>
                                         <div class="col-6">
                                             <label for="new_phone" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Mobile Number <span class="text-danger">*</span></label>
-                                            <input type="tel" class="form-control rounded-3" id="new_phone" required value="{{ auth()->user()->mobile_number ?? '' }}" placeholder="10-digit mobile" style="font-size: 0.88rem;">
+                                            <input type="tel" class="form-control rounded-3" id="new_phone" value="{{ auth()->user()->mobile_number ?? '' }}" placeholder="10-digit mobile" maxlength="15" style="font-size: 0.88rem;">
                                         </div>
                                         <div class="col-6">
                                             <label for="new_zip" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Pincode <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control rounded-3 font-monospace fw-bold" id="new_zip" required placeholder="6-digit PIN" style="font-size: 0.88rem;">
+                                            <input type="text" class="form-control rounded-3 font-monospace fw-bold" id="new_zip" placeholder="6-digit PIN" maxlength="6" oninput="handleNewPincodeLookup(this.value)" style="font-size: 0.88rem;">
+                                            <small id="new_zip_lookup_hint" class="text-muted d-block mt-0.5" style="font-size: 0.7rem;"></small>
                                         </div>
                                         <div class="col-12">
                                             <label for="new_address" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Flat / House / Building / Street Address <span class="text-danger">*</span></label>
-                                            <textarea class="form-control rounded-3" id="new_address" rows="2" required placeholder="Complete address" style="font-size: 0.88rem;"></textarea>
+                                            <textarea class="form-control rounded-3" id="new_address" rows="2" placeholder="Complete street address, landmark" style="font-size: 0.88rem;"></textarea>
                                         </div>
                                         <div class="col-6">
                                             <label for="new_city" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">City <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control rounded-3" id="new_city" required style="font-size: 0.88rem;">
+                                            <input type="text" class="form-control rounded-3" id="new_city" placeholder="City" style="font-size: 0.88rem;">
                                         </div>
                                         <div class="col-6">
                                             <label for="new_state" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">State <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control rounded-3" id="new_state" required style="font-size: 0.88rem;">
+                                            <input type="text" class="form-control rounded-3" id="new_state" placeholder="State" style="font-size: 0.88rem;">
                                         </div>
                                     </div>
 
                                     <div class="d-flex justify-content-end gap-2 mt-3">
-                                        @if($addresses->count() > 0)
-                                            <button type="button" class="btn btn-light border rounded-pill px-3.5 btn-sm fw-semibold" onclick="closeNewAddressForm()">Cancel</button>
-                                        @endif
-                                        <button type="submit" class="btn btn-primary rounded-pill px-4 btn-sm shadow-xs fw-semibold" id="btn-save-address" style="background: #4f46e5; border: none;">
+                                        <button type="button" id="btn-cancel-new-address" class="btn btn-light border rounded-pill px-3.5 btn-sm fw-semibold" onclick="closeNewAddressForm()" style="display: {{ $addresses->count() > 0 ? 'inline-block' : 'none' }};">Cancel</button>
+                                        <button type="button" onclick="handleSaveAddress(event)" class="btn btn-primary rounded-pill px-4 btn-sm shadow-xs fw-semibold" id="btn-save-address" style="background: #4f46e5; border: none;">
                                             <i class="bi bi-bookmark-check me-1"></i> Save Address & Continue
                                         </button>
                                     </div>
-                                </form>
+                                </div>
                             </div>
                         </div>
 
@@ -832,6 +872,12 @@
                     @endforeach
                 </div>
             </div>
+            <div class="modal-footer border-top bg-light py-2.5 px-3 px-md-4 d-flex justify-content-between align-items-center">
+                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3.5 py-1.5 fw-semibold" onclick="openNewAddressFromModal()" style="background: #4f46e5; border: none; font-size: 0.8rem;">
+                    <i class="bi bi-plus-lg me-1"></i> Add New Address
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3.5 py-1.5 fw-semibold" data-bs-dismiss="modal" style="font-size: 0.8rem;">Close</button>
+            </div>
         </div>
     </div>
 </div>
@@ -846,6 +892,120 @@ let userAddresses = {!! json_encode($addresses) !!};
 let currentSelectedAddress = userAddresses.length > 0 ? userAddresses[0] : null;
 window.isCurrentAddressServiceable = true;
 window.currentCheckoutStep = 1;
+@if(isset($pendingOrder) && $pendingOrder)
+window.activePendingOrder = {
+    id: {{ $pendingOrder->id }},
+    order_number: @json($pendingOrder->order_number),
+    total: @json(number_format((float) $pendingOrder->total_amount, 2)),
+    proceed_url: @json(route('checkout.payment_failed', $pendingOrder)),
+    order_url: @json(route('account.orders.show', $pendingOrder)),
+    cancel_url: @json(route('account.orders.cancel', $pendingOrder))
+};
+@else
+window.activePendingOrder = null;
+@endif
+
+function showPendingOrderBlockModal() {
+    const p = window.activePendingOrder;
+    if (!p) return;
+
+    Swal.fire({
+        icon: 'warning',
+        title: `Pending Order #${p.order_number}`,
+        html: `
+            <div class="text-start small" style="line-height: 1.55;">
+                <p class="mb-2 text-secondary">
+                    You currently have an unfinished pending order <strong class="text-dark">#${p.order_number}</strong> (Amount: <strong class="text-dark">₹${p.total}</strong>).
+                </p>
+                <div class="p-2.5 rounded-3 mb-2" style="background: #fffbeb; border: 1px solid #fde68a; color: #92400e;">
+                    <i class="bi bi-info-circle-fill me-1"></i>
+                    <strong>Store Policy:</strong> You cannot place a new order until you either <strong>Proceed</strong> with your pending order (complete payment / switch to COD) or <strong>Cancel</strong> it.
+                </div>
+            </div>
+        `,
+        showDenyButton: true,
+        showCancelButton: true,
+        confirmButtonColor: '#4f46e5',
+        denyButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: `<i class="bi bi-credit-card me-1"></i> Proceed with #${p.order_number}`,
+        denyButtonText: `<i class="bi bi-x-circle me-1"></i> Cancel Order #${p.order_number}`,
+        cancelButtonText: 'Close'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = p.proceed_url;
+        } else if (result.isDenied) {
+            cancelPendingOrderOnCheckout(p.id, p.order_number);
+        }
+    });
+}
+
+function cancelPendingOrderOnCheckout(orderId, orderNumber) {
+    Swal.fire({
+        title: `Cancel Pending Order #${orderNumber}?`,
+        text: 'Cancelling this pending order is 100% free and will allow you to place your new order immediately.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Yes, Cancel Pending Order',
+        cancelButtonText: 'Back'
+    }).then((res) => {
+        if (!res.isConfirmed) return;
+
+        const bannerBtn = document.getElementById('btn-cancel-pending-banner');
+        if (bannerBtn) {
+            bannerBtn.disabled = true;
+            bannerBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Cancelling...';
+        }
+
+        const cancelUrl = (window.activePendingOrder && window.activePendingOrder.cancel_url)
+            ? window.activePendingOrder.cancel_url
+            : `/account/orders/${orderId}/cancel`;
+
+        fetch(cancelUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                cancellation_reason: 'Cancelled pending order during checkout to place a new order',
+                refund_method: 'wallet'
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                window.activePendingOrder = null;
+                const bannerEl = document.getElementById('pending-order-restriction-banner');
+                if (bannerEl) bannerEl.remove();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Pending Order Cancelled!',
+                    text: data.message || `Order #${orderNumber} has been cancelled. You can now proceed with your new order.`,
+                    confirmButtonColor: '#10b981'
+                });
+            } else {
+                if (bannerBtn) {
+                    bannerBtn.disabled = false;
+                    bannerBtn.innerHTML = '<i class="bi bi-x-circle"></i> <span>Cancel Pending Order</span>';
+                }
+                Swal.fire('Error', data.message || 'Could not cancel the pending order.', 'error');
+            }
+        })
+        .catch(err => {
+            console.error('Cancel pending order error:', err);
+            if (bannerBtn) {
+                bannerBtn.disabled = false;
+                bannerBtn.innerHTML = '<i class="bi bi-x-circle"></i> <span>Cancel Pending Order</span>';
+            }
+            Swal.fire('Error', 'Network error while cancelling pending order.', 'error');
+        });
+    });
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     if (currentSelectedAddress) {
@@ -905,6 +1065,11 @@ document.addEventListener('DOMContentLoaded', function() {
     window.handleOrderSubmission = function(e) {
         if (e) e.preventDefault();
 
+        if (window.activePendingOrder) {
+            showPendingOrderBlockModal();
+            return;
+        }
+
         if (window.currentCheckoutStep === 1) {
             proceedToStep2();
             return;
@@ -958,11 +1123,25 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(async res => {
             const data = await res.json();
             if (!res.ok || !data.success) {
+                if (data.has_pending_order) {
+                    window.activePendingOrder = {
+                        id: data.pending_order_id,
+                        order_number: data.pending_order_number,
+                        total: data.pending_order_total || '0.00',
+                        proceed_url: data.proceed_url,
+                        order_url: data.order_url,
+                        cancel_url: data.cancel_url
+                    };
+                    window.updatePaymentButtonLabel();
+                    showPendingOrderBlockModal();
+                    return null;
+                }
                 throw new Error(data.message || 'Could not place order. Please try again.');
             }
             return data;
         })
         .then(data => {
+            if (!data) return;
             if (data.redirect_url) {
                 window.location.href = data.redirect_url;
             } else if (data.gateway === 'razorpay' || data.razorpay_order_id) {
@@ -1009,7 +1188,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     modal: {
                         ondismiss: function() {
-                            window.updatePaymentButtonLabel();
+                            if (data.failed_url) {
+                                window.location.href = data.failed_url;
+                            } else {
+                                window.updatePaymentButtonLabel();
+                            }
                         }
                     }
                 };
@@ -1017,6 +1200,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 try {
                     const rzp = new Razorpay(options);
                     rzp.on('payment.failed', function(resp) {
+                        if (data.failed_url) {
+                            window.location.href = data.failed_url;
+                            return;
+                        }
                         window.updatePaymentButtonLabel();
                         Swal.fire({
                             icon: 'error',
@@ -1176,6 +1363,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Clean Step Switchers
 function proceedToStep2() {
+    if (window.activePendingOrder) {
+        showPendingOrderBlockModal();
+        return;
+    }
+
     if (!currentSelectedAddress || !document.getElementById('hidden_shipping_address').value) {
         const errorBanner = document.getElementById('address-error-banner');
         if (errorBanner) {
@@ -1685,8 +1877,25 @@ function selectModalAddress(addr) {
 function showAddressSelectorModal() {
     const modalEl = document.getElementById('addressSelectorModal');
     if (modalEl) {
-        const modalInstance = new bootstrap.Modal(modalEl);
+        const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
         modalInstance.show();
+    }
+}
+
+function openNewAddressFromModal() {
+    const modalEl = document.getElementById('addressSelectorModal');
+    if (modalEl) {
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) modalInstance.hide();
+    }
+    const card = document.getElementById('new-address-card');
+    if (card) {
+        card.style.display = 'block';
+        setTimeout(() => {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const nameInput = document.getElementById('new_name');
+            if (nameInput) nameInput.focus();
+        }, 200);
     }
 }
 
@@ -1698,6 +1907,8 @@ function openNewAddressForm() {
         } else {
             card.style.display = 'block';
             card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const nameInput = document.getElementById('new_name');
+            if (nameInput) nameInput.focus();
         }
     }
 }
@@ -1709,27 +1920,147 @@ function closeNewAddressForm() {
     }
 }
 
+function handleNewPincodeLookup(val) {
+    const pin = (val || '').replace(/\D/g, '').slice(0, 6);
+    const zipInput = document.getElementById('new_zip');
+    if (zipInput && zipInput.value !== pin) {
+        zipInput.value = pin;
+    }
+    const hintEl = document.getElementById('new_zip_lookup_hint');
+    if (pin.length < 6) {
+        if (hintEl) hintEl.textContent = '';
+        return;
+    }
+
+    if (hintEl) {
+        hintEl.className = 'text-muted d-block mt-0.5';
+        hintEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1" style="width:0.6rem;height:0.6rem;"></span> Looking up PIN code...';
+    }
+
+    fetch('{{ route("delivery.check") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ pincode: pin })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.city && !data.city.startsWith('PIN ')) {
+            const cityInput = document.getElementById('new_city');
+            if (cityInput && !cityInput.value.trim()) cityInput.value = data.city;
+        }
+        if (data.state && data.state !== 'India') {
+            const stateInput = document.getElementById('new_state');
+            if (stateInput && !stateInput.value.trim()) stateInput.value = data.state;
+        }
+        if (hintEl) {
+            if (data.is_serviceable) {
+                hintEl.className = 'text-success fw-semibold d-block mt-0.5';
+                hintEl.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>Serviceable (${data.city || pin})`;
+            } else {
+                hintEl.className = 'text-danger fw-semibold d-block mt-0.5';
+                hintEl.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i>Delivery unavailable for ${pin}`;
+            }
+        }
+    })
+    .catch(() => {
+        if (hintEl) hintEl.textContent = '';
+    });
+}
+
+function renderModalAddressList() {
+    const listEl = document.getElementById('modal-address-list');
+    if (!listEl) return;
+
+    listEl.innerHTML = '';
+    userAddresses.forEach((addr) => {
+        const col = document.createElement('div');
+        col.className = 'col-12';
+        const card = document.createElement('div');
+        card.className = 'card border rounded-3 p-3 address-modal-option cursor-pointer';
+        card.onclick = () => selectModalAddress(addr);
+        card.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start gap-2">
+                <div>
+                    <strong class="text-dark" style="font-size: 0.9rem;"></strong>
+                    <p class="text-secondary mb-1 mt-0.5" style="font-size: 0.82rem;"></p>
+                    <div class="small text-muted" style="font-size: 0.78rem;"><i class="bi bi-telephone me-1"></i> <span class="addr-phone"></span></div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-0.5 flex-shrink-0" style="font-size: 0.76rem;">Select Address</button>
+            </div>
+        `;
+        card.querySelector('strong').textContent = addr.name || '';
+        card.querySelector('p').textContent = `${addr.address || ''}, ${addr.city || ''}, ${addr.state || ''} - ${addr.zip || ''}`;
+        card.querySelector('.addr-phone').textContent = addr.phone || '';
+        col.appendChild(card);
+        listEl.appendChild(col);
+    });
+
+    const headerBtn = document.getElementById('btn-saved-addresses-header');
+    const countText = document.getElementById('saved-addresses-count-text');
+    const switchBtn = document.getElementById('btn-switch-address');
+    const closeHeaderBtn = document.getElementById('btn-close-new-address-header');
+    const cancelBtn = document.getElementById('btn-cancel-new-address');
+
+    if (countText) countText.textContent = `Saved Addresses (${userAddresses.length})`;
+    if (headerBtn) headerBtn.style.display = userAddresses.length > 0 ? 'inline-block' : 'none';
+    if (switchBtn) switchBtn.style.display = userAddresses.length > 1 ? 'inline-block' : 'none';
+    if (closeHeaderBtn) closeHeaderBtn.style.display = userAddresses.length > 0 ? 'inline-block' : 'none';
+    if (cancelBtn) cancelBtn.style.display = userAddresses.length > 0 ? 'inline-block' : 'none';
+}
+
 function handleSaveAddress(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
+
+    const nameVal = (document.getElementById('new_name')?.value || '').trim();
+    const phoneVal = (document.getElementById('new_phone')?.value || '').trim();
+    const zipVal = (document.getElementById('new_zip')?.value || '').trim();
+    const addressVal = (document.getElementById('new_address')?.value || '').trim();
+    const cityVal = (document.getElementById('new_city')?.value || '').trim();
+    const stateVal = (document.getElementById('new_state')?.value || '').trim();
+
+    if (!nameVal || !phoneVal || !zipVal || !addressVal || !cityVal || !stateVal) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Incomplete Address',
+            text: 'Please fill in Full Name, Mobile Number, 6-digit PIN Code, Street Address, City, and State.',
+            confirmButtonColor: '#4f46e5'
+        });
+        return;
+    }
+
+    if (zipVal.length !== 6) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Invalid PIN Code',
+            text: 'Please enter a valid 6-digit PIN code.',
+            confirmButtonColor: '#4f46e5'
+        });
+        return;
+    }
+
     const btn = document.getElementById('btn-save-address');
-    const origText = btn ? btn.innerHTML : 'Save Address';
+    const origText = btn ? btn.innerHTML : '<i class="bi bi-bookmark-check me-1"></i> Save Address & Continue';
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
     }
 
     const payload = {
-        name: document.getElementById('new_name').value,
-        phone: document.getElementById('new_phone').value,
-        zip: document.getElementById('new_zip').value,
-        address: document.getElementById('new_address').value,
-        city: document.getElementById('new_city').value,
-        state: document.getElementById('new_state').value,
+        name: nameVal,
+        phone: phoneVal,
+        zip: zipVal,
+        address: addressVal,
+        city: cityVal,
+        state: stateVal,
         country: 'India',
         is_default: true
     };
 
-    fetch('{{ route("account.addresses.store") }}', {
+    fetch('{{ route("checkout.save-address") }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1738,7 +2069,13 @@ function handleSaveAddress(e) {
         },
         body: JSON.stringify(payload)
     })
-    .then(res => res.json())
+    .then(async res => {
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.message || 'Could not save address.');
+        }
+        return data;
+    })
     .then(data => {
         if (btn) {
             btn.disabled = false;
@@ -1746,17 +2083,32 @@ function handleSaveAddress(e) {
         }
         if (data.success || data.address) {
             const savedAddr = data.address || payload;
-            userAddresses.unshift(savedAddr);
+            if (Array.isArray(data.all_addresses)) {
+                userAddresses = data.all_addresses;
+            } else {
+                userAddresses.unshift(savedAddr);
+            }
+            renderModalAddressList();
             applySelectedAddress(savedAddr);
             closeNewAddressForm();
-            
+
+            // Clear new address inputs for next use
+            document.getElementById('new_address').value = '';
+            document.getElementById('new_zip').value = '';
+            document.getElementById('new_city').value = '';
+            document.getElementById('new_state').value = '';
+            const hintEl = document.getElementById('new_zip_lookup_hint');
+            if (hintEl) hintEl.textContent = '';
+
             const successBanner = document.getElementById('address-success-banner');
             if (successBanner) {
                 successBanner.style.display = 'block';
-                setTimeout(() => { successBanner.style.display = 'none'; }, 3000);
+                setTimeout(() => { successBanner.style.display = 'none'; }, 3500);
             }
 
-            proceedToStep2();
+            if (!window.activePendingOrder) {
+                proceedToStep2();
+            }
         } else {
             Swal.fire('Error', data.message || 'Could not save address.', 'error');
         }
@@ -1767,9 +2119,7 @@ function handleSaveAddress(e) {
             btn.disabled = false;
             btn.innerHTML = origText;
         }
-        applySelectedAddress(payload);
-        closeNewAddressForm();
-        proceedToStep2();
+        Swal.fire('Error', err.message || 'Could not save address. Please check your details and try again.', 'error');
     });
 }
 

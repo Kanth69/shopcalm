@@ -309,27 +309,44 @@
         <span class="text-white-50 small">Order #{{ $order->order_number }}</span>
     </div>
     <div class="card-body p-4">
+        @php
+            $isRealizedIncomeOrder = in_array($order->status, \App\Models\Order::INCOME_STATUSES);
+        @endphp
         <div class="row g-3 text-center text-sm-start">
             <div class="col-6 col-md-3">
-                <div class="text-white-50 small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Customer Paid</div>
-                <div class="fs-4 fw-bolder text-white">₹{{ number_format($order->total_amount, 2) }}</div>
+                <div class="text-white-50 small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">
+                    {{ $isRealizedIncomeOrder ? 'Order Revenue' : 'Order Amount (' . ucfirst($order->status) . ')' }}
+                </div>
+                <div class="fs-4 fw-bolder {{ $isRealizedIncomeOrder ? 'text-white' : 'text-white-50' }}">
+                    ₹{{ number_format($isRealizedIncomeOrder ? $order->total_amount : 0, 2) }}
+                </div>
             </div>
             <div class="col-6 col-md-3">
                 <div class="text-white-50 small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Product Cost (COGS)</div>
-                <div class="fs-4 fw-bolder text-white-50">₹{{ number_format($order->total_cost, 2) }}</div>
+                <div class="fs-4 fw-bolder text-white-50">₹{{ number_format($isRealizedIncomeOrder ? $order->total_cost : 0, 2) }}</div>
             </div>
             <div class="col-6 col-md-3">
                 <div class="text-white-50 small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Gross Profit</div>
+                @if($isRealizedIncomeOrder)
                 <div class="fs-4 fw-bolder {{ $order->gross_profit >= 0 ? 'text-success' : 'text-danger' }}">
                     {{ $order->gross_profit >= 0 ? '+' : '' }}₹{{ number_format($order->gross_profit, 2) }}
                 </div>
+                @else
+                <div class="fs-4 fw-bolder text-secondary">₹0.00</div>
+                @endif
             </div>
             <div class="col-6 col-md-3">
                 <div class="text-white-50 small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Profit Margin</div>
                 <div class="d-inline-flex align-items-center gap-1.5 mt-1">
+                    @if($isRealizedIncomeOrder)
                     <span class="badge rounded-pill px-3 py-1.5 fw-bolder {{ $order->profit_margin >= 20 ? 'bg-success text-white' : ($order->profit_margin >= 0 ? 'bg-warning text-dark' : 'bg-danger text-white') }}" style="font-size: 0.88rem;">
                         {{ $order->profit_margin }}%
                     </span>
+                    @else
+                    <span class="badge rounded-pill px-3 py-1.5 fw-bolder bg-secondary text-white" style="font-size: 0.82rem;">
+                        Not Counted ({{ ucfirst($order->status) }})
+                    </span>
+                    @endif
                 </div>
             </div>
         </div>

@@ -183,6 +183,20 @@ class CheckoutController extends BaseApiController
     {
         $user = $request->user();
 
+        $pendingOrder = $this->checkoutService->getActivePendingOrder($user);
+        if ($pendingOrder) {
+            return $this->sendError(
+                "You already have a pending order (#{$pendingOrder->order_number}). You cannot place a new order until you cancel or complete payment for that order.",
+                [
+                    'has_pending_order'    => true,
+                    'pending_order_id'     => (int) $pendingOrder->id,
+                    'pending_order_number' => $pendingOrder->order_number,
+                    'pending_order_total'  => (float) $pendingOrder->total_amount,
+                ],
+                422
+            );
+        }
+
         // Normalize inputs from mobile Flutter app
         $request->merge([
             'payment_method'   => strtolower($request->input('payment_method', 'cod')),

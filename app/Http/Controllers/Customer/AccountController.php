@@ -11,7 +11,7 @@ class AccountController extends Controller
 {
     public function orders()
     {
-        $user   = Auth::user();
+        $user   = Auth::guard('customer')->user() ?? Auth::user();
         $orders = $user->orders()->with('items.product')->latest()->paginate(10);
 
         $totalCount     = $user->orders()->count();
@@ -26,12 +26,29 @@ class AccountController extends Controller
         return view('customer.account.orders', compact('orders', 'recommendedProducts', 'totalCount', 'deliveredCount', 'activeCount'));
     }
 
-    public function showOrder(Order $order)
+    public function showOrder(Request $request, Order $order)
     {
         $user = Auth::guard('customer')->user() ?? Auth::user();
 
         if (!$user || (int)$order->user_id !== (int)$user->id) {
             return redirect()->route('account.orders.index')->with('error', 'The requested order was not found in your account.');
+        }
+
+        // If redirected from Razorpay retry callback with payment parameters, verify and mark order paid
+        if ($order->payment_status !== 'paid' && $request->filled(['razorpay_payment_id', 'razorpay_order_id', 'razorpay_signature'])) {
+            $razorpay = app(\App\Services\RazorpayService::class);
+            if ($razorpay->verifyPaymentSignature($request->razorpay_order_id, $request->razorpay_payment_id, $request->razorpay_signature)) {
+                $order = app(\App\Services\CheckoutService::class)->markOrderPaid($order, [
+                    'gateway'             => 'razorpay',
+                    'gateway_order_id'    => $request->razorpay_order_id,
+                    'gateway_payment_id'  => $request->razorpay_payment_id,
+                    'payment_method_group'=> 'online',
+                    'bank_reference'      => $request->razorpay_payment_id,
+                    'payment_time'        => now(),
+                    'gateway_message'     => 'Razorpay Retry Payment Verified Successfully',
+                ], $user);
+                return redirect()->route('checkout.success', $order);
+            }
         }
 
         $order->load(['items.product.category', 'items.product.brand', 'coupon', 'feedback', 'cancellation', 'statusHistories']);

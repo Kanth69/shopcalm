@@ -129,6 +129,7 @@ class StaffNotificationController extends Controller
             }
         }
 
+        $todayRealizedRevenue = (float) Order::whereDate('created_at', today())->whereIn('status', Order::INCOME_STATUSES)->sum('total_amount');
         $stats = [
             'total_orders'           => Order::count(),
             'needs_processing'       => Order::whereIn('status', ['pending', 'confirmed'])->count(),
@@ -136,8 +137,8 @@ class StaffNotificationController extends Controller
             'in_transit'             => Order::whereIn('status', ['shipped', 'out for delivery'])->count(),
             'delivered'              => Order::where('status', 'delivered')->count(),
             'today_orders'           => Order::whereDate('created_at', today())->count(),
-            'today_revenue'          => (float) Order::whereDate('created_at', today())->where('status', '!=', 'cancelled')->sum('total_amount'),
-            'today_revenue_fmt'      => '₹' . number_format(Order::whereDate('created_at', today())->where('status', '!=', 'cancelled')->sum('total_amount'), 2),
+            'today_revenue'          => $todayRealizedRevenue,
+            'today_revenue_fmt'      => '₹' . number_format($todayRealizedRevenue, 2),
             'pending_products_count' => $pendingProductsCount,
         ];
 

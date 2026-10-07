@@ -68,7 +68,7 @@ class AdminDashboardService
 
     private function getStats(Carbon $startDate, Carbon $endDate): array
     {
-        $validOrdersQuery = Order::whereNotIn('status', ['cancelled'])->whereBetween('created_at', [$startDate, $endDate]);
+        $validOrdersQuery = Order::whereIn('status', Order::INCOME_STATUSES)->whereBetween('created_at', [$startDate, $endDate]);
 
         return [
             'total_customers' => User::where('role_id', 3)->count(),
@@ -108,7 +108,7 @@ class AdminDashboardService
             ->pluck('count', 'date');
 
         $revenueTrend = Order::select($dbSelect, DB::raw('sum(total_amount) as total'))
-            ->where('status', 'delivered')
+            ->whereIn('status', Order::INCOME_STATUSES)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->groupBy('date')
             ->orderBy('date', 'asc')
