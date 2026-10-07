@@ -29,32 +29,50 @@ class AccountController extends BaseApiController
         $user = $request->user();
         $status = $request->query('status');
 
-        $query = $user->orders()->with(['items.product'])->latest();
+        $query = $user->orders()->with(['items.product.brand', 'items.product.category', 'fulfillment'])->latest();
 
         if ($status) {
             $query->where('status', $status);
         }
 
-        $orders = $query->paginate(10);
+        $orders = $query->paginate(20);
 
         $formattedOrders = collect($orders->items())->map(function (Order $order) {
             return [
-                'id'             => $order->id,
-                'order_number'   => $order->order_number,
-                'status'         => $order->status,
-                'payment_method' => $order->payment_method,
-                'payment_status' => $order->payment_status,
-                'item_count'     => $order->items->count(),
-                'total_amount'   => (float) $order->total_amount,
-                'created_at'     => $order->created_at ? $order->created_at->format('Y-m-d H:i:s') : null,
-                'items'          => $order->items->map(function ($item) {
+                'id'                   => $order->id,
+                'order_number'         => $order->order_number,
+                'status'               => $order->status,
+                'payment_method'       => $order->payment_method,
+                'payment_status'       => $order->payment_status,
+                'item_count'           => $order->items->count(),
+                'subtotal_amount'      => (float) $order->subtotal_amount,
+                'shipping_charge'      => (float) ($order->shipping_charge ?? 0),
+                'wallet_amount_used'   => (float) ($order->wallet_amount_used ?? 0),
+                'total_amount'         => (float) $order->total_amount,
+                'delivery_otp'         => $order->delivery_otp,
+                'is_local_bengaluru'   => $order->isLocalBengaluruDelivery(),
+                'created_at'           => $order->created_at ? $order->created_at->format('d M, Y') : '',
+                'created_at_full'      => $order->created_at ? $order->created_at->format('d M, Y h:i A') : '',
+                'items'                => $order->items->map(function ($item) {
+                    $imgPath = $item->product ? ($item->product->main_image ?? $item->product->featured_image ?? null) : null;
+                    $unitPrice = (float) ($item->unit_price ?? $item->price ?? 0);
+                    $qty = (int) ($item->quantity ?? 1);
+                    $totPrice = (float) ($item->total_price ?? $item->subtotal ?? ($unitPrice * $qty));
                     return [
+                        'id'              => $item->id,
                         'product_id'      => $item->product_id,
-                        'product_name'    => $item->product_name ?? $item->product?->name,
-                        'product_image'   => $item->product?->featured_image ? asset('storage/' . $item->product->featured_image) : null,
+                        'product_slug'    => $item->product?->slug,
+                        'product_name'    => $item->product_name ?? $item->product?->name ?? 'Product',
+                        'brand_name'      => $item->product?->brand?->name,
+                        'category_name'   => $item->product?->category?->name,
+                        'product_image'   => $imgPath ? (str_starts_with($imgPath, 'http') ? $imgPath : asset('storage/' . $imgPath)) : null,
                         'selected_option' => $item->selected_option,
-                        'quantity'        => (int) $item->quantity,
-                        'price'           => (float) $item->price,
+                        'quantity'        => $qty,
+                        'original_price'  => (float) ($item->original_price ?? $unitPrice),
+                        'unit_price'      => $unitPrice,
+                        'price'           => $unitPrice,
+                        'total_price'     => $totPrice,
+                        'subtotal'        => $totPrice,
                     ];
                 }),
             ];
@@ -79,19 +97,24 @@ class AccountController extends BaseApiController
             return $this->sendError('Unauthorized access to this order.', [], 403);
         }
 
-        $order->load(['items.product', 'cancellation.cancelledBy']);
+        $order->load(['items.product.brand', 'items.product.category', 'fulfillment', 'cancellation.cancelledBy', 'coupon', 'primaryPayment']);
 
         $cancellation = $order->cancellation;
         $cancellationData = null;
         if ($cancellation) {
             $cancellationData = [
-                'cancelled_by_type'   => $cancellation->cancelled_by_type,
-                'cancellation_reason' => $cancellation->cancellation_reason,
-                'admin_notes'         => $cancellation->admin_notes,
-                'cancellation_fee'    => (float) $cancellation->cancellation_fee,
-                'refund_amount'       => (float) $cancellation->refund_amount,
-                'refund_status'       => $cancellation->refund_status,
-                'refund_method'       => $cancellation->refund_method,
+                'cancelled_by_type'    => $cancellation->cancelled_by_type,
+                'cancellation_reason'  => $cancellation->cancellation_reason,
+                'admin_notes'          => $cancellation->admin_notes,
+                'cancellation_fee'     => (float) $cancellation->cancellation_fee,
+                'refund_amount'        => (float) $cancellation->refund_amount,
+                'wallet_refund_amount' => (float) ($cancellation->wallet_refund_amount ?? 0),
+                'online_refund_amount' => (float) ($cancellation->online_refund_amount ?? 0),
+                'refund_status'        => $cancellation->refund_status,
+                'online_refund_status' => $cancellation->online_refund_status,
+                'refund_method'        => $cancellation->refund_method,
+                'payment_reference'    => $cancellation->razorpay_refund_id ?: $cancellation->payment_reference,
+                'cancelled_at'         => $cancellation->created_at ? $cancellation->created_at->format('d M, Y h:i A') : null,
             ];
         }
 
@@ -104,33 +127,55 @@ class AccountController extends BaseApiController
             'status'                   => $order->status,
             'payment_method'           => $order->payment_method,
             'payment_status'           => $order->payment_status,
+            'bank_reference'           => $order->primaryPayment?->bank_reference,
             'subtotal'                 => (float) $order->subtotal_amount,
-            'shipping_cost'            => (float) $order->shipping_cost,
+            'shipping_cost'            => (float) ($order->shipping_charge ?? $order->shipping_cost ?? 0),
             'cod_fee'                  => (float) $order->cod_fee,
+            'coupon_code'              => $order->coupon?->code,
             'coupon_discount'          => (float) $order->coupon_discount_amount,
             'wallet_amount_used'       => (float) $order->wallet_amount_used,
             'total_amount'             => (float) $order->total_amount,
             'shipping_name'            => $order->shipping_name,
+            'shipping_email'           => $order->shipping_email,
             'shipping_phone'           => $order->shipping_phone,
             'shipping_address'         => $order->shipping_address,
             'shipping_city'            => $order->shipping_city,
             'shipping_state'           => $order->shipping_state,
             'shipping_pincode'         => $order->shipping_zip,
+            'shipping_country'         => $order->shipping_country ?? 'India',
+            'is_local_bengaluru'       => $order->isLocalBengaluruDelivery(),
             'courier_partner'          => $order->courier_partner,
             'tracking_number'          => $order->tracking_number,
+            'tracking_url'             => $order->tracking_url,
             'rider_name'               => $order->rider_name,
+            'rider_phone'              => $order->rider_phone,
+            'delivery_slot'            => $order->delivery_slot,
+            'delivery_otp'             => $order->delivery_otp,
+            'delivered_at'             => $order->delivered_at ? $order->delivered_at->format('d M, Y h:i A') : null,
             'can_customer_cancel'      => $canCustomerCancel,
             'cancellation'             => $cancellationData,
-            'created_at'               => $order->created_at->format('Y-m-d H:i:s'),
+            'created_at'               => $order->created_at ? $order->created_at->format('d M, Y h:i A') : '',
+            'created_at_date'          => $order->created_at ? $order->created_at->format('d M, Y') : '',
             'items'                    => $order->items->map(function ($item) {
+                $imgPath = $item->product ? ($item->product->main_image ?? $item->product->featured_image ?? null) : null;
+                $unitPrice = (float) ($item->unit_price ?? $item->price ?? 0);
+                $qty = (int) ($item->quantity ?? 1);
+                $totPrice = (float) ($item->total_price ?? $item->subtotal ?? ($unitPrice * $qty));
                 return [
+                    'id'              => $item->id,
                     'product_id'      => $item->product_id,
-                    'product_name'    => $item->product_name ?? $item->product?->name,
-                    'product_image'   => $item->product?->featured_image ? asset('storage/' . $item->product->featured_image) : null,
+                    'product_slug'    => $item->product?->slug,
+                    'product_name'    => $item->product_name ?? $item->product?->name ?? 'Product',
+                    'brand_name'      => $item->product?->brand?->name,
+                    'category_name'   => $item->product?->category?->name,
+                    'product_image'   => $imgPath ? (str_starts_with($imgPath, 'http') ? $imgPath : asset('storage/' . $imgPath)) : null,
                     'selected_option' => $item->selected_option,
-                    'quantity'        => (int) $item->quantity,
-                    'price'           => (float) $item->price,
-                    'subtotal'        => (float) $item->subtotal,
+                    'quantity'        => $qty,
+                    'original_price'  => (float) ($item->original_price ?? $unitPrice),
+                    'unit_price'      => $unitPrice,
+                    'price'           => $unitPrice,
+                    'total_price'     => $totPrice,
+                    'subtotal'        => $totPrice,
                 ];
             }),
         ], 'Order details retrieved.');
@@ -176,14 +221,13 @@ class AccountController extends BaseApiController
 
         $request->validate([
             'cancellation_reason' => 'required|string|max:255',
-            'refund_method'       => 'nullable|string|in:wallet,bank_upi,none',
-            'refund_upi_id'       => 'nullable|string|max:100',
+            'refund_method'       => 'nullable|string|in:original_source,wallet,none',
         ]);
 
         try {
             $reason = $request->cancellation_reason;
-            $refundMethod = $request->input('refund_method', 'wallet');
-            $upiId = $request->input('refund_upi_id');
+            $refundMethod = $request->input('refund_method', 'original_source');
+            $upiId = null;
 
             if ($order->payment_method === 'cod' && $order->payment_status !== 'paid') {
                 return $this->sendError('For unpaid COD orders, please pay the GST cancellation fee or contact support.', [], 400);
@@ -240,4 +284,145 @@ class AccountController extends BaseApiController
             'addresses' => $addresses,
         ], 'Saved addresses retrieved.');
     }
+
+    /**
+     * Store New Customer Shipping Address.
+     */
+    public function storeAddress(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$request->has('zip') && $request->filled('pincode')) {
+            $request->merge(['zip' => $request->input('pincode')]);
+        }
+
+        $validated = $request->validate([
+            'name'     => 'required|string|max:255',
+            'phone'    => 'required|string|max:20',
+            'address'  => 'required|string|max:500',
+            'city'     => 'required|string|max:100',
+            'state'    => 'required|string|max:100',
+            'zip'      => 'required|string|max:10',
+            'country'  => 'nullable|string|max:100',
+        ]);
+
+        $validated['country'] = $validated['country'] ?? 'India';
+
+        $address = $user->addresses()->create($validated);
+
+        return $this->sendResponse([
+            'address' => $address,
+        ], 'Delivery address saved successfully.', 201);
+    }
+
+    /**
+     * Update Existing Shipping Address.
+     */
+    public function updateAddress(Request $request, Address $address): JsonResponse
+    {
+        $user = $request->user();
+
+        if ((int) $address->user_id !== (int) $user->id) {
+            return $this->sendError('Unauthorized access to this address.', [], 403);
+        }
+
+        if (!$request->has('zip') && $request->filled('pincode')) {
+            $request->merge(['zip' => $request->input('pincode')]);
+        }
+
+        $validated = $request->validate([
+            'name'     => 'sometimes|required|string|max:255',
+            'phone'    => 'sometimes|required|string|max:20',
+            'address'  => 'sometimes|required|string|max:500',
+            'city'     => 'sometimes|required|string|max:100',
+            'state'    => 'sometimes|required|string|max:100',
+            'zip'      => 'sometimes|required|string|max:10',
+            'country'  => 'nullable|string|max:100',
+        ]);
+
+        $address->update($validated);
+
+        return $this->sendResponse([
+            'address' => $address,
+        ], 'Delivery address updated successfully.');
+    }
+
+    /**
+     * Delete a Shipping Address.
+     */
+    public function deleteAddress(Request $request, Address $address): JsonResponse
+    {
+        $user = $request->user();
+
+        if ((int) $address->user_id !== (int) $user->id) {
+            return $this->sendError('Unauthorized access to this address.', [], 403);
+        }
+
+        $address->delete();
+
+        return $this->sendResponse([], 'Delivery address deleted successfully.');
+    }
+
+    /**
+     * Update Customer Profile (Name, Email, Avatar, or Password).
+     */
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($request->filled('current_password') && $request->filled('password')) {
+            return $this->changePassword($request);
+        }
+
+        $validated = $request->validate([
+            'name'   => 'sometimes|required|string|max:255',
+            'email'  => 'nullable|email|max:255|unique:users,email,' . $user->id,
+            'avatar' => 'nullable|image|max:2048',
+        ]);
+
+        if ($request->hasFile('avatar')) {
+            if ($user->avatar) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->avatar);
+            }
+            $validated['avatar'] = $request->file('avatar')->store('avatars', 'public');
+        }
+
+        $user->update($validated);
+
+        return $this->sendResponse([
+            'user' => [
+                'id'            => $user->id,
+                'name'          => $user->name,
+                'email'         => $user->email,
+                'mobile_number' => $user->mobile_number,
+                'avatar'        => $user->avatar ? asset('storage/' . $user->avatar) : null,
+            ],
+        ], 'Profile updated successfully.');
+    }
+
+    /**
+     * Change Customer Account Password.
+     */
+    public function changePassword(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'current_password' => 'required|string',
+            'password'         => 'required|string|min:8|confirmed',
+        ]);
+
+        if (!\Illuminate\Support\Facades\Hash::check($request->current_password, $user->password)) {
+            return $this->sendError('The current password you entered is incorrect.', [
+                'current_password' => ['The current password is incorrect.'],
+            ], 422);
+        }
+
+        $user->update([
+            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+        ]);
+
+        return $this->sendResponse([], 'Password updated successfully.');
+    }
 }
+

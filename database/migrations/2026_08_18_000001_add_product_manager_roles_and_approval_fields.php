@@ -40,7 +40,9 @@ return new class extends Migration
         });
 
         // Change status column to string with default 'Active' to support 'Pending_Approval' and 'Rejected'
-        DB::statement("ALTER TABLE products MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Active'");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE products MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Active'");
+        }
     }
 
     /**

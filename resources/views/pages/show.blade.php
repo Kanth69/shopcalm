@@ -363,6 +363,15 @@
     }
 </style>
 @endpush
+@push('styles')
+<style>
+@media (max-width: 576px) {
+    .policy-card-body { font-size: 0.78rem; line-height: 1.6; }
+    .policy-card { padding: 1rem 0.8rem; }
+    .policy-nav-pill { font-size: 0.7rem; padding: 0.35rem 0.8rem; }
+}
+</style>
+@endpush
 
 @section('content')
 
@@ -398,8 +407,12 @@
                 {{ $firstPart }} <span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{{ $lastWord }}</span>
             </h1>
 
+            @php
+                $pageContentDecoded = json_decode($page->content, true) ?: [];
+                $heroDesc = $pageContentDecoded['desc'] ?? $pageContentDecoded['hero_subtitle'] ?? $page->meta_description ?? ($isLegal ? ($legalPages[$page->slug]['desc'] ?? 'Official guidelines and terms for ' . $storeName . ' customers.') : 'Frequently asked questions and quick assistance guide.');
+            @endphp
             <p class="text-muted mb-3 mx-auto" style="line-height: 1.6; max-width: 640px; font-size: clamp(0.85rem, 2vw, 1.05rem) !important;">
-                {{ $isLegal ? ($legalPages[$page->slug]['desc'] ?? 'Official guidelines and terms for ' . $storeName . ' customers.') : 'Frequently asked questions and quick assistance guide.' }}
+                {{ $heroDesc }}
             </p>
 
             <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">

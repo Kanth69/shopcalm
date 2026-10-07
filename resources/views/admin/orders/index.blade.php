@@ -214,13 +214,32 @@
 
                         <!-- Payment Method -->
                         <td>
-                            @if(strtolower($order->payment_method ?? 'cod') === 'online')
-                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
-                                    <i class="bi bi-credit-card me-1"></i>ONLINE
+                            @php
+                                $wAmt = (float) ($order->wallet_amount_used ?? 0);
+                                $tAmt = (float) ($order->total_amount ?? 0);
+                                $pm = strtolower($order->payment_method ?? '');
+                            @endphp
+                            @if(($pm === 'wallet' || $pm === 'store_wallet' || $wAmt > 0) && $tAmt == 0)
+                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
+                                    <i class="bi bi-wallet2 me-1"></i>100% WALLET
                                 </span>
-                            @else
+                            @elseif($wAmt > 0 && $tAmt > 0)
+                                @if($pm === 'cod')
+                                    <span class="badge bg-dark text-white rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
+                                        <i class="bi bi-wallet2 me-1"></i>WALLET + COD
+                                    </span>
+                                @else
+                                    <span class="badge bg-primary text-white rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
+                                        <i class="bi bi-wallet2 me-1"></i>WALLET + ONLINE
+                                    </span>
+                                @endif
+                            @elseif($pm === 'cod')
                                 <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
                                     <i class="bi bi-cash-stack me-1"></i>COD
+                                </span>
+                            @else
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
+                                    <i class="bi bi-credit-card me-1"></i>ONLINE PG
                                 </span>
                             @endif
                             <div class="small text-muted mt-0.5" style="font-size: 0.7rem;">

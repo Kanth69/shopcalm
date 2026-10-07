@@ -4,11 +4,11 @@
 @endphp
 
 <div class="card card-product-grid w-100 h-100 border-0 rounded-4 overflow-hidden d-flex flex-column transition-all hover-elevate shadow-xs" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
-    {{-- Image Container (Clean White Canvas) --}}
-    <div class="img-wrap position-relative d-flex align-items-center justify-content-center p-2" style="background: #ffffff; overflow: hidden;">
+    {{-- Image Container (Clean White Uniform Canvas) --}}
+    <div class="img-wrap position-relative d-flex align-items-center justify-content-center p-2" style="background: #ffffff; overflow: hidden; height: 200px; min-height: 200px; max-height: 200px;">
         <a href="{{ route('product.show', $product->slug) }}" class="d-flex align-items-center justify-content-center w-100 h-100 text-decoration-none">
             @if($product->main_image)
-                <img loading="lazy" decoding="async" src="{{ asset('storage/' . $product->main_image) }}" class="card-img-top product-img-contain" alt="{{ $product->name }}" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                <img loading="lazy" decoding="async" src="{{ asset('storage/' . $product->main_image) }}" class="card-img-top product-img-contain" alt="{{ $product->name }}" style="width: 100%; height: 100%; max-height: 176px; max-width: 176px; object-fit: contain; object-position: center;">
             @else
                 <div class="d-flex align-items-center justify-content-center text-muted w-100 h-100">
                     <i class="bi bi-image fs-2 opacity-25"></i>

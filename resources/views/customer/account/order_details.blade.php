@@ -14,7 +14,8 @@
         'confirmed'        => ['bg'=>'#dbeafe','color'=>'#1e40af','border'=>'#93c5fd','stripe'=>'#3b82f6','icon'=>'bi-check2-square','label'=>'Confirmed'],
         'processing'       => ['bg'=>'#dbeafe','color'=>'#1e40af','border'=>'#93c5fd','stripe'=>'#3b82f6','icon'=>'bi-gear-fill','label'=>'Processing'],
         'cancelled'        => ['bg'=>'#fee2e2','color'=>'#991b1b','border'=>'#fca5a5','stripe'=>'#ef4444','icon'=>'bi-x-circle-fill','label'=>'Cancelled'],
-        'pending'          => ['bg'=>'#fef3c7','color'=>'#92400e','border'=>'#fde68a','stripe'=>'#f59e0b','icon'=>'bi-clock-fill','label'=>'Pending'],
+        'failed'           => ['bg'=>'#fee2e2','color'=>'#991b1b','border'=>'#fca5a5','stripe'=>'#ef4444','icon'=>'bi-exclamation-octagon-fill','label'=>'Payment Failed'],
+        'pending'          => ['bg'=>'#fef3c7','color'=>'#92400e','border'=>'#fde68a','stripe'=>'#f59e0b','icon'=>'bi-clock-fill','label'=>'Pending Payment'],
     ];
     $st = $map[$s] ?? $map['pending'];
     $statusStyle = "background:{$st['bg']}; color:{$st['color']}; border:1px solid {$st['border']};";
@@ -39,7 +40,7 @@
         'delivered'        => 5,
     ];
 
-    $stepIdx = $stageRankMap[$s] ?? false;
+    $stepIdx = in_array($s, ['cancelled', 'failed']) ? false : ($stageRankMap[$s] ?? false);
 @endphp
 
 {{-- Header Banner Card --}}
@@ -71,8 +72,8 @@
     </div>
 </div>
 
-{{-- ── Payment Incomplete Recovery Banner (If Online Payment was Failed/Pending) ── --}}
-@if($order->payment_status === 'failed' || ($order->status === 'pending' && $order->payment_method === 'online'))
+{{-- ── Payment Incomplete Recovery Banner (If Online Payment was Failed/Pending and Order is NOT Cancelled) ── --}}
+@if($order->status !== 'cancelled' && $order->status !== 'delivered' && ($order->payment_status === 'failed' || ($order->status === 'pending' && $order->payment_method === 'online')))
 <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3.5" style="background: #ffffff; border: 1.5px solid #fdba74 !important;">
     <div class="card-body p-3 p-md-4">
         <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
@@ -182,43 +183,113 @@
             {{-- Refund Destination Box --}}
             <div class="col-12 col-md-6">
                 <div class="p-3 rounded-4 bg-light-subtle border h-100 d-flex flex-column justify-content-center" style="background: #f8fafc; border-color: #e2e8f0 !important;">
-                    <div class="text-uppercase text-muted fw-bold mb-1.5" style="font-size: 0.67rem; letter-spacing: 0.06em;">Refund Destination &amp; Status</div>
+                    <div class="text-uppercase text-muted fw-bold mb-2" style="font-size: 0.67rem; letter-spacing: 0.06em;">Refund Destination &amp; Status</div>
                     
-                    @if($cancellation && ($cancellation->refund_method === 'original_source' || $cancellation->refund_method === 'online'))
-                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5 mb-1">
-                            <span class="fw-bold text-dark" style="font-size: 0.88rem;"><i class="bi bi-credit-card text-primary me-1.5"></i> Original Payment Method (Razorpay Direct Refund)</span>
-                            @if($cancellation->refund_status === 'processed')
-                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">✓ Refund Processed</span>
-                            @else
-                                <span class="badge bg-warning text-dark rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">⏳ Direct Refund Initiated</span>
-                            @endif
+                    @php
+                        $walletUsedInOrder = (float) ($order->wallet_amount_used ?? 0);
+                        $recordedRefundAmount = (float) ($cancellation?->refund_amount ?? 0);
+                        $walletRefundVal = (float) ($cancellation?->wallet_refund_amount ?? 0);
+                        $onlineRefundVal = (float) ($cancellation?->online_refund_amount ?? 0);
+
+                        // Fallback for legacy records
+                        if ($walletRefundVal == 0 && $onlineRefundVal == 0 && $recordedRefundAmount > 0) {
+                            if ($cancellation?->refund_method === 'wallet') {
+                                $walletRefundVal = $recordedRefundAmount;
+                            } elseif (in_array($cancellation?->refund_method, ['original_source', 'online'])) {
+                                $onlineRefundVal = $recordedRefundAmount;
+                            }
+                        }
+
+                        $isCodNoRefund = ($cancellation && $cancellation->refund_method === 'none') || ($order->payment_method === 'cod' && $order->payment_status !== 'paid' && $walletRefundVal == 0 && $onlineRefundVal == 0);
+                        $ticketNo = 'CNL-' . ($order->order_number ?? $order->id);
+                    @endphp
+
+                    @if($isCodNoRefund)
+                        <div class="p-2.5 rounded-3 bg-white border">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5 mb-1">
+                                <span class="fw-bold text-dark" style="font-size: 0.88rem;"><i class="bi bi-receipt-cutoff text-secondary me-1.5"></i> Cash on Delivery (COD)</span>
+                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.7rem;">✓ 100% Free Cancellation</span>
+                            </div>
+                            <div class="text-muted small mt-1" style="font-size: 0.73rem;">
+                                No cash was collected for this order. Order delivery has been cancelled with zero charges.
+                            </div>
                         </div>
-                        <div class="text-muted small mt-1" style="font-size: 0.73rem;">Refund of ₹{{ number_format($cancellation?->refund_amount ?? 0, 2) }} is credited back to your original GPay/PhonePe UPI ID, Card, or Bank account in 5-7 business days.</div>
-                    @elseif($cancellation && $cancellation->refund_method === 'bank_upi')
-                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5 mb-1">
-                            <span class="fw-bold text-dark" style="font-size: 0.88rem;"><i class="bi bi-bank text-info me-1.5"></i> Bank UPI: <code class="text-dark bg-white px-2 py-0.5 rounded border font-monospace" style="font-size: 0.8rem;">{{ $cancellation->refund_upi_id }}</code></span>
-                            @if($cancellation->refund_status === 'processed')
-                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">✓ Processed</span>
-                            @else
-                                <span class="badge bg-warning text-dark rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">⏳ Pending Payout</span>
-                            @endif
-                        </div>
-                        @if($cancellation->refund_status === 'processed')
-                            <div class="text-success small fw-semibold" style="font-size: 0.73rem;"><i class="bi bi-check-circle-fill me-1"></i> Bank UTR Ref: <span class="font-monospace text-dark">{{ $cancellation->payment_reference }}</span></div>
-                        @else
-                            <div class="text-muted small" style="font-size: 0.73rem;">Refund will be processed to your UPI handle within 2-3 business days.</div>
-                        @endif
-                    @elseif($cancellation && $cancellation->refund_method === 'wallet')
-                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5">
-                            <span class="fw-bold text-dark" style="font-size: 0.88rem;"><i class="bi bi-wallet2 text-primary me-1.5"></i> Store Wallet</span>
-                            <span class="badge bg-success text-white rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">⚡ Credited Instantly</span>
-                        </div>
-                        <div class="text-muted small mt-1" style="font-size: 0.73rem;">Amount credited to your store wallet balance for future purchases.</div>
                     @else
-                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5">
-                            <span class="fw-bold text-dark" style="font-size: 0.88rem;"><i class="bi bi-receipt-cutoff text-secondary me-1.5"></i> COD Order (100% Free Cancellation)</span>
-                            <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">✓ ₹0 Cancellation Fee</span>
-                        </div>
+                        @if($walletRefundVal > 0)
+                            <div class="p-2.5 rounded-3 bg-white border mb-2">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5">
+                                    <span class="fw-bold text-dark" style="font-size: 0.85rem;"><i class="bi bi-wallet2 text-success me-1.5"></i> ShopCalm Wallet</span>
+                                    <span class="badge bg-success text-white rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">⚡ Instantly Credited</span>
+                                </div>
+                                <div class="text-muted small mt-1" style="font-size: 0.73rem;">
+                                    <strong>₹{{ number_format($walletRefundVal, 2) }}</strong> credited back to your ShopCalm Wallet balance.
+                                </div>
+                            </div>
+                        @endif
+
+                        @if($onlineRefundVal > 0 || ($cancellation && in_array($cancellation->refund_method, ['original_source', 'online', 'dual']) && $walletRefundVal == 0))
+                            @php
+                                $displayOnlineAmt = $onlineRefundVal > 0 ? $onlineRefundVal : $recordedRefundAmount;
+                                $refundProof = $cancellation->razorpay_refund_id ?: $cancellation->payment_reference;
+                                $isProcessed = ($cancellation->online_refund_status === 'processed' || $cancellation->refund_status === 'processed');
+                            @endphp
+                            <div class="p-2.5 rounded-3 bg-white border">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5 mb-1.5">
+                                    <span class="fw-bold text-dark" style="font-size: 0.85rem;"><i class="bi bi-credit-card text-primary me-1.5"></i> Original Payment Source (Razorpay Direct)</span>
+                                    @if($isProcessed)
+                                        <span class="badge bg-success text-white rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">✓ Refund Processed</span>
+                                    @else
+                                        <span class="badge bg-warning text-dark rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">⏳ Direct Refund Initiated</span>
+                                    @endif
+                                </div>
+
+                                <!-- Refund Ticket Badge (Always Available for Support Complaint) -->
+                                <div class="p-2 rounded-2 bg-light text-dark small d-flex align-items-center justify-content-between mb-1.5" style="font-size: 0.74rem;">
+                                    <div>
+                                        <i class="bi bi-ticket-perforated-fill text-primary me-1"></i><strong>Support Ticket No:</strong>
+                                        <code class="text-dark bg-white px-1.5 py-0.5 rounded border font-monospace ms-1">{{ $ticketNo }}</code>
+                                    </div>
+                                    <button type="button" class="btn btn-link p-0 text-muted" onclick="navigator.clipboard.writeText('{{ $ticketNo }}')" title="Copy Ticket No">
+                                        <i class="bi bi-copy"></i>
+                                    </button>
+                                </div>
+
+                                @if($isProcessed && $refundProof)
+                                    <div class="p-2 rounded-2 bg-success bg-opacity-10 border border-success border-opacity-25 text-dark small d-flex align-items-center justify-content-between mb-1" style="font-size: 0.74rem;">
+                                        <div>
+                                            <i class="bi bi-shield-check text-success me-1"></i><strong>Bank UTR Ref:</strong>
+                                            <code class="text-dark bg-white px-1.5 py-0.5 rounded border font-monospace ms-1">{{ $refundProof }}</code>
+                                        </div>
+                                        <button type="button" class="btn btn-link p-0 text-muted" onclick="navigator.clipboard.writeText('{{ $refundProof }}')" title="Copy UTR Reference">
+                                            <i class="bi bi-copy"></i>
+                                        </button>
+                                    </div>
+                                    <div class="text-muted small" style="font-size: 0.72rem;">₹{{ number_format($displayOnlineAmt, 2) }} credited to original bank account.</div>
+                                @else
+                                    <div class="text-muted small" style="font-size: 0.72rem; line-height: 1.35;">
+                                        Refund of <strong>₹{{ number_format($displayOnlineAmt, 2) }}</strong> initiated via Razorpay PG. Expected credit: 3-5 business days.
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+
+                        @if($cancellation && $cancellation->refund_method === 'bank_upi' && $walletRefundVal == 0 && $onlineRefundVal == 0)
+                            <div class="p-2.5 rounded-3 bg-white border">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5 mb-1">
+                                    <span class="fw-bold text-dark" style="font-size: 0.85rem;"><i class="bi bi-bank text-info me-1.5"></i> Bank UPI: <code class="text-dark bg-light px-1.5 py-0.5 rounded border font-monospace">{{ $cancellation->refund_upi_id }}</code></span>
+                                    @if($cancellation->refund_status === 'processed')
+                                        <span class="badge bg-success text-white rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">✓ Processed</span>
+                                    @else
+                                        <span class="badge bg-warning text-dark rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">⏳ Pending Payout</span>
+                                    @endif
+                                </div>
+                                @if($cancellation->refund_status === 'processed')
+                                    <div class="text-success small fw-semibold" style="font-size: 0.73rem;"><i class="bi bi-check-circle-fill me-1"></i> Bank UTR Ref: <span class="font-monospace text-dark">{{ $cancellation->payment_reference }}</span></div>
+                                @else
+                                    <div class="text-muted small" style="font-size: 0.73rem;">Refund will be processed to your UPI handle within 2-3 business days.</div>
+                                @endif
+                            </div>
+                        @endif
                     @endif
                 </div>
             </div>
@@ -230,21 +301,30 @@
                 <i class="bi bi-calculator me-1"></i> Financial Refund Calculation Breakdown
             </div>
             
+            @php
+                $netRefundTotal = $walletRefundVal + $onlineRefundVal;
+                if ($netRefundTotal == 0 && !$isCodNoRefund) {
+                    $netRefundTotal = $recordedRefundAmount;
+                }
+            @endphp
+
             <div class="d-flex align-items-center justify-content-between py-1 text-dark" style="font-size: 0.84rem;">
                 <span>Original Order Total:</span>
-                <strong class="font-monospace text-dark">₹{{ number_format($order->total_amount, 2) }}</strong>
+                <strong class="font-monospace text-dark">₹{{ number_format($order->total_amount > 0 ? $order->total_amount : ($walletUsedInOrder > 0 ? $walletUsedInOrder : 0), 2) }}</strong>
             </div>
 
-            <div class="d-flex align-items-center justify-content-between py-1 text-danger" style="font-size: 0.84rem;">
-                <span>Retained Non-Refundable GST Tax Fee:</span>
-                <strong class="font-monospace">-₹{{ number_format($cancellation?->cancellation_fee ?? 0, 2) }}</strong>
-            </div>
+            @if($cancellation?->cancellation_fee > 0)
+                <div class="d-flex align-items-center justify-content-between py-1 text-danger" style="font-size: 0.84rem;">
+                    <span>Retained Non-Refundable GST Tax Fee:</span>
+                    <strong class="font-monospace">-₹{{ number_format($cancellation->cancellation_fee, 2) }}</strong>
+                </div>
+            @endif
 
             <hr class="my-2 border-secondary-subtle">
 
-            <div class="d-flex align-items-center justify-content-between pt-1 fw-bold text-success flex-wrap gap-1">
+            <div class="d-flex align-items-center justify-content-between pt-1 fw-bold {{ $isCodNoRefund ? 'text-secondary' : 'text-success' }} flex-wrap gap-1">
                 <span class="fs-6" style="font-size: 0.92rem !important;">Net Refund Amount:</span>
-                <span class="font-monospace fs-5 text-success">₹{{ number_format($cancellation?->refund_amount ?? 0, 2) }}</span>
+                <span class="font-monospace fs-5 {{ $isCodNoRefund ? 'text-secondary' : 'text-success' }}">₹{{ number_format($netRefundTotal, 2) }}</span>
             </div>
         </div>
     </div>
@@ -490,7 +570,11 @@
                 <div class="d-flex justify-content-between border-bottom pb-2 mb-2" style="font-size: 0.84rem;">
                     <span class="text-muted">Payment Mode:</span>
                     <span class="fw-bold text-dark">
-                        @if($order->payment_method === 'online')
+                        @if($order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0))
+                            <span class="text-success"><i class="bi bi-wallet2 me-1"></i>ShopCalm Wallet (100% Paid)</span>
+                        @elseif($order->wallet_amount_used > 0)
+                            <span class="text-dark"><i class="bi bi-wallet2 me-1"></i>Wallet (₹{{ number_format($order->wallet_amount_used, 2) }}) + {{ $order->payment_method === 'online' ? 'Prepaid Online' : 'Cash on Delivery' }}</span>
+                        @elseif($order->payment_method === 'online')
                             <span class="text-success"><i class="bi bi-shield-check me-1"></i>Prepaid ({{ $order->primaryPayment?->method_display ?? 'Online' }})</span>
                         @else
                             <span class="text-secondary"><i class="bi bi-cash me-1"></i>Cash on Delivery</span>
@@ -1059,8 +1143,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                 };
-                const rzp = new Razorpay(options);
-                rzp.open();
+                try {
+                    const rzp = new Razorpay(options);
+                    rzp.on('payment.failed', function(resp) {
+                        btnRetry.disabled = false;
+                        btnRetry.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Retry Payment';
+                    });
+                    rzp.open();
+                } catch (rzpErr) {
+                    console.error("Razorpay retry open error:", rzpErr);
+                    btnRetry.disabled = false;
+                    btnRetry.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Retry Payment';
+                    alert(rzpErr.message || "Could not open Razorpay modal.");
+                }
             } else {
                 alert(data.message || "Failed to initialize payment retry.");
                 btnRetry.disabled = false;

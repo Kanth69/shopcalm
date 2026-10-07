@@ -40,8 +40,8 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'mobile_number',
+        'mobile_verified_at',
         'email',
-        'email_verified_at',
         'password',
         'avatar',
         'role_id',
@@ -66,9 +66,14 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
+            'mobile_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function isMobileVerified(): bool
+    {
+        return !is_null($this->mobile_verified_at);
     }
 
     public function role(): BelongsTo

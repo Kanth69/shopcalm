@@ -14,10 +14,6 @@ class ProfileSetupController extends Controller
     {
         $user = Auth::guard('customer')->user();
 
-        if ($user->profile_prompt_seen) {
-            return redirect()->route('dashboard');
-        }
-
         $user->load(['profile', 'interests']);
         $categories = Category::where('status', 'Active')->orderBy('name')->get();
 
@@ -49,10 +45,6 @@ class ProfileSetupController extends Controller
                 if (isset($validated['interests'])) {
                     $user->interests()->sync($validated['interests']);
                 }
-
-                // 3. Mark prompt as seen
-                $user->profile_prompt_seen = true;
-                $user->save();
             });
 
             return redirect()->route('dashboard')->with('toast', ['type' => 'success', 'title' => 'Welcome!', 'message' => 'Profile updated successfully.']);

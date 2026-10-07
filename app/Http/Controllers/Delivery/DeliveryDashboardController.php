@@ -381,6 +381,13 @@ class DeliveryDashboardController extends Controller
 
             // Trigger Tiered Referral Milestone Rewards for Referrer
             app(\App\Services\WalletService::class)->rewardReferrerOnDeliveredOrder($order);
+
+            // Trigger WhatsApp Order Delivered Notification
+            try {
+                app(\App\Services\WhatsAppService::class)->sendOrderDelivered($order);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("[DeliveryDashboardController] WhatsApp Order Delivered notification failed: " . $e->getMessage());
+            }
         });
 
         if ($request->ajax() || $request->wantsJson()) {

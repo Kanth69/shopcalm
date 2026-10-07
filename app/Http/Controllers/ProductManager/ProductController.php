@@ -407,13 +407,20 @@ class ProductController extends Controller
     /**
      * Delete a gallery image.
      */
-    public function deleteGalleryImage(int $id): RedirectResponse
+    public function deleteGalleryImage(Request $request, int $id)
     {
         $image = ProductImage::findOrFail($id);
         if ($image->image && Storage::disk('public')->exists($image->image)) {
             Storage::disk('public')->delete($image->image);
         }
         $image->delete();
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Gallery photo removed successfully.',
+            ]);
+        }
 
         return back()->with('toast', [
             'type' => 'success',

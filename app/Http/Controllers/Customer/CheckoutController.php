@@ -217,7 +217,9 @@ class CheckoutController extends Controller
                     'formatted_discount' => number_format($totals['discountAmount'], 2),
                     'subtotal' => number_format($totals['subtotal'], 2),
                     'grand_total' => number_format($totals['grandTotal'], 2),
+                    'grand_total_raw' => $totals['grandTotal'],
                     'wallet_discount' => number_format($totals['walletDiscount'], 2),
+                    'wallet_discount_raw' => $totals['walletDiscount'],
                     'total_savings' => number_format($totals['totalSavings'], 2),
                 ]);
             }
@@ -253,7 +255,9 @@ class CheckoutController extends Controller
                 'message' => 'Coupon removed.',
                 'subtotal' => number_format($totals['subtotal'], 2),
                 'grand_total' => number_format($totals['grandTotal'], 2),
+                'grand_total_raw' => $totals['grandTotal'],
                 'wallet_discount' => number_format($totals['walletDiscount'], 2),
+                'wallet_discount_raw' => $totals['walletDiscount'],
                 'total_savings' => number_format($totals['totalSavings'], 2)
             ]);
         }
@@ -335,7 +339,7 @@ class CheckoutController extends Controller
             $userWallet = $user ? app(\App\Services\WalletService::class)->getOrCreateWallet($user) : null;
             $walletBalance = ($userWallet && $userWallet->status === 'active') ? (float) $userWallet->balance : 0.00;
 
-            $isFullyPaidByWallet = ($useWallet && $walletBalance >= $payableBeforeWallet && $payableBeforeWallet > 0);
+            $isFullyPaidByWallet = ($useWallet && $walletBalance >= $payableBeforeWallet);
 
             // IF 100% COVERED BY WALLET: Bypass payment gateway (no 0.00 gateway error!), debit wallet & confirm order immediately!
             if ($isFullyPaidByWallet) {
@@ -374,11 +378,16 @@ class CheckoutController extends Controller
                 $order = $this->checkoutService->createPendingOnlineOrder($data, $user);
 
                 // Call Razorpay Service to create Razorpay Order
-                $razorpay = app(\App\Services\RazorpayService::class);
-                $rzResult = $razorpay->createRazorpayOrder($order->order_number, (float) $order->total_amount, [
-                    'shipping_name' => $order->shipping_name,
-                    'email'         => $order->shipping_email,
-                ]);
+                try {
+                    $razorpay = app(\App\Services\RazorpayService::class);
+                    $rzResult = $razorpay->createRazorpayOrder($order->order_number, (float) $order->total_amount, [
+                        'shipping_name' => $order->shipping_name,
+                        'email'         => $order->shipping_email,
+                    ]);
+                } catch (\Exception $e) {
+                    $this->checkoutService->markOrderPaymentFailed($order, $e->getMessage());
+                    throw $e;
+                }
 
                 // Update payment record with gateway order ID
                 $payment = \App\Models\Payment::where('order_id', $order->id)->latest()->first();
@@ -475,6 +484,13 @@ class CheckoutController extends Controller
             abort(403);
         }
 
+        if ($order->status === 'cancelled') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This order has been cancelled and cannot be retried.',
+            ], 422);
+        }
+
         if ($order->payment_status === 'paid') {
             return response()->json([
                 'success' => true,
@@ -485,17 +501,19 @@ class CheckoutController extends Controller
 
         try {
             $razorpay = app(\App\Services\RazorpayService::class);
-            $rzpOrder = $razorpay->createOrder($order->order_number, (float) $order->total_amount, [
+            $rzpOrder = $razorpay->createRazorpayOrder($order->order_number, (float) $order->total_amount, [
                 'user_id'  => $user->id,
                 'order_id' => $order->id,
             ]);
+
+            $rzpOrderId = $rzpOrder['razorpay_order_id'] ?? $rzpOrder['id'] ?? null;
 
             \App\Models\Payment::create([
                 'order_id'             => $order->id,
                 'user_id'              => $user->id,
                 'order_number'         => $order->order_number,
                 'gateway'              => 'razorpay',
-                'gateway_order_id'     => $rzpOrder['id'],
+                'gateway_order_id'     => $rzpOrderId,
                 'amount'               => (float) $order->total_amount,
                 'currency'             => 'INR',
                 'status'               => 'PENDING',
@@ -505,7 +523,7 @@ class CheckoutController extends Controller
 
             return response()->json([
                 'success'           => true,
-                'razorpay_order_id' => $rzpOrder['id'],
+                'razorpay_order_id' => $rzpOrderId,
                 'key_id'            => $razorpay->getKeyId(),
                 'amount'            => $rzpOrder['amount'],
                 'currency'          => 'INR',
@@ -534,6 +552,10 @@ class CheckoutController extends Controller
         $user = Auth::guard('customer')->user() ?? Auth::user();
         if ($order->user_id !== $user->id) {
             abort(403);
+        }
+
+        if ($order->status === 'cancelled') {
+            return back()->with('toast', ['type' => 'error', 'title' => 'Error', 'message' => 'This order has been cancelled and cannot be converted to COD.']);
         }
 
         try {

@@ -11,10 +11,12 @@ class CartService
 {
     public function getCart()
     {
-        if (Auth::check()) {
-            $cart = Cart::with('items.product')->firstOrCreate(['user_id' => Auth::id()]);
+        $userId = Auth::id() ?? (Auth::guard('sanctum')->id() ?? request()->user('sanctum')?->id);
+
+        if ($userId) {
+            $cart = Cart::with('items.product')->firstOrCreate(['user_id' => $userId]);
         } else {
-            $sessionId = Session::getId();
+            $sessionId = request()->header('X-Device-Id') ?: Session::getId();
             $cart = Cart::with('items.product')->firstOrCreate(['session_id' => $sessionId]);
         }
 
@@ -42,8 +44,60 @@ class CartService
         }
     }
 
+    public function setBuyNowSession(int $productId, int $quantity = 1, ?string $selectedOption = null)
+    {
+        $product = Product::findOrFail($productId);
+
+        if ($product->status !== 'Active') {
+            return ['success' => false, 'type' => 'error', 'title' => 'Unavailable', 'message' => 'Product is currently inactive.'];
+        }
+
+        $maxStock = $product->getOptionStock($selectedOption);
+
+        if ($maxStock < 1) {
+            return ['success' => false, 'type' => 'error', 'title' => 'Out of Stock', 'message' => 'Product is currently out of stock.'];
+        }
+
+        Session::put('buy_now_data', [
+            'product_id'      => $productId,
+            'quantity'        => min($quantity, $maxStock),
+            'selected_option' => $selectedOption,
+        ]);
+
+        return ['success' => true, 'type' => 'success', 'title' => 'Instant Buy', 'message' => 'Proceeding to Checkout.'];
+    }
+
     public function getSelectedCart()
     {
+        if (Session::has('buy_now_data')) {
+            $data = Session::get('buy_now_data');
+            $product = Product::with(['category', 'brand'])->find($data['product_id']);
+            if ($product && $product->status === 'Active') {
+                $maxStock = $product->getOptionStock($data['selected_option']);
+                if ($maxStock >= 1) {
+                    $qty = min($data['quantity'], $maxStock);
+                    $offerService = app(\App\Services\OfferService::class);
+                    $productWithOffer = $offerService->applyOfferDiscountsToProducts(collect([$product]))->first();
+                    $price = $productWithOffer->sale_price ?? $product->price;
+
+                    $virtualItem = new \App\Models\CartItem([
+                        'product_id'      => $product->id,
+                        'quantity'        => $qty,
+                        'unit_price'      => $price,
+                        'selected_option' => $data['selected_option'],
+                        'is_selected'     => true,
+                    ]);
+                    $virtualItem->id = 999999;
+                    $virtualItem->setRelation('product', $productWithOffer);
+
+                    $virtualCart = new Cart();
+                    $virtualCart->setRelation('items', collect([$virtualItem]));
+                    return $virtualCart;
+                }
+            }
+            Session::forget('buy_now_data');
+        }
+
         $cart = $this->getCart();
         $cart->load(['items' => function ($query) {
             $query->where('is_selected', true)->with(['product.category', 'product.brand']);
@@ -154,6 +208,11 @@ class CartService
 
     public function clearSelectedItems()
     {
+        if (Session::has('buy_now_data')) {
+            Session::forget('buy_now_data');
+            return true;
+        }
+
         $cart = $this->getCart();
         return $cart->items()->where('is_selected', true)->delete() > 0;
     }
@@ -180,7 +239,7 @@ class CartService
 
     public function subtotal()
     {
-        return $this->getCart()->items->where('is_selected', true)->sum(function ($item) {
+        return $this->getSelectedCart()->items->sum(function ($item) {
             return $item->quantity * $item->unit_price;
         });
     }
@@ -197,10 +256,12 @@ class CartService
 
     public function mergeSessionCart(?string $guestSessionId = null)
     {
-        if (Auth::check()) {
-            $sessionId = $guestSessionId ?? Session::getId();
+        $userId = Auth::id() ?? (Auth::guard('sanctum')->id() ?? request()->user('sanctum')?->id);
+
+        if ($userId) {
+            $sessionId = $guestSessionId ?? (request()->header('X-Device-Id') ?: Session::getId());
             $sessionCart = Cart::where('session_id', $sessionId)->whereNull('user_id')->first();
-            $userCart = Cart::firstOrCreate(['user_id' => Auth::id()]);
+            $userCart = Cart::firstOrCreate(['user_id' => $userId]);
 
             if ($sessionCart && $sessionCart->id !== $userCart->id) {
                 foreach ($sessionCart->items as $sessionItem) {

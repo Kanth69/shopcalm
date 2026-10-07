@@ -1,9 +1,9 @@
 <x-guest-layout>
-    <x-slot name="title">Authentication</x-slot>
+    <x-slot name="title">{{ request()->routeIs('register') ? 'Create Account' : 'Sign In' }}</x-slot>
 
     <div id="auth-container" class="auth-card-container">
         <!-- Initial State -->
-        <div id="state-initial">
+        <div id="state-initial" style="{{ request()->routeIs('register') ? 'display: none;' : '' }}">
             @include('auth.components.initial')
         </div>
 
@@ -13,7 +13,7 @@
         </div>
 
         <!-- Register State -->
-        <div id="state-register" style="display: none;">
+        <div id="state-register" style="{{ request()->routeIs('register') ? 'display: block;' : 'display: none;' }}">
             @include('auth.components.register')
         </div>
 
@@ -32,63 +32,40 @@
         .auth-card-container {
             position: relative;
             padding: 4px 2px;
-            min-height: 340px;
+            min-height: 320px;
         }
 
         .auth-header {
             text-align: center;
-            margin-bottom: 24px;
+            margin-bottom: 22px;
         }
 
         .auth-logo {
-            display: inline-flex;
-            align-items: center;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
             text-decoration: none;
-            margin-bottom: 16px;
-        }
-
-        .logo-w {
-            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
-            color: white;
-            width: 42px;
-            height: 42px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: 800;
-            border-radius: 12px;
-            margin-right: 12px;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        }
-
-        .logo-text {
-            font-size: 26px;
-            font-weight: 800;
-            color: #1e293b;
-            letter-spacing: -0.5px;
-        }
-
-        .logo-text span {
-            color: #3b82f6;
+            margin-bottom: 14px;
         }
 
         .auth-title {
             font-size: 22px;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 6px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 4px;
+            letter-spacing: -0.4px;
         }
 
         .auth-subtitle {
             font-size: 14px;
             color: #64748b;
+            margin-bottom: 0;
         }
 
         .auth-form {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 14px;
         }
 
         .form-row {
@@ -107,11 +84,12 @@
         }
 
         .form-group label {
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 12px;
+            font-weight: 700;
             color: #475569;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.45px;
+            margin-bottom: 0;
         }
 
         .label-row {
@@ -137,22 +115,45 @@
             left: 0;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            font-size: 13px;
+            gap: 5px;
+            font-size: 12.5px;
             font-weight: 600;
             color: #64748b;
             background: #f1f5f9;
             border: 1px solid #e2e8f0;
-            padding: 6px 12px;
+            padding: 5px 11px;
             border-radius: 20px;
             cursor: pointer;
             transition: all 0.2s;
             z-index: 10;
+            text-decoration: none;
         }
 
         .back-nav-btn:hover {
             background: #e2e8f0;
             color: #1e293b;
+        }
+
+        .back-bottom-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 13.5px;
+            font-weight: 600;
+            color: #475569;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            padding: 8px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .back-bottom-btn:hover {
+            background: #e2e8f0;
+            color: #0f172a;
         }
 
         .forgot-link:hover, .change-identifier-btn:hover {
@@ -163,7 +164,7 @@
             background-color: #f8fafc;
             border: 2px solid #e2e8f0;
             border-radius: 12px;
-            padding: 12px 16px;
+            padding: 11px 15px;
             font-size: 15px;
             color: #1e293b;
             transition: all 0.2s ease;
@@ -175,6 +176,94 @@
             border-color: #3b82f6;
             background-color: #fff;
             box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        .auth-phone-input-group {
+            display: flex;
+            align-items: stretch;
+            width: 100%;
+        }
+
+        .auth-phone-input-group .input-group-text {
+            background-color: #f1f5f9 !important;
+            border: 2px solid #e2e8f0;
+            border-right: none;
+            border-radius: 12px 0 0 12px;
+            color: #334155;
+            font-size: 14px;
+            padding: 0 14px;
+            display: flex;
+            align-items: center;
+        }
+
+        .auth-phone-input-group .auth-input {
+            border-radius: 0 12px 12px 0 !important;
+            flex: 1;
+        }
+
+        /* Custom Checkbox */
+        .checkbox-container {
+            display: inline-flex;
+            align-items: center;
+            position: relative;
+            padding-left: 28px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            user-select: none;
+            color: #475569;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+        }
+
+        .checkbox-container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        .checkmark {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 0;
+            height: 20px;
+            width: 20px;
+            background-color: #f1f5f9;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .checkbox-container:hover input ~ .checkmark {
+            border-color: #3b82f6;
+        }
+
+        .checkbox-container input:checked ~ .checkmark {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+
+        .checkbox-container input:checked ~ .checkmark:after {
+            display: block;
+        }
+
+        .checkbox-container .checkmark:after {
+            left: 5px;
+            top: 1px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
         }
 
         .password-input-wrapper {
@@ -535,43 +624,56 @@
                 min-height: auto;
             }
             .auth-header {
-                margin-bottom: 12px;
+                margin-bottom: 16px;
             }
             .auth-logo {
-                margin-bottom: 6px;
+                margin-bottom: 10px;
             }
-            .auth-logo img, .auth-logo svg {
-                height: 28px !important;
+            .auth-logo .logo-shopcalm-svg {
+                width: 34px !important;
+                height: 34px !important;
+            }
+            .auth-logo .logo-shopcalm-wordmark {
+                font-size: 1.38rem !important;
             }
             .auth-title {
-                font-size: 18px;
-                margin-bottom: 2px;
+                font-size: 20px;
+                margin-bottom: 3px;
                 letter-spacing: -0.3px;
             }
             .auth-subtitle {
-                font-size: 12px;
+                font-size: 13px;
             }
             .auth-form {
-                gap: 7px;
+                gap: 12px;
             }
             .form-row {
-                gap: 7px;
+                flex-direction: column;
+                gap: 12px;
             }
             .form-group {
-                gap: 2px;
+                gap: 5px;
             }
             .form-group label {
-                font-size: 10.5px;
-                letter-spacing: 0.3px;
+                font-size: 11.5px;
+                letter-spacing: 0.35px;
             }
             .auth-input {
-                padding: 7px 11px;
-                font-size: 13.5px;
-                border-radius: 9px;
-                min-height: 37px;
+                padding: 10px 14px;
+                font-size: 15px;
+                border-radius: 11px;
+                min-height: 44px;
+            }
+            .auth-phone-input-group .input-group-text {
+                border-radius: 11px 0 0 11px;
+                padding: 0 12px;
+                font-size: 14px;
+            }
+            .auth-phone-input-group .auth-input {
+                border-radius: 0 11px 11px 0 !important;
             }
             .password-toggle-btn {
-                font-size: 15px;
+                font-size: 17px;
                 right: 8px;
             }
             .otp-input-group {
@@ -579,79 +681,90 @@
             }
             .otp-btn {
                 padding: 0 12px;
-                font-size: 12px;
-                border-radius: 9px;
+                font-size: 12.5px;
+                border-radius: 11px;
             }
             .auth-submit-btn {
-                padding: 8.5px 12px;
-                font-size: 13px;
-                border-radius: 9px;
-                margin-top: 2px;
-                min-height: 38px;
-                gap: 6px;
+                padding: 12px 16px;
+                font-size: 15px;
+                border-radius: 11px;
+                margin-top: 4px;
+                min-height: 46px;
+                gap: 8px;
             }
             .auth-divider {
-                margin: 4px 0;
+                margin: 6px 0;
             }
             .auth-divider span {
-                font-size: 10px;
-                padding: 0 8px;
+                font-size: 11px;
+                padding: 0 10px;
             }
             .google-btn {
-                padding: 7px 12px;
-                font-size: 12px;
-                border-radius: 9px;
-                min-height: 35px;
+                padding: 10px 14px;
+                font-size: 13.5px;
+                border-radius: 11px;
+                min-height: 42px;
                 gap: 8px;
             }
             .google-btn img {
-                width: 16px;
+                width: 18px;
             }
             .auth-alert {
-                padding: 7px 11px;
-                font-size: 11.5px;
-                margin-bottom: 8px;
-                border-radius: 8px;
+                padding: 10px 12px;
+                font-size: 12.5px;
+                margin-bottom: 12px;
+                border-radius: 10px;
             }
             .back-nav-btn {
-                padding: 3px 8px;
-                font-size: 11px;
-                border-radius: 12px;
+                padding: 4px 10px;
+                font-size: 11.5px;
+                border-radius: 14px;
+                top: 2px;
+            }
+            .back-bottom-btn {
+                padding: 7px 16px;
+                font-size: 13px;
             }
             .field-hint {
-                font-size: 11px;
+                font-size: 11.5px;
             }
             .form-options {
                 margin: 2px 0;
             }
             .otp-digit-input {
-                width: 38px;
-                height: 44px;
-                font-size: 18px;
-                border-radius: 9px;
+                width: 42px;
+                height: 48px;
+                font-size: 19px;
+                border-radius: 10px;
                 border-width: 1.5px;
             }
             .otp-boxes-wrapper {
-                gap: 5px;
+                gap: 6px;
                 margin: 8px 0;
             }
             .step-pill {
-                padding: 2px 7px;
-                font-size: 10px;
+                padding: 3px 8px;
+                font-size: 10.5px;
             }
             .step-connector {
-                width: 8px;
+                width: 10px;
             }
             .email-banner-pill {
-                padding: 4px 10px;
+                padding: 5px 12px;
             }
             .email-text {
-                font-size: 12px;
-                max-width: 165px;
+                font-size: 12.5px;
+                max-width: 175px;
             }
             .edit-pill-btn {
-                padding: 1px 7px;
-                font-size: 10.5px;
+                padding: 2px 8px;
+                font-size: 11px;
+            }
+            .auth-toast {
+                left: 16px;
+                right: 16px;
+                bottom: 16px;
+                text-align: center;
             }
         }
     </style>

@@ -18,17 +18,23 @@ class OrderCancellation extends Model
         'cancellation_reason',
         'admin_notes',
         'cancellation_fee',
+        'wallet_refund_amount',
+        'online_refund_amount',
         'refund_amount',
         'refund_status',
+        'online_refund_status',
         'refund_method',
         'refund_upi_id',
         'payment_reference',
+        'razorpay_refund_id',
         'payment_status',
     ];
 
     protected $casts = [
-        'cancellation_fee' => 'decimal:2',
-        'refund_amount'    => 'decimal:2',
+        'cancellation_fee'     => 'decimal:2',
+        'wallet_refund_amount' => 'decimal:2',
+        'online_refund_amount' => 'decimal:2',
+        'refund_amount'        => 'decimal:2',
     ];
 
     public function order(): BelongsTo

@@ -3,8 +3,8 @@
 
     <div class="auth-card-container">
         <div class="auth-header text-center">
-            <a href="{{ route('home') }}" class="auth-logo d-inline-flex justify-content-center mb-3 text-decoration-none">
-                <x-logo height="38" />
+            <a href="{{ route('home') }}" class="auth-logo d-inline-flex align-items-center justify-content-center mb-3 text-decoration-none">
+                <x-logo height="40" />
             </a>
             <h2 class="auth-title">Forgot Password</h2>
             <p class="auth-subtitle">Enter your registered mobile number to receive a 6-digit WhatsApp OTP code.</p>
@@ -17,7 +17,7 @@
         </div>
 
         <!-- Green Success Banner Alert -->
-        <div id="forgot-success-alert" class="auth-alert success mb-3" style="display: none; background-color: #d1fae5; color: #065f46; border: 1px solid #10b981; padding: 12px; border-radius: 8px;">
+        <div id="forgot-success-alert" class="auth-alert success mb-3" style="display: none;">
             <i class="bi bi-check-circle-fill me-2 fs-5"></i>
             <span id="forgot-success-msg"></span>
         </div>
@@ -28,41 +28,51 @@
                 @csrf
                 <div class="form-group">
                     <label for="mobile_number">Mobile Number <span class="text-danger">*</span></label>
-                    <div class="input-group">
+                    <div class="input-group auth-phone-input-group">
                         <span class="input-group-text bg-light fw-bold">+91</span>
-                        <input id="mobile_number" class="auth-input form-control" type="text" name="mobile_number" maxlength="10" required autofocus placeholder="9876543210">
+                        <input id="mobile_number" class="auth-input form-control" type="tel" inputmode="numeric" name="mobile_number" maxlength="10" required autofocus placeholder="9876543210">
                     </div>
                 </div>
 
                 <button type="submit" id="btn-send-otp" class="auth-submit-btn">
                     <span>Send WhatsApp OTP</span>
-                    <i class="bi bi-whatsapp ms-2"></i>
+                    <i class="bi bi-whatsapp ms-1"></i>
                 </button>
             </form>
 
             <!-- Step 2: Reset Password Form (Hidden Initially) -->
-            <form id="reset-password-form" class="auth-form mt-4" style="display: none;">
+            <form id="reset-password-form" class="auth-form mt-3" style="display: none;">
                 @csrf
                 <input type="hidden" id="reset_mobile_number" name="mobile_number">
 
-                <div class="form-group mb-3">
+                <div class="form-group">
                     <label for="otp">WhatsApp 6-Digit OTP Code <span class="text-danger">*</span></label>
-                    <input id="otp" class="auth-input form-control" type="text" name="otp" maxlength="6" required placeholder="123456" style="letter-spacing: 4px; font-weight: bold; text-align: center;">
+                    <input id="otp" class="auth-input form-control" type="tel" inputmode="numeric" name="otp" maxlength="6" required placeholder="123456" style="letter-spacing: 4px; font-weight: bold; text-align: center;">
                 </div>
 
-                <div class="form-group mb-3">
+                <div class="form-group">
                     <label for="password">New Password <span class="text-danger">*</span></label>
-                    <input id="password" class="auth-input form-control" type="password" name="password" required placeholder="Minimum 8 characters">
+                    <div class="password-input-wrapper">
+                        <input id="password" class="auth-input form-control" type="password" name="password" required placeholder="Minimum 8 characters">
+                        <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password', this)" title="Show password">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
                 </div>
 
-                <div class="form-group mb-3">
+                <div class="form-group">
                     <label for="password_confirmation">Confirm New Password <span class="text-danger">*</span></label>
-                    <input id="password_confirmation" class="auth-input form-control" type="password" name="password_confirmation" required placeholder="Re-enter new password">
+                    <div class="password-input-wrapper">
+                        <input id="password_confirmation" class="auth-input form-control" type="password" name="password_confirmation" required placeholder="Re-enter new password">
+                        <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password_confirmation', this)" title="Show password">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" id="btn-submit-reset" class="auth-submit-btn">
                     <span>Reset Password & Sign In</span>
-                    <i class="bi bi-shield-check ms-2"></i>
+                    <i class="bi bi-shield-check ms-1"></i>
                 </button>
             </form>
         </div>
@@ -76,6 +86,228 @@
             </a>
         </div>
     </div>
+
+    <style>
+        .auth-card-container {
+            padding: 4px 2px;
+        }
+        .auth-header {
+            text-align: center;
+            margin-bottom: 22px;
+        }
+        .auth-logo {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-decoration: none;
+            margin-bottom: 14px;
+        }
+        .auth-title {
+            font-size: 22px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 6px;
+            letter-spacing: -0.4px;
+        }
+        .auth-subtitle {
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.5;
+            margin-bottom: 0;
+        }
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .form-group label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.45px;
+            margin-bottom: 0;
+        }
+        .auth-input {
+            background-color: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 11px 15px;
+            font-size: 15px;
+            color: #1e293b;
+            transition: all 0.2s ease;
+            outline: none;
+            width: 100%;
+        }
+        .auth-input:focus {
+            border-color: #3b82f6;
+            background-color: #fff;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+        .auth-phone-input-group {
+            display: flex;
+            align-items: stretch;
+            width: 100%;
+        }
+        .auth-phone-input-group .input-group-text {
+            background-color: #f1f5f9 !important;
+            border: 2px solid #e2e8f0;
+            border-right: none;
+            border-radius: 12px 0 0 12px;
+            color: #334155;
+            font-size: 14px;
+            padding: 0 14px;
+            display: flex;
+            align-items: center;
+        }
+        .auth-phone-input-group .auth-input {
+            border-radius: 0 12px 12px 0 !important;
+            flex: 1;
+        }
+        .password-input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .password-input-wrapper .auth-input {
+            padding-right: 46px;
+        }
+        .password-toggle-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            padding: 6px;
+            color: #64748b;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            z-index: 5;
+            font-size: 18px;
+        }
+        .password-toggle-btn:hover {
+            color: #3b82f6;
+            background-color: #f1f5f9;
+        }
+        .auth-submit-btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            color: white;
+            padding: 13px 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15.5px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+            margin-top: 4px;
+        }
+        .auth-submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+        }
+        .auth-submit-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .back-nav-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 13.5px;
+            font-weight: 600;
+            color: #475569;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            padding: 8px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .back-nav-btn:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+        .auth-alert {
+            display: flex;
+            align-items: center;
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .auth-alert.success {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        .auth-alert.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        @media (max-width: 576px) {
+            .auth-card-container {
+                padding: 0;
+            }
+            .auth-header {
+                margin-bottom: 16px;
+            }
+            .auth-logo {
+                margin-bottom: 10px;
+            }
+            .auth-logo .logo-shopcalm-svg {
+                width: 34px !important;
+                height: 34px !important;
+            }
+            .auth-logo .logo-shopcalm-wordmark {
+                font-size: 1.38rem !important;
+            }
+            .auth-title {
+                font-size: 20px;
+            }
+            .auth-subtitle {
+                font-size: 13px;
+            }
+            .auth-form {
+                gap: 12px;
+            }
+            .auth-input {
+                padding: 10px 14px;
+                font-size: 15px;
+                border-radius: 11px;
+                min-height: 44px;
+            }
+            .auth-phone-input-group .input-group-text {
+                border-radius: 11px 0 0 11px;
+                padding: 0 12px;
+            }
+            .auth-phone-input-group .auth-input {
+                border-radius: 0 11px 11px 0 !important;
+            }
+            .auth-submit-btn {
+                padding: 12px 16px;
+                font-size: 15px;
+                border-radius: 11px;
+                min-height: 46px;
+            }
+        }
+    </style>
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -128,7 +360,7 @@
                     showSuccess(data.message + (data.dev_otp ? ' (Dev OTP: ' + data.dev_otp + ')' : ''));
                     document.getElementById('reset_mobile_number').value = mobile;
                     reqOtpForm.style.display = 'none';
-                    resetPassForm.style.display = 'block';
+                    resetPassForm.style.display = 'flex';
                 } else {
                     const msg = data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Mobile number not found.');
                     showError(msg);

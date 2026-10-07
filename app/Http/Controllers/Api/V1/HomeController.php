@@ -45,9 +45,15 @@ class HomeController extends BaseApiController
             return Brand::where('status', 1)->orderBy('name')->take(10)->get();
         });
 
+        $allProducts = $trendingProducts->concat($featuredProducts)->concat($latestProducts)->unique('id')->values();
+        if ($allProducts->isEmpty()) {
+            $allProducts = Product::with(['category', 'brand'])->where('status', 'Active')->latest()->take(20)->get();
+        }
+
         $data = [
             'banners' => $banners,
             'offers' => $offers,
+            'products' => $allProducts,
             'featuredProducts' => $featuredProducts,
             'trendingProducts' => $trendingProducts,
             'latestProducts' => $latestProducts,

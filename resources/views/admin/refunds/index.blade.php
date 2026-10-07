@@ -109,8 +109,9 @@
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="bg-light text-muted small text-uppercase">
-                    <tr>
-                        <th class="ps-4">Order Details</th>
+                    <tr class="text-nowrap">
+                        <th class="ps-4">Ticket No</th>
+                        <th>Order Details</th>
                         <th>Customer</th>
                         <th>Cancellation Reason</th>
                         <th class="text-end">Order Total</th>
@@ -123,52 +124,142 @@
                 </thead>
                 <tbody>
                     @forelse($cancellations as $item)
+                    @php
+                        $ord = $item->order;
+                        $orderNumber = $ord?->order_number ?? $item->order_id;
+                        $ticketNo = 'CNL-' . $orderNumber;
+                        $orderShowRoute = request()->routeIs('order-manager.*') ? 'order-manager.orders.show' : 'admin.orders.show';
+                        $orderShowUrl = $ord ? route($orderShowRoute, $ord->order_number ?? $ord->id) : '#';
+
+                        $walletUsed = (float) ($ord?->wallet_amount_used ?? 0);
+                        $totalAmt = (float) ($ord?->total_amount ?? 0);
+                        $payMethod = strtolower($ord?->payment_method ?? '');
+
+                        if (($payMethod === 'wallet' || $payMethod === 'store_wallet' || $walletUsed > 0) && $totalAmt == 0) {
+                            $payModeBadgeClass = 'bg-success text-white';
+                            $payModeIcon = 'bi-wallet2';
+                            $payModeText = '100% Wallet';
+                        } elseif ($walletUsed > 0 && $totalAmt > 0) {
+                            if ($payMethod === 'cod') {
+                                $payModeBadgeClass = 'bg-secondary text-white';
+                                $payModeIcon = 'bi-wallet2';
+                                $payModeText = 'Wallet + COD';
+                            } else {
+                                $payModeBadgeClass = 'bg-primary text-white';
+                                $payModeIcon = 'bi-wallet2';
+                                $payModeText = 'Wallet + Prepaid';
+                            }
+                        } elseif ($payMethod === 'cod') {
+                            $payModeBadgeClass = 'bg-dark text-white';
+                            $payModeIcon = 'bi-cash-stack';
+                            $payModeText = 'COD';
+                        } else {
+                            $payModeBadgeClass = 'bg-primary text-white';
+                            $payModeIcon = 'bi-credit-card';
+                            $payModeText = 'Prepaid (Online)';
+                        }
+                    @endphp
                     <tr>
-                        <td class="ps-4">
-                            <div class="fw-bold text-dark">#{{ $item->order->order_number ?? 'N/A' }}</div>
-                            <div class="text-muted small" style="font-size: 0.75rem;">
+                        <td class="ps-4 text-nowrap">
+                            <div class="d-flex align-items-center gap-1.5">
+                                <code class="text-primary bg-primary bg-opacity-10 px-2 py-1 rounded border border-primary border-opacity-25 font-monospace fw-bold" style="font-size: 0.76rem;">{{ $ticketNo }}</code>
+                                <button type="button" class="btn btn-link p-0 text-muted" onclick="navigator.clipboard.writeText('{{ $ticketNo }}')" title="Copy Ticket No">
+                                    <i class="bi bi-copy" style="font-size: 0.8rem;"></i>
+                                </button>
+                            </div>
+                        </td>
+                        <td>
+                            @if($ord)
+                                <a href="{{ $orderShowUrl }}" target="_blank" class="fw-bold text-primary text-decoration-none" title="View Full Order Details">
+                                    #{{ $orderNumber }} <i class="bi bi-box-arrow-up-right opacity-75 ms-0.5" style="font-size: 0.68rem;"></i>
+                                </a>
+                            @else
+                                <span class="fw-bold text-dark">#{{ $orderNumber }}</span>
+                            @endif
+                            <div class="text-muted small mb-1" style="font-size: 0.74rem;">
                                 {{ $item->created_at ? $item->created_at->format('d M Y, h:i A') : '—' }}
                             </div>
+                            <span class="badge {{ $payModeBadgeClass }} rounded-pill px-2 py-0.5 fw-semibold" style="font-size: 0.67rem;">
+                                <i class="bi {{ $payModeIcon }} me-1"></i>{{ $payModeText }}
+                            </span>
                         </td>
                         <td>
                             <div class="fw-semibold text-dark">{{ $item->user->name ?? 'Guest' }}</div>
                             <div class="text-muted small" style="font-size: 0.75rem;">{{ $item->user->phone ?? $item->user->email ?? '—' }}</div>
                         </td>
                         <td>
-                            <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 0.75rem;">
-                                {{ Str::limit($item->cancellation_reason, 30) }}
-                            </span>
+                            <div class="d-flex flex-column gap-1">
+                                <span class="badge bg-light text-dark border px-2 py-1 text-wrap text-start" style="font-size: 0.75rem; max-width: 200px;">
+                                    {{ Str::limit($item->cancellation_reason, 40) }}
+                                </span>
+                                @if($item->cancelled_by_type === 'admin')
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-1.5 py-0.5" style="font-size: 0.65rem; width: fit-content;">
+                                        <i class="bi bi-shield-x me-1"></i>By Store Admin
+                                    </span>
+                                @else
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border px-1.5 py-0.5" style="font-size: 0.65rem; width: fit-content;">
+                                        <i class="bi bi-person me-1"></i>By Customer
+                                    </span>
+                                @endif
+                                @if($item->admin_notes)
+                                    <div class="text-muted small fst-italic" style="font-size: 0.7rem;">Note: {{ Str::limit($item->admin_notes, 30) }}</div>
+                                @endif
+                            </div>
                         </td>
+                        @php
+                            $walletAmt = (float) ($item->wallet_refund_amount ?? $item->order->wallet_amount_used ?? 0);
+                            $onlineAmt = (float) ($item->online_refund_amount ?? 0);
+                            $orderTotalVal = ($item->order->total_amount ?? 0) > 0 ? ($item->order->total_amount + $walletAmt) : ($walletAmt > 0 ? $walletAmt : ($item->order->subtotal_amount ?? 0));
+                            $totalNetRefund = $item->refund_amount > 0 ? $item->refund_amount : ($walletAmt + $onlineAmt);
+                            $refundProof = $item->razorpay_refund_id ?: $item->payment_reference;
+                        @endphp
                         <td class="text-end fw-bold text-dark">
-                            ₹{{ number_format($item->order->total_amount ?? 0, 2) }}
+                            ₹{{ number_format($orderTotalVal, 2) }}
                         </td>
                         <td class="text-end fw-bold text-danger">
                             -₹{{ number_format($item->cancellation_fee, 2) }}
                         </td>
                         <td class="text-end fw-bold text-success" style="font-size: 0.95rem;">
-                            ₹{{ number_format($item->refund_amount, 2) }}
+                            ₹{{ number_format($totalNetRefund, 2) }}
                         </td>
                         <td>
-                            @if($item->refund_method === 'original_source' || $item->refund_method === 'online')
+                            @if($item->refund_method === 'dual' || ($walletAmt > 0 && $onlineAmt > 0))
+                                <div class="d-flex flex-column gap-1">
+                                    <span class="badge bg-success bg-opacity-25 text-success-emphasis border border-success px-2 py-0.5" style="font-size: 0.68rem;">
+                                        ⚡ Wallet: ₹{{ number_format($walletAmt, 2) }}
+                                    </span>
+                                    <span class="badge bg-primary bg-opacity-25 text-primary-emphasis border border-primary px-2 py-0.5" style="font-size: 0.68rem;">
+                                        💳 PG: ₹{{ number_format($onlineAmt, 2) }}
+                                    </span>
+                                </div>
+                            @elseif($item->refund_method === 'wallet' || ($walletAmt > 0 && $onlineAmt <= 0))
+                                <span class="badge bg-success bg-opacity-25 text-success-emphasis border border-success px-2.5 py-1">
+                                    ⚡ ShopCalm Wallet (Instant)
+                                </span>
+                            @elseif($item->refund_method === 'original_source' || $item->refund_method === 'online')
                                 <span class="badge bg-primary bg-opacity-25 text-primary-emphasis border border-primary px-2.5 py-1">
                                     💳 Original Source (Razorpay PG)
                                 </span>
+                                @if($refundProof)
+                                    <div class="font-monospace text-muted small mt-1 d-flex align-items-center gap-1" style="font-size: 0.71rem;">
+                                        <span>Ref: {{ $refundProof }}</span>
+                                        <button type="button" class="btn btn-link p-0 text-muted" onclick="navigator.clipboard.writeText('{{ $refundProof }}')" title="Copy Ref">
+                                            <i class="bi bi-copy"></i>
+                                        </button>
+                                    </div>
+                                @endif
                             @elseif($item->refund_method === 'bank_upi')
                                 <span class="badge bg-warning bg-opacity-25 text-warning-emphasis border border-warning px-2.5 py-1">
                                     🏦 Bank UPI
                                 </span>
                                 @if($item->refund_upi_id)
-                                    <div class="font-monospace fw-bold small text-dark mt-1 d-flex align-items-center gap-1">
+                                    <div class="font-monospace fw-bold small text-dark mt-1 d-flex align-items-center gap-1" style="font-size: 0.75rem;">
                                         <span>{{ $item->refund_upi_id }}</span>
                                         <button type="button" class="btn btn-link p-0 text-muted" onclick="navigator.clipboard.writeText('{{ $item->refund_upi_id }}')" title="Copy UPI ID">
                                             <i class="bi bi-copy"></i>
                                         </button>
                                     </div>
                                 @endif
-                            @elseif($item->refund_method === 'wallet')
-                                <span class="badge bg-success bg-opacity-25 text-success-emphasis border border-success px-2.5 py-1">
-                                    ⚡ Store Wallet (Instant)
-                                </span>
                             @else
                                 <span class="badge bg-light text-muted border px-2.5 py-1">
                                     None (COD)
@@ -176,12 +267,17 @@
                             @endif
                         </td>
                         <td>
-                            @if($item->refund_status === 'processed')
+                            @if($item->refund_status === 'processed' || $item->online_refund_status === 'processed')
                                 <span class="badge bg-success rounded-pill px-3 py-1">
                                     <i class="bi bi-check-circle-fill me-1"></i> Processed
                                 </span>
-                                @if($item->payment_reference)
-                                    <div class="text-muted small mt-1" style="font-size: 0.72rem;">Ref: {{ $item->payment_reference }}</div>
+                                @if($refundProof)
+                                    <div class="text-muted small mt-1 d-flex align-items-center gap-1 font-monospace" style="font-size: 0.71rem;">
+                                        <span>Ref: {{ $refundProof }}</span>
+                                        <button type="button" class="btn btn-link p-0 text-muted" onclick="navigator.clipboard.writeText('{{ $refundProof }}')" title="Copy Reference">
+                                            <i class="bi bi-copy"></i>
+                                        </button>
+                                    </div>
                                 @endif
                             @elseif($item->refund_status === 'pending')
                                 <span class="badge bg-warning text-dark rounded-pill px-3 py-1">
@@ -203,7 +299,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9" class="text-center py-5 text-muted">
+                        <td colspan="10" class="text-center py-5 text-muted">
                             <i class="bi bi-inbox fs-1 d-block mb-2 text-muted opacity-50"></i>
                             No cancellation or refund requests found matching your filters.
                         </td>

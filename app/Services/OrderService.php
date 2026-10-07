@@ -82,6 +82,16 @@ class OrderService
                 'notes'           => $notes,
             ]);
 
+            // 3. Trigger Referral Rewards & WhatsApp Delivered Notification when status becomes delivered
+            if ($newStatus === 'delivered') {
+                app(\App\Services\WalletService::class)->rewardReferrerOnDeliveredOrder($order);
+                try {
+                    app(\App\Services\WhatsAppService::class)->sendOrderDelivered($order);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("[OrderService] WhatsApp Order Delivered notification failed: " . $e->getMessage());
+                }
+            }
+
             return $order;
         });
     }
@@ -113,21 +123,39 @@ class OrderService
             $taxAmount = round($productPayable - $productTaxableBase, 2);
         }
 
-        $cancellationFee = min((float) $order->total_amount, $taxAmount);
-        $netRefund = max(0, (float) $order->total_amount - $cancellationFee);
+        $isPaid = ($order->payment_status === 'paid');
+        $walletUsed = (float) ($order->wallet_amount_used ?? 0);
+
+        if (!$isPaid) {
+            // Unpaid online or unpaid COD order: $0 online payment collected
+            $prepaidOnlinePaid = 0.00;
+            $codAmountToCollect = $order->payment_method === 'cod' ? (float) ($order->total_amount ?? 0) : 0.00;
+            $cancellationFee = 0.00;
+            $netPrepaidRefund = 0.00;
+        } else {
+            $prepaidOnlinePaid = (float) ($order->total_amount ?? 0);
+            $codAmountToCollect = 0.00;
+            $cancellationFee = min($prepaidOnlinePaid, $taxAmount);
+            $netPrepaidRefund = max(0, $prepaidOnlinePaid - $cancellationFee);
+        }
 
         return [
-            'total_amount'         => (float) $order->total_amount,
-            'product_payable'      => $productPayable,
-            'product_taxable_base' => round($productPayable / 1.18, 2),
-            'cancellation_fee'     => $cancellationFee,
-            'net_refund'           => $netRefund,
+            'total_amount'           => (float) $order->total_amount,
+            'wallet_amount_used'     => $walletUsed,
+            'prepaid_online_paid'    => $prepaidOnlinePaid,
+            'cod_amount_to_collect'  => $codAmountToCollect,
+            'product_payable'        => $productPayable,
+            'product_taxable_base'   => round($productPayable / 1.18, 2),
+            'cancellation_fee'       => $cancellationFee,
+            'wallet_refund'          => $walletUsed,
+            'net_refund'             => $netPrepaidRefund,
         ];
     }
 
     /**
-     * Cancel a Prepaid Order (Paid Online) & Trigger Direct PG Refund (Less GST Fee).
-     * Bypasses wallet completely as wallet is reserved for referrals.
+     * Cancel a Prepaid Order (Paid Online/Wallet) & Trigger Dual Refund:
+     * 1. 100% Wallet portion paid goes directly back to user's Wallet.
+     * 2. Prepaid Online portion (less GST fee) is refunded to original payment source (Razorpay).
      */
     public function cancelPrepaidOrder(Order $order, string $reason, string $refundMethod = 'original_source', ?string $upiId = null): \App\Models\OrderCancellation
     {
@@ -139,52 +167,100 @@ class OrderService
             $summary = $this->calculateCancellationSummary($order);
             $user = $order->user;
 
-            $refundStatus = 'pending';
+            $walletRefund = $summary['wallet_refund'];
+            $prepaidRefund = $summary['net_refund'];
+
+            // 1. Credit 100% of wallet amount used back to customer's wallet
+            if ($walletRefund > 0 && $user) {
+                app(\App\Services\WalletService::class)->getOrCreateWallet($user)->credit(
+                    $walletRefund,
+                    'ORDER_CANCELLED_REFUND',
+                    "100% Wallet refund for cancelled Order #{$order->order_number}",
+                    $order->id
+                );
+            }
+
+            // 2. Handle Prepaid Online portion (Razorpay PG refund)
+            $refundStatus = 'none';
             $refundRef = null;
 
-            if ($summary['net_refund'] > 0) {
-                // Trigger Direct Gateway Refund via Razorpay API back to Original Payment Method
-                try {
-                    $targetRef = $order->payment_reference ?: $order->order_number;
-                    $razorpay = app(\App\Services\RazorpayService::class);
-                    $rzResult = $razorpay->createRefund(
-                        $targetRef,
-                        $summary['net_refund'],
-                        "Prepaid Cancellation Refund for Order #{$order->order_number} (Less GST Fee)"
+            if ($prepaidRefund > 0) {
+                if ($refundMethod === 'wallet' && $user) {
+                    app(\App\Services\WalletService::class)->getOrCreateWallet($user)->credit(
+                        $prepaidRefund,
+                        'ORDER_CANCELLED_REFUND',
+                        "Prepaid net refund (less GST fee) for Order #{$order->order_number}",
+                        $order->id
                     );
+                    $refundStatus = 'processed';
+                } else {
+                    // Trigger Direct Gateway Refund via Razorpay API back to Original Payment Method
+                    try {
+                        $targetRef = $order->payment_reference ?: $order->order_number;
+                        $razorpay = app(\App\Services\RazorpayService::class);
+                        $rzResult = $razorpay->createRefund(
+                            $targetRef,
+                            $prepaidRefund,
+                            "Prepaid Cancellation Refund for Order #{$order->order_number} (Less GST Fee)"
+                        );
 
-                    if (!empty($rzResult['success'])) {
-                        $refundStatus = ($rzResult['refund_status'] === 'success' || $rzResult['refund_status'] === 'processed') ? 'processed' : 'pending';
-                        $refundRef = $rzResult['razorpay_refund_id'] ?? ('RFD-' . time());
+                        if (!empty($rzResult['success'])) {
+                            $refundStatus = ($rzResult['refund_status'] === 'success' || $rzResult['refund_status'] === 'processed') ? 'processed' : 'pending';
+                            $refundRef = $rzResult['razorpay_refund_id'] ?? ('RFD-' . time());
+                        }
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning("Direct Razorpay Refund attempt error for #{$order->order_number}: " . $e->getMessage());
+                        $refundStatus = 'pending';
                     }
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning("Direct Razorpay Refund attempt error for #{$order->order_number}: " . $e->getMessage());
-                    $refundStatus = 'pending';
                 }
-            } else {
-                $refundStatus = 'none';
+            } elseif ($walletRefund > 0) {
+                $refundStatus = 'processed';
             }
+
+            // Dual Refund Amounts & Statuses recorded in OrderCancellation table
+            $totalRefundRecorded = $walletRefund + $prepaidRefund;
+            $recordedMethod = ($walletRefund > 0 && $prepaidRefund > 0) 
+                ? 'dual' 
+                : ($walletRefund > 0 ? 'wallet' : ($prepaidRefund > 0 ? ($refundMethod ?: 'original_source') : 'none'));
 
             // Record in order_cancellations table
             $cancellation = \App\Models\OrderCancellation::create([
-                'order_id'            => $order->id,
-                'user_id'             => $user ? $user->id : $order->user_id,
-                'cancelled_by_type'   => 'customer',
-                'cancelled_by_id'     => $user ? $user->id : null,
-                'cancellation_reason' => $reason,
-                'cancellation_fee'    => $summary['cancellation_fee'],
-                'refund_amount'       => $summary['net_refund'],
-                'refund_status'       => $refundStatus,
-                'refund_method'       => $refundMethod ?: 'original_source',
-                'refund_upi_id'       => $upiId,
-                'payment_reference'   => $refundRef,
+                'order_id'             => $order->id,
+                'user_id'              => $user ? $user->id : $order->user_id,
+                'cancelled_by_type'    => 'customer',
+                'cancelled_by_id'      => $user ? $user->id : null,
+                'cancellation_reason'  => $reason,
+                'cancellation_fee'     => $summary['cancellation_fee'],
+                'wallet_refund_amount' => $walletRefund,
+                'online_refund_amount' => $prepaidRefund,
+                'refund_amount'        => $totalRefundRecorded,
+                'refund_status'        => $refundStatus,
+                'online_refund_status' => $prepaidRefund > 0 ? $refundStatus : 'none',
+                'refund_method'        => $recordedMethod,
+                'refund_upi_id'        => $upiId,
+                'payment_reference'    => $refundRef,
+                'razorpay_refund_id'   => $refundRef,
             ]);
 
             // Restore product & option stocks
             $this->restoreOrderProductStocks($order);
 
-            // Update order status
-            $this->updateOrderStatus($order, 'cancelled', "Cancelled by customer (Prepaid direct refund to payment source): {$reason}");
+            // Update order status & log details
+            if ($summary['prepaid_online_paid'] > 0) {
+                $statusNotes = "Cancelled by customer: ₹{$walletRefund} refunded to Wallet, ₹{$prepaidRefund} refunded to Payment Source (GST Fee: ₹{$summary['cancellation_fee']}). Reason: {$reason}";
+            } elseif ($walletRefund > 0) {
+                $statusNotes = "Cancelled by customer: ₹{$walletRefund} refunded to Wallet. Reason: {$reason}";
+            } else {
+                $statusNotes = "Cancelled by customer (Unpaid online order cancelled free). Reason: {$reason}";
+            }
+            $this->updateOrderStatus($order, 'cancelled', $statusNotes);
+
+            // Trigger WhatsApp Order Cancelled Notification
+            try {
+                app(\App\Services\WhatsAppService::class)->sendOrderCancelled($cancellation);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("[OrderService] WhatsApp Order Cancelled notification failed: " . $e->getMessage());
+            }
 
             return $cancellation;
         });
@@ -201,19 +277,33 @@ class OrderService
 
         return DB::transaction(function () use ($order, $reason) {
             $user = $order->user;
+            $walletRefund = (float) ($order->wallet_amount_used ?? 0);
+
+            // Credit 100% of wallet amount used back to customer's wallet if wallet was used
+            if ($walletRefund > 0 && $user) {
+                app(\App\Services\WalletService::class)->getOrCreateWallet($user)->credit(
+                    $walletRefund,
+                    'ORDER_CANCELLED_REFUND',
+                    "100% Wallet refund for cancelled COD + Wallet Order #{$order->order_number}",
+                    $order->id
+                );
+            }
 
             $cancellation = \App\Models\OrderCancellation::updateOrCreate(
                 ['order_id' => $order->id],
                 [
-                    'user_id'             => $order->user_id,
-                    'cancelled_by_type'   => 'customer',
-                    'cancelled_by_id'     => Auth::id() ?: $order->user_id,
-                    'cancellation_reason' => $reason,
-                    'cancellation_fee'    => 0.00, // 100% Free for COD
-                    'refund_amount'       => 0.00,
-                    'refund_status'       => 'none',
-                    'refund_method'       => 'none',
-                    'payment_status'      => 'waived',
+                    'user_id'              => $order->user_id,
+                    'cancelled_by_type'    => 'customer',
+                    'cancelled_by_id'      => Auth::id() ?: $order->user_id,
+                    'cancellation_reason'  => $reason,
+                    'cancellation_fee'     => 0.00, // 100% Free for COD
+                    'wallet_refund_amount' => $walletRefund,
+                    'online_refund_amount' => 0.00,
+                    'refund_amount'        => $walletRefund,
+                    'refund_status'        => $walletRefund > 0 ? 'processed' : 'none',
+                    'online_refund_status' => 'none',
+                    'refund_method'        => $walletRefund > 0 ? 'wallet' : 'none',
+                    'payment_status'       => 'waived',
                 ]
             );
 
@@ -221,7 +311,17 @@ class OrderService
             $this->restoreOrderProductStocks($order);
 
             // Update order status
-            $this->updateOrderStatus($order, 'cancelled', "Cancelled by customer (100% Free COD Cancellation): {$reason}");
+            $statusNotes = $walletRefund > 0 
+                ? "Cancelled by customer (100% Free COD Cancellation): ₹{$walletRefund} refunded to Wallet. Reason: {$reason}"
+                : "Cancelled by customer (100% Free COD Cancellation): {$reason}";
+            $this->updateOrderStatus($order, 'cancelled', $statusNotes);
+
+            // Trigger WhatsApp Order Cancelled Notification
+            try {
+                app(\App\Services\WhatsAppService::class)->sendOrderCancelled($cancellation);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("[OrderService] WhatsApp Order Cancelled notification failed: " . $e->getMessage());
+            }
 
             return $cancellation;
         });
@@ -290,6 +390,13 @@ class OrderService
             // Update order status
             $adminName = $adminUser ? $adminUser->name : 'Store Admin';
             $this->updateOrderStatus($order, 'cancelled', "Cancelled by Store Admin ({$adminName}): {$reason}" . ($adminNotes ? " - Notes: {$adminNotes}" : ''));
+
+            // Trigger WhatsApp Order Cancelled Notification
+            try {
+                app(\App\Services\WhatsAppService::class)->sendOrderCancelled($cancellation);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("[OrderService] WhatsApp Order Cancelled notification failed: " . $e->getMessage());
+            }
 
             return $cancellation;
         });

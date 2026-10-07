@@ -11,7 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `orders` MODIFY `payment_method` VARCHAR(50) NOT NULL DEFAULT 'cod'");
+        if (\Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+            \Illuminate\Support\Facades\DB::statement("ALTER TABLE `orders` MODIFY `payment_method` VARCHAR(50) NOT NULL DEFAULT 'cod'");
+        }
     }
 
     /**
@@ -19,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `orders` MODIFY `payment_method` ENUM('cod', 'online') NOT NULL DEFAULT 'cod'");
+        if (\Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+            \Illuminate\Support\Facades\DB::statement("ALTER TABLE `orders` MODIFY `payment_method` ENUM('cod', 'online') NOT NULL DEFAULT 'cod'");
+        }
     }
 };

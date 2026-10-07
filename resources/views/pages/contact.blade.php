@@ -151,8 +151,18 @@
                 </span>
             </div>
 
+            @php
+                $heroTitle = $data['hero_title'] ?? ('Get in Touch with ' . $storeName);
+                $titleParts = explode(' ', $heroTitle);
+                $lastWord = count($titleParts) > 1 ? array_pop($titleParts) : '';
+                $firstPart = implode(' ', $titleParts);
+            @endphp
             <h1 class="fw-bolder mb-3 text-dark" style="letter-spacing: -0.03em; font-size: clamp(1.6rem, 4vw, 2.4rem); color: #0f172a; line-height: 1.25;">
-                Get in Touch with <span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{{ $storeName }}</span>
+                @if($lastWord)
+                    {{ $firstPart }} <span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{{ $lastWord }}</span>
+                @else
+                    {{ $heroTitle }}
+                @endif
             </h1>
 
             <p class="text-muted fs-5 mb-0 mx-auto" style="line-height: 1.65; max-width: 640px; font-size: clamp(0.92rem, 2.5vw, 1.15rem) !important;">

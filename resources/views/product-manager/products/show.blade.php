@@ -264,6 +264,43 @@
             </div>
         </div>
 
+        @php
+            $optStocks = is_array($product->option_stocks) ? $product->option_stocks : (json_decode($product->option_stocks ?? '{}', true) ?: []);
+            $optTypeLabels = [
+                'size'        => 'Clothing Size',
+                'waist'       => 'Waist Size',
+                'color'       => 'Color',
+                'size_color'  => 'Color + Clothing Size (Double Variant)',
+                'waist_color' => 'Color + Waist Size (Double Variant)',
+                'custom'      => 'Custom Variant',
+            ];
+            $optTypeLabel = $optTypeLabels[strtolower($product->option_type ?? 'size')] ?? ucfirst($product->option_type ?? 'Variant');
+        @endphp
+        @if($product->has_options && !empty($optStocks))
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-sliders text-primary me-2"></i>Product Variants & Stock Breakdown
+                    </h6>
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-1">
+                        {{ $optTypeLabel }} ({{ count($optStocks) }})
+                    </span>
+                </div>
+                <div class="card-body p-3">
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach($optStocks as $optKey => $optQty)
+                            <div class="border rounded-3 px-3 py-2 bg-light d-inline-flex align-items-center gap-2">
+                                <span class="fw-bold text-dark small">{{ $optKey }}</span>
+                                <span class="badge rounded-pill {{ (int)$optQty > 5 ? 'bg-success' : ((int)$optQty > 0 ? 'bg-warning text-dark' : 'bg-danger') }}">
+                                    {{ (int)$optQty }} in stock
+                                </span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <!-- Product Stock Movement Audit Trail -->
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
             <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">

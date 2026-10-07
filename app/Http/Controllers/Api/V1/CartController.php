@@ -2,51 +2,80 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Models\Cart;
 use App\Models\Product;
 use App\Models\Setting;
+use App\Services\CartService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CartController extends BaseApiController
 {
-    /**
-     * Helper to calculate cart totals for JSON response.
-     */
-    protected function calculateCartTotals(array $cart): array
+    protected CartService $cartService;
+
+    public function __construct(CartService $cartService)
     {
+        $this->cartService = $cartService;
+    }
+
+    /**
+     * Helper to format database Cart model into standardized mobile API response.
+     */
+    protected function formatCartResponse(Cart $cart): array
+    {
+        $cart->load(['items.product']);
+
         $items = [];
         $subtotal = 0.00;
         $totalSavings = 0.00;
 
-        foreach ($cart as $id => $details) {
-            $itemTotal = (float) $details['price'] * (int) $details['quantity'];
-            $subtotal += $itemTotal;
+        foreach ($cart->items as $item) {
+            $product = $item->product;
+            $unitPrice = (float) $item->unit_price;
+            $originalPrice = (float) ($product ? $product->price : $unitPrice);
+            $itemTotal = round($unitPrice * $item->quantity, 2);
 
-            if (!empty($details['original_price']) && $details['original_price'] > $details['price']) {
-                $totalSavings += ($details['original_price'] - $details['price']) * $details['quantity'];
+            if ($item->is_selected) {
+                $subtotal += $itemTotal;
+                if ($originalPrice > $unitPrice) {
+                    $totalSavings += ($originalPrice - $unitPrice) * $item->quantity;
+                }
             }
 
-            $items[] = array_merge($details, [
-                'cart_item_id' => (string) $id,
-                'total'        => round($itemTotal, 2),
-                'image_url'    => !empty($details['image']) ? asset('storage/' . $details['image']) : null,
-            ]);
+            $imgPath = $product ? ($product->main_image ?? $product->featured_image ?? null) : null;
+            $items[] = [
+                'cart_item_id'    => (int) $item->id,
+                'product_id'      => (int) $item->product_id,
+                'name'            => $product ? $product->name : 'Product',
+                'slug'            => $product ? $product->slug : '',
+                'quantity'        => (int) $item->quantity,
+                'price'           => $unitPrice,
+                'original_price'  => $originalPrice,
+                'image_url'       => $imgPath ? (str_starts_with($imgPath, 'http') ? $imgPath : asset('storage/' . $imgPath)) : null,
+                'selected_option' => $item->selected_option,
+                'is_selected'     => (bool) $item->is_selected,
+                'total'           => $itemTotal,
+                'in_stock'        => $product ? ($product->stock > 0 && $product->status === 'Active') : false,
+                'max_available'   => $product ? $product->getOptionStock($item->selected_option) : 0,
+            ];
         }
 
         $freeShippingMin = (float) Setting::get('free_shipping_min', 499);
-        $deliveryCharge = ($subtotal >= $freeShippingMin || count($cart) === 0) ? 0.00 : 40.00;
+        $deliveryCharge = ($subtotal >= $freeShippingMin || count($items) === 0) ? 0.00 : 40.00;
         $grandTotal = $subtotal + $deliveryCharge;
 
         return [
-            'items'                 => $items,
-            'item_count'            => count($items),
-            'total_quantity'        => array_sum(array_column($items, 'quantity')),
-            'subtotal'              => round($subtotal, 2),
-            'total_savings'         => round($totalSavings, 2),
-            'delivery_charge'       => round($deliveryCharge, 2),
-            'free_shipping_min'     => $freeShippingMin,
+            'cart_id'                 => (int) $cart->id,
+            'items'                   => $items,
+            'item_count'              => count($items),
+            'total_quantity'          => array_sum(array_column($items, 'quantity')),
+            'selected_items_count'    => count(array_filter($items, fn($i) => $i['is_selected'])),
+            'subtotal'                => round($subtotal, 2),
+            'total_savings'           => round($totalSavings, 2),
+            'delivery_charge'         => round($deliveryCharge, 2),
+            'free_shipping_min'       => $freeShippingMin,
             'qualifies_free_shipping' => ($subtotal >= $freeShippingMin),
-            'grand_total'           => round($grandTotal, 2),
+            'grand_total'             => round($grandTotal, 2),
         ];
     }
 
@@ -55,8 +84,8 @@ class CartController extends BaseApiController
      */
     public function index(Request $request): JsonResponse
     {
-        $cart = session()->get('cart', []);
-        return $this->sendResponse($this->calculateCartTotals($cart), 'Cart retrieved successfully.');
+        $cart = $this->cartService->getCart();
+        return $this->sendResponse($this->formatCartResponse($cart), 'Cart retrieved successfully.');
     }
 
     /**
@@ -68,96 +97,60 @@ class CartController extends BaseApiController
             'product_id'      => 'required|exists:products,id',
             'quantity'        => 'required|integer|min:1',
             'selected_option' => 'nullable|string',
+            'is_buy_now'      => 'nullable|boolean',
         ]);
 
-        $product = Product::findOrFail($request->product_id);
+        $result = $this->cartService->addProduct(
+            (int) $request->product_id,
+            (int) $request->quantity,
+            $request->selected_option,
+            (bool) $request->input('is_buy_now', false)
+        );
 
-        if ($product->status !== 'Active') {
-            return $this->sendError('Product is currently unavailable.', [], 400);
+        if (!($result['success'] ?? false)) {
+            return $this->sendError($result['message'] ?? 'Unable to add product to cart.', [], 400);
         }
 
-        $selectedOption = $request->selected_option;
-        $price = (float) $product->selling_price;
-        $originalPrice = (float) $product->price;
-
-        // Check variant option price if selected
-        if ($selectedOption && !empty($product->options) && is_array($product->options)) {
-            foreach ($product->options as $option) {
-                if (isset($option['name']) && $option['name'] === $selectedOption) {
-                    if (!empty($option['price'])) {
-                        $price = (float) $option['price'];
-                    }
-                    break;
-                }
-            }
-        }
-
-        // Cart Key: product_id + option
-        $cartKey = $product->id . ($selectedOption ? '_' . md5($selectedOption) : '');
-        $cart = session()->get('cart', []);
-
-        if (isset($cart[$cartKey])) {
-            $cart[$cartKey]['quantity'] += (int) $request->quantity;
-        } else {
-            $cart[$cartKey] = [
-                'product_id'      => $product->id,
-                'name'            => $product->name,
-                'slug'            => $product->slug,
-                'quantity'        => (int) $request->quantity,
-                'price'           => $price,
-                'original_price'  => $originalPrice,
-                'image'           => $product->featured_image,
-                'selected_option' => $selectedOption,
-            ];
-        }
-
-        session()->put('cart', $cart);
-
+        $cart = $this->cartService->getCart();
         return $this->sendResponse(
-            $this->calculateCartTotals($cart),
-            "{$product->name} added to cart."
+            $this->formatCartResponse($cart),
+            $result['message'] ?? 'Product added to bag.'
         );
     }
 
     /**
      * Update Quantity of a Cart Item.
      */
-    public function update(Request $request, string $itemId): JsonResponse
+    public function update(Request $request, int $itemId): JsonResponse
     {
         $request->validate([
-            'quantity' => 'required|integer|min:1',
+            'quantity' => 'required|integer|min:0',
         ]);
 
-        $cart = session()->get('cart', []);
+        $result = $this->cartService->updateQuantity($itemId, (int) $request->quantity);
 
-        if (!isset($cart[$itemId])) {
-            return $this->sendError('Cart item not found.', [], 404);
+        if (!($result['success'] ?? false)) {
+            return $this->sendError($result['message'] ?? 'Unable to update cart quantity.', [], 400);
         }
 
-        $cart[$itemId]['quantity'] = (int) $request->quantity;
-        session()->put('cart', $cart);
-
+        $cart = $this->cartService->getCart();
         return $this->sendResponse(
-            $this->calculateCartTotals($cart),
-            'Cart updated successfully.'
+            $this->formatCartResponse($cart),
+            $result['message'] ?? 'Cart updated successfully.'
         );
     }
 
     /**
      * Remove an Item from Cart.
      */
-    public function remove(string $itemId): JsonResponse
+    public function remove(int $itemId): JsonResponse
     {
-        $cart = session()->get('cart', []);
+        $removed = $this->cartService->removeItem($itemId);
 
-        if (isset($cart[$itemId])) {
-            unset($cart[$itemId]);
-            session()->put('cart', $cart);
-        }
-
+        $cart = $this->cartService->getCart();
         return $this->sendResponse(
-            $this->calculateCartTotals($cart),
-            'Item removed from cart.'
+            $this->formatCartResponse($cart),
+            $removed ? 'Item removed from bag.' : 'Item not found in bag.'
         );
     }
 
@@ -166,10 +159,29 @@ class CartController extends BaseApiController
      */
     public function clear(): JsonResponse
     {
-        session()->forget('cart');
+        $this->cartService->clearCart();
+        $cart = $this->cartService->getCart();
         return $this->sendResponse(
-            $this->calculateCartTotals([]),
+            $this->formatCartResponse($cart),
             'Cart cleared successfully.'
+        );
+    }
+
+    /**
+     * Toggle Item Selection Checkbox (for selective checkout in mobile apps).
+     */
+    public function toggleSelect(Request $request, int $itemId): JsonResponse
+    {
+        $request->validate([
+            'is_selected' => 'nullable|boolean',
+        ]);
+
+        $this->cartService->toggleSelect($itemId, $request->has('is_selected') ? (bool) $request->is_selected : null);
+        $cart = $this->cartService->getCart();
+
+        return $this->sendResponse(
+            $this->formatCartResponse($cart),
+            'Cart selection updated.'
         );
     }
 }

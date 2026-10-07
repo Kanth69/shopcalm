@@ -26,3 +26,4 @@ Thumbs.db
 # Scratch & Temporary files
 scratch/
 scratch_*.php
+/public/downloads/*.apk

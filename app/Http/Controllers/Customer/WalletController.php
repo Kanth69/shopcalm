@@ -23,6 +23,15 @@ class WalletController extends Controller
         $user = Auth::user();
         $wallet = $this->walletService->getOrCreateWallet($user);
 
+        // Fetch dynamic wallet settings
+        $signupBonus = WalletService::getSignupBonus();
+        $firstReward = WalletService::getFirstOrderReward();
+        $secondReward = WalletService::getSecondOrderReward();
+        $thirdReward = WalletService::getThirdOrderReward();
+        $totalPotentialReward = $firstReward + $secondReward + $thirdReward;
+        $isReferralActive = WalletService::isReferralProgramActive();
+        $isSignupBonusActive = WalletService::isSignupBonusActive();
+
         // Fetch referred friends and their delivery milestones
         $referredWallets = Wallet::where('referred_by', $user->id)
             ->with(['user.orders' => function ($q) {
@@ -31,14 +40,14 @@ class WalletController extends Controller
             ->latest()
             ->get();
 
-        $friendsStats = $referredWallets->map(function ($friendWallet) {
+        $friendsStats = $referredWallets->map(function ($friendWallet) use ($firstReward, $secondReward, $thirdReward) {
             $friendUser = $friendWallet->user;
             $deliveredOrdersCount = $friendUser ? $friendUser->orders->count() : 0;
 
             $totalEarnedFromFriend = 0.00;
-            if ($deliveredOrdersCount >= 1) $totalEarnedFromFriend += 100.00;
-            if ($deliveredOrdersCount >= 2) $totalEarnedFromFriend += 50.00;
-            if ($deliveredOrdersCount >= 3) $totalEarnedFromFriend += 25.00;
+            if ($deliveredOrdersCount >= 1) $totalEarnedFromFriend += $firstReward;
+            if ($deliveredOrdersCount >= 2) $totalEarnedFromFriend += $secondReward;
+            if ($deliveredOrdersCount >= 3) $totalEarnedFromFriend += $thirdReward;
 
             return (object) [
                 'friend_name' => $friendUser?->name ?? 'Friend',
@@ -58,8 +67,9 @@ class WalletController extends Controller
         $transactions = $wallet->transactions()->latest()->paginate(12);
 
         // Shareable referral URL
+        $storeName = \App\Models\Setting::get('store_name', 'ShopCalm');
         $referralUrl = route('register', ['ref' => $wallet->referral_code]);
-        $whatsappShareText = urlencode("Hey! Shop on ShopCalm and get ₹50 instant wallet credit on your first order! Use my referral code {$wallet->referral_code} or click here: {$referralUrl}");
+        $whatsappShareText = urlencode("Hey! Shop on {$storeName} and get ₹" . number_format($signupBonus, 0) . " instant wallet credit on your signup! Use my referral code {$wallet->referral_code} or click here: {$referralUrl}");
 
         return view('customer.account.wallet', compact(
             'wallet',
@@ -68,7 +78,14 @@ class WalletController extends Controller
             'totalReferralEarnings',
             'transactions',
             'referralUrl',
-            'whatsappShareText'
+            'whatsappShareText',
+            'signupBonus',
+            'firstReward',
+            'secondReward',
+            'thirdReward',
+            'totalPotentialReward',
+            'isReferralActive',
+            'isSignupBonusActive'
         ));
     }
 }

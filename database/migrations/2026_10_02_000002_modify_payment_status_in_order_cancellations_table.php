@@ -12,7 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (Schema::hasColumn('order_cancellations', 'payment_status')) {
+        if (Schema::hasColumn('order_cancellations', 'payment_status') && DB::getDriverName() !== 'sqlite') {
             DB::statement("ALTER TABLE order_cancellations MODIFY payment_status VARCHAR(50) DEFAULT 'pending' NULL");
         }
     }
@@ -22,7 +22,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        if (Schema::hasColumn('order_cancellations', 'payment_status')) {
+        if (Schema::hasColumn('order_cancellations', 'payment_status') && DB::getDriverName() !== 'sqlite') {
             DB::statement("ALTER TABLE order_cancellations MODIFY payment_status ENUM('pending', 'paid', 'failed', 'dropped') DEFAULT 'pending'");
         }
     }

@@ -96,7 +96,7 @@
                 </div>
                 <div class="col-5 border-start ps-4 d-flex flex-column justify-content-center">
                     <div class="text-muted small fw-bold text-uppercase mb-1">Payment & Collection</div>
-                    @if(strtoupper($order->payment_method) === 'COD' && $order->payment_status !== 'paid')
+                    @if(strtoupper($order->payment_method) === 'COD' && $order->payment_status !== 'paid' && $order->total_amount > 0)
                         <div class="p-2.5 rounded-3 bg-warning bg-opacity-15 border border-warning text-center">
                             <span class="badge bg-warning text-dark fw-bold mb-1">CASH ON DELIVERY</span>
                             <div class="h5 fw-bolder text-dark mb-0">Collect: ₹{{ number_format($order->total_amount, 2) }}</div>

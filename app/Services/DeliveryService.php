@@ -30,7 +30,8 @@ class DeliveryService
         // Query database
         $record = Pincode::where('pincode', $pincode)->first();
 
-        if (!$record || !$record->is_serviceable) {
+        // If explicitly disabled by store admin, mark unserviceable
+        if ($record && !$record->is_serviceable) {
             return [
                 'success' => true,
                 'is_serviceable' => false,
@@ -39,37 +40,53 @@ class DeliveryService
             ];
         }
 
-        $deliveryDays = $record->delivery_days ?? 3;
-        $deliveryDate = $record->getEstimatedDeliveryDate();
-        $deliveryText = $record->getEstimatedDeliveryText();
-
         $freeShippingMin = (float) Setting::get('free_shipping_min', 499);
-
         $isCodFeeEnabled = Setting::get('cod_fee_enabled', '1');
         $isCodFeeActive = ($isCodFeeEnabled === '1' || $isCodFeeEnabled === 'true' || $isCodFeeEnabled === true || $isCodFeeEnabled === 1);
 
-        $codFee = 0.00;
-        if ($isCodFeeActive && $record->is_cod_available) {
-            $codFee = ($record->cod_fee !== null)
-                ? (float) $record->cod_fee
-                : (float) Setting::get('cod_flat_fee', 40.00);
+        if ($record) {
+            $deliveryDays = $record->delivery_days ?? 3;
+            $deliveryDate = $record->getEstimatedDeliveryDate();
+            $deliveryText = $record->getEstimatedDeliveryText();
+            $city = $record->city;
+            $state = $record->state;
+            $locationText = "{$record->city}, {$record->pincode}";
+            $isCodAvailable = (bool)$record->is_cod_available;
+            $deliveryCharge = (float)$record->delivery_charge;
+            $codFee = 0.00;
+            if ($isCodFeeActive && $isCodAvailable) {
+                $codFee = ($record->cod_fee !== null)
+                    ? (float) $record->cod_fee
+                    : (float) Setting::get('cod_flat_fee', 40.00);
+            }
+        } else {
+            // Standard Pan-India delivery fallback for any valid Indian PIN code
+            $deliveryDays = 4;
+            $deliveryDate = Carbon::now()->addDays($deliveryDays);
+            $deliveryText = $deliveryDate->format('l, d M');
+            $city = "PIN {$pincode}";
+            $state = 'India';
+            $locationText = "PIN {$pincode}";
+            $isCodAvailable = true;
+            $deliveryCharge = 40.00;
+            $codFee = $isCodFeeActive ? (float) Setting::get('cod_flat_fee', 40.00) : 0.00;
         }
 
         return [
             'success' => true,
             'is_serviceable' => true,
-            'pincode' => $record->pincode,
-            'city' => $record->city,
-            'state' => $record->state,
-            'location_text' => "{$record->city}, {$record->pincode}",
+            'pincode' => $pincode,
+            'city' => $city,
+            'state' => $state,
+            'location_text' => $locationText,
             'delivery_days' => $deliveryDays,
             'estimated_delivery' => $deliveryText,
             'estimated_date_iso' => $deliveryDate->toISOString(),
-            'is_cod_available' => (bool)$record->is_cod_available,
-            'delivery_charge' => (float)$record->delivery_charge,
+            'is_cod_available' => $isCodAvailable,
+            'delivery_charge' => $deliveryCharge,
             'cod_fee' => $codFee,
             'free_shipping_min' => $freeShippingMin,
-            'message' => "Delivery available to {$record->city} by {$deliveryText}!",
+            'message' => "Delivery available to {$locationText} by {$deliveryText}!",
         ];
     }
 

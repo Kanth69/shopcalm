@@ -293,7 +293,7 @@
                 </div>
 
                 <!-- 3. Payment Mode Badge -->
-                @if(strtolower($order->payment_method) === 'cod')
+                @if(strtolower($order->payment_method) === 'cod' && $order->total_amount > 0)
                     <div class="payment-banner payment-cod">
                         <div class="payment-title">💵 COD: COLLECT ₹{{ number_format($order->total_amount, 2) }}</div>
                         <div class="payment-sub">CASH ON DELIVERY &bull; VERIFY EXACT AMOUNT</div>
@@ -301,7 +301,7 @@
                 @else
                     <div class="payment-banner payment-prepaid">
                         <div class="payment-title">✅ PREPAID ORDER: ₹0.00</div>
-                        <div class="payment-sub">PAID ONLINE VIA {{ strtoupper($order->payment_method) }} &bull; DO NOT COLLECT CASH</div>
+                        <div class="payment-sub">PAID VIA {{ strtoupper(($order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0)) ? 'SHOPCALM WALLET (100% PAID)' : $order->payment_method) }} &bull; DO NOT COLLECT CASH</div>
                     </div>
                 @endif
 

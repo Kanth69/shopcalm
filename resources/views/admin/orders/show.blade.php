@@ -46,7 +46,7 @@
                 <div class="d-flex align-items-center gap-2.5 text-muted flex-wrap" style="font-size: 0.82rem;">
                     <span><i class="bi bi-calendar3 me-1 text-primary"></i> Placed on {{ $order->created_at->format('d M, Y \a\t h:i A') }}</span>
                     <span>&bull;</span>
-                    <span><i class="bi bi-credit-card me-1 text-success"></i> Payment: <strong class="text-dark">{{ strtoupper($order->payment_method ?? 'COD') }}</strong></span>
+                    <span><i class="bi bi-credit-card me-1 text-success"></i> Payment: <strong class="text-dark">{{ ($order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0)) ? 'WALLET (100% PAID)' : strtoupper($order->payment_method ?? 'COD') }}</strong></span>
                     <span>&bull;</span>
                     <span>Payment Status: <strong class="text-dark text-capitalize">{{ $order->payment_status ?? 'Paid' }}</strong></span>
                 </div>

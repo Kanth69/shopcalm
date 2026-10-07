@@ -64,6 +64,7 @@
             </div>
         </div>
 
+        @if($isReferralActive)
         {{-- Share & Earn Viral Referral Card (Voucher & Reward Flagship Layout) --}}
         <div class="col-lg-7">
             <div class="card border-0 shadow-xs rounded-4 h-100 p-3.5 p-md-4 position-relative overflow-hidden" 
@@ -81,13 +82,13 @@
                         </div>
                         <div class="min-w-0">
                             <div class="d-flex align-items-center gap-2 flex-wrap mb-0.5">
-                                <h6 class="fw-bolder text-dark mb-0" style="font-size: 1rem; letter-spacing: -0.01em;">Refer Friends & Earn ₹175!</h6>
+                                <h6 class="fw-bolder text-dark mb-0" style="font-size: 1rem; letter-spacing: -0.01em;">Refer Friends &amp; Earn ₹{{ number_format($totalPotentialReward, 0) }}!</h6>
                                 <span class="badge rounded-pill px-2 py-0.5 fw-bold" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-size: 0.68rem;">
                                     <i class="bi bi-stars"></i> UNLIMITED
                                 </span>
                             </div>
                             <p class="text-secondary small mb-0" style="font-size: 0.78rem; line-height: 1.4;">
-                                They get <strong class="text-success">₹50 welcome bonus</strong>, you earn <strong class="text-primary">₹175 across 3 orders</strong>!
+                                They get <strong class="text-success">₹{{ number_format($signupBonus, 0) }} welcome bonus</strong>, you earn <strong class="text-primary">₹{{ number_format($totalPotentialReward, 0) }} across 3 orders</strong>!
                             </p>
                         </div>
                     </div>
@@ -132,8 +133,75 @@
                 </div>
             </div>
         </div>
+        @else
+        {{-- Referral Program Disabled: Wallet Benefits & Usage Overview Card --}}
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-xs rounded-4 h-100 p-3.5 p-md-4 position-relative overflow-hidden" 
+                 style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
+                
+                <div class="d-flex align-items-center gap-2.5 mb-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0 shadow-xs" 
+                         style="width: 44px; height: 44px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
+                        <i class="bi bi-shield-check fs-5"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bolder text-dark mb-0.5" style="font-size: 1rem; letter-spacing: -0.01em;">How Your {{ \App\Models\Setting::get('store_name', 'ShopCalm') }} Wallet Works</h6>
+                        <p class="text-secondary small mb-0" style="font-size: 0.78rem;">Enjoy instant refunds, 1-click checkout, and total flexibility on all your purchases.</p>
+                    </div>
+                </div>
+
+                <div class="row g-2.5">
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded-3 bg-light border h-100">
+                            <div class="d-flex align-items-center gap-2 mb-1 text-primary">
+                                <i class="bi bi-lightning-charge-fill fs-6"></i>
+                                <span class="fw-bold small text-dark">Instant Cancellation Refunds</span>
+                            </div>
+                            <div class="text-secondary small" style="font-size: 0.74rem; line-height: 1.35;">
+                                Cancelled order amounts are credited 100% back to your wallet instantly without waiting 3-5 bank days.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded-3 bg-light border h-100">
+                            <div class="d-flex align-items-center gap-2 mb-1 text-success">
+                                <i class="bi bi-cart-check-fill fs-6"></i>
+                                <span class="fw-bold small text-dark">1-Click Fast Checkout</span>
+                            </div>
+                            <div class="text-secondary small" style="font-size: 0.74rem; line-height: 1.35;">
+                                Use your available wallet balance at checkout for instant 1-click order placement without OTP delays.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded-3 bg-light border h-100">
+                            <div class="d-flex align-items-center gap-2 mb-1 text-warning">
+                                <i class="bi bi-credit-card-2-front-fill fs-6"></i>
+                                <span class="fw-bold small text-dark">Prepaid &amp; COD Combination</span>
+                            </div>
+                            <div class="text-secondary small" style="font-size: 0.74rem; line-height: 1.35;">
+                                Combine wallet balance with COD or Online Payments to pay any remaining amount easily.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded-3 bg-light border h-100">
+                            <div class="d-flex align-items-center gap-2 mb-1 text-info">
+                                <i class="bi bi-shield-lock-fill fs-6"></i>
+                                <span class="fw-bold small text-dark">Zero Expiry Guarantee</span>
+                            </div>
+                            <div class="text-secondary small" style="font-size: 0.74rem; line-height: 1.35;">
+                                Your wallet credits never expire and remain 100% safe in your customer account forever.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
     </div>
 
+    @if($isReferralActive)
     {{-- 3-Tier Repeat Rewards Milestone Explainer Banner --}}
     <div class="card border-0 shadow-sm rounded-4 p-4" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
         <h6 class="fw-bold text-dark mb-3"><i class="bi bi-stars text-warning me-2"></i>How the 3-Tier Referral Reward Program Works:</h6>
@@ -142,7 +210,7 @@
                 <div class="p-3 rounded-3 bg-light border h-100 position-relative">
                     <div class="badge bg-primary text-white rounded-pill px-2.5 py-1 mb-2 fw-bold" style="font-size: 0.68rem;">Step 1: Welcome</div>
                     <div class="fw-bold text-dark small">Friend Registers</div>
-                    <p class="text-success fw-bold small mb-0 mt-1">Friend gets ₹50 Bonus</p>
+                    <p class="text-success fw-bold small mb-0 mt-1">Friend gets ₹{{ number_format($signupBonus, 0) }} Bonus</p>
                     <small class="text-muted d-block mt-0.5" style="font-size: 0.7rem;">Instant credit upon signup</small>
                 </div>
             </div>
@@ -150,7 +218,7 @@
                 <div class="p-3 rounded-3 bg-light border h-100 position-relative">
                     <div class="badge bg-success text-white rounded-pill px-2.5 py-1 mb-2 fw-bold" style="font-size: 0.68rem;">Step 2: 1st Order</div>
                     <div class="fw-bold text-dark small">1st Order Delivered</div>
-                    <p class="text-primary fw-bold small mb-0 mt-1">You get ₹100.00</p>
+                    <p class="text-primary fw-bold small mb-0 mt-1">You get ₹{{ number_format($firstReward, 2) }}</p>
                     <small class="text-muted d-block mt-0.5" style="font-size: 0.7rem;">Auto-credited on delivery</small>
                 </div>
             </div>
@@ -158,7 +226,7 @@
                 <div class="p-3 rounded-3 bg-light border h-100 position-relative">
                     <div class="badge bg-warning text-dark rounded-pill px-2.5 py-1 mb-2 fw-bold" style="font-size: 0.68rem;">Step 3: 2nd Order</div>
                     <div class="fw-bold text-dark small">2nd Order Delivered</div>
-                    <p class="text-primary fw-bold small mb-0 mt-1">You get ₹50.00</p>
+                    <p class="text-primary fw-bold small mb-0 mt-1">You get ₹{{ number_format($secondReward, 2) }}</p>
                     <small class="text-muted d-block mt-0.5" style="font-size: 0.7rem;">Repeat purchase bonus</small>
                 </div>
             </div>
@@ -166,7 +234,7 @@
                 <div class="p-3 rounded-3 bg-light border h-100 position-relative">
                     <div class="badge bg-info text-dark rounded-pill px-2.5 py-1 mb-2 fw-bold" style="font-size: 0.68rem;">Step 4: 3rd Order</div>
                     <div class="fw-bold text-dark small">3rd Order Delivered</div>
-                    <p class="text-primary fw-bold small mb-0 mt-1">You get ₹25.00</p>
+                    <p class="text-primary fw-bold small mb-0 mt-1">You get ₹{{ number_format($thirdReward, 2) }}</p>
                     <small class="text-muted d-block mt-0.5" style="font-size: 0.7rem;">Final loyalty milestone</small>
                 </div>
             </div>
@@ -188,9 +256,9 @@
                     <tr>
                         <th class="ps-4">Friend Name</th>
                         <th>Joined Date</th>
-                        <th class="text-center">1st Order (₹100)</th>
-                        <th class="text-center">2nd Order (₹50)</th>
-                        <th class="text-center">3rd Order (₹25)</th>
+                        <th class="text-center">1st Order (₹{{ number_format($firstReward, 0) }})</th>
+                        <th class="text-center">2nd Order (₹{{ number_format($secondReward, 0) }})</th>
+                        <th class="text-center">3rd Order (₹{{ number_format($thirdReward, 0) }})</th>
                         <th class="text-end pe-4">Total Earned</th>
                     </tr>
                 </thead>
@@ -208,21 +276,21 @@
                         <td class="text-secondary small">{{ $friend->joined_date ? $friend->joined_date->format('d M, Y') : 'N/A' }}</td>
                         <td class="text-center">
                             @if($friend->first_order_done)
-                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1"><i class="bi bi-check-circle-fill me-1"></i> Earned ₹100</span>
+                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1"><i class="bi bi-check-circle-fill me-1"></i> Earned ₹{{ number_format($firstReward, 0) }}</span>
                             @else
                                 <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1">Pending</span>
                             @endif
                         </td>
                         <td class="text-center">
                             @if($friend->second_order_done)
-                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1"><i class="bi bi-check-circle-fill me-1"></i> Earned ₹50</span>
+                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1"><i class="bi bi-check-circle-fill me-1"></i> Earned ₹{{ number_format($secondReward, 0) }}</span>
                             @else
                                 <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1">Pending</span>
                             @endif
                         </td>
                         <td class="text-center">
                             @if($friend->third_order_done)
-                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1"><i class="bi bi-check-circle-fill me-1"></i> Earned ₹25</span>
+                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1"><i class="bi bi-check-circle-fill me-1"></i> Earned ₹{{ number_format($thirdReward, 0) }}</span>
                             @else
                                 <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1">Pending</span>
                             @endif
@@ -236,6 +304,7 @@
             </table>
         </div>
     </div>
+    @endif
     @endif
 
     {{-- Passbook / Transaction History --}}
@@ -292,4 +361,14 @@
     </div>
 
 </div>
+@push('styles')
+<style>
+@media (max-width: 576px) {
+    .row.g-2\.5 { gap: 0.5rem; }
+    .col-sm-6 .p-3 { padding: 0.75rem; }
+    .card-body .text-secondary { font-size: 0.78rem; }
+    .card-body .fw-bold { font-size: 0.9rem; }
+}
+</style>
+@endpush
 @endsection

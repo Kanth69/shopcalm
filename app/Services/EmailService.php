@@ -15,9 +15,9 @@ class EmailService
 
     public function __construct()
     {
-        $this->apiKey      = config('services.brevo.api_key', env('BREVO_API_KEY', ''));
-        $this->senderEmail = config('services.brevo.sender_email') ?: config('mail.from.address', 'support@shopcalm.in');
-        $this->senderName  = config('services.brevo.sender_name') ?: config('app.name', 'ShopCalm');
+        $this->apiKey      = \App\Models\Setting::get('brevo_api_key') ?: (config('services.brevo.api_key') ?: env('BREVO_API_KEY', ''));
+        $this->senderEmail = \App\Models\Setting::get('brevo_sender_email') ?: (config('services.brevo.sender_email') ?: config('mail.from.address', 'support@shopcalm.in'));
+        $this->senderName  = \App\Models\Setting::get('brevo_sender_name') ?: (config('services.brevo.sender_name') ?: config('app.name', 'ShopCalm'));
     }
 
     /**
@@ -189,5 +189,129 @@ class EmailService
             Log::error("[EmailService] Failed to generate/send order confirmation email for #{$order->order_number}: " . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Fetch real-time Brevo Account Quota, Plan, and Remaining Email Credits.
+     */
+    public function getAccountQuota(): array
+    {
+        if (empty($this->apiKey)) {
+            return [
+                'connected'     => false,
+                'message'       => 'Brevo REST API Key is not configured in Store Settings.',
+                'credits'       => 0,
+                'credits_label' => '0 (Key Missing)',
+                'plan_type'     => 'Not Configured',
+                'account_email' => 'N/A',
+                'company_name'  => 'N/A',
+                'smtp_enabled'  => false,
+            ];
+        }
+
+        try {
+            $request = Http::withHeaders([
+                'api-key' => $this->apiKey,
+                'Accept'  => 'application/json',
+            ]);
+
+            if (app()->environment('local')) {
+                $request = $request->withoutVerifying();
+            }
+
+            $response = $request->get('https://api.brevo.com/v3/account');
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                $email = $data['email'] ?? 'N/A';
+                $company = $data['companyName'] ?? ($data['firstName'] ?? 'Brevo Account');
+                $plans = $data['plan'] ?? [];
+
+                $credits = 0;
+                $planType = 'Free';
+                $creditsType = 'daily';
+
+                if (!empty($plans) && is_array($plans)) {
+                    foreach ($plans as $p) {
+                        if (isset($p['credits'])) {
+                            $credits += (int) $p['credits'];
+                        }
+                        if (isset($p['type'])) {
+                            $planType = ucfirst($p['type']);
+                        }
+                        if (isset($p['creditsType'])) {
+                            $creditsType = $p['creditsType'];
+                        }
+                    }
+                }
+
+                $smtpEnabled = (bool) ($data['relay']['enabled'] ?? true);
+
+                return [
+                    'connected'     => true,
+                    'account_email' => $email,
+                    'company_name'  => $company,
+                    'plan_type'     => $planType,
+                    'credits'       => $credits,
+                    'credits_label' => number_format($credits) . ($creditsType === 'sendLimit' ? ' / day' : ' credits'),
+                    'credits_type'  => $creditsType,
+                    'smtp_enabled'  => $smtpEnabled,
+                    'sender_email'  => $this->senderEmail,
+                    'sender_name'   => $this->senderName,
+                ];
+            }
+
+            $errorMsg = $response->json('message') ?? ('HTTP ' . $response->status());
+            return [
+                'connected'     => false,
+                'message'       => "Brevo API Error: {$errorMsg}",
+                'credits'       => 0,
+                'credits_label' => 'Error',
+                'plan_type'     => 'API Key Invalid',
+                'account_email' => 'N/A',
+                'company_name'  => 'N/A',
+                'smtp_enabled'  => false,
+            ];
+
+        } catch (\Throwable $e) {
+            return [
+                'connected'     => false,
+                'message'       => 'Connection exception: ' . $e->getMessage(),
+                'credits'       => 0,
+                'credits_label' => 'Error',
+                'plan_type'     => 'Offline',
+                'account_email' => 'N/A',
+                'company_name'  => 'N/A',
+                'smtp_enabled'  => false,
+            ];
+        }
+    }
+
+    /**
+     * Send a Live Test Email to verify Brevo API connectivity.
+     */
+    public function sendTestEmail(string $recipientEmail): array
+    {
+        $storeName = \App\Models\Setting::get('store_name', 'ShopCalm');
+        $subject = "{$storeName} - Brevo REST Email Service Verification";
+        $html = "
+            <div style='font-family: Arial, sans-serif; padding: 24px; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px;'>
+                <div style='text-align: center; margin-bottom: 20px;'>
+                    <h2 style='color: #4f46e5; margin: 0;'>{$storeName}</h2>
+                    <p style='color: #64748b; font-size: 14px; margin-top: 4px;'>Transactional Email Delivery Test</p>
+                </div>
+                <div style='background-color: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 20px;'>
+                    <p style='margin: 0 0 8px 0; color: #1e293b; font-weight: bold;'>✓ Brevo Email Service Connected Successfully!</p>
+                    <p style='margin: 0; color: #475569; font-size: 14px;'>This automated verification email confirms that your store's transactional email delivery via Brevo REST API is live and operational.</p>
+                </div>
+                <div style='font-size: 13px; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 12px;'>
+                    <p style='margin: 4px 0;'><strong>Sender:</strong> {$this->senderName} (&lt;{$this->senderEmail}&gt;)</p>
+                    <p style='margin: 4px 0;'><strong>Timestamp:</strong> " . now()->format('d M Y, h:i:s A T') . "</p>
+                </div>
+            </div>
+        ";
+
+        return $this->sendEmail($recipientEmail, $subject, $html);
     }
 }

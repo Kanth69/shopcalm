@@ -19,6 +19,9 @@ class CartController extends Controller
 
     public function index()
     {
+        // Clear transient Buy Now session so permanent DB cart is displayed
+        \Illuminate\Support\Facades\Session::forget('buy_now_data');
+
         $cart = $this->cartService->getCart();
         $subtotal = $this->cartService->subtotal();
         
@@ -106,11 +109,38 @@ class CartController extends Controller
     {
         $isBuyNow = $request->has('buy_now') && (bool) $request->buy_now;
 
+        if ($isBuyNow) {
+            $result = $this->cartService->setBuyNowSession(
+                (int) $request->product_id,
+                (int) ($request->quantity ?? 1),
+                $request->selected_option
+            );
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success'      => $result['success'],
+                    'message'      => $result['message'] ?? 'Proceeding to checkout...',
+                    'cart_count'   => $this->cartService->allItemsCount(),
+                    'product_id'   => (int) $request->product_id,
+                    'redirect_url' => $result['success'] ? route('checkout.index') : null,
+                ]);
+            }
+
+            if ($result['success']) {
+                return redirect()->route('checkout.index');
+            }
+
+            return back()->with('toast', [
+                'type'    => $result['type'],
+                'title'   => $result['title'],
+                'message' => $result['message']
+            ]);
+        }
+
         $result = $this->cartService->addProduct(
             (int) $request->product_id,
             (int) ($request->quantity ?? 1),
-            $request->selected_option,
-            $isBuyNow
+            $request->selected_option
         );
 
         if ($request->ajax()) {
@@ -118,23 +148,19 @@ class CartController extends Controller
             $cartItem = $cart->items->where('product_id', $request->product_id)->first();
 
             return response()->json([
-                'success' => $result['success'],
-                'message' => $result['message'] ?? 'Product added to bag successfully!',
-                'cart_count' => $this->cartService->totalItems(),
-                'product_id' => (int) $request->product_id,
-                'item_id' => $cartItem ? $cartItem->id : null,
-                'quantity' => $cartItem ? $cartItem->quantity : 0,
-                'redirect_url' => ($request->has('buy_now') && $result['success']) ? route('checkout.index') : null,
+                'success'      => $result['success'],
+                'message'      => $result['message'] ?? 'Product added to bag successfully!',
+                'cart_count'   => $this->cartService->allItemsCount(),
+                'product_id'   => (int) $request->product_id,
+                'item_id'      => $cartItem ? $cartItem->id : null,
+                'quantity'     => $cartItem ? $cartItem->quantity : 0,
+                'redirect_url' => null,
             ]);
         }
 
-        if ($request->has('buy_now') && $result['success']) {
-            return redirect()->route('checkout.index');
-        }
-
         return back()->with('toast', [
-            'type' => $result['type'],
-            'title' => $result['title'],
+            'type'    => $result['type'],
+            'title'   => $result['title'],
             'message' => $result['message']
         ]);
     }

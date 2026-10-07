@@ -117,7 +117,8 @@
         'confirmed'        => ['bg'=>'#dbeafe','color'=>'#1e40af','border'=>'#93c5fd','stripe'=>'#3b82f6','icon'=>'bi-check2-square','label'=>'Confirmed'],
         'processing'       => ['bg'=>'#dbeafe','color'=>'#1e40af','border'=>'#93c5fd','stripe'=>'#3b82f6','icon'=>'bi-gear-fill','label'=>'Processing'],
         'cancelled'        => ['bg'=>'#fee2e2','color'=>'#991b1b','border'=>'#fca5a5','stripe'=>'#ef4444','icon'=>'bi-x-circle-fill','label'=>'Cancelled'],
-        'pending'          => ['bg'=>'#fef3c7','color'=>'#92400e','border'=>'#fde68a','stripe'=>'#f59e0b','icon'=>'bi-clock-fill','label'=>'Pending'],
+        'failed'           => ['bg'=>'#fee2e2','color'=>'#991b1b','border'=>'#fca5a5','stripe'=>'#ef4444','icon'=>'bi-exclamation-octagon-fill','label'=>'Payment Failed'],
+        'pending'          => ['bg'=>'#fef3c7','color'=>'#92400e','border'=>'#fde68a','stripe'=>'#f59e0b','icon'=>'bi-clock-fill','label'=>'Pending Payment'],
     ];
     $st = $map[$s] ?? $map['pending'];
 
@@ -141,7 +142,7 @@
         'delivered'        => 5,
     ];
 
-    $stepIdx = $stageRankMap[$s] ?? false;
+    $stepIdx = in_array($s, ['cancelled', 'failed']) ? false : ($stageRankMap[$s] ?? false);
 
     $thumbs     = $order->items->take(3)->map(fn($i) => $i->product?->main_image)->filter();
     $extraCount = max(0, $order->items->count() - 3);
@@ -193,7 +194,9 @@
                         <div class="d-flex align-items-center gap-3 flex-wrap" style="font-size:0.78rem; color:#64748b;">
                             <span><i class="bi bi-calendar3 me-1 opacity-75"></i>{{ $order->created_at ? $order->created_at->format('d M Y') : '—' }}</span>
                             <span><i class="bi bi-bag me-1 opacity-75"></i>{{ $order->items->count() }} item{{ $order->items->count() !== 1 ? 's' : '' }}</span>
-                            @if($order->payment_method)
+                            @if($order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0))
+                            <span class="text-success fw-bold"><i class="bi bi-wallet2 me-1 opacity-75"></i>WALLET (100% PAID)</span>
+                            @elseif($order->payment_method)
                             <span><i class="bi bi-credit-card me-1 opacity-75"></i>{{ strtoupper($order->payment_method) }}</span>
                             @endif
                         </div>
@@ -204,7 +207,15 @@
                 <div class="d-flex align-items-center gap-3 ms-auto flex-wrap">
                     <div class="text-end">
                         <div class="fw-bold text-dark" style="font-size:1.05rem;">₹{{ number_format($order->total_amount, 2) }}</div>
-                        <div class="text-muted" style="font-size:0.72rem;">Total paid</div>
+                        <div class="text-muted" style="font-size:0.72rem;">
+                            @if($order->payment_status === 'paid')
+                                Total paid
+                            @elseif($order->payment_method === 'cod')
+                                Payable on Delivery
+                            @else
+                                Amount Unpaid
+                            @endif
+                        </div>
                     </div>
                     @if((\App\Models\Setting::get('allow_customer_cancellation', '1') == '1') && in_array($order->status, ['pending', 'confirmed']))
                         <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-2 fw-semibold" 
@@ -223,7 +234,7 @@
             </div>
 
             {{-- ── Progress Tracker ── --}}
-            @if($s !== 'cancelled' && $stepIdx !== false)
+            @if($s !== 'cancelled' && $s !== 'failed' && $stepIdx !== false)
             <div class="mt-4 pt-3" style="border-top:1px dashed #e2e8f0;">
                 <div class="position-relative d-flex align-items-center justify-content-between" style="padding:0 2px;">
                     <div class="position-absolute" style="top:13px; left:14px; right:14px; height:3px; background:#e2e8f0; border-radius:99px; z-index:0;"></div>
@@ -262,6 +273,15 @@
                      style="background:#fee2e2; border:1px solid #fca5a5;">
                     <i class="bi bi-x-circle-fill" style="color:#dc2626; font-size:0.8rem;"></i>
                     <span style="color:#991b1b; font-size:0.78rem; font-weight:600;">Order Cancelled</span>
+                </div>
+            </div>
+
+            @elseif($s === 'failed')
+            <div class="mt-3 pt-3 d-flex align-items-center gap-2" style="border-top:1px dashed #e2e8f0;">
+                <div class="rounded-pill px-3 py-1 d-inline-flex align-items-center gap-2"
+                     style="background:#fee2e2; border:1px solid #fca5a5;">
+                    <i class="bi bi-exclamation-octagon-fill" style="color:#dc2626; font-size:0.8rem;"></i>
+                    <span style="color:#991b1b; font-size:0.78rem; font-weight:600;">Payment Failed (Order Not Placed)</span>
                 </div>
             </div>
             @endif
@@ -351,16 +371,28 @@
                             </div>
                         </div>
 
-                        <!-- Prepaid Direct Refund Notice -->
-                        <div id="prepaidRefundOptionsSection" class="mb-3" style="display: none;">
-                            <div class="alert alert-info border-0 rounded-3 p-3 shadow-xs bg-light border" style="border-color: #cbd5e1 !important; background: #f8fafc;">
-                                <div class="fw-bold text-dark small mb-1">
-                                    <i class="bi bi-shield-check text-primary me-1"></i> Direct Refund to Original Payment Source (Razorpay)
+                        <!-- Prepaid Direct Refund & Wallet Breakdown Notice (Amazon Style) -->
+                        <div id="refundDestinationsSection" class="mb-3" style="display: none;">
+                            <div class="small fw-bold text-dark text-uppercase mb-2" style="font-size: 0.68rem; letter-spacing: 0.05em;">Refund Destination Breakdown:</div>
+                            
+                            <!-- Wallet Refund Box -->
+                            <div id="walletRefundBox" class="p-2.5 rounded-3 mb-2 bg-success bg-opacity-10 border border-success border-opacity-25" style="display: none;">
+                                <div class="d-flex justify-content-between align-items-center mb-0.5">
+                                    <span class="fw-bold text-dark small"><i class="bi bi-wallet2 text-success me-1"></i> ShopCalm Wallet (100% Refund)</span>
+                                    <span class="fw-bold text-success font-monospace" id="walletRefundText">₹0.00</span>
                                 </div>
-                                <div class="text-secondary small" style="font-size: 0.78rem; line-height: 1.4;">
-                                    Net refund will be credited automatically back to your original payment instrument (UPI / Credit Card / Debit Card / NetBanking) via <strong>Razorpay</strong> within 3-5 business days.
-                                </div>
+                                <div class="text-muted small" style="font-size: 0.72rem;"><i class="bi bi-lightning-charge-fill text-warning me-1"></i>Credited <strong>instantly</strong> back to your wallet balance</div>
                             </div>
+
+                            <!-- Online Razorpay Refund Box -->
+                            <div id="onlineRefundBox" class="p-2.5 rounded-3 bg-info bg-opacity-10 border border-info border-opacity-25" style="display: none;">
+                                <div class="d-flex justify-content-between align-items-center mb-0.5">
+                                    <span class="fw-bold text-dark small"><i class="bi bi-shield-check text-primary me-1"></i> Original Payment Instrument (Razorpay)</span>
+                                    <span class="fw-bold text-primary font-monospace" id="onlineRefundText">₹0.00</span>
+                                </div>
+                                <div class="text-muted small" style="font-size: 0.72rem;"><i class="bi bi-clock-history text-info me-1"></i>Credited to UPI / Card / Bank within 3-5 business days</div>
+                            </div>
+                            
                             <input type="hidden" name="refund_method" id="refund_method_input" value="original_source">
                         </div>
 
@@ -441,17 +473,36 @@ function openCancellationModal(orderId, orderNumber) {
                 if (data.is_cod && !data.is_paid) {
                     // COD Order
                     document.getElementById('prepaidFinancialSummaryBox').style.display = 'none';
-                    document.getElementById('prepaidRefundOptionsSection').style.display = 'none';
+                    document.getElementById('refundDestinationsSection').style.display = 'none';
                     document.getElementById('codNoticeSection').style.display = 'block';
                     document.getElementById('confirmCancelBtn').innerText = 'Confirm Free Cancellation';
                 } else {
-                    // Prepaid / Paid Order
+                    // Prepaid / Wallet / Dual Order
                     document.getElementById('prepaidFinancialSummaryBox').style.display = 'block';
-                    document.getElementById('prepaidRefundOptionsSection').style.display = 'block';
+                    document.getElementById('refundDestinationsSection').style.display = 'block';
                     document.getElementById('codNoticeSection').style.display = 'none';
-                    document.getElementById('refundOrPayableLabel').innerText = 'Net Refund Amount:';
+
+                    const walletRef = data.summary.wallet_refund || 0;
+                    const onlineRef = data.summary.net_refund || 0;
+
+                    if (walletRef > 0) {
+                        document.getElementById('walletRefundBox').style.display = 'block';
+                        document.getElementById('walletRefundText').innerText = '₹' + walletRef.toFixed(2);
+                    } else {
+                        document.getElementById('walletRefundBox').style.display = 'none';
+                    }
+
+                    if (data.summary.prepaid_online_paid > 0) {
+                        document.getElementById('onlineRefundBox').style.display = 'block';
+                        document.getElementById('onlineRefundText').innerText = '₹' + onlineRef.toFixed(2);
+                    } else {
+                        document.getElementById('onlineRefundBox').style.display = 'none';
+                    }
+
+                    const totalNetRefund = walletRef + onlineRef;
+                    document.getElementById('refundOrPayableLabel').innerText = 'Total Net Refund:';
                     document.getElementById('refundOrPayableLabel').className = 'text-success';
-                    document.getElementById('refundOrPayableAmount').innerText = '₹' + data.summary.net_refund.toFixed(2);
+                    document.getElementById('refundOrPayableAmount').innerText = '₹' + totalNetRefund.toFixed(2);
                     document.getElementById('refundOrPayableAmount').className = 'text-success font-monospace fs-6';
                     document.getElementById('confirmCancelBtn').innerText = 'Confirm Cancellation & Refund';
                 }

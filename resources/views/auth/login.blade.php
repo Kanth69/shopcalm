@@ -9,8 +9,8 @@
 
     <div class="auth-card-container">
         <div class="auth-header text-center">
-            <a href="{{ route('home') }}" class="auth-logo d-inline-flex justify-content-center mb-3 text-decoration-none">
-                <x-logo height="38" />
+            <a href="{{ route('home') }}" class="auth-logo d-inline-flex align-items-center justify-content-center mb-3 text-decoration-none">
+                <x-logo height="40" />
             </a>
             <h2 class="auth-title">{{ $pageTitle }}</h2>
             <p class="auth-subtitle">{{ $isAdminLogin ? 'Authorized personnel access' : 'Enter details to access your account' }}</p>
@@ -59,8 +59,8 @@
             </button>
 
             @if (!$isAdminLogin)
-                <div class="auth-footer mt-4">
-                    New to Shopcalm? <a href="{{ route('register') }}">Create Account</a>
+                <div class="auth-footer mt-3">
+                    New to ShopCalm? <a href="{{ route('register') }}">Create Account</a>
                 </div>
             @endif
         </form>
@@ -69,19 +69,20 @@
     <style>
         /* Modern Auth Styles */
         .auth-card-container {
-            padding: 10px 5px;
+            padding: 6px 4px;
         }
 
         .auth-header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
         }
 
         .auth-logo {
-            display: inline-flex;
-            align-items: center;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
             text-decoration: none;
-            margin-bottom: 20px;
+            margin-bottom: 14px;
         }
 
         .logo-w {
@@ -363,6 +364,46 @@
 
         .auth-footer a:hover {
             text-decoration: underline;
+        }
+
+        @media (max-width: 576px) {
+            .auth-card-container {
+                padding: 0;
+            }
+            .auth-header {
+                margin-bottom: 16px;
+            }
+            .auth-logo {
+                margin-bottom: 10px;
+            }
+            .auth-logo .logo-shopcalm-svg {
+                width: 34px !important;
+                height: 34px !important;
+            }
+            .auth-logo .logo-shopcalm-wordmark {
+                font-size: 1.38rem !important;
+            }
+            .auth-title {
+                font-size: 20px;
+            }
+            .auth-subtitle {
+                font-size: 13px;
+            }
+            .auth-form {
+                gap: 14px;
+            }
+            .auth-input {
+                padding: 10px 14px;
+                font-size: 15px;
+                border-radius: 11px;
+                min-height: 44px;
+            }
+            .auth-submit-btn {
+                padding: 12px 16px;
+                font-size: 15px;
+                border-radius: 11px;
+                min-height: 46px;
+            }
         }
     </style>
 </x-guest-layout>

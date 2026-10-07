@@ -1,3 +1,7 @@
+@php
+    $rawStoreName = \App\Models\Setting::get('store_name', 'ShopCalm');
+    $brandDisplay = str_ireplace('shopcalm', 'ShopCalm', $rawStoreName);
+@endphp
 {{-- Registration Sub-Step 1: Personal Details (Name, Phone, Email, Referral) --}}
 <div id="reg-substep-details">
     <div class="auth-header text-center position-relative">
@@ -5,7 +9,7 @@
             <i class="bi bi-arrow-left"></i>
             <span>Back</span>
         </button>
-        <a href="{{ route('home') }}" class="auth-logo d-inline-flex justify-content-center mb-2 text-decoration-none">
+        <a href="{{ route('home') }}" class="auth-logo d-inline-flex align-items-center justify-content-center mb-2 text-decoration-none">
             <x-logo height="36" />
         </a>
 
@@ -46,7 +50,7 @@
         <div class="form-row">
             <div class="form-group flex-1">
                 <label for="register_mobile">Mobile Number <span class="text-danger">*</span></label>
-                <input id="register_mobile" class="auth-input" type="tel" name="mobile_number" value="{{ old('mobile_number') }}" required pattern="[0-9]{10}" maxlength="10" placeholder="10-digit number">
+                <input id="register_mobile" class="auth-input" type="tel" name="mobile_number" value="{{ old('mobile_number') }}" required pattern="[0-9]{10}" maxlength="10" inputmode="numeric" placeholder="10-digit mobile number">
             </div>
 
             <div class="form-group flex-1">
@@ -71,7 +75,7 @@
         </button>
 
         <p class="text-center text-muted mt-3 mb-0" style="font-size: 0.76rem; line-height: 1.5;">
-            By signing up, you agree to {{ \App\Models\Setting::get('store_name', 'ShopCalm') }}'s 
+            By signing up, you agree to {{ $brandDisplay }}'s 
             <a href="{{ route('page.terms') }}" target="_blank" class="text-primary text-decoration-none fw-semibold">Terms & Conditions</a> 
             and 
             <a href="{{ route('page.privacy') }}" target="_blank" class="text-primary text-decoration-none fw-semibold">Privacy Policy</a>.
@@ -86,7 +90,7 @@
             <i class="bi bi-arrow-left"></i>
             <span>Back</span>
         </button>
-        <a href="{{ route('home') }}" class="auth-logo d-inline-flex justify-content-center mb-2 text-decoration-none">
+        <a href="{{ route('home') }}" class="auth-logo d-inline-flex align-items-center justify-content-center mb-2 text-decoration-none">
             <x-logo height="36" />
         </a>
 

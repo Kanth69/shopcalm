@@ -36,7 +36,7 @@ class PageController extends Controller
             'content' => 'required',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string',
-            'is_active' => 'boolean',
+            'is_active' => 'nullable',
         ]);
 
         $page->update([

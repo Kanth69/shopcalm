@@ -4,7 +4,7 @@
 
 @section('content')
 
-<div class="container my-3 my-md-4">
+<div class="container-fluid my-3 my-md-4">
     {{-- Breadcrumb --}}
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb small mb-0">
@@ -133,6 +133,7 @@
 <style>
 .category-card {
     transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
+    padding: 1.5rem; /* increase inner spacing for touch targets */
 }
 .category-pill-link:hover .category-card {
     transform: translateY(-5px);
@@ -153,6 +154,32 @@
 #catFilterInput:focus {
     background: rgba(255, 255, 255, 0.2) !important;
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35) !important;
+}
+/* Mobile specific adjustments */
+@media (max-width: 576px) {
+    .category-card {
+        padding: 1rem;
+        border: 1px solid #e2e8f0 !important;
+    }
+    .category-icon-circle {
+        width: 56px !important;
+        height: 56px !important;
+        min-width: 56px !important;
+        font-size: 1.5rem !important;
+    }
+    .category-card .card-title {
+        font-size: 0.85rem !important;
+    }
+    .category-card .badge {
+        font-size: 0.65rem !important;
+    }
+    .explore-cta-text {
+        font-size: 0.75rem !important;
+    }
+    #catFilterInput {
+        width: 100% !important;
+        max-width: none !important;
+    }
 }
 </style>
 

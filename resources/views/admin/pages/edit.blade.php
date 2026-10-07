@@ -41,65 +41,192 @@
                         @php $aboutData = json_decode(old('content', $page->content), true) ?: []; @endphp
                         
                         <div class="alert alert-primary border-0 rounded-3 mb-4 small">
-                            <i class="bi bi-info-circle me-2"></i> Structured Corporate Page: Update hero messaging, mission statement, and strategic focus cards below.
+                            <i class="bi bi-info-circle me-2"></i> Structured Corporate Page: Update hero messaging, stats counters, company story, mission, customer commitments, and service focus pillars below.
                         </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-dark small">Hero Title <span class="text-danger">*</span></label>
-                            <input type="text" id="about_hero_title" class="form-control" value="{{ $aboutData['hero_title'] ?? 'Welcome to ShopCalm' }}" placeholder="e.g. Elevating Quality Commerce">
+
+                        <!-- 1. Hero & Tagline -->
+                        <div class="card border rounded-3 p-3 mb-4 bg-white shadow-2xs">
+                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-megaphone text-primary me-2"></i>Hero & Introduction</h6>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-dark small">Hero Title <span class="text-danger">*</span></label>
+                                <input type="text" id="about_hero_title" class="form-control" value="{{ $aboutData['hero_title'] ?? 'About ShopCalm' }}" placeholder="e.g. About ShopCalm">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-dark small">Corporate Tagline</label>
+                                <input type="text" id="about_tagline" class="form-control" value="{{ $aboutData['tagline'] ?? 'Simple. Transparent. Trustworthy.' }}" placeholder="e.g. Simple. Transparent. Trustworthy.">
+                            </div>
+                            <div class="mb-0">
+                                <label class="form-label fw-bold text-dark small">Supporting Overview Text</label>
+                                <textarea id="about_supporting_text" class="form-control" rows="3" placeholder="Overview paragraph shown below the hero...">{{ $aboutData['supporting_text'] ?? '' }}</textarea>
+                            </div>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-dark small">Corporate Tagline</label>
-                            <input type="text" id="about_tagline" class="form-control" value="{{ $aboutData['tagline'] ?? '' }}" placeholder="e.g. Curated with Purpose & Precision">
-                        </div>
-                        
-                        <div class="mb-4">
-                            <label class="form-label fw-bold text-dark small">Supporting Overview Text</label>
-                            <textarea id="about_supporting_text" class="form-control" rows="3" placeholder="Overview paragraph shown below the hero...">{{ strip_tags(str_replace('</p>', "\n", $aboutData['supporting_text'] ?? '')) }}</textarea>
-                        </div>
-                        
-                        <hr class="my-4">
-                        
-                        <div class="mb-4">
-                            <label class="form-label fw-bold text-dark small">Our Mission & Core Philosophy</label>
-                            <textarea id="about_mission" class="form-control" rows="3" placeholder="Mission statement...">{{ strip_tags(str_replace('</p>', "\n", $aboutData['mission'] ?? '')) }}</textarea>
-                        </div>
-                        
-                        <hr class="my-4">
-                        
-                        <h6 class="fw-bold text-dark mb-3">Focus Areas & Pillars</h6>
-                        <div id="about_focus_container">
-                            @foreach($aboutData['focus_areas'] ?? [] as $index => $focus)
-                                <div class="card bg-light border rounded-3 mb-3 focus-item p-3">
-                                    <div class="mb-2">
-                                        <label class="form-label small text-muted fw-bold">Pillar Title #{{ $index + 1 }}</label>
-                                        <input type="text" class="form-control fw-bold focus-title" value="{{ $focus['title'] ?? '' }}" placeholder="Pillar Title">
+
+                        <!-- 2. Core Stats Counters -->
+                        <div class="card border rounded-3 p-3 mb-4 bg-white shadow-2xs">
+                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-bar-chart-fill text-success me-2"></i>Key Performance Metrics & Stats (4 Counters)</h6>
+                            <div class="row g-3">
+                                @php $stats = $aboutData['stats'] ?? []; @endphp
+                                @for($s = 0; $s < 4; $s++)
+                                    <div class="col-md-6">
+                                        <div class="p-3 border rounded-2 bg-light">
+                                            <div class="fw-bold small text-muted mb-2">Counter #{{ $s + 1 }}</div>
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <label class="form-label small text-muted">Value (e.g. 50K+)</label>
+                                                    <input type="text" id="about_stat_{{ $s }}_val" class="form-control form-control-sm fw-bold" value="{{ $stats[$s]['value'] ?? '' }}">
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="form-label small text-muted">Label (e.g. Happy Customers)</label>
+                                                    <input type="text" id="about_stat_{{ $s }}_lbl" class="form-control form-control-sm" value="{{ $stats[$s]['label'] ?? '' }}">
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label class="form-label small text-muted fw-bold">Pillar Description</label>
-                                        <input type="text" class="form-control focus-desc" value="{{ $focus['desc'] ?? '' }}" placeholder="Description of this pillar...">
+                                @endfor
+                            </div>
+                        </div>
+
+                        <!-- 3. Our Story & Journey -->
+                        <div class="card border rounded-3 p-3 mb-4 bg-white shadow-2xs">
+                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-compass-fill text-primary me-2"></i>Our Story & Journey</h6>
+                            @php $story = $aboutData['our_story'] ?? []; @endphp
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold text-dark">Section Badge</label>
+                                    <input type="text" id="about_story_badge" class="form-control form-control-sm" value="{{ $story['badge'] ?? 'Our Journey' }}">
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label small fw-bold text-dark">Heading Title</label>
+                                    <input type="text" id="about_story_title" class="form-control form-control-sm" value="{{ $story['title'] ?? 'How ShopCalm Came to Life' }}">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-bold text-dark">Subtitle Tagline</label>
+                                    <input type="text" id="about_story_subtitle" class="form-control form-control-sm" value="{{ $story['subtitle'] ?? 'Born out of the desire to eliminate shopping anxiety and clutter.' }}">
+                                </div>
+                            </div>
+
+                            <label class="form-label small fw-bold text-dark mb-1">Story Paragraphs (3 Paragraphs)</label>
+                            @php $storyParas = $story['paragraphs'] ?? []; @endphp
+                            <div class="mb-3">
+                                <textarea id="about_story_p1" class="form-control form-control-sm mb-2" rows="2" placeholder="Paragraph 1...">{{ $storyParas[0] ?? '' }}</textarea>
+                                <textarea id="about_story_p2" class="form-control form-control-sm mb-2" rows="2" placeholder="Paragraph 2...">{{ $storyParas[1] ?? '' }}</textarea>
+                                <textarea id="about_story_p3" class="form-control form-control-sm" rows="2" placeholder="Paragraph 3...">{{ $storyParas[2] ?? '' }}</textarea>
+                            </div>
+
+                            <div class="p-3 border rounded-2 bg-light">
+                                <div class="fw-bold small text-dark mb-2">Right Callout Box</div>
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label small text-muted">Box Title</label>
+                                        <input type="text" id="about_story_quote_title" class="form-control form-control-sm" value="{{ $story['quote_title'] ?? 'Built for Peace of Mind' }}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small text-muted">Guarantee Badge</label>
+                                        <input type="text" id="about_story_guarantee_badge" class="form-control form-control-sm" value="{{ $story['guarantee_badge'] ?? 'Customer-First Guarantee' }}">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small text-muted">Guiding Question / Quote</label>
+                                        <textarea id="about_story_quote_text" class="form-control form-control-sm" rows="2">{{ $story['quote_text'] ?? '' }}</textarea>
                                     </div>
                                 </div>
-                            @endforeach
+                            </div>
                         </div>
-                        
+
+                        <!-- 4. Mission Statement -->
+                        <div class="card border rounded-3 p-3 mb-4 bg-white shadow-2xs">
+                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-bullseye text-danger me-2"></i>Our Mission & Core Philosophy</h6>
+                            <textarea id="about_mission" class="form-control" rows="3" placeholder="Mission statement HTML or text...">{{ $aboutData['mission'] ?? '' }}</textarea>
+                        </div>
+
+                        <!-- 5. 4 Core Customer Commitments -->
+                        <div class="card border rounded-3 p-3 mb-4 bg-white shadow-2xs">
+                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-shield-lock-fill text-success me-2"></i>Our 4 Core Customer Commitments</h6>
+                            @php $commitments = $aboutData['trust_commitments'] ?? []; @endphp
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-dark">Section Title</label>
+                                    <input type="text" id="about_commitments_title" class="form-control form-control-sm" value="{{ $commitments['title'] ?? 'Our 4 Core Customer Commitments' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-dark">Section Subtitle</label>
+                                    <input type="text" id="about_commitments_subtitle" class="form-control form-control-sm" value="{{ $commitments['subtitle'] ?? '' }}">
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                @php $cItems = $commitments['items'] ?? []; @endphp
+                                @for($c = 0; $c < 4; $c++)
+                                    <div class="col-md-6">
+                                        <div class="p-3 border rounded-2 bg-light">
+                                            <div class="fw-bold small text-muted mb-2">Commitment #{{ $c + 1 }}</div>
+                                            <div class="mb-2">
+                                                <label class="form-label small text-muted">Title</label>
+                                                <input type="text" id="about_commit_{{ $c }}_title" class="form-control form-control-sm fw-bold" value="{{ $cItems[$c]['title'] ?? '' }}">
+                                            </div>
+                                            <div>
+                                                <label class="form-label small text-muted">Description</label>
+                                                <input type="text" id="about_commit_{{ $c }}_desc" class="form-control form-control-sm" value="{{ $cItems[$c]['desc'] ?? '' }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endfor
+                            </div>
+                        </div>
+
+                        <!-- 6. Focus Areas & Service Standards -->
+                        <div class="card border rounded-3 p-3 mb-4 bg-white shadow-2xs">
+                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-award-fill text-primary me-2"></i>Focus Areas / Service Pillars (6 Items)</h6>
+                            <div class="row g-3" id="about_focus_container">
+                                @php $focusList = $aboutData['focus_areas'] ?? []; @endphp
+                                @for($f = 0; $f < 6; $f++)
+                                    <div class="col-md-6">
+                                        <div class="p-3 border rounded-2 bg-light focus-item h-100">
+                                            <div class="fw-bold small text-muted mb-2">Pillar #{{ $f + 1 }}</div>
+                                            <div class="mb-2">
+                                                <label class="form-label small text-muted">Title</label>
+                                                <input type="text" class="form-control form-control-sm fw-bold focus-title" value="{{ $focusList[$f]['title'] ?? '' }}" placeholder="e.g. Curated Authenticity">
+                                            </div>
+                                            <div>
+                                                <label class="form-label small text-muted">Description</label>
+                                                <textarea class="form-control form-control-sm focus-desc" rows="2" placeholder="Description of this pillar...">{{ $focusList[$f]['desc'] ?? '' }}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endfor
+                            </div>
+                        </div>
+
+                        <!-- 7. Call To Action -->
+                        <div class="card border rounded-3 p-3 mb-3 bg-white shadow-2xs">
+                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-lightning-charge-fill text-warning me-2"></i>Bottom Call to Action Banner</h6>
+                            @php $cta = $aboutData['cta'] ?? []; @endphp
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-dark">CTA Title</label>
+                                    <input type="text" id="about_cta_title" class="form-control form-control-sm" value="{{ $cta['title'] ?? 'Ready to Experience Great Shopping?' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-dark">CTA Subtitle</label>
+                                    <input type="text" id="about_cta_subtitle" class="form-control form-control-sm" value="{{ $cta['subtitle'] ?? 'Discover thousands of verified products with fast delivery and guaranteed satisfaction.' }}">
+                                </div>
+                            </div>
+                        </div>
+
                         <textarea id="page-content-json" name="content" class="d-none">{{ old('content', $page->content) }}</textarea>
 
                     @elseif($page->slug === 'contact-us')
                         @php $contactData = json_decode(old('content', $page->content), true) ?: []; @endphp
                         
                         <div class="alert alert-primary border-0 rounded-3 mb-4 small">
-                            <i class="bi bi-info-circle me-2"></i> Contact Page Template: Customize hero headers and information panel prompts.
+                            <i class="bi bi-info-circle me-2"></i> Contact Page Template: Customize hero headers, support prompts, and contact form titles.
                         </div>
                         
                         <div class="mb-3">
                             <label class="form-label fw-bold text-dark small">Hero Title</label>
-                            <input type="text" id="contact_hero_title" class="form-control" value="{{ $contactData['hero_title'] ?? 'Get in Touch' }}">
+                            <input type="text" id="contact_hero_title" class="form-control" value="{{ $contactData['hero_title'] ?? 'Get in Touch with ShopCalm' }}" placeholder="e.g. Get in Touch with ShopCalm">
                         </div>
                         <div class="mb-4">
                             <label class="form-label fw-bold text-dark small">Hero Subtitle</label>
-                            <textarea id="contact_hero_subtitle" class="form-control" rows="2">{{ $contactData['hero_subtitle'] ?? 'Have a question or need assistance? We\'re here to help.' }}</textarea>
+                            <textarea id="contact_hero_subtitle" class="form-control" rows="2">{{ $contactData['hero_subtitle'] ?? 'Have questions about your order, tracking, or products? Our dedicated support team is here to assist you 24/7.' }}</textarea>
                         </div>
                         
                         <hr class="my-4">
@@ -107,7 +234,7 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-bold text-dark small">Left Panel Title</label>
-                                <input type="text" id="contact_info_title" class="form-control" value="{{ $contactData['info_title'] ?? 'Contact Information' }}">
+                                <input type="text" id="contact_info_title" class="form-control" value="{{ $contactData['info_title'] ?? 'Customer Care & Support' }}">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold text-dark small">Form Header Title</label>
@@ -115,7 +242,7 @@
                             </div>
                             <div class="col-12">
                                 <label class="form-label fw-bold text-dark small">Left Panel Description</label>
-                                <textarea id="contact_info_subtitle" class="form-control" rows="2">{{ $contactData['info_subtitle'] ?? 'Fill up the form and our team will get back to you within 24 hours.' }}</textarea>
+                                <textarea id="contact_info_subtitle" class="form-control" rows="2">{{ $contactData['info_subtitle'] ?? 'Reach out through any channel below. Our customer support agents respond promptly.' }}</textarea>
                             </div>
                         </div>
                         
@@ -135,7 +262,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold text-dark small">Hero Subtitle</label>
-                                <input type="text" id="faq_hero_subtitle" class="form-control" value="{{ $faqData['hero_subtitle'] ?? 'Have questions? We\'re here to help you get the answers you need.' }}">
+                                <input type="text" id="faq_hero_subtitle" class="form-control" value="{{ $faqData['hero_subtitle'] ?? 'Find quick answers regarding shipping timelines, order tracking, payment methods, and authenticity guarantee.' }}">
                             </div>
                         </div>
                         
@@ -148,7 +275,7 @@
                                     $q = $faqData['faqs'][$i-1]['question'] ?? '';
                                     $a = $faqData['faqs'][$i-1]['answer'] ?? '';
                                     $cat = $faqData['faqs'][$i-1]['category'] ?? 'General';
-                                    $isVisible = ($i <= 5 || $q !== '' || $a !== '');
+                                    $isVisible = ($i <= 8 || $q !== '' || $a !== '');
                                 @endphp
                                 <div class="faq-section-block mb-3 p-3 border rounded-3 bg-light {{ $isVisible ? '' : 'd-none' }}" id="faq-block-{{ $i }}">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -187,35 +314,57 @@
                         <textarea id="page-content-json" name="content" class="d-none">{{ old('content', $page->content) }}</textarea>
 
                     @elseif(in_array($page->slug, ['terms-and-conditions', 'privacy-policy', 'shipping-policy', 'return-refund-policy', 'cancellation-policy']))
-                        @php $legalData = json_decode(old('content', $page->content), true) ?: []; @endphp
+                        @php 
+                            $legalData = json_decode(old('content', $page->content), true) ?: []; 
+                            $sections = $legalData['sections'] ?? [];
+                        @endphp
                         
                         <div class="alert alert-primary border-0 rounded-3 mb-4 small">
-                            <i class="bi bi-shield-check me-2"></i> Structured Legal Sections: Enter your section headings and policy clauses below.
+                            <i class="bi bi-shield-check me-2"></i> Structured Legal Sections: Enter your section headings and policy clauses below. Unused clause blocks will be omitted automatically.
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-dark small">Policy Hero Subtitle / Summary Tagline</label>
+                            <input type="text" id="legal_desc" class="form-control" value="{{ $legalData['desc'] ?? '' }}" placeholder="e.g. Rules, policies, and guidelines for using our store services.">
+                            <div class="form-text small text-muted">Displayed under the main policy title on the storefront.</div>
                         </div>
                         
                         <div class="mb-4">
-                            <label class="form-label fw-bold text-dark small">Preamble / Introductory Clause</label>
-                            <textarea id="legal_intro" class="form-control" rows="3" placeholder="Opening clause or general policy overview...">{{ $legalData['intro'] ?? '' }}</textarea>
+                            <label class="form-label fw-bold text-dark small">Preamble / Introductory Clause (Overview & Applicability)</label>
+                            <textarea id="legal_intro" class="form-control" rows="4" placeholder="Opening clause or general policy overview...">{{ $legalData['intro'] ?? '' }}</textarea>
                         </div>
                         
                         <hr class="my-4">
                         
                         <h6 class="fw-bold text-dark mb-3">Numbered Policy Clauses</h6>
-                        @for($i = 1; $i <= 10; $i++)
-                            <div class="legal-section-block mb-3 p-3 border rounded-3 bg-light">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="badge bg-white text-dark border font-monospace small">Clause Section #{{ $i }}</span>
+                        <div id="legal-clauses-container">
+                            @for($i = 1; $i <= 20; $i++)
+                                @php 
+                                    $cTitle = $sections[$i-1]['title'] ?? '';
+                                    $cContent = $sections[$i-1]['content'] ?? '';
+                                    $isClauseVisible = ($i <= max(3, count($sections)) || !empty($cTitle) || !empty($cContent));
+                                @endphp
+                                <div class="legal-section-block mb-3 p-3 border rounded-3 bg-light {{ $isClauseVisible ? '' : 'd-none' }}" id="legal-block-{{ $i }}">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge bg-white text-dark border font-monospace small">Clause Section #{{ $i }}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label small text-muted fw-bold">Section Heading</label>
+                                        <input type="text" id="legal_section_{{ $i }}_title" class="form-control fw-bold" value="{{ $cTitle }}" placeholder="e.g. {{ $i }}. Eligibility & Scope">
+                                    </div>
+                                    <div>
+                                        <label class="form-label small text-muted fw-bold">Clause Body</label>
+                                        <textarea id="legal_section_{{ $i }}_content" class="form-control" rows="4" placeholder="Full terms for this clause...">{{ $cContent }}</textarea>
+                                    </div>
                                 </div>
-                                <div class="mb-2">
-                                    <label class="form-label small text-muted fw-bold">Section Heading</label>
-                                    <input type="text" id="legal_section_{{ $i }}_title" class="form-control fw-bold" value="{{ $legalData['sections'][$i-1]['title'] ?? '' }}" placeholder="e.g. {{ $i }}. Eligibility & Scope">
-                                </div>
-                                <div>
-                                    <label class="form-label small text-muted fw-bold">Clause Body</label>
-                                    <textarea id="legal_section_{{ $i }}_content" class="form-control" rows="3" placeholder="Full terms for this clause...">{{ $legalData['sections'][$i-1]['content'] ?? '' }}</textarea>
-                                </div>
-                            </div>
-                        @endfor
+                            @endfor
+                        </div>
+
+                        <div class="text-center my-3">
+                            <button type="button" class="btn btn-outline-primary rounded-pill btn-sm px-3" onclick="showNextLegalBlock()">
+                                <i class="bi bi-plus-circle me-1"></i> Add Another Policy Clause
+                            </button>
+                        </div>
                         
                         <textarea id="page-content-json" name="content" class="d-none">{{ old('content', $page->content) }}</textarea>
 
@@ -297,6 +446,16 @@ function showNextFaqBlock() {
     }
 }
 
+function showNextLegalBlock() {
+    const hiddenBlocks = document.querySelectorAll('.legal-section-block.d-none');
+    if (hiddenBlocks.length > 0) {
+        hiddenBlocks[0].classList.remove('d-none');
+        hiddenBlocks[0].querySelector('input')?.focus();
+    } else {
+        alert('All 20 clause slots are active.');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('pageEditForm');
     const slug = '{{ $page->slug }}';
@@ -306,8 +465,61 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!jsonTarget) return;
 
         if (slug === 'about-us') {
+            // Stats
+            const stats = [];
+            for (let s = 0; s < 4; s++) {
+                const val = document.getElementById(`about_stat_${s}_val`)?.value.trim();
+                const lbl = document.getElementById(`about_stat_${s}_lbl`)?.value.trim();
+                const colors = ['#6366f1', '#10b981', '#0284c7', '#f59e0b'];
+                if (val || lbl) {
+                    stats.push({ value: val || '', label: lbl || '', color: colors[s] || '#6366f1' });
+                }
+            }
+
+            // Story Paragraphs
+            const p1 = document.getElementById('about_story_p1')?.value.trim();
+            const p2 = document.getElementById('about_story_p2')?.value.trim();
+            const p3 = document.getElementById('about_story_p3')?.value.trim();
+            const paragraphs = [p1, p2, p3].filter(p => !!p);
+
+            // Our Story Object
+            const ourStory = {
+                badge: document.getElementById('about_story_badge')?.value.trim() || 'Our Journey',
+                title: document.getElementById('about_story_title')?.value.trim() || '',
+                subtitle: document.getElementById('about_story_subtitle')?.value.trim() || '',
+                paragraphs: paragraphs,
+                quote_title: document.getElementById('about_story_quote_title')?.value.trim() || '',
+                quote_text: document.getElementById('about_story_quote_text')?.value.trim() || '',
+                guarantee_badge: document.getElementById('about_story_guarantee_badge')?.value.trim() || ''
+            };
+
+            // Customer Commitments Items
+            const commitItems = [];
+            const commitIcons = ['bi-patch-check-fill', 'bi-tag-fill', 'bi-shield-fill-check', 'bi-arrow-clockwise'];
+            const commitColors = ['#10b981', '#6366f1', '#06b6d4', '#8b5cf6'];
+            for (let c = 0; c < 4; c++) {
+                const cTitle = document.getElementById(`about_commit_${c}_title`)?.value.trim();
+                const cDesc = document.getElementById(`about_commit_${c}_desc`)?.value.trim();
+                if (cTitle || cDesc) {
+                    commitItems.push({
+                        title: cTitle || '',
+                        desc: cDesc || '',
+                        icon: commitIcons[c] || 'bi-patch-check-fill',
+                        color: commitColors[c] || '#6366f1'
+                    });
+                }
+            }
+
+            const trustCommitments = {
+                badge: 'Customer Guarantee',
+                title: document.getElementById('about_commitments_title')?.value.trim() || 'Our 4 Core Customer Commitments',
+                subtitle: document.getElementById('about_commitments_subtitle')?.value.trim() || '',
+                items: commitItems
+            };
+
+            // Focus Areas
             const focusAreas = [];
-            document.querySelectorAll('.focus-item').forEach(item => {
+            document.querySelectorAll('#about_focus_container .focus-item').forEach(item => {
                 const title = item.querySelector('.focus-title')?.value.trim();
                 const desc = item.querySelector('.focus-desc')?.value.trim();
                 if (title || desc) {
@@ -315,12 +527,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
+            // CTA
+            const cta = {
+                title: document.getElementById('about_cta_title')?.value.trim() || 'Ready to Experience Great Shopping?',
+                subtitle: document.getElementById('about_cta_subtitle')?.value.trim() || 'Discover thousands of verified products with fast delivery and guaranteed satisfaction.'
+            };
+
             const data = {
                 hero_title: document.getElementById('about_hero_title')?.value.trim() || '',
                 tagline: document.getElementById('about_tagline')?.value.trim() || '',
                 supporting_text: document.getElementById('about_supporting_text')?.value.trim() || '',
+                stats: stats,
+                our_story: ourStory,
                 mission: document.getElementById('about_mission')?.value.trim() || '',
-                focus_areas: focusAreas
+                trust_commitments: trustCommitments,
+                focus_areas: focusAreas,
+                cta: cta
             };
             jsonTarget.value = JSON.stringify(data);
 
@@ -365,7 +587,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } else if (['terms-and-conditions', 'privacy-policy', 'shipping-policy', 'return-refund-policy', 'cancellation-policy'].includes(slug)) {
             const sections = [];
-            for (let i = 1; i <= 10; i++) {
+            for (let i = 1; i <= 20; i++) {
                 const title = document.getElementById(`legal_section_${i}_title`)?.value.trim();
                 const content = document.getElementById(`legal_section_${i}_content`)?.value.trim();
                 if (title && content) {
@@ -373,6 +595,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             const data = {
+                desc: document.getElementById('legal_desc')?.value.trim() || '',
                 intro: document.getElementById('legal_intro')?.value.trim() || '',
                 sections: sections
             };

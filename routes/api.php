@@ -20,6 +20,7 @@ Route::prefix('v1')->group(function () {
     Route::prefix('auth')->group(function () {
         Route::post('/check-user', [AuthController::class, 'checkUser']);
         Route::post('/send-otp', [AuthController::class, 'sendOtp']);
+        Route::post('/send-whatsapp-otp', [AuthController::class, 'sendOtp']);
         Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
         Route::post('/login', [AuthController::class, 'login']);
         Route::post('/register', [AuthController::class, 'register']);
@@ -48,6 +49,7 @@ Route::prefix('v1')->group(function () {
         Route::patch('/update/{itemId}', [CartController::class, 'update']);
         Route::delete('/remove/{itemId}', [CartController::class, 'remove']);
         Route::delete('/clear', [CartController::class, 'clear']);
+        Route::patch('/toggle-select/{itemId}', [CartController::class, 'toggleSelect']);
     });
 
     // ── 4. CHECKOUT & ACCOUNT (Protected Sanctum Routes) ──
@@ -55,7 +57,9 @@ Route::prefix('v1')->group(function () {
 
         Route::prefix('checkout')->group(function () {
             Route::post('/validate', [CheckoutController::class, 'validateCheckout']);
+            Route::post('/apply-coupon', [CheckoutController::class, 'applyCoupon']);
             Route::post('/place-order', [CheckoutController::class, 'placeOrder']);
+            Route::post('/verify-payment', [CheckoutController::class, 'verifyPayment']);
             Route::post('/orders/{order}/switch-to-cod', [CheckoutController::class, 'switchToCod']);
         });
 
@@ -66,8 +70,15 @@ Route::prefix('v1')->group(function () {
             Route::post('/orders/{order}/cancel', [AccountController::class, 'cancelOrder']);
             Route::get('/wallet', [AccountController::class, 'wallet']);
             Route::get('/addresses', [AccountController::class, 'addresses']);
+            Route::post('/addresses', [AccountController::class, 'storeAddress']);
+            Route::patch('/addresses/{address}', [AccountController::class, 'updateAddress']);
+            Route::delete('/addresses/{address}', [AccountController::class, 'deleteAddress']);
+            Route::post('/profile', [AccountController::class, 'updateProfile']);
+            Route::post('/change-password', [AccountController::class, 'changePassword']);
         });
 
+        // Reviews
+        Route::post('/products/{product}/reviews', [\App\Http\Controllers\Customer\ProductReviewController::class, 'store']);
     });
 
 });

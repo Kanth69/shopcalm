@@ -113,12 +113,12 @@
                 </div>
 
                 <div class="flex-shrink-0 ms-2">
-                    @if($order->payment_status === 'paid')
+                    @if($order->payment_status === 'paid' || $order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0))
                         <span class="badge rounded-pill px-3 py-1.5 fw-bold text-white shadow-xs" 
                               style="background: #10b981; font-size: 0.7rem; letter-spacing: 0.02em;">
                             ✓ PAID
                         </span>
-                    @elseif($order->payment_method === 'cod')
+                    @elseif($order->payment_method === 'cod' && $order->total_amount > 0)
                         <span class="badge rounded-pill px-3 py-1.5 fw-bold font-monospace shadow-xs" 
                               style="background: #fffbeb; color: #b45309; border: 1.5px solid #fde68a; font-size: 0.72rem;">
                             💵 COD CASH
@@ -246,7 +246,7 @@
                 </div>
 
                 <div class="flex-shrink-0 ms-2">
-                    @if($order->payment_method === 'cod' && $order->payment_status !== 'paid')
+                    @if($order->payment_method === 'cod' && $order->payment_status !== 'paid' && $order->total_amount > 0)
                         <span class="badge rounded-pill px-3 py-1.5 fw-bold font-monospace shadow-xs" 
                               style="background: #fffbeb; color: #b45309; border: 1.5px solid #fde68a; font-size: 0.7rem;">
                             💵 COD Cash

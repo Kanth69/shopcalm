@@ -77,6 +77,13 @@ class FulfillmentService
                 'notes'           => "Bengaluru Local Delivery: Assigned to {$data['rider_name']} ({$data['rider_phone']}). Slot: " . ($data['delivery_slot'] ?? 'Express') . " [OTP: {$otp}]",
             ]);
 
+            // Trigger WhatsApp Out For Delivery Notification with OTP
+            try {
+                app(\App\Services\WhatsAppService::class)->sendOutForDeliveryLocal($order);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("[FulfillmentService] WhatsApp Out For Delivery notification failed: " . $e->getMessage());
+            }
+
             return $fulfillment;
         });
     }
@@ -118,6 +125,13 @@ class FulfillmentService
                 'changed_by'      => $staffId,
                 'notes'           => "National Courier Dispatched: {$data['courier_partner']} (AWB: {$data['tracking_number']})",
             ]);
+
+            // Trigger WhatsApp Courier Dispatched Notification with AWB Tracking Link
+            try {
+                app(\App\Services\WhatsAppService::class)->sendDispatchedCourier($order);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("[FulfillmentService] WhatsApp Courier Dispatched notification failed: " . $e->getMessage());
+            }
 
             return $fulfillment;
         });

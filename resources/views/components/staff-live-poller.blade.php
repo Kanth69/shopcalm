@@ -41,6 +41,9 @@
     const portal = configEl.getAttribute('data-portal') || 'order_manager';
 
     let lastKnownOrderId = 0;
+    let lastKnownProductId = 0;
+    let lastKnownRejectedId = 0;
+    let lastKnownAssignedId = 0;
     let isInitialLoad = true;
     let soundEnabled = localStorage.getItem('staff_sound_notifications') !== 'false';
 
@@ -65,10 +68,9 @@
     document.addEventListener('click', unlockAudio);
     document.addEventListener('keydown', unlockAudio);
 
-    // 1. Synthesize Loud 4-Tone Alert Siren for New Orders (Strictly reserved for Order Manager portal)
+    // 1. Synthesize Loud Alert Siren for Orders, Rejections & Delivery Assignments
     function playOrderChime() {
         if (!soundEnabled) return;
-        if (portal !== 'order_manager') return;
         try {
             const ctx = getAudioContext();
             if (!ctx) return;
@@ -88,7 +90,7 @@
                 osc.stop(ctx.currentTime + start + duration);
             }
 
-            // Loud 4-Tone High-Attention Order Bell (A5 -> D6 -> A5 -> D6)
+            // Loud 4-Tone High-Attention Bell
             playNote(880.00, 0.00, 0.20, 0.6);
             playNote(1174.66, 0.15, 0.25, 0.7);
             playNote(880.00, 0.35, 0.20, 0.6);
@@ -98,21 +100,28 @@
         }
     }
 
-    // 2. Sound Toggle Helper in Navbar
+    // 2. Sound Toggle Helper for All Portals
     window.toggleStaffSound = function () {
         soundEnabled = !soundEnabled;
         localStorage.setItem('staff_sound_notifications', soundEnabled);
-        const icon = document.getElementById('staffSoundIcon');
-        const text = document.getElementById('staffSoundText');
-        if (icon) {
-            icon.className = soundEnabled ? 'bi bi-volume-up-fill text-success' : 'bi bi-volume-mute-fill text-danger';
-        }
-        if (text) {
-            text.textContent = soundEnabled ? 'Sound ON' : 'Muted';
-        }
+        
+        document.querySelectorAll('.staff-sound-toggle-btn').forEach(btn => {
+            btn.innerHTML = soundEnabled 
+                ? '<i class="bi bi-volume-up-fill text-success fs-5"></i> <span class="d-none d-sm-inline small ms-1 fw-semibold text-success">Sound ON</span>'
+                : '<i class="bi bi-volume-mute-fill text-danger fs-5"></i> <span class="d-none d-sm-inline small ms-1 fw-semibold text-danger">Muted</span>';
+        });
 
-        if (soundEnabled && portal === 'order_manager') playOrderChime();
+        if (soundEnabled) playOrderChime();
     };
+
+    // Initialize button state on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.staff-sound-toggle-btn').forEach(btn => {
+            btn.innerHTML = soundEnabled 
+                ? '<i class="bi bi-volume-up-fill text-success fs-5"></i> <span class="d-none d-sm-inline small ms-1 fw-semibold text-success">Sound ON</span>'
+                : '<i class="bi bi-volume-mute-fill text-danger fs-5"></i> <span class="d-none d-sm-inline small ms-1 fw-semibold text-danger">Muted</span>';
+        });
+    });
 
     // 3. Dynamic Row Generator for New Incoming Order
     function createOrderTableRow(order) {
@@ -201,12 +210,37 @@
 
         const elTodayRevenue = document.getElementById('kpiTodayRevenue');
         if (elTodayRevenue && stats.today_revenue_fmt) elTodayRevenue.textContent = stats.today_revenue_fmt;
+
+        // Admin Pending Products Badge Updates
+        if (stats.pending_products_count !== undefined) {
+            const bellBadge = document.getElementById('pendingProductsBellBadge');
+            const countHeader = document.getElementById('pendingProductsCountHeader');
+
+            if (bellBadge) {
+                if (stats.pending_products_count > 0) {
+                    bellBadge.textContent = stats.pending_products_count;
+                    bellBadge.classList.remove('d-none');
+                } else {
+                    bellBadge.classList.add('d-none');
+                }
+            }
+
+            if (countHeader) {
+                if (stats.pending_products_count > 0) {
+                    countHeader.textContent = stats.pending_products_count + ' Action Required';
+                    countHeader.className = 'badge bg-danger rounded-pill px-2.5 py-1';
+                } else {
+                    countHeader.textContent = 'All Clean';
+                    countHeader.className = 'badge bg-success rounded-pill px-2.5 py-1';
+                }
+            }
+        }
     }
 
     // 5. Poll Function
     async function pollLiveOrders() {
         try {
-            const url = `${endpoint}?since_id=${lastKnownOrderId}&portal=${portal}`;
+            const url = `${endpoint}?since_id=${lastKnownOrderId}&since_product_id=${lastKnownProductId}&since_rejected_id=${lastKnownRejectedId}&since_assigned_id=${lastKnownAssignedId}&portal=${portal}`;
             const res = await fetch(url, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
@@ -217,14 +251,17 @@
             if (!res.ok) return;
             const data = await res.json();
 
-            // Set high-water mark ID on initial load
+            // Set high-water mark IDs on initial load
             if (isInitialLoad) {
                 lastKnownOrderId = data.latest_id || 0;
+                lastKnownProductId = data.latest_product_id || 0;
+                lastKnownRejectedId = data.latest_rejected_id || 0;
+                lastKnownAssignedId = data.latest_assigned_order_id || 0;
                 isInitialLoad = false;
                 return;
             }
 
-            // If new orders detected
+            // If new orders detected (Order Manager & Admin)
             if (data.has_new && data.new_orders && data.new_orders.length > 0) {
                 lastKnownOrderId = data.latest_id;
                 playOrderChime();
@@ -252,6 +289,69 @@
                             html: `<strong>${order.customer_name}</strong> from <strong>${order.city}</strong> (${order.total_amount_fmt})<br><a href="${order.url}" class="btn btn-xs btn-primary rounded-pill px-2.5 py-0.5 mt-1 text-white fw-bold" style="font-size: 0.72rem; text-decoration: none;">View Order &rarr;</a>`,
                             showConfirmButton: false,
                             timer: 7000,
+                            timerProgressBar: true
+                        });
+                    }
+                });
+            }
+
+            // If new pending products submitted by Product Manager (for Admin review)
+            if (data.has_new_products && data.new_pending_products && data.new_pending_products.length > 0) {
+                lastKnownProductId = data.latest_product_id;
+                playOrderChime();
+
+                data.new_pending_products.forEach(prod => {
+                    if (window.Swal) {
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'warning',
+                            title: `📦 Product Submission Alert!`,
+                            html: `<strong>${prod.name}</strong> submitted by <strong>${prod.submitter}</strong><br><a href="${prod.url}" class="btn btn-sm btn-primary rounded-pill px-3 py-1 mt-2 text-white fw-bold shadow-sm" style="font-size: 0.75rem; text-decoration: none;"><i class="bi bi-eye me-1"></i> Review & Approve &rarr;</a>`,
+                            showConfirmButton: false,
+                            timer: 10000,
+                            timerProgressBar: true
+                        });
+                    }
+                });
+            }
+
+            // If product rejected by Admin (alert for Product Manager)
+            if (data.has_new_rejected && data.new_rejected_products && data.new_rejected_products.length > 0) {
+                lastKnownRejectedId = data.latest_rejected_id;
+                playOrderChime();
+
+                data.new_rejected_products.forEach(prod => {
+                    if (window.Swal) {
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'error',
+                            title: `❌ Product Rejected by Admin!`,
+                            html: `<strong>${prod.name}</strong><br><small class="text-muted d-block my-1">${prod.rejection_reason}</small><a href="${prod.url}" class="btn btn-sm btn-danger rounded-pill px-3 py-1 mt-2 text-white fw-bold shadow-sm" style="font-size: 0.75rem; text-decoration: none;"><i class="bi bi-pencil me-1"></i> Edit & Fix Product &rarr;</a>`,
+                            showConfirmButton: false,
+                            timer: 12000,
+                            timerProgressBar: true
+                        });
+                    }
+                });
+            }
+
+            // If new delivery assigned (alert for Delivery Partner)
+            if (data.has_new_assigned && data.new_assigned_orders && data.new_assigned_orders.length > 0) {
+                lastKnownAssignedId = data.latest_assigned_order_id;
+                playOrderChime();
+
+                data.new_assigned_orders.forEach(ord => {
+                    if (window.Swal) {
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'info',
+                            title: `🛵 New Delivery Assigned!`,
+                            html: `Order <strong>#${ord.order_number}</strong> assigned to you in <strong>${ord.city}</strong><br><a href="${ord.url}" class="btn btn-sm btn-primary rounded-pill px-3 py-1 mt-2 text-white fw-bold shadow-sm" style="font-size: 0.75rem; text-decoration: none;"><i class="bi bi-truck me-1"></i> Open Order & Dispatch &rarr;</a>`,
+                            showConfirmButton: false,
+                            timer: 12000,
                             timerProgressBar: true
                         });
                     }

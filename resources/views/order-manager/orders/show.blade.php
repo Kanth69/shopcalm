@@ -121,23 +121,12 @@
     @else
         @php
             $cancellation = $order->cancellation;
-            $isAdminCancelled = false;
-
-            if ($cancellation && $cancellation->cancelled_by_type === 'admin') {
-                $isAdminCancelled = true;
-            } elseif ($cancellation && $cancellation->cancelledBy && $cancellation->cancelledBy->isSuperAdmin()) {
-                $isAdminCancelled = true;
-            } else {
-                $cancelHistory = $order->statusHistories()->where('current_status', 'cancelled')->latest()->first();
-                if ($cancelHistory) {
-                    $notesLower = strtolower($cancelHistory->notes ?? '');
-                    if (str_contains($notesLower, 'admin') || str_contains($notesLower, 'store') || str_contains($notesLower, 'staff') || str_contains($notesLower, 'management')) {
-                        $isAdminCancelled = true;
-                    } elseif ($cancelHistory->changedBy && $cancelHistory->changedBy->isSuperAdmin()) {
-                        $isAdminCancelled = true;
-                    }
-                }
-            }
+            $isAdminCancelled = ($cancellation && $cancellation->cancelled_by_type === 'admin');
+            $ticketNo = 'CNL-' . $order->order_number;
+            $walletRefundVal = (float) ($cancellation?->wallet_refund_amount ?? 0);
+            $onlineRefundVal = (float) ($cancellation?->online_refund_amount ?? 0);
+            $totalRefundVal = (float) ($cancellation?->refund_amount ?? ($walletRefundVal + $onlineRefundVal));
+            $refundProof = $cancellation?->razorpay_refund_id ?: $cancellation?->payment_reference;
         @endphp
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 1.5px solid #fecaca !important;">
             <div class="card-header py-3 px-4 border-bottom border-danger-subtle d-flex align-items-center justify-content-between flex-wrap gap-2"
@@ -147,19 +136,25 @@
                         <i class="bi bi-x-circle-fill fs-5"></i>
                     </div>
                     <div>
-                        <h6 class="fw-bold text-danger mb-0.5" style="font-size: 0.96rem;">Order Cancellation Audit & Refund Summary</h6>
+                        <h6 class="fw-bold text-danger mb-0.5" style="font-size: 0.96rem;">Order Cancellation &amp; Refund Breakdown</h6>
                         <div class="text-secondary small" style="font-size: 0.76rem;">
                             Cancelled on <span class="fw-semibold text-dark">{{ $cancellation ? $cancellation->created_at->format('d M, Y \a\t h:i A') : $order->updated_at->format('d M, Y \a\t h:i A') }}</span>
                         </div>
                     </div>
                 </div>
-                <div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-white text-dark border font-monospace px-2.5 py-1" style="font-size: 0.72rem;">
+                        <i class="bi bi-ticket-perforated text-primary me-1"></i>{{ $ticketNo }}
+                        <button type="button" class="btn btn-link p-0 text-muted ms-1" onclick="navigator.clipboard.writeText('{{ $ticketNo }}')" title="Copy Ticket No">
+                            <i class="bi bi-copy"></i>
+                        </button>
+                    </span>
                     @if($isAdminCancelled)
                         <span class="badge bg-danger text-white rounded-pill px-3 py-1.5 fw-bold shadow-xs" style="font-size: 0.74rem;">
                             <i class="bi bi-shield-x me-1"></i> Cancelled by Store Management (Admin)
                         </span>
                     @else
-                        <span class="badge bg-warning text-dark rounded-pill px-3 py-1.5 fw-bold shadow-xs" style="font-size: 0.74rem;">
+                        <span class="badge bg-secondary text-white rounded-pill px-3 py-1.5 fw-bold shadow-xs" style="font-size: 0.74rem;">
                             <i class="bi bi-person-x me-1"></i> Cancelled by Customer
                         </span>
                     @endif
@@ -169,10 +164,10 @@
             <div class="card-body p-4">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <div class="p-3 rounded-3 bg-light border">
+                        <div class="p-3 rounded-3 bg-light border h-100">
                             <div class="text-uppercase text-muted fw-bold mb-1" style="font-size: 0.68rem;">Cancellation Reason</div>
                             <div class="fw-bold text-dark" style="font-size: 0.9rem;">
-                                {{ $cancellation->cancellation_reason ?? ($isAdminCancelled ? 'Cancelled by Store Staff' : 'Cancelled by Customer') }}
+                                {{ $cancellation?->cancellation_reason ?? ($isAdminCancelled ? 'Cancelled by Store Staff' : 'Cancelled by Customer') }}
                             </div>
                             @if($cancellation && $cancellation->admin_notes)
                                 <div class="mt-2 text-muted small p-2 rounded bg-white border" style="font-size: 0.75rem;">
@@ -183,18 +178,47 @@
                     </div>
 
                     <div class="col-md-6">
-                        <div class="p-3 rounded-3 bg-light border">
-                            <div class="text-uppercase text-muted fw-bold mb-1" style="font-size: 0.68rem;">Refund Status & Audit Ledger</div>
-                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="p-3 rounded-3 bg-light border h-100">
+                            <div class="text-uppercase text-muted fw-bold mb-1" style="font-size: 0.68rem;">Refund Status &amp; Financial Ledger</div>
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1.5">
                                 <span class="fw-bold text-dark" style="font-size: 0.9rem;">
-                                    Refund Amount: <span class="font-monospace text-success">₹{{ number_format($cancellation->refund_amount ?? ($isAdminCancelled ? $order->total_amount : 0), 2) }}</span>
+                                    Net Refund: <span class="font-monospace text-success fs-6">₹{{ number_format($totalRefundVal, 2) }}</span>
                                 </span>
-                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">
-                                    {{ ucfirst($cancellation->refund_status ?? 'Processed') }}
-                                </span>
+                                @if(($cancellation?->refund_status === 'processed' || $cancellation?->online_refund_status === 'processed'))
+                                    <span class="badge bg-success text-white rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">
+                                        ✓ Processed
+                                    </span>
+                                @elseif($cancellation?->refund_status === 'pending')
+                                    <span class="badge bg-warning text-dark rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">
+                                        ⏳ Pending Payout
+                                    </span>
+                                @else
+                                    <span class="badge bg-secondary rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">
+                                        None (COD)
+                                    </span>
+                                @endif
                             </div>
+
+                            @if($walletRefundVal > 0)
+                                <div class="small text-muted" style="font-size: 0.73rem;">
+                                    • Wallet Credited: <strong class="text-success">₹{{ number_format($walletRefundVal, 2) }}</strong> (Instant)
+                                </div>
+                            @endif
+                            @if($onlineRefundVal > 0)
+                                <div class="small text-muted" style="font-size: 0.73rem;">
+                                    • Razorpay PG Refund: <strong class="text-primary">₹{{ number_format($onlineRefundVal, 2) }}</strong>
+                                </div>
+                            @endif
+                            @if($refundProof)
+                                <div class="small text-muted mt-1 font-monospace d-flex align-items-center gap-1" style="font-size: 0.73rem;">
+                                    <span>Bank UTR Ref: <strong>{{ $refundProof }}</strong></span>
+                                    <button type="button" class="btn btn-link p-0 text-muted" onclick="navigator.clipboard.writeText('{{ $refundProof }}')" title="Copy UTR">
+                                        <i class="bi bi-copy"></i>
+                                    </button>
+                                </div>
+                            @endif
                             <div class="text-muted small mt-1" style="font-size: 0.73rem;">
-                                Cancellation Fee Collected: <strong class="text-dark">₹{{ number_format($cancellation->cancellation_fee ?? 0, 2) }}</strong>
+                                GST Fee Retained: <strong class="text-danger">-₹{{ number_format($cancellation->cancellation_fee ?? 0, 2) }}</strong>
                             </div>
                         </div>
                     </div>
@@ -475,148 +499,214 @@
             </div>
         @endif
 
-        <!-- 1. Order Status Advancement Action Card -->
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border-top: 4px solid #4f46e5 !important;">
-            <div class="card-header bg-white py-3 px-4 border-bottom">
-                <h6 class="mb-0 fw-bold text-dark" style="font-size: 0.95rem;">
-                    <i class="bi bi-arrow-repeat text-primary me-2"></i>Advance Fulfillment Status
-                </h6>
-            </div>
-            <div class="card-body p-4">
-                <form id="formUpdateStatus" action="{{ route('order-manager.orders.update-status', $order) }}" method="POST">
-                    @csrf
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark small">Advance Status to:</label>
-                        <select id="orderStatusSelect" name="status" class="form-select fw-bold small">
-                            <option value="pending" {{ $order->status === 'pending' ? 'selected' : '' }}>⏳ 1. Pending</option>
-                            <option value="confirmed" {{ $order->status === 'confirmed' ? 'selected' : '' }}>✅ 2. Confirmed</option>
-                            <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>📦 3. Processing (Warehouse)</option>
-                            <option value="packed" {{ $order->status === 'packed' ? 'selected' : '' }}>🏷️ 4. Packed & Ready</option>
-                            <option value="shipped" {{ $order->status === 'shipped' ? 'selected' : '' }}>🚚 5. Shipped (In-Transit)</option>
-                            <option value="out for delivery" {{ $order->status === 'out for delivery' ? 'selected' : '' }}>📍 6. Out for Delivery</option>
-                            <option value="delivered" {{ $order->status === 'delivered' ? 'selected' : '' }}>🎉 7. Delivered</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark small">Internal Fulfillment Notes</label>
-                        <textarea id="statusNotesInput" name="notes" rows="2" class="form-control small" placeholder="e.g. Package picked from warehouse rack and labeled."></textarea>
-                    </div>
-
-                    <button type="submit" id="btnSubmitStatus" class="btn text-white w-100 fw-bold rounded-pill shadow-xs py-2" style="background: #4f46e5; border: none; font-size: 0.84rem;">
-                        <i class="bi bi-check2-circle me-1"></i> Update Status (Instant)
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- 2. Logistics & Dispatch Card (Context-Aware) -->
-        @if($order->isLocalBengaluruDelivery())
-            <!-- Bengaluru Local Fleet Assignment Card -->
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border: 1.5px solid #bae6fd !important; border-top: 4px solid #0284c7 !important;">
-                <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
-                    <h6 class="mb-0 fw-bold text-dark" style="font-size: 0.94rem;">
-                        <i class="bi bi-geo-fill text-info me-1.5"></i>Bengaluru Fleet Dispatch
+        @if(!$isCancelled && $order->status !== 'delivered')
+            <!-- 1. Order Status Advancement Action Card -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border-top: 4px solid #4f46e5 !important;">
+                <div class="card-header bg-white py-3 px-4 border-bottom">
+                    <h6 class="mb-0 fw-bold text-dark" style="font-size: 0.95rem;">
+                        <i class="bi bi-arrow-repeat text-primary me-2"></i>Advance Fulfillment Status
                     </h6>
-                    <span class="badge rounded-pill px-2.5 py-1 small fw-bold text-white shadow-xs" style="background: #0284c7; font-size: 0.68rem;">
-                        Local Fleet
-                    </span>
                 </div>
                 <div class="card-body p-4">
-                    <form id="formAssignRider" action="{{ route('order-manager.orders.assign-rider', $order) }}" method="POST">
+                    <form id="formUpdateStatus" action="{{ route('order-manager.orders.update-status', $order) }}" method="POST">
                         @csrf
                         <div class="mb-3">
-                            <label class="form-label fw-bold text-dark small">Select Delivery Partner</label>
-                            <select id="selectRegisteredRider" name="rider_id" class="form-select small">
-                                <option value="">-- Choose In-House Delivery Partner --</option>
-                                @foreach($deliveryPartners as $dp)
-                                    <option value="{{ $dp->id }}" 
-                                            data-name="{{ $dp->name }}" 
-                                            data-phone="{{ $dp->mobile_number }}"
-                                            {{ $order->rider_id === $dp->id ? 'selected' : '' }}>
-                                        🛵 {{ $dp->name }} ({{ $dp->mobile_number ?? 'No Phone' }}) &bull; {{ $dp->assigned_deliveries_count }} active
-                                    </option>
-                                @endforeach
+                            <label class="form-label fw-bold text-dark small">Advance Status to:</label>
+                            <select id="orderStatusSelect" name="status" class="form-select fw-bold small">
+                                <option value="pending" {{ $order->status === 'pending' ? 'selected' : '' }}>⏳ 1. Pending</option>
+                                <option value="confirmed" {{ $order->status === 'confirmed' ? 'selected' : '' }}>✅ 2. Confirmed</option>
+                                <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>📦 3. Processing (Warehouse)</option>
+                                <option value="packed" {{ $order->status === 'packed' ? 'selected' : '' }}>🏷️ 4. Packed & Ready</option>
+                                <option value="shipped" {{ $order->status === 'shipped' ? 'selected' : '' }}>🚚 5. Shipped (In-Transit)</option>
+                                <option value="out for delivery" {{ $order->status === 'out for delivery' ? 'selected' : '' }}>📍 6. Out for Delivery</option>
+                                <option value="delivered" {{ $order->status === 'delivered' ? 'selected' : '' }}>🎉 7. Delivered</option>
                             </select>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold text-dark small">Rider Name <span class="text-danger">*</span></label>
-                            <input type="text" id="inputRiderName" name="rider_name" class="form-control small" 
-                                   value="{{ old('rider_name', $order->rider_name) }}" required placeholder="e.g. Karthik">
+                            <label class="form-label fw-bold text-dark small">Internal Fulfillment Notes</label>
+                            <textarea id="statusNotesInput" name="notes" rows="2" class="form-control small" placeholder="e.g. Package picked from warehouse rack and labeled."></textarea>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-dark small">Rider Phone <span class="text-danger">*</span></label>
-                            <input type="text" id="inputRiderPhone" name="rider_phone" class="form-control small" 
-                                   value="{{ old('rider_phone', $order->rider_phone) }}" required placeholder="e.g. +91 9123456789">
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-dark small">Delivery Window</label>
-                            <select id="selectDeliverySlot" name="delivery_slot" class="form-select small">
-                                <option value="Next-Day Express Delivery (1-2 Days)" {{ ($order->delivery_slot === 'Next-Day Express Delivery (1-2 Days)' || !$order->delivery_slot) ? 'selected' : '' }}>⚡ Next-Day Express Delivery (1-2 Days)</option>
-                                <option value="Morning Slot (10:00 AM - 02:00 PM)" {{ $order->delivery_slot === 'Morning Slot (10:00 AM - 02:00 PM)' ? 'selected' : '' }}>🌅 Morning Slot (10:00 AM - 02:00 PM)</option>
-                                <option value="Evening Slot (04:00 PM - 08:00 PM)" {{ $order->delivery_slot === 'Evening Slot (04:00 PM - 08:00 PM)' ? 'selected' : '' }}>🌆 Evening Slot (04:00 PM - 08:00 PM)</option>
-                                <option value="Standard Local Delivery (2-3 Days)" {{ $order->delivery_slot === 'Standard Local Delivery (2-3 Days)' ? 'selected' : '' }}>📦 Standard Local Delivery (2-3 Days)</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-dark small">Rider Delivery Notes (Optional)</label>
-                            <input type="text" id="inputRiderNotes" name="notes" class="form-control small" 
-                                   value="{{ old('notes', $order->fulfillment?->notes) }}" placeholder="e.g. Gate security call before delivery">
-                        </div>
-
-                        <button type="submit" id="btnSubmitRider" class="btn text-white w-100 fw-bold rounded-pill shadow-xs py-2" style="background: #0284c7; border: none; font-size: 0.84rem;">
-                            <i class="bi bi-send-fill me-1.5"></i> Assign Rider & Dispatch (Out for Delivery)
+                        <button type="submit" id="btnSubmitStatus" class="btn text-white w-100 fw-bold rounded-pill shadow-xs py-2" style="background: #4f46e5; border: none; font-size: 0.84rem;">
+                            <i class="bi bi-check2-circle me-1"></i> Update Status (Instant)
                         </button>
                     </form>
+                </div>
+            </div>
+
+            <!-- 2. Logistics & Dispatch Card (Context-Aware) -->
+            @if($order->isLocalBengaluruDelivery())
+                <!-- Bengaluru Local Fleet Assignment Card -->
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border: 1.5px solid #bae6fd !important; border-top: 4px solid #0284c7 !important;">
+                    <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+                        <h6 class="mb-0 fw-bold text-dark" style="font-size: 0.94rem;">
+                            <i class="bi bi-geo-fill text-info me-1.5"></i>Bengaluru Fleet Dispatch
+                        </h6>
+                        <span class="badge rounded-pill px-2.5 py-1 small fw-bold text-white shadow-xs" style="background: #0284c7; font-size: 0.68rem;">
+                            Local Fleet
+                        </span>
+                    </div>
+                    <div class="card-body p-4">
+                        <form id="formAssignRider" action="{{ route('order-manager.orders.assign-rider', $order) }}" method="POST">
+                            @csrf
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-dark small">Select Delivery Partner</label>
+                                <select id="selectRegisteredRider" name="rider_id" class="form-select small">
+                                    <option value="">-- Choose In-House Delivery Partner --</option>
+                                    @foreach($deliveryPartners as $dp)
+                                        <option value="{{ $dp->id }}" 
+                                                data-name="{{ $dp->name }}" 
+                                                data-phone="{{ $dp->mobile_number }}"
+                                                {{ $order->rider_id === $dp->id ? 'selected' : '' }}>
+                                            🛵 {{ $dp->name }} ({{ $dp->mobile_number ?? 'No Phone' }}) &bull; {{ $dp->assigned_deliveries_count }} active
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-dark small">Rider Name <span class="text-danger">*</span></label>
+                                <input type="text" id="inputRiderName" name="rider_name" class="form-control small" 
+                                       value="{{ old('rider_name', $order->rider_name) }}" required placeholder="e.g. Karthik">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-dark small">Rider Phone <span class="text-danger">*</span></label>
+                                <input type="text" id="inputRiderPhone" name="rider_phone" class="form-control small" 
+                                       value="{{ old('rider_phone', $order->rider_phone) }}" required placeholder="e.g. +91 9123456789">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-dark small">Delivery Window</label>
+                                <select id="selectDeliverySlot" name="delivery_slot" class="form-select small">
+                                    <option value="Next-Day Express Delivery (1-2 Days)" {{ ($order->delivery_slot === 'Next-Day Express Delivery (1-2 Days)' || !$order->delivery_slot) ? 'selected' : '' }}>⚡ Next-Day Express Delivery (1-2 Days)</option>
+                                    <option value="Morning Slot (10:00 AM - 02:00 PM)" {{ $order->delivery_slot === 'Morning Slot (10:00 AM - 02:00 PM)' ? 'selected' : '' }}>🌅 Morning Slot (10:00 AM - 02:00 PM)</option>
+                                    <option value="Evening Slot (04:00 PM - 08:00 PM)" {{ $order->delivery_slot === 'Evening Slot (04:00 PM - 08:00 PM)' ? 'selected' : '' }}>🌆 Evening Slot (04:00 PM - 08:00 PM)</option>
+                                    <option value="Standard Local Delivery (2-3 Days)" {{ $order->delivery_slot === 'Standard Local Delivery (2-3 Days)' ? 'selected' : '' }}>📦 Standard Local Delivery (2-3 Days)</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-dark small">Rider Delivery Notes (Optional)</label>
+                                <input type="text" id="inputRiderNotes" name="notes" class="form-control small" 
+                                       value="{{ old('notes', $order->fulfillment?->notes) }}" placeholder="e.g. Gate security call before delivery">
+                            </div>
+
+                            <button type="submit" id="btnSubmitRider" class="btn text-white w-100 fw-bold rounded-pill shadow-xs py-2" style="background: #0284c7; border: none; font-size: 0.84rem;">
+                                <i class="bi bi-send-fill me-1.5"></i> Assign Rider & Dispatch (Out for Delivery)
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @else
+                <!-- National 3rd-Party Courier Logistics Card -->
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border: 1.5px solid #ddd6fe !important; border-top: 4px solid #4f46e5 !important;">
+                    <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+                        <h6 class="mb-0 fw-bold text-dark" style="font-size: 0.94rem;">
+                            <i class="bi bi-truck me-1.5 text-primary"></i>National Courier Logistics
+                        </h6>
+                        <span class="badge rounded-pill px-2.5 py-1 small fw-bold text-white shadow-xs" style="background: #4f46e5; font-size: 0.68rem;">
+                            Pan-India AWB
+                        </span>
+                    </div>
+                    <div class="card-body p-4">
+                        <form id="formUpdateTracking" action="{{ route('order-manager.orders.update-tracking', $order) }}" method="POST">
+                            @csrf
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-dark small">Courier Partner <span class="text-danger">*</span></label>
+                                <select id="selectCourierPartner" name="courier_partner" class="form-select small" required>
+                                    <option value="Delhivery" {{ $order->courier_partner === 'Delhivery' ? 'selected' : '' }}>Delhivery Express</option>
+                                    <option value="BlueDart" {{ $order->courier_partner === 'BlueDart' ? 'selected' : '' }}>BlueDart Aviation</option>
+                                    <option value="DTDC" {{ $order->courier_partner === 'DTDC' ? 'selected' : '' }}>DTDC Courier</option>
+                                    <option value="Ecom Express" {{ $order->courier_partner === 'Ecom Express' ? 'selected' : '' }}>Ecom Express</option>
+                                    <option value="FedEx" {{ $order->courier_partner === 'FedEx' ? 'selected' : '' }}>FedEx India</option>
+                                    <option value="India Post" {{ $order->courier_partner === 'India Post' ? 'selected' : '' }}>India Post SpeedPost</option>
+                                    <option value="Shadowfax" {{ $order->courier_partner === 'Shadowfax' ? 'selected' : '' }}>Shadowfax</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-dark small">AWB / Tracking Number <span class="text-danger">*</span></label>
+                                <input type="text" id="inputTrackingNumber" name="tracking_number" class="form-control font-monospace small" 
+                                       value="{{ old('tracking_number', $order->tracking_number) }}" required placeholder="e.g. BD983471092">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-dark small">Tracking URL (Optional)</label>
+                                <input type="url" id="inputTrackingUrl" name="tracking_url" class="form-control small" 
+                                       value="{{ old('tracking_url', $order->tracking_url) }}" placeholder="https://www.bluedart.com/track/...">
+                            </div>
+
+                            <button type="submit" id="btnSubmitTracking" class="btn text-white w-100 fw-bold rounded-pill shadow-xs py-2" style="background: #4f46e5; border: none; font-size: 0.84rem;">
+                                <i class="bi bi-box-seam-fill me-1.5"></i> Save Tracking & Dispatch (Shipped)
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @endif
+        @elseif($order->status === 'delivered')
+            <!-- Fulfillment Complete Card for Delivered Orders -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 1.5px solid #bbf7d0 !important; border-top: 4px solid #16a34a !important;">
+                <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0 fw-bold text-success" style="font-size: 0.94rem;">
+                        <i class="bi bi-check-circle-fill me-1.5 text-success"></i> Fulfillment Complete
+                    </h6>
+                    <span class="badge bg-success text-white rounded-pill px-2.5 py-1" style="font-size: 0.68rem;">✓ Delivered</span>
+                </div>
+                <div class="card-body p-4 text-center">
+                    <div class="rounded-circle bg-success bg-opacity-10 text-success d-inline-flex align-items-center justify-content-center mb-2.5" style="width: 48px; height: 48px; font-size: 1.3rem;">
+                        <i class="bi bi-bag-check-fill"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1" style="font-size: 0.94rem;">Package Delivered Successfully</h6>
+                    <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                        Delivered on <strong>{{ $order->delivered_at ? $order->delivered_at->format('d M Y, h:i A') : $order->updated_at->format('d M Y, h:i A') }}</strong>
+                    </p>
+
+                    <!-- Delivered By Info Badge -->
+                    <div class="p-2.5 rounded-3 bg-light border text-start small">
+                        <div class="text-uppercase text-muted fw-bold mb-1" style="font-size: 0.65rem;">Delivered By</div>
+                        @if($order->isLocalBengaluruDelivery())
+                            <div class="fw-bold text-dark d-flex align-items-center gap-1.5" style="font-size: 0.84rem;">
+                                <i class="bi bi-person-badge-fill text-success"></i>
+                                <span>🛵 {{ $order->rider_name ?? 'In-House Fleet Rider' }}</span>
+                            </div>
+                            @if($order->rider_phone)
+                                <div class="text-muted small mt-0.5" style="font-size: 0.74rem;">
+                                    Phone: <a href="tel:{{ $order->rider_phone }}" class="text-primary text-decoration-none fw-semibold">{{ $order->rider_phone }}</a>
+                                </div>
+                            @endif
+                        @else
+                            <div class="fw-bold text-dark d-flex align-items-center gap-1.5" style="font-size: 0.84rem;">
+                                <i class="bi bi-truck text-primary"></i>
+                                <span>🚚 {{ $order->courier_partner ?? 'National Courier' }}</span>
+                            </div>
+                            @if($order->tracking_number)
+                                <div class="text-muted small mt-0.5 font-monospace" style="font-size: 0.74rem;">
+                                    AWB: <strong>{{ $order->tracking_number }}</strong>
+                                </div>
+                            @endif
+                        @endif
+                    </div>
                 </div>
             </div>
         @else
-            <!-- National 3rd-Party Courier Logistics Card -->
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border: 1.5px solid #ddd6fe !important; border-top: 4px solid #4f46e5 !important;">
-                <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
-                    <h6 class="mb-0 fw-bold text-dark" style="font-size: 0.94rem;">
-                        <i class="bi bi-truck me-1.5 text-primary"></i>National Courier Logistics
+            <!-- Operations Locked Notice for Cancelled Orders -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 1.5px solid #fecaca !important; border-top: 4px solid #ef4444 !important;">
+                <div class="card-header bg-white py-3 px-4 border-bottom">
+                    <h6 class="mb-0 fw-bold text-danger" style="font-size: 0.94rem;">
+                        <i class="bi bi-slash-circle me-1.5 text-danger"></i> Fulfillment Operations Locked
                     </h6>
-                    <span class="badge rounded-pill px-2.5 py-1 small fw-bold text-white shadow-xs" style="background: #4f46e5; font-size: 0.68rem;">
-                        Pan-India AWB
-                    </span>
                 </div>
-                <div class="card-body p-4">
-                    <form id="formUpdateTracking" action="{{ route('order-manager.orders.update-tracking', $order) }}" method="POST">
-                        @csrf
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-dark small">Courier Partner <span class="text-danger">*</span></label>
-                            <select id="selectCourierPartner" name="courier_partner" class="form-select small" required>
-                                <option value="Delhivery" {{ $order->courier_partner === 'Delhivery' ? 'selected' : '' }}>Delhivery Express</option>
-                                <option value="BlueDart" {{ $order->courier_partner === 'BlueDart' ? 'selected' : '' }}>BlueDart Aviation</option>
-                                <option value="DTDC" {{ $order->courier_partner === 'DTDC' ? 'selected' : '' }}>DTDC Courier</option>
-                                <option value="Ecom Express" {{ $order->courier_partner === 'Ecom Express' ? 'selected' : '' }}>Ecom Express</option>
-                                <option value="FedEx" {{ $order->courier_partner === 'FedEx' ? 'selected' : '' }}>FedEx India</option>
-                                <option value="India Post" {{ $order->courier_partner === 'India Post' ? 'selected' : '' }}>India Post SpeedPost</option>
-                                <option value="Shadowfax" {{ $order->courier_partner === 'Shadowfax' ? 'selected' : '' }}>Shadowfax</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-dark small">AWB / Tracking Number <span class="text-danger">*</span></label>
-                            <input type="text" id="inputTrackingNumber" name="tracking_number" class="form-control font-monospace small" 
-                                   value="{{ old('tracking_number', $order->tracking_number) }}" required placeholder="e.g. BD983471092">
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-dark small">Tracking URL (Optional)</label>
-                            <input type="url" id="inputTrackingUrl" name="tracking_url" class="form-control small" 
-                                   value="{{ old('tracking_url', $order->tracking_url) }}" placeholder="https://www.bluedart.com/track/...">
-                        </div>
-
-                        <button type="submit" id="btnSubmitTracking" class="btn text-white w-100 fw-bold rounded-pill shadow-xs py-2" style="background: #4f46e5; border: none; font-size: 0.84rem;">
-                            <i class="bi bi-box-seam-fill me-1.5"></i> Save Tracking & Dispatch (Shipped)
-                        </button>
-                    </form>
+                <div class="card-body p-4 text-center">
+                    <div class="rounded-circle bg-danger bg-opacity-10 text-danger d-inline-flex align-items-center justify-content-center mb-2.5" style="width: 48px; height: 48px; font-size: 1.3rem;">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1" style="font-size: 0.92rem;">Order Cancelled</h6>
+                    <p class="text-secondary small mb-0" style="font-size: 0.78rem; line-height: 1.4;">
+                        This order has been cancelled on <strong>{{ $cancellation ? $cancellation->created_at->format('d M Y, h:i A') : $order->updated_at->format('d M Y, h:i A') }}</strong>.
+                        <br>Status advancement and rider dispatches are locked.
+                    </p>
                 </div>
             </div>
         @endif
@@ -678,7 +768,7 @@
         @php
             $payment = $order->primaryPayment ?? $order->latestPayment;
         @endphp
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border: 1.5px solid #e2e8f0 !important; border-top: 4px solid {{ $order->payment_method === 'online' ? '#10b981' : '#64748b' }} !important;">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border: 1.5px solid #e2e8f0 !important; border-top: 4px solid {{ ($order->payment_method === 'online' || $order->payment_method === 'wallet' || $order->wallet_amount_used > 0) ? '#10b981' : '#64748b' }} !important;">
             <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
                 <h6 class="mb-0 fw-bold text-dark" style="font-size: 0.94rem;">
                     <i class="bi bi-credit-card-2-front-fill text-success me-1.5"></i>Payment & Gateway Audit
@@ -689,7 +779,11 @@
                 <div class="mb-3">
                     <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.68rem;">Payment Channel</div>
                     <div class="fw-bold text-dark mt-0.5" style="font-size: 0.92rem;">
-                        @if($order->payment_method === 'online')
+                        @if($order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0))
+                            💳 ShopCalm Wallet (100% Paid)
+                        @elseif($order->wallet_amount_used > 0)
+                            💳 ShopCalm Wallet (₹{{ number_format($order->wallet_amount_used, 2) }}) + {{ $order->payment_method === 'online' ? '⚡ Razorpay PG (' . ($payment?->method_display ?? 'Online UPI') . ')' : '💵 Cash on Delivery (COD)' }}
+                        @elseif($order->payment_method === 'online')
                             ⚡ Razorpay PG ({{ $payment?->method_display ?? 'Online UPI / Card' }})
                         @else
                             💵 Cash on Delivery (COD)

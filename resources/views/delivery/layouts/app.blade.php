@@ -215,6 +215,11 @@
         </div>
 
         <div class="d-flex align-items-center gap-2">
+            <!-- Sound Alert Toggle Button -->
+            <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2.5 py-1 text-decoration-none staff-sound-toggle-btn d-flex align-items-center gap-1 border-white-50" onclick="toggleStaffSound()" title="Toggle Alert Sound" style="font-size: 0.74rem;">
+                <i class="bi bi-volume-up-fill text-success fs-6"></i>
+                <span class="d-none d-sm-inline small ms-1 fw-semibold text-success">Sound ON</span>
+            </button>
             <form action="{{ route('delivery.logout') }}" method="POST" class="d-inline">
                 @csrf
                 <button type="submit" class="btn btn-sm btn-outline-light rounded-pill px-3 py-1.5 d-flex align-items-center gap-1.5 text-white border-white-50 shadow-xs" style="font-size: 0.74rem;">
@@ -259,6 +264,8 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.20/dist/sweetalert2.all.min.js"></script>
+
+@include('components.staff-live-poller', ['endpoint' => route('admin.live-orders'), 'portal' => 'delivery'])
 
 @stack('scripts')
 </body>

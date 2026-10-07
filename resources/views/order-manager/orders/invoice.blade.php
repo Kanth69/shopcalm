@@ -112,7 +112,7 @@
 
 @php
     $payment = $order->primaryPayment ?? $order->latestPayment;
-    $isPaid = in_array(strtolower($order->payment_status ?? ''), ['paid', 'success']);
+    $isPaid = in_array(strtolower($order->payment_status ?? ''), ['paid', 'success']) || $order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0);
     
     // State Code Map
     $stateCodes = [
@@ -248,7 +248,11 @@
                     </div>
                     <div class="text-secondary small" style="line-height: 1.6; font-size: 0.82rem;">
                         <strong>Payment Mode:</strong> 
-                        @if($order->payment_method === 'online')
+                        @if($order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0))
+                            💳 ShopCalm Wallet (100% Paid)
+                        @elseif($order->wallet_amount_used > 0)
+                            💳 ShopCalm Wallet (₹{{ number_format($order->wallet_amount_used, 2) }}) + {{ $order->payment_method === 'online' ? '⚡ Razorpay PG (' . ($payment?->method_display ?? 'Online UPI') . ')' : '💵 Cash on Delivery (COD)' }}
+                        @elseif($order->payment_method === 'online')
                             ⚡ Razorpay PG ({{ $payment?->method_display ?? 'Online UPI' }})
                         @else
                             💵 Cash on Delivery (COD)

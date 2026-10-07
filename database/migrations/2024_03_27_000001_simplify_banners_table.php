@@ -9,9 +9,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('banners', function (Blueprint $table) {
+            // Drop indexes if exist before dropping columns (required for SQLite)
+            try {
+                $table->dropIndex(['is_active', 'start_date', 'end_date']);
+            } catch (\Throwable $e) {}
+            try {
+                $table->dropIndex(['banner_type', 'display_order']);
+            } catch (\Throwable $e) {}
+
             // Drop foreign key if it exists
             if (Schema::hasColumn('banners', 'offer_id')) {
-                $table->dropForeign(['offer_id']);
+                try {
+                    $table->dropForeign(['offer_id']);
+                } catch (\Throwable $e) {}
             }
 
             // Drop complex columns to simplify the module

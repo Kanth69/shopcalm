@@ -444,9 +444,9 @@
         <div class="d-none d-md-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-light border" style="font-size: 0.78rem;">
             <span class="pulse-dot"></span>
             <span class="fw-bold text-dark" style="font-size: 0.72rem;">LIVE PULSE</span>
-            <button type="button" class="btn btn-link p-0 text-decoration-none border-start ps-2 ms-1 text-dark" onclick="toggleStaffSound()" title="Toggle Notification Sound">
-                <i id="staffSoundIcon" class="bi bi-volume-up-fill text-success"></i>
-                <span id="staffSoundText" class="text-dark small fw-bold ms-1" style="font-size: 0.7rem;">Audio ON</span>
+            <button type="button" class="btn btn-link p-0 text-decoration-none border-start ps-2 ms-1 text-dark staff-sound-toggle-btn" onclick="toggleStaffSound()" title="Toggle Notification Sound">
+                <i id="staffSoundIcon" class="bi bi-volume-up-fill text-success fs-5"></i>
+                <span id="staffSoundText" class="text-success small fw-bold ms-1" style="font-size: 0.7rem;">Sound ON</span>
             </button>
         </div>
 

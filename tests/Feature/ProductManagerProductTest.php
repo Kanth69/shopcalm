@@ -28,7 +28,7 @@ class ProductManagerProductTest extends TestCase
             $pm = User::factory()->create(['role_id' => 4, 'email' => 'pm@shopcalm.com']);
         }
 
-        $response = $this->actingAs($pm)->get('/product-manager/products/create');
+        $response = $this->actingAs($pm, 'product_manager')->get('https://hub.localhost/product-manager/products/create');
         $response->assertStatus(200);
         $response->assertSee('Add New Product');
     }
@@ -41,12 +41,12 @@ class ProductManagerProductTest extends TestCase
         }
 
         $category = Category::first() ?? Category::create(['name' => 'Tech', 'slug' => 'tech', 'status' => 'Active']);
-        $brand = Brand::first() ?? Brand::create(['name' => 'Sony', 'slug' => 'sony', 'status' => true]);
+        $brand = Brand::first() ?? Brand::create(['name' => 'Sony', 'slug' => 'sony', 'category_id' => $category->id, 'status' => true]);
 
-        $image = UploadedFile::fake()->image('product.jpg');
+        $image = UploadedFile::fake()->create('product.jpg', 100, 'image/jpeg');
 
         $sku = 'TEST-' . uniqid();
-        $response = $this->actingAs($pm)->post('/product-manager/products', [
+        $response = $this->actingAs($pm, 'product_manager')->post('https://hub.localhost/product-manager/products', [
             'name' => 'Automated Test Headset',
             'category_id' => $category->id,
             'brand_id' => $brand->id,
@@ -58,7 +58,7 @@ class ProductManagerProductTest extends TestCase
             'main_image' => $image,
         ]);
 
-        $response->assertRedirect('/product-manager/products/pending');
+        $response->assertRedirect('https://hub.localhost/product-manager/products/pending');
 
         $this->assertDatabaseHas('products', [
             'sku' => $sku,

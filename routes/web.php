@@ -122,6 +122,19 @@ $registerStaffRoutes = function () {
 
         Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
         Route::patch('settings', [SettingController::class, 'update'])->name('settings.update');
+        Route::get('settings/brevo-credits', [SettingController::class, 'getBrevoCredits'])->name('settings.brevo-credits');
+        Route::post('settings/test-email', [SettingController::class, 'sendTestEmail'])->name('settings.test-email');
+
+        // Dedicated Integrations & API Hub Dashboards
+        Route::prefix('integrations')->name('integrations.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\IntegrationController::class, 'index'])->name('index');
+            Route::get('brevo', [\App\Http\Controllers\Admin\IntegrationController::class, 'brevo'])->name('brevo');
+            Route::post('brevo/update', [\App\Http\Controllers\Admin\IntegrationController::class, 'updateBrevo'])->name('brevo.update');
+            Route::get('whatsapp', [\App\Http\Controllers\Admin\IntegrationController::class, 'whatsapp'])->name('whatsapp');
+            Route::post('whatsapp/update', [\App\Http\Controllers\Admin\IntegrationController::class, 'updateWhatsApp'])->name('whatsapp.update');
+            Route::get('razorpay', [\App\Http\Controllers\Admin\IntegrationController::class, 'razorpay'])->name('razorpay');
+            Route::post('razorpay/update', [\App\Http\Controllers\Admin\IntegrationController::class, 'updateRazorpay'])->name('razorpay.update');
+        });
     });
 
     // Dedicated Product Manager Portal Routes

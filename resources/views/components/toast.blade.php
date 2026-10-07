@@ -27,6 +27,12 @@
             'title'   => 'Information',
             'message' => session('info'),
         ];
+    } elseif (isset($errors) && $errors->any()) {
+        $toastData = [
+            'type'    => 'danger',
+            'title'   => 'Could Not Save Changes',
+            'message' => $errors->first(),
+        ];
     }
 @endphp
 

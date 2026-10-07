@@ -173,7 +173,18 @@
         <div class="col-sm-6 col-xl-3">
             <div class="card border-0 shadow-sm rounded-4 p-3.5 bg-white h-100 position-relative overflow-hidden">
                 <div class="d-flex align-items-center justify-content-between mb-1">
-                    <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.5px;">Referral Policy</div>
+                    <div class="d-flex align-items-center gap-1.5">
+                        <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.5px;">Referral Policy</div>
+                        @if($rules['referral_enabled'])
+                            <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.65rem;">
+                                ● Active
+                            </span>
+                        @else
+                            <span class="badge bg-secondary bg-opacity-20 text-secondary rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.65rem;">
+                                ○ Disabled
+                            </span>
+                        @endif
+                    </div>
                     @if(auth()->user()->isSuperAdmin())
                     <button type="button" class="btn btn-link p-0 text-primary fw-bold text-decoration-none" style="font-size: 0.72rem;" data-bs-toggle="modal" data-bs-target="#editRulesModal">
                         <i class="bi bi-sliders me-0.5"></i> Edit
@@ -183,6 +194,9 @@
                 <div class="d-flex align-items-center gap-1.5 small mb-1">
                     <span class="text-secondary" style="font-size: 0.75rem;">Welcome Bonus:</span>
                     <strong class="text-dark font-monospace">₹{{ number_format($rules['signup_bonus'], 0) }}</strong>
+                    @if(!$rules['signup_bonus_enabled'])
+                        <span class="text-muted" style="font-size: 0.65rem;">(Disabled)</span>
+                    @endif
                 </div>
                 <div class="d-flex align-items-center gap-1.5 small mb-1">
                     <span class="text-secondary" style="font-size: 0.75rem;">3-Tier Repeat:</span>
@@ -191,7 +205,7 @@
                 <div class="text-muted" style="font-size: 0.7rem;">
                     Max Payout: <strong class="text-dark">₹{{ number_format($rules['first_order_reward'] + $rules['second_order_reward'] + $rules['third_order_reward'], 0) }}</strong>/friend
                 </div>
-                <div class="kpi-accent" style="background: linear-gradient(90deg, #8b5cf6, #a78bfa);"></div>
+                <div class="kpi-accent" style="background: linear-gradient(90deg, {{ $rules['referral_enabled'] ? '#8b5cf6, #a78bfa' : '#9ca3af, #cbd5e1' }});"></div>
             </div>
         </div>
     </div>

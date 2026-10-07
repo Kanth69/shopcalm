@@ -92,12 +92,53 @@
                         </form>
                     </div>
 
-                    {{-- Main Image Area --}}
-                    <div class="p-3 p-md-4 d-flex align-items-center justify-content-center" style="min-height: 380px; max-height: 480px;">
-                        @if($product->main_image)
-                            <img src="{{ asset('storage/' . $product->main_image) }}" id="main-product-img" 
-                                 class="img-fluid main-pdp-image" alt="{{ $product->name }}" 
-                                 style="max-height: 420px; width: auto; object-fit: contain; transition: transform 0.3s ease;">
+                    @php
+                        $allProductImages = [];
+                        if (!empty($product->main_image)) {
+                            $allProductImages[] = str_starts_with($product->main_image, 'http') ? $product->main_image : asset('storage/' . $product->main_image);
+                        }
+                        if ($product->galleryImages && $product->galleryImages->count() > 0) {
+                            foreach ($product->galleryImages as $gImg) {
+                                $rawPath = $gImg->image ?? $gImg->image_path ?? null;
+                                if (!empty($rawPath)) {
+                                    $fullUrl = str_starts_with($rawPath, 'http') ? $rawPath : asset('storage/' . $rawPath);
+                                    if (!in_array($fullUrl, $allProductImages, true)) {
+                                        $allProductImages[] = $fullUrl;
+                                    }
+                                }
+                            }
+                        }
+                    @endphp
+
+                    {{-- Main Image Area (Fixed Uniform 1:1 Square Frame) --}}
+                    <div class="p-3 p-md-4 d-flex align-items-center justify-content-center position-relative pdp-main-image-stage">
+                        @if(count($allProductImages) > 0)
+                            <div class="pdp-uniform-image-box d-flex align-items-center justify-content-center">
+                                <img src="{{ $allProductImages[0] }}" id="main-product-img" 
+                                     class="main-pdp-image" alt="{{ $product->name }}">
+                            </div>
+
+                            @if(count($allProductImages) > 1)
+                                {{-- Previous / Next Image Controls --}}
+                                <button type="button" onclick="stepProductGallery(-1)" aria-label="Previous image"
+                                        class="btn btn-light shadow-sm rounded-circle position-absolute start-0 ms-2 d-flex align-items-center justify-content-center z-2"
+                                        style="width: 36px; height: 36px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.92); border: 1px solid #e2e8f0;">
+                                    <i class="bi bi-chevron-left text-dark" style="font-size: 0.95rem;"></i>
+                                </button>
+                                <button type="button" onclick="stepProductGallery(1)" aria-label="Next image"
+                                        class="btn btn-light shadow-sm rounded-circle position-absolute end-0 me-2 d-flex align-items-center justify-content-center z-2"
+                                        style="width: 36px; height: 36px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.92); border: 1px solid #e2e8f0;">
+                                    <i class="bi bi-chevron-right text-dark" style="font-size: 0.95rem;"></i>
+                                </button>
+
+                                {{-- Image Counter Pill --}}
+                                <div class="position-absolute bottom-0 end-0 m-3 z-2">
+                                    <span id="pdp-gallery-counter" class="badge rounded-pill px-2.5 py-1 fw-semibold"
+                                          style="background: rgba(15, 23, 42, 0.72); color: #ffffff; font-size: 0.72rem; backdrop-filter: blur(4px);">
+                                        1 / {{ count($allProductImages) }}
+                                    </span>
+                                </div>
+                            @endif
                         @else
                             <div class="text-muted d-flex flex-column align-items-center justify-content-center py-5">
                                 <i class="bi bi-image fs-1 opacity-25"></i>
@@ -108,19 +149,16 @@
                 </div>
 
                 {{-- Thumbnail Gallery Strip --}}
-                @if($product->galleryImages->count() > 0)
-                <div class="d-flex align-items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-                    {{-- Main image thumbnail --}}
-                    <div class="gallery-thumb active rounded-3 border overflow-hidden p-1 cursor-pointer flex-shrink-0" 
-                         onclick="updateMainImage('{{ asset('storage/' . $product->main_image) }}', this)"
-                         style="width: 68px; height: 68px; background: #ffffff; border-color: #cbd5e1 !important;">
-                        <img src="{{ asset('storage/' . $product->main_image) }}" class="w-100 h-100" style="object-fit: contain;">
-                    </div>
-                    @foreach($product->galleryImages as $image)
-                    <div class="gallery-thumb rounded-3 border overflow-hidden p-1 cursor-pointer flex-shrink-0" 
-                         onclick="updateMainImage('{{ asset('storage/' . $image->image_path) }}', this)"
-                         style="width: 68px; height: 68px; background: #ffffff; border-color: #e2e8f0 !important;">
-                        <img src="{{ asset('storage/' . $image->image_path) }}" class="w-100 h-100" style="object-fit: contain;">
+                @if(count($allProductImages) > 1)
+                <div class="d-flex align-items-center gap-2 overflow-x-auto pb-2 pt-1 no-scrollbar" id="pdp-thumb-strip">
+                    @foreach($allProductImages as $idx => $imgUrl)
+                    <div class="gallery-thumb {{ $idx === 0 ? 'active' : '' }} rounded-3 overflow-hidden p-1 cursor-pointer flex-shrink-0" 
+                         data-index="{{ $idx }}"
+                         data-src="{{ $imgUrl }}"
+                         onclick="selectProductGalleryIndex({{ $idx }})"
+                         onmouseenter="selectProductGalleryIndex({{ $idx }})"
+                         style="width: 68px; height: 68px; background: #ffffff; border: 2px solid {{ $idx === 0 ? '#0284c7' : '#e2e8f0' }}; transition: all 0.2s ease; cursor: pointer;">
+                        <img src="{{ $imgUrl }}" alt="{{ $product->name }} view {{ $idx + 1 }}" class="w-100 h-100" style="object-fit: contain;">
                     </div>
                     @endforeach
                 </div>
@@ -228,42 +266,130 @@
                 @endif
             </div>
 
-            {{-- 6.5. Product Options (Sizes, Colors, Waist Sizes Matrix) --}}
+            {{-- 6.5. Product Options (Sizes, Colors, Waist Sizes, or Double Variant Color + Size Matrix) --}}
             @if($product->has_options && !empty($product->option_stocks))
                 @php
                     $optionStocks = is_array($product->option_stocks) ? $product->option_stocks : json_decode($product->option_stocks, true);
-                    $optionLabel = match(strtolower($product->option_type ?? 'size')) {
+                    $optType = strtolower($product->option_type ?? 'size');
+                    $hasDoubleVariants = in_array($optType, ['size_color', 'waist_color']);
+                    if (!$hasDoubleVariants && is_array($optionStocks)) {
+                        foreach (array_keys($optionStocks) as $k) {
+                            if (str_contains((string)$k, ' - ')) {
+                                $hasDoubleVariants = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    $uniqueColors = [];
+                    $colorTotalStock = [];
+                    $uniqueSizes = [];
+                    $doubleMatrix = [];
+                    if ($hasDoubleVariants && is_array($optionStocks)) {
+                        foreach ($optionStocks as $optKey => $optQty) {
+                            $parts = explode(' - ', (string)$optKey, 2);
+                            $c = trim($parts[0] ?? '');
+                            $s = trim($parts[1] ?? '');
+                            if ($c !== '' && $s !== '') {
+                                if (!in_array($c, $uniqueColors, true)) $uniqueColors[] = $c;
+                                if (!in_array($s, $uniqueSizes, true)) $uniqueSizes[] = $s;
+                                $colorTotalStock[$c] = ($colorTotalStock[$c] ?? 0) + (int)$optQty;
+                                $doubleMatrix[$c][$s] = (int)$optQty;
+                            }
+                        }
+                    }
+
+                    $optionLabel = match($optType) {
                         'waist' => 'Select Waist Size',
                         'color' => 'Select Color',
                         default => 'Select Size',
                     };
+                    $secondDimLabel = ($optType === 'waist_color') ? 'Select Waist Size' : 'Select Size';
                 @endphp
-                <div class="mb-4 p-3 rounded-4 border bg-white shadow-xs">
-                    <div class="d-flex align-items-center justify-content-between mb-2.5">
-                        <span class="fw-bold text-dark small" style="font-size: 0.88rem;"><i class="bi bi-tag-fill me-1 text-primary"></i> {{ $optionLabel }}:</span>
-                        <span id="selected-option-display" class="badge rounded-pill bg-light text-secondary border px-2.5 py-1 font-monospace fw-bold" style="font-size: 0.72rem;">Please Select</span>
+
+                @if($hasDoubleVariants && count($uniqueColors) > 0 && count($uniqueSizes) > 0)
+                    <div class="mb-4 p-3 rounded-4 border bg-white shadow-xs" id="option-pills-container" data-double-variant="1">
+                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                            <span class="fw-bold text-dark small" style="font-size: 0.88rem;"><i class="bi bi-layers-fill me-1 text-primary"></i> Selected Variant:</span>
+                            <span id="selected-option-display" class="badge rounded-pill bg-light text-secondary border px-2.5 py-1 font-monospace fw-bold" style="font-size: 0.72rem;">Select Color & Size</span>
+                        </div>
+
+                        {{-- Step 1: Select Color --}}
+                        <div class="mb-3">
+                            <div class="fw-bold text-dark small mb-2" style="font-size: 0.82rem;">
+                                <i class="bi bi-palette-fill me-1 text-primary"></i> 1. Select Color:
+                                <span id="selected-color-label" class="text-primary fw-bold ms-1"></span>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                @foreach($uniqueColors as $colorName)
+                                    @php
+                                        $cStock = $colorTotalStock[$colorName] ?? 0;
+                                        $cAvail = $cStock > 0;
+                                    @endphp
+                                    <button type="button"
+                                            class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold double-color-pill {{ $cAvail ? 'btn-outline-secondary text-dark border-secondary border-opacity-50' : 'btn-light border text-muted opacity-50' }}"
+                                            data-color="{{ $colorName }}"
+                                            {{ !$cAvail ? 'disabled' : '' }}
+                                            onclick="selectDoubleVariantColor('{{ addslashes($colorName) }}')">
+                                        {{ $colorName }}
+                                        @if(!$cAvail)
+                                            <span class="badge bg-danger text-white rounded-pill ms-1" style="font-size: 0.6rem;">Sold Out</span>
+                                        @endif
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Step 2: Select Size / Waist --}}
+                        <div>
+                            <div class="fw-bold text-dark small mb-2" style="font-size: 0.82rem;">
+                                <i class="bi bi-rulers me-1 text-primary"></i> 2. {{ $secondDimLabel }}:
+                                <span id="selected-size-label" class="text-primary fw-bold ms-1"></span>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                @foreach($uniqueSizes as $sizeName)
+                                    <button type="button"
+                                            class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold double-size-pill btn-outline-secondary text-dark border-secondary border-opacity-50"
+                                            data-size="{{ $sizeName }}"
+                                            onclick="selectDoubleVariantSize('{{ addslashes($sizeName) }}')">
+                                        {{ $sizeName }}
+                                        <span class="badge bg-light text-muted border ms-1 font-monospace double-size-stock-badge" data-size-badge="{{ $sizeName }}" style="font-size: 0.65rem;">Pick color</span>
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+                        <script>
+                            window.doubleVariantMatrix = @json($doubleMatrix);
+                        </script>
                     </div>
-                    <div class="d-flex flex-wrap gap-2" id="option-pills-container">
-                        @foreach($optionStocks as $optKey => $optQty)
-                            @php
-                                $isAvailable = $optQty > 0;
-                            @endphp
-                            <button type="button" 
-                                    class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold option-pill-btn {{ $isAvailable ? 'btn-outline-secondary text-dark border-secondary border-opacity-50' : 'btn-light border text-muted opacity-50' }}"
-                                    data-option="{{ $optKey }}"
-                                    data-stock="{{ $optQty }}"
-                                    {{ !$isAvailable ? 'disabled' : '' }}
-                                    onclick="selectProductOption('{{ $optKey }}', {{ $optQty }})">
-                                {{ $optKey }}
-                                @if($isAvailable)
-                                    <span class="badge bg-light text-dark border ms-1 font-monospace" style="font-size: 0.65rem;">{{ $optQty }} left</span>
-                                @else
-                                    <span class="badge bg-danger text-white rounded-pill ms-1" style="font-size: 0.6rem;">Sold Out</span>
-                                @endif
-                            </button>
-                        @endforeach
+                @else
+                    <div class="mb-4 p-3 rounded-4 border bg-white shadow-xs">
+                        <div class="d-flex align-items-center justify-content-between mb-2.5">
+                            <span class="fw-bold text-dark small" style="font-size: 0.88rem;"><i class="bi bi-tag-fill me-1 text-primary"></i> {{ $optionLabel }}:</span>
+                            <span id="selected-option-display" class="badge rounded-pill bg-light text-secondary border px-2.5 py-1 font-monospace fw-bold" style="font-size: 0.72rem;">Please Select</span>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2" id="option-pills-container">
+                            @foreach($optionStocks as $optKey => $optQty)
+                                @php
+                                    $isAvailable = $optQty > 0;
+                                @endphp
+                                <button type="button" 
+                                        class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold option-pill-btn {{ $isAvailable ? 'btn-outline-secondary text-dark border-secondary border-opacity-50' : 'btn-light border text-muted opacity-50' }}"
+                                        data-option="{{ $optKey }}"
+                                        data-stock="{{ $optQty }}"
+                                        {{ !$isAvailable ? 'disabled' : '' }}
+                                        onclick="selectProductOption('{{ addslashes($optKey) }}', {{ $optQty }})">
+                                    {{ $optKey }}
+                                    @if($isAvailable)
+                                        <span class="badge bg-light text-dark border ms-1 font-monospace" style="font-size: 0.65rem;">{{ $optQty }} left</span>
+                                    @else
+                                        <span class="badge bg-danger text-white rounded-pill ms-1" style="font-size: 0.6rem;">Sold Out</span>
+                                    @endif
+                                </button>
+                            @endforeach
+                        </div>
                     </div>
-                </div>
+                @endif
             @endif
 
             {{-- 7. Quantity & CTA Purchase Actions (Flipkart / Amazon Iconic Dual Actions) --}}
@@ -638,6 +764,31 @@
 @endif
 
 <style>
+    .pdp-main-image-stage {
+        width: 100%;
+        height: 420px;
+        min-height: 420px;
+        max-height: 420px;
+        background: #ffffff;
+        overflow: hidden;
+    }
+    .pdp-uniform-image-box {
+        width: 360px;
+        height: 360px;
+        max-width: 100%;
+        max-height: 100%;
+        aspect-ratio: 1 / 1;
+        overflow: hidden;
+        border-radius: 10px;
+        background: #ffffff;
+    }
+    .main-pdp-image {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: contain !important;
+        object-position: center center !important;
+        transition: opacity 0.2s ease, transform 0.3s ease;
+    }
     .gallery-thumb { 
         transition: all 0.2s ease; 
         opacity: 0.75; 
@@ -681,6 +832,15 @@
     @media (max-width: 767.98px) {
         .product-gallery-sticky {
             position: static !important;
+        }
+        .pdp-main-image-stage {
+            height: 310px;
+            min-height: 310px;
+            max-height: 310px;
+        }
+        .pdp-uniform-image-box {
+            width: 260px;
+            height: 260px;
         }
         body {
             padding-bottom: 60px;
@@ -743,6 +903,8 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 let currentSelectedOption = '';
+let selectedDoubleColor = '';
+let selectedDoubleSize = '';
 
 function selectProductOption(optKey, optQty) {
     currentSelectedOption = optKey;
@@ -750,7 +912,7 @@ function selectProductOption(optKey, optQty) {
         btn.classList.remove('btn-primary', 'text-white');
         btn.classList.add('btn-outline-secondary', 'text-dark');
     });
-    const clickedBtn = document.querySelector(`.option-pill-btn[data-option="${optKey}"]`);
+    const clickedBtn = document.querySelector(`.option-pill-btn[data-option="${CSS.escape(optKey)}"]`);
     if (clickedBtn) {
         clickedBtn.classList.remove('btn-outline-secondary', 'text-dark');
         clickedBtn.classList.add('btn-primary', 'text-white');
@@ -763,37 +925,225 @@ function selectProductOption(optKey, optQty) {
     document.querySelectorAll('.hidden-selected-option').forEach(inp => {
         inp.value = optKey;
     });
+    const qtyInput = document.getElementById('qty-input');
+    if (qtyInput && optQty > 0) {
+        qtyInput.max = optQty;
+        if (parseInt(qtyInput.value) > optQty) {
+            qtyInput.value = optQty;
+            document.querySelectorAll('.hidden-qty').forEach(el => el.value = optQty);
+        }
+    }
+}
+
+function selectDoubleVariantColor(colorName) {
+    selectedDoubleColor = colorName;
+    const colorLabel = document.getElementById('selected-color-label');
+    if (colorLabel) colorLabel.textContent = colorName;
+
+    document.querySelectorAll('.double-color-pill').forEach(btn => {
+        if (btn.getAttribute('data-color') === colorName) {
+            btn.classList.remove('btn-outline-secondary', 'text-dark');
+            btn.classList.add('btn-primary', 'text-white');
+        } else if (!btn.disabled) {
+            btn.classList.remove('btn-primary', 'text-white');
+            btn.classList.add('btn-outline-secondary', 'text-dark');
+        }
+    });
+
+    const matrix = window.doubleVariantMatrix || {};
+    const sizesForColor = matrix[colorName] || {};
+
+    document.querySelectorAll('.double-size-pill').forEach(btn => {
+        const sizeName = btn.getAttribute('data-size');
+        const stock = sizesForColor[sizeName] !== undefined ? parseInt(sizesForColor[sizeName]) : 0;
+        const badge = btn.querySelector('.double-size-stock-badge');
+
+        if (stock > 0) {
+            btn.disabled = false;
+            btn.classList.remove('btn-light', 'text-muted', 'opacity-50');
+            if (selectedDoubleSize === sizeName) {
+                btn.classList.remove('btn-outline-secondary', 'text-dark');
+                btn.classList.add('btn-primary', 'text-white');
+            } else {
+                btn.classList.remove('btn-primary', 'text-white');
+                btn.classList.add('btn-outline-secondary', 'text-dark');
+            }
+            if (badge) {
+                badge.textContent = `${stock} left`;
+                badge.className = 'badge bg-light text-dark border ms-1 font-monospace double-size-stock-badge';
+            }
+        } else {
+            btn.disabled = true;
+            btn.classList.remove('btn-primary', 'text-white', 'btn-outline-secondary', 'text-dark');
+            btn.classList.add('btn-light', 'border', 'text-muted', 'opacity-50');
+            if (badge) {
+                badge.textContent = 'Sold Out';
+                badge.className = 'badge bg-danger text-white rounded-pill ms-1 double-size-stock-badge';
+            }
+            if (selectedDoubleSize === sizeName) {
+                selectedDoubleSize = '';
+                const sizeLabel = document.getElementById('selected-size-label');
+                if (sizeLabel) sizeLabel.textContent = '';
+            }
+        }
+    });
+
+    syncDoubleVariantSelection();
+}
+
+function selectDoubleVariantSize(sizeName) {
+    if (!selectedDoubleColor) {
+        // Auto-select the first available color that has this size in stock
+        const matrix = window.doubleVariantMatrix || {};
+        for (const c of Object.keys(matrix)) {
+            if ((matrix[c][sizeName] || 0) > 0) {
+                selectDoubleVariantColor(c);
+                break;
+            }
+        }
+    }
+
+    const matrix = window.doubleVariantMatrix || {};
+    const stock = (selectedDoubleColor && matrix[selectedDoubleColor] && matrix[selectedDoubleColor][sizeName])
+        ? parseInt(matrix[selectedDoubleColor][sizeName])
+        : 0;
+    if (selectedDoubleColor && stock <= 0) return;
+
+    selectedDoubleSize = sizeName;
+    const sizeLabel = document.getElementById('selected-size-label');
+    if (sizeLabel) sizeLabel.textContent = sizeName;
+
+    document.querySelectorAll('.double-size-pill').forEach(btn => {
+        if (btn.getAttribute('data-size') === sizeName && !btn.disabled) {
+            btn.classList.remove('btn-outline-secondary', 'text-dark');
+            btn.classList.add('btn-primary', 'text-white');
+        } else if (!btn.disabled) {
+            btn.classList.remove('btn-primary', 'text-white');
+            btn.classList.add('btn-outline-secondary', 'text-dark');
+        }
+    });
+
+    syncDoubleVariantSelection();
+}
+
+function syncDoubleVariantSelection() {
+    const displaySpan = document.getElementById('selected-option-display');
+    const matrix = window.doubleVariantMatrix || {};
+
+    if (selectedDoubleColor && selectedDoubleSize) {
+        const stock = (matrix[selectedDoubleColor] && matrix[selectedDoubleColor][selectedDoubleSize])
+            ? parseInt(matrix[selectedDoubleColor][selectedDoubleSize])
+            : 0;
+        if (stock > 0) {
+            currentSelectedOption = `${selectedDoubleColor} - ${selectedDoubleSize}`;
+            if (displaySpan) {
+                displaySpan.textContent = currentSelectedOption;
+                displaySpan.className = 'badge rounded-pill bg-primary text-white border px-2.5 py-1 font-monospace fw-bold';
+            }
+            document.querySelectorAll('.hidden-selected-option').forEach(inp => {
+                inp.value = currentSelectedOption;
+            });
+            const qtyInput = document.getElementById('qty-input');
+            if (qtyInput) {
+                qtyInput.max = stock;
+                if (parseInt(qtyInput.value) > stock) {
+                    qtyInput.value = stock;
+                    document.querySelectorAll('.hidden-qty').forEach(el => el.value = stock);
+                }
+            }
+            return;
+        }
+    }
+
+    currentSelectedOption = '';
+    document.querySelectorAll('.hidden-selected-option').forEach(inp => {
+        inp.value = '';
+    });
+    if (displaySpan) {
+        if (selectedDoubleColor && !selectedDoubleSize) {
+            displaySpan.textContent = `${selectedDoubleColor} — Now Select Size`;
+        } else if (!selectedDoubleColor && selectedDoubleSize) {
+            displaySpan.textContent = `Size ${selectedDoubleSize} — Now Select Color`;
+        } else {
+            displaySpan.textContent = 'Select Color & Size';
+        }
+        displaySpan.className = 'badge rounded-pill bg-light text-secondary border px-2.5 py-1 font-monospace fw-bold';
+    }
 }
 
 function validateOptionSelected(formEl) {
     const hasOptionsContainer = document.getElementById('option-pills-container');
     if (hasOptionsContainer && !currentSelectedOption) {
+        const isDouble = hasOptionsContainer.getAttribute('data-double-variant') === '1';
+        let msg = 'Please select a size or color option before adding to your bag.';
+        if (isDouble) {
+            if (!selectedDoubleColor && !selectedDoubleSize) {
+                msg = 'Please select both a Color and a Size before adding to your bag.';
+            } else if (!selectedDoubleColor) {
+                msg = 'Please select a Color option.';
+            } else if (!selectedDoubleSize) {
+                msg = `Please select an available Size for ${selectedDoubleColor}.`;
+            }
+        }
         if (typeof Swal !== 'undefined') {
             Swal.fire({
                 icon: 'info',
-                title: 'Please Select an Option',
-                text: 'Please select a size or color option before adding to your bag.',
+                title: isDouble ? 'Select Color & Size' : 'Please Select an Option',
+                text: msg,
                 confirmButtonColor: '#0284c7'
             });
         } else {
-            alert('Please select a size or color option before adding to your bag.');
+            alert(msg);
         }
         return false;
     }
     return true;
 }
 
-function updateMainImage(src, thumb) {
+let currentProductGalleryIdx = 0;
+
+function selectProductGalleryIndex(idx) {
+    const thumbs = document.querySelectorAll('.gallery-thumb');
+    if (!thumbs.length) return;
+    if (idx < 0) idx = thumbs.length - 1;
+    if (idx >= thumbs.length) idx = 0;
+
+    currentProductGalleryIdx = idx;
+    const targetThumb = thumbs[idx];
+    const src = targetThumb ? targetThumb.getAttribute('data-src') : null;
     const mainImg = document.getElementById('main-product-img');
-    if (mainImg) {
-        mainImg.style.opacity = '0.4';
+
+    if (mainImg && src && mainImg.src !== src) {
+        mainImg.style.opacity = '0.35';
         setTimeout(() => {
             mainImg.src = src;
             mainImg.style.opacity = '1';
-        }, 120);
+        }, 90);
     }
-    document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
-    thumb.classList.add('active');
+
+    thumbs.forEach((t, i) => {
+        if (i === idx) {
+            t.classList.add('active');
+            t.style.borderColor = '#0284c7';
+        } else {
+            t.classList.remove('active');
+            t.style.borderColor = '#e2e8f0';
+        }
+    });
+
+    const counter = document.getElementById('pdp-gallery-counter');
+    if (counter) {
+        counter.textContent = `${idx + 1} / ${thumbs.length}`;
+    }
+}
+
+function stepProductGallery(delta) {
+    selectProductGalleryIndex(currentProductGalleryIdx + delta);
+}
+
+function updateMainImage(src, thumb) {
+    const idx = thumb && thumb.hasAttribute('data-index') ? parseInt(thumb.getAttribute('data-index'), 10) : 0;
+    selectProductGalleryIndex(idx);
 }
 
 function changeQty(amt) {

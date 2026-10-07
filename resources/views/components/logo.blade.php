@@ -17,22 +17,22 @@
     
     $darkAccentColor = $variant === 'light' ? 'rgba(255,255,255,0.88)' : '#0a1128';
     
-    // Split store name into 2 parts for styled gradient rendering
+    // Split store name into 2 parts for styled gradient rendering (e.g., Shop + Calm)
     $nameLen = strlen($storeName);
     $splitPoint = (stripos($storeName, 'Kart') !== false) ? stripos($storeName, 'Kart') : ((stripos($storeName, 'Calm') !== false) ? stripos($storeName, 'Calm') : (int)ceil($nameLen / 2));
-    $part1 = $splitPoint > 0 ? substr($storeName, 0, $splitPoint) : $storeName;
-    $part2 = $splitPoint > 0 ? substr($storeName, $splitPoint) : '';
+    $part1 = $splitPoint > 0 ? ucfirst(substr($storeName, 0, $splitPoint)) : ucfirst($storeName);
+    $part2 = $splitPoint > 0 ? ucfirst(substr($storeName, $splitPoint)) : '';
+    $wordmarkFontSize = max(1.22, round($height * 0.046, 2));
+    $iconGap = max(8, round($height * 0.22));
 @endphp
 
-@if($customLogo && !$onlyIcon)
-    <div class="d-inline-flex align-items-center logo-custom-container" style="user-select: none;">
-        <img src="{{ asset('storage/' . $customLogo) }}" height="{{ $height }}" alt="{{ $storeName }}" style="max-height: {{ $height }}px; object-fit: contain;">
-    </div>
-@else
-<div class="d-inline-flex {{ $showTagline ? 'flex-column align-items-center' : 'align-items-center gap-2.5' }} logo-shopcalm-container" style="user-select: none;">
-    <div class="d-inline-flex align-items-center gap-2.5">
+<div class="d-inline-flex {{ $showTagline ? 'flex-column align-items-center' : 'align-items-center' }} logo-shopcalm-container" style="display: inline-flex !important; {{ $showTagline ? 'flex-direction: column; align-items: center;' : 'flex-direction: row; align-items: center;' }} user-select: none; line-height: 1; text-decoration: none;">
+    <div class="d-inline-flex align-items-center logo-shopcalm-row" style="display: inline-flex !important; flex-direction: row !important; align-items: center !important; gap: {{ $iconGap }}px; flex-wrap: nowrap !important; white-space: nowrap !important;">
+        @if($customLogo)
+            <img src="{{ asset('storage/' . $customLogo) }}" height="{{ $height }}" alt="{{ $storeName }}" style="height: {{ $height }}px; max-height: {{ $height }}px; width: auto; object-fit: contain; display: inline-block; flex-shrink: 0;">
+        @else
         {{-- ShopCalm Exact Reference Brand Mark (100% Vector SVG) --}}
-        <svg width="{{ $iconSize }}" height="{{ $iconSize }}" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0; overflow: visible;">
+        <svg class="logo-shopcalm-svg" width="{{ $iconSize }}" height="{{ $iconSize }}" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; flex-shrink: 0; overflow: visible; width: {{ $iconSize }}px; height: {{ $iconSize }}px;">
             <defs>
                 {{-- Dynamic linear gradient for the "S" body: Purple to Electric Blue --}}
                 <linearGradient id="{{ $uid }}_s_gradient" x1="45%" y1="15%" x2="75%" y2="95%">
@@ -137,9 +137,10 @@
                 </g>
             </g>
         </svg>
+        @endif
 
         @if(!$onlyIcon)
-            <div class="d-flex align-items-baseline" style="font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif; font-size: {{ max(1.2, $height * 0.046) }}rem; font-weight: 800; letter-spacing: -0.7px; line-height: 1;">
+            <div class="d-inline-flex align-items-baseline logo-shopcalm-wordmark" style="display: inline-flex !important; flex-direction: row !important; align-items: baseline !important; white-space: nowrap !important; font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif; font-size: {{ $wordmarkFontSize }}rem; font-weight: 800; letter-spacing: -0.7px; line-height: 1;">
                 <span style="color: {{ $textColorShop }};">{{ $part1 }}</span><span style="background: linear-gradient(135deg, #8b5cf6 0%, #2563eb 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{{ $part2 }}</span>
             </div>
         @endif
@@ -147,11 +148,11 @@
 
     @if($showTagline)
         {{-- Tagline bar matching exact reference: — 🛍️ Shop More. Worry Less. — --}}
-        <div class="d-flex align-items-center justify-content-center gap-2 mt-1.5" style="width: 100%;">
+        <div class="d-flex align-items-center justify-content-center gap-2 mt-1.5" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px; width: 100%;">
             <div style="height: 1px; width: 28px; background: {{ $ruleColor }};"></div>
-            <div class="d-flex align-items-center gap-1.5">
+            <div class="d-flex align-items-center gap-1.5" style="display: inline-flex; align-items: center; gap: 5px;">
                 {{-- Mini Purple Bag Icon --}}
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; flex-shrink: 0;">
                     <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
                     <line x1="3" y1="6" x2="21" y2="6"></line>
                     <path d="M16 10a4 4 0 0 1-8 0"></path>
@@ -164,4 +165,3 @@
         </div>
     @endif
 </div>
-@endif

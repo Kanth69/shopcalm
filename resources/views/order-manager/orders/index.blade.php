@@ -173,9 +173,9 @@
                             <div class="fw-bold text-dark small">₹{{ number_format($order->total_amount, 2) }}</div>
                             <div class="d-flex align-items-center gap-1 mt-0.5">
                                 <span class="badge bg-light text-dark border" style="font-size: 0.65rem; text-transform: uppercase;">
-                                    {{ $order->payment_method }}
+                                    {{ ($order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0)) ? 'WALLET (100%)' : $order->payment_method }}
                                 </span>
-                                <span class="badge {{ $order->payment_status === 'paid' ? 'bg-success' : 'bg-warning text-dark' }}" style="font-size: 0.62rem;">
+                                <span class="badge {{ ($order->payment_status === 'paid' || $order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0)) ? 'bg-success' : 'bg-warning text-dark' }}" style="font-size: 0.62rem;">
                                     {{ ucfirst($order->payment_status ?? 'pending') }}
                                 </span>
                             </div>

@@ -235,31 +235,23 @@
     </div>
 
     <!-- 2. Core Stats Counter Grid -->
+    @php
+        $stats = $data['stats'] ?? [
+            ['value' => '50K+', 'label' => 'Happy Customers', 'color' => '#6366f1'],
+            ['value' => '10K+', 'label' => 'Verified Products', 'color' => '#10b981'],
+            ['value' => '99.8%', 'label' => 'On-Time Delivery', 'color' => '#0284c7'],
+            ['value' => '4.9★', 'label' => 'Customer Rating', 'color' => '#f59e0b'],
+        ];
+    @endphp
     <div class="row g-3 g-lg-4 mb-4 mb-md-5 pb-lg-2">
+        @foreach($stats as $st)
         <div class="col-6 col-md-3">
             <div class="about-stat-card">
-                <div class="text-primary fw-bolder mb-1.5" style="font-size: clamp(1.6rem, 4.5vw, 2.3rem); line-height: 1; letter-spacing: -0.03em; color: #6366f1 !important;">50K+</div>
-                <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.05em;">Happy Customers</div>
+                <div class="fw-bolder mb-1.5" style="font-size: clamp(1.6rem, 4.5vw, 2.3rem); line-height: 1; letter-spacing: -0.03em; color: {{ $st['color'] ?? '#6366f1' }} !important;">{{ $st['value'] }}</div>
+                <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.05em;">{{ $st['label'] }}</div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="about-stat-card">
-                <div class="text-success fw-bolder mb-1.5" style="font-size: clamp(1.6rem, 4.5vw, 2.3rem); line-height: 1; letter-spacing: -0.03em; color: #10b981 !important;">10K+</div>
-                <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.05em;">Verified Products</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="about-stat-card">
-                <div class="text-info fw-bolder mb-1.5" style="font-size: clamp(1.6rem, 4.5vw, 2.3rem); line-height: 1; letter-spacing: -0.03em; color: #0284c7 !important;">99.8%</div>
-                <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.05em;">On-Time Delivery</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="about-stat-card">
-                <div class="text-warning fw-bolder mb-1.5" style="font-size: clamp(1.6rem, 4.5vw, 2.3rem); line-height: 1; letter-spacing: -0.03em; color: #f59e0b !important;">4.9★</div>
-                <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.05em;">Customer Rating</div>
-            </div>
-        </div>
+        @endforeach
     </div>
 
     <!-- 3. Section: Our Story & Journey (with Generous Spacing & High-Contrast Visuals) -->
@@ -268,12 +260,12 @@
             <div class="col-lg-7">
                 <div class="mb-3">
                     <span class="badge rounded-pill px-3 py-1.5 fw-bold text-uppercase d-inline-flex align-items-center gap-1.5 shadow-xs" style="background: linear-gradient(135deg, #ede9fe, #e0e7ff); color: #4f46e5; font-size: 0.76rem; border: 1px solid #c7d2fe; letter-spacing: 0.05em;">
-                        <i class="bi bi-compass-fill text-primary"></i> <span>Our Journey</span>
+                        <i class="bi bi-compass-fill text-primary"></i> <span>{{ $ourStory['badge'] ?? 'Our Journey' }}</span>
                     </span>
                 </div>
 
                 <h2 class="fw-bolder mb-2.5" style="letter-spacing: -0.03em; color: #0f172a; font-size: clamp(1.4rem, 3.5vw, 2rem); line-height: 1.25;">
-                    How <span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{{ $storeName }}</span> Came to Life
+                    {{ $ourStory['title'] ?? ('How ' . $storeName . ' Came to Life') }}
                 </h2>
 
                 <p class="fw-semibold mb-4" style="color: #4f46e5; font-size: 1.05rem; letter-spacing: -0.01em;">
@@ -281,15 +273,9 @@
                 </p>
 
                 <div style="line-height: 1.85; font-size: 0.96rem; color: #1e293b;">
-                    <p class="mb-3.5">
-                        Online shopping should be an exciting and stress-free experience, yet modern e-commerce is often crowded with confusing pricing, unverified sellers, and difficult return procedures.
-                    </p>
-                    <p class="mb-3.5">
-                        We founded <strong style="color: #6366f1; font-weight: 700;">{{ $storeName }}</strong> to bring <span style="background: #ede9fe; color: #7c3aed; padding: 3px 9px; border-radius: 6px; font-weight: 600;">peace of mind</span> back to online retail. Every product in our catalog undergoes <strong style="color: #0f172a; font-weight: 700;">rigorous authenticity screening</strong>, and our operations are designed around customer transparency, fair pricing, and dependable logistics.
-                    </p>
-                    <p class="mb-0">
-                        Today, {{ $storeName }} proudly serves thousands of happy shoppers nationwide, delivering top electronics, fashion, lifestyle, and home essentials with speed and reliability.
-                    </p>
+                    @foreach($ourStory['paragraphs'] ?? [] as $pIdx => $para)
+                        <p class="{{ $loop->last ? 'mb-0' : 'mb-3.5' }}">{!! $para !!}</p>
+                    @endforeach
                 </div>
             </div>
 
@@ -302,16 +288,15 @@
                         </div>
                     </div>
 
-                    <h4 class="fw-bolder mb-2.5 text-dark" style="color: #1e1b4b !important; letter-spacing: -0.02em;">Built for Peace of Mind</h4>
+                    <h4 class="fw-bolder mb-2.5 text-dark" style="color: #1e1b4b !important; letter-spacing: -0.02em;">{{ $ourStory['quote_title'] ?? 'Built for Peace of Mind' }}</h4>
 
                     <p class="mb-4 text-center" style="color: #334155; font-size: 0.95rem; line-height: 1.65; max-width: 320px;">
-                        Every decision we make starts with one guiding question: 
-                        <span class="d-block mt-2 fw-bold fst-italic" style="color: #1e1b4b;">"Does this make shopping simpler and calmer for our customers?"</span>
+                        {{ $ourStory['quote_text'] ?? 'Every decision we make starts with one guiding question: "Does this make shopping simpler and calmer for our customers?"' }}
                     </p>
 
                     <div class="d-inline-flex align-items-center justify-content-center gap-2 bg-white px-4 py-2.5 rounded-pill shadow-xs border border-primary border-opacity-25" style="white-space: nowrap; line-height: 1;">
                         <i class="bi bi-patch-check-fill text-success fs-5"></i> 
-                        <span class="fw-bold" style="color: #4338ca; font-size: 0.85rem; letter-spacing: 0.01em;">Customer-First Guarantee</span>
+                        <span class="fw-bold" style="color: #4338ca; font-size: 0.85rem; letter-spacing: 0.01em;">{{ $ourStory['guarantee_badge'] ?? 'Customer-First Guarantee' }}</span>
                     </div>
                 </div>
             </div>
@@ -393,10 +378,16 @@
     </div>
 
     <!-- 7. Call to Action Banner -->
+    @php
+        $cta = $data['cta'] ?? [
+            'title' => 'Ready to Experience Great Shopping?',
+            'subtitle' => 'Discover thousands of verified products with fast delivery and guaranteed satisfaction.'
+        ];
+    @endphp
     <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 text-center mb-4" style="background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #e0e7ff 100%); border: 1px solid #ddd6fe !important;">
         <div class="mx-auto" style="max-width: 650px;">
-            <h3 class="fw-bold text-dark mb-2" style="letter-spacing: -0.02em; font-size: clamp(1.25rem, 3.5vw, 1.65rem);">Ready to Experience Great Shopping?</h3>
-            <p class="text-muted mb-4 small">Discover thousands of verified products with fast delivery and guaranteed satisfaction.</p>
+            <h3 class="fw-bold text-dark mb-2" style="letter-spacing: -0.02em; font-size: clamp(1.25rem, 3.5vw, 1.65rem);">{{ $cta['title'] ?? 'Ready to Experience Great Shopping?' }}</h3>
+            <p class="text-muted mb-4 small">{{ $cta['subtitle'] ?? 'Discover thousands of verified products with fast delivery and guaranteed satisfaction.' }}</p>
             <div class="d-flex align-items-center justify-content-center gap-2.5 flex-wrap">
                 <div class="row g-2 justify-content-center w-100" style="max-width: 420px;">
                     <div class="col-6">

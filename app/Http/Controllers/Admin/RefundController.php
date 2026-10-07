@@ -24,11 +24,15 @@ class RefundController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->whereHas('order', fn($oq) => $oq->where('order_number', 'like', "%{$search}%"))
+            $search = trim($request->search);
+            $cleanSearch = str_replace('CNL-', '', $search);
+
+            $query->where(function ($q) use ($search, $cleanSearch) {
+                $q->whereHas('order', fn($oq) => $oq->where('order_number', 'like', "%{$search}%")->orWhere('order_number', 'like', "%{$cleanSearch}%"))
                   ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$search}%")->orWhere('phone', 'like', "%{$search}%"))
-                  ->orWhere('refund_upi_id', 'like', "%{$search}%");
+                  ->orWhere('refund_upi_id', 'like', "%{$search}%")
+                  ->orWhere('payment_reference', 'like', "%{$search}%")
+                  ->orWhere('razorpay_refund_id', 'like', "%{$search}%");
             });
         }
 
@@ -80,6 +84,13 @@ class RefundController extends Controller
                 'changed_by'      => \Illuminate\Support\Facades\Auth::id(),
                 'notes'           => "Net Refund of ₹" . number_format($cancellation->refund_amount, 2) . " to UPI handle ({$cancellation->refund_upi_id}) marked PROCESSED by Admin{$channelNote}{$refNote}{$adminNotes}.",
             ]);
+        }
+
+        // Trigger WhatsApp Refund Processed Notification (with UTR Proof)
+        try {
+            app(\App\Services\WhatsAppService::class)->sendRefundProcessed($cancellation);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("[Admin RefundController] WhatsApp Refund Processed notification failed: " . $e->getMessage());
         }
 
         return redirect()->back()->with('success', "Refund of ₹" . number_format($cancellation->refund_amount, 2) . " for Order #{$order->order_number} to UPI ({$cancellation->refund_upi_id}) has been marked as PROCESSED!");

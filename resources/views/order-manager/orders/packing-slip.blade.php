@@ -79,7 +79,7 @@
                     <div class="small fw-bold text-uppercase text-muted mb-1">Package Info:</div>
                     <div class="small text-dark">
                         <strong>Items:</strong> {{ $order->items->sum('quantity') }} Units<br>
-                        <strong>Method:</strong> {{ strtoupper($order->payment_method) }}<br>
+                        <strong>Method:</strong> {{ ($order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0)) ? 'SHOPCALM WALLET (100% PAID)' : strtoupper($order->payment_method) }}<br>
                         <strong>Courier:</strong> {{ $order->courier_partner ?? 'Pending' }}<br>
                         <strong>AWB:</strong> {{ $order->tracking_number ?? 'Pending' }}
                     </div>

@@ -8,7 +8,13 @@
     <title>@yield('title', \App\Models\Setting::get('store_name', 'ShopCalm') . ' - ' . \App\Models\Setting::get('tagline', 'Shop More. Worry Less.'))</title>
     <meta name="description" content="@yield('meta_description', \App\Models\Setting::get('tagline', 'Discover genuine electronics, smartphones, fashion, and lifestyle essentials at best prices with fast doorstep delivery.'))">
     <link rel="canonical" href="{{ url()->current() }}">
-    <link rel="icon" type="image/x-icon" href="{{ \App\Models\Setting::get('favicon') ? asset('storage/' . \App\Models\Setting::get('favicon')) : asset('favicon.ico') }}">
+    @php
+        $storeFavicon = \App\Models\Setting::get('favicon');
+        $storeFaviconUrl = $storeFavicon ? asset('storage/' . $storeFavicon) . '?v=' . (@filemtime(storage_path('app/public/' . $storeFavicon)) ?: time()) : asset('favicon.ico');
+    @endphp
+    <link rel="icon" href="{{ $storeFaviconUrl }}">
+    <link rel="shortcut icon" href="{{ $storeFaviconUrl }}">
+    <link rel="apple-touch-icon" href="{{ $storeFaviconUrl }}">
 
     <!-- Open Graph / Social & WhatsApp Link Sharing Preview -->
     <meta property="og:site_name" content="{{ \App\Models\Setting::get('store_name', 'ShopCalm') }}">

@@ -130,25 +130,26 @@
     <style>
         /* Shared Modern Auth Styles */
         .auth-card-container {
-            padding: 5px;
+            padding: 4px 2px;
         }
 
         .auth-header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
         }
 
         .auth-logo {
-            display: inline-flex;
-            align-items: center;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
             text-decoration: none;
-            margin-bottom: 20px;
+            margin-bottom: 14px;
         }
 
         .auth-title {
             font-size: 22px;
-            font-weight: 700;
-            color: #1e293b;
+            font-weight: 800;
+            color: #0f172a;
             margin-bottom: 6px;
         }
 
@@ -160,7 +161,7 @@
         .auth-form {
             display: flex;
             flex-direction: column;
-            gap: 18px;
+            gap: 16px;
         }
 
         .form-group {
@@ -186,6 +187,7 @@
             color: #1e293b;
             transition: all 0.2s ease;
             outline: none;
+            width: 100%;
         }
 
         .auth-input:focus {
@@ -197,10 +199,10 @@
         .auth-submit-btn {
             background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
             color: white;
-            padding: 14px;
+            padding: 13px 16px;
             border: none;
             border-radius: 12px;
-            font-size: 16px;
+            font-size: 15.5px;
             font-weight: 700;
             cursor: pointer;
             display: flex;
@@ -209,7 +211,7 @@
             gap: 10px;
             transition: all 0.2s ease;
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
-            margin-top: 10px;
+            margin-top: 6px;
         }
 
         .auth-submit-btn:hover {
@@ -232,6 +234,46 @@
 
         .auth-footer a:hover {
             text-decoration: underline;
+        }
+
+        @media (max-width: 576px) {
+            .auth-card-container {
+                padding: 0;
+            }
+            .auth-header {
+                margin-bottom: 16px;
+            }
+            .auth-logo {
+                margin-bottom: 10px;
+            }
+            .auth-logo .logo-shopcalm-svg {
+                width: 34px !important;
+                height: 34px !important;
+            }
+            .auth-logo .logo-shopcalm-wordmark {
+                font-size: 1.38rem !important;
+            }
+            .auth-title {
+                font-size: 20px;
+            }
+            .auth-subtitle {
+                font-size: 13px;
+            }
+            .auth-form {
+                gap: 12px;
+            }
+            .auth-input {
+                padding: 10px 14px;
+                font-size: 15px;
+                border-radius: 11px;
+                min-height: 44px;
+            }
+            .auth-submit-btn {
+                padding: 12px 16px;
+                font-size: 15px;
+                border-radius: 11px;
+                min-height: 46px;
+            }
         }
     </style>
 </x-guest-layout>

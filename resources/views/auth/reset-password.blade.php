@@ -171,38 +171,16 @@
             margin-bottom: 24px;
         }
         .auth-logo {
-            display: inline-flex;
-            align-items: center;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
             text-decoration: none;
-            margin-bottom: 16px;
-        }
-        .logo-w {
-            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
-            color: white;
-            width: 42px;
-            height: 42px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: 800;
-            border-radius: 12px;
-            margin-right: 12px;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        }
-        .logo-text {
-            font-size: 26px;
-            font-weight: 800;
-            color: #1e293b;
-            letter-spacing: -0.5px;
-        }
-        .logo-text span {
-            color: #3b82f6;
+            margin-bottom: 14px;
         }
         .auth-title {
             font-size: 22px;
-            font-weight: 700;
-            color: #1e293b;
+            font-weight: 800;
+            color: #0f172a;
             margin-bottom: 6px;
         }
         .auth-subtitle {
@@ -220,8 +198,8 @@
             gap: 6px;
         }
         .form-group label {
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 12px;
+            font-weight: 700;
             color: #475569;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -337,6 +315,45 @@
             background-color: #fee2e2;
             color: #991b1b;
             border: 1px solid #fecaca;
+        }
+        @media (max-width: 576px) {
+            .auth-card-container {
+                padding: 0;
+            }
+            .auth-header {
+                margin-bottom: 16px;
+            }
+            .auth-logo {
+                margin-bottom: 10px;
+            }
+            .auth-logo .logo-shopcalm-svg {
+                width: 34px !important;
+                height: 34px !important;
+            }
+            .auth-logo .logo-shopcalm-wordmark {
+                font-size: 1.38rem !important;
+            }
+            .auth-title {
+                font-size: 20px;
+            }
+            .auth-subtitle {
+                font-size: 13px;
+            }
+            .auth-form {
+                gap: 12px;
+            }
+            .auth-input {
+                padding: 10px 14px;
+                font-size: 15px;
+                border-radius: 11px;
+                min-height: 44px;
+            }
+            .auth-submit-btn {
+                padding: 12px 16px;
+                font-size: 15px;
+                border-radius: 11px;
+                min-height: 46px;
+            }
         }
     </style>
 </x-guest-layout>

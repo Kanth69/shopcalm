@@ -19,6 +19,9 @@ return new class extends Migration
         // 2. Drop unused google_id column from users table if present
         if (Schema::hasColumn('users', 'google_id')) {
             Schema::table('users', function (Blueprint $table) {
+                try {
+                    $table->dropUnique(['google_id']);
+                } catch (\Throwable $e) {}
                 $table->dropColumn('google_id');
             });
         }

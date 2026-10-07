@@ -16,6 +16,7 @@ class PageSeeder extends Seeder
 
         // 1. PRIVACY POLICY
         $privacyData = [
+            'desc' => 'How we securely collect, protect, and handle your data under DPDP Act 2023.',
             'intro' => '<p class="lead">At <strong>' . $storeName . '</strong> (operated by WiseKart E-Commerce Solutions), accessible from shopcalm.in, protecting your personal data and upholding your digital privacy is our topmost priority. This Privacy Policy outlines how we collect, process, store, and safeguard your information in accordance with the <strong>Digital Personal Data Protection Act, 2023 (DPDP Act)</strong>, the <strong>Information Technology Act, 2000 (Section 43A)</strong>, and the <strong>Consumer Protection (E-Commerce) Rules, 2020</strong> of India.</p>',
             'sections' => [
                 [
@@ -91,6 +92,7 @@ class PageSeeder extends Seeder
 
         // 2. TERMS & CONDITIONS
         $termsData = [
+            'desc' => 'Rules, policies, and guidelines for using our store services.',
             'intro' => '<p class="lead">Welcome to <strong>' . $storeName . '</strong>. These Terms & Conditions constitute a legally binding agreement between you ("Customer", "User") and ' . $storeName . ' E-Commerce Solutions regarding your access to and use of shopcalm.in and our mobile application. By accessing our platform or making a purchase, you agree to be bound by these Terms and our Privacy Policy.</p>',
             'sections' => [
                 [
@@ -147,6 +149,7 @@ class PageSeeder extends Seeder
 
         // 3. RETURN & REFUND POLICY (STRICT NO RETURN & NO REPLACEMENT)
         $returnData = [
+            'desc' => 'Strict No Return & No Replacement policy guidelines.',
             'intro' => '<p class="lead">Thank you for shopping at <strong>' . $storeName . '</strong>. Please read our policy carefully regarding returns, replacements, and refunds before placing an order.</p>',
             'sections' => [
                 [
@@ -180,6 +183,7 @@ class PageSeeder extends Seeder
 
         // 4. SHIPPING POLICY
         $shippingData = [
+            'desc' => 'Delivery timelines, courier partners, and tracking info across India.',
             'intro' => '<p class="lead">We strive to deliver your orders safely and swiftly across India. Below are the terms and conditions governing our shipping and delivery processes at <strong>' . $storeName . '</strong>.</p>',
             'sections' => [
                 [
@@ -204,6 +208,7 @@ class PageSeeder extends Seeder
 
         // 5. CANCELLATION POLICY
         $cancellationData = [
+            'desc' => 'Order cancellation terms, turnaround, and instant wallet refunds.',
             'intro' => '<p class="lead">We understand that plans change. At <strong>' . $storeName . '</strong>, we offer a transparent and hassle-free cancellation process prior to order dispatch.</p>',
             'sections' => [
                 [
@@ -227,21 +232,78 @@ class PageSeeder extends Seeder
             ]
         ];
 
+        $aboutData = [
+            'hero_title' => 'About ' . $storeName,
+            'tagline' => 'Simple. Transparent. Trustworthy.',
+            'supporting_text' => 'Your everyday shopping destination built on curated product authenticity, fast doorstep delivery, and 24/7 customer care.',
+            'stats' => [
+                ['value' => '50K+', 'label' => 'Happy Customers', 'color' => '#6366f1'],
+                ['value' => '10K+', 'label' => 'Verified Products', 'color' => '#10b981'],
+                ['value' => '99.8%', 'label' => 'On-Time Delivery', 'color' => '#0284c7'],
+                ['value' => '4.9★', 'label' => 'Customer Rating', 'color' => '#f59e0b'],
+            ],
+            'our_story' => [
+                'badge' => 'Our Journey',
+                'title' => 'How ' . $storeName . ' Came to Life',
+                'subtitle' => 'Born out of the desire to eliminate shopping anxiety and clutter.',
+                'paragraphs' => [
+                    'Online shopping should be an exciting and stress-free experience, yet modern e-commerce is often crowded with confusing pricing, unverified sellers, and difficult return procedures.',
+                    'We founded ' . $storeName . ' to bring peace of mind back to online retail. Every product in our catalog undergoes rigorous authenticity screening, and our operations are designed around customer transparency, fair pricing, and dependable logistics.',
+                    'Today, ' . $storeName . ' proudly serves thousands of happy shoppers nationwide, delivering top electronics, fashion, lifestyle, and home essentials with speed and reliability.'
+                ],
+                'quote_title' => 'Built for Peace of Mind',
+                'quote_text' => 'Every decision we make starts with one guiding question: "Does this make shopping simpler and calmer for our customers?"',
+                'guarantee_badge' => 'Customer-First Guarantee'
+            ],
+            'mission' => '<p>Our mission is to build a shopping destination where customers can shop comfortably, confidently, and without unnecessary complexity or hidden fees.</p><p class="fw-bold text-primary mb-0">' . $storeName . ' — Shop More. Worry Less.</p>',
+            'trust_commitments' => [
+                'badge' => 'Customer Guarantee',
+                'title' => 'Our 4 Core Customer Commitments',
+                'subtitle' => 'Every order placed on ' . $storeName . ' is backed by our strict quality standard.',
+                'items' => [
+                    ['title' => '100% Genuine Products', 'desc' => 'Direct from verified brand partners and licensed distributors.', 'icon' => 'bi-patch-check-fill', 'color' => '#10b981'],
+                    ['title' => 'Zero Hidden Fees', 'desc' => 'What you see is what you pay. Transparent pricing at every step.', 'icon' => 'bi-tag-fill', 'color' => '#6366f1'],
+                    ['title' => 'Insured Safe Delivery', 'desc' => 'Every package is insured and tracked with trusted national couriers.', 'icon' => 'bi-shield-fill-check', 'color' => '#06b6d4'],
+                    ['title' => 'Instant Refund Assurance', 'desc' => 'Prompt refund processing directly to your original payment method.', 'icon' => 'bi-arrow-clockwise', 'color' => '#8b5cf6']
+                ]
+            ],
+            'focus_areas' => [
+                ['title' => 'Curated Authenticity', 'desc' => 'Carefully verified products with transparent specifications and genuine warranty.'],
+                ['title' => 'Frictionless Checkout', 'desc' => 'Lightning-fast, simple browsing with smart filters, live search, and 1-click ordering.'],
+                ['title' => 'Bank-Grade Security', 'desc' => 'Your payment details and personal data are encrypted with state-of-the-art security.'],
+                ['title' => 'Fast Dispatch & Tracking', 'desc' => 'Reliable courier partners providing live parcel tracking right to your doorstep.'],
+                ['title' => '30-Day Hassle-Free Returns', 'desc' => 'Simple, transparent return, cancellation, and instant refund processing.'],
+                ['title' => '24/7 Dedicated Helpdesk', 'desc' => 'Friendly support team ready to assist you anytime via live helpdesk and email.']
+            ],
+            'cta' => [
+                'title' => 'Ready to Experience Great Shopping?',
+                'subtitle' => 'Discover thousands of verified products with fast delivery and guaranteed satisfaction.'
+            ]
+        ];
+
+        $contactData = [
+            'hero_title' => 'Get in Touch with ' . $storeName,
+            'hero_subtitle' => 'Have questions about your order, tracking, or products? Our dedicated support team is here to assist you 24/7.',
+            'info_title' => 'Customer Care & Support',
+            'info_subtitle' => 'Reach out through any channel below. Our customer support agents respond promptly.',
+            'form_title' => 'Send us a message'
+        ];
+
         $pages = [
             [
                 'title' => 'About Us',
                 'slug' => 'about-us',
-                'content' => '<h1>About ' . $storeName . '</h1><p>Welcome to ' . $storeName . '. We are dedicated to providing you the best products at unbeatable prices.</p>',
-                'meta_title' => 'About Us | ' . $storeName,
-                'meta_description' => 'Learn about ' . $storeName . ', our mission, and our commitment to quality e-commerce.',
+                'content' => json_encode($aboutData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                'meta_title' => 'About Us - ' . $storeName,
+                'meta_description' => 'Learn about ' . $storeName . ', our mission, vision, and customer-first shopping promise.',
                 'is_active' => true,
             ],
             [
                 'title' => 'Contact Us',
                 'slug' => 'contact-us',
-                'content' => '<h1>Contact Us</h1><p>Get in touch with the ' . $storeName . ' team. We are here to help!</p>',
-                'meta_title' => 'Contact Support | ' . $storeName,
-                'meta_description' => 'Get in touch with ' . $storeName . ' customer support team.',
+                'content' => json_encode($contactData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                'meta_title' => 'Contact Us & Customer Support | ' . $storeName,
+                'meta_description' => 'Get in touch with the ' . $storeName . ' support team. We are available 24/7 to help you with orders, returns, and queries.',
                 'is_active' => true,
             ],
             [

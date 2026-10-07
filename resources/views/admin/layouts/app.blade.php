@@ -6,6 +6,12 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ \App\Models\Setting::get('store_name', 'ShopCalm') }} - Admin</title>
+    @php
+        $adminFavicon = \App\Models\Setting::get('favicon');
+        $adminFaviconUrl = $adminFavicon ? asset('storage/' . $adminFavicon) . '?v=' . (@filemtime(storage_path('app/public/' . $adminFavicon)) ?: time()) : asset('favicon.ico');
+    @endphp
+    <link rel="icon" href="{{ $adminFaviconUrl }}">
+    <link rel="shortcut icon" href="{{ $adminFaviconUrl }}">
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -734,6 +740,32 @@
                 @endif
 
                 <li class="nav-header">System Settings</li>
+                @if(optional(auth()->user())->isSuperAdmin())
+                <li class="nav-item">
+                    <a class="nav-link has-submenu {{ request()->routeIs('admin.integrations.*') ? '' : 'collapsed' }}"
+                       data-bs-toggle="collapse" href="#integrationsSubmenu" role="button"
+                       aria-expanded="{{ request()->routeIs('admin.integrations.*') ? 'true' : 'false' }}">
+                        <i class="bi bi-cpu" style="color: #6366f1;"></i>
+                        <span class="nav-label">Integrations & APIs</span>
+                    </a>
+                    <div class="collapse {{ request()->routeIs('admin.integrations.*') ? 'show' : '' }}" id="integrationsSubmenu">
+                        <ul class="nav flex-column submenu">
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.integrations.index') ? 'active' : '' }}" href="{{ route('admin.integrations.index') }}">Overview Hub</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.integrations.brevo') ? 'active' : '' }}" href="{{ route('admin.integrations.brevo') }}"><i class="bi bi-envelope-paper text-indigo me-1"></i> Brevo Email Hub</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.integrations.whatsapp') ? 'active' : '' }}" href="{{ route('admin.integrations.whatsapp') }}"><i class="bi bi-whatsapp text-success me-1"></i> WhatsApp Cloud API</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.integrations.razorpay') ? 'active' : '' }}" href="{{ route('admin.integrations.razorpay') }}"><i class="bi bi-credit-card-2-front text-primary me-1"></i> Razorpay Gateway</a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                @endif
                 <li class="nav-item">
                     <a class="nav-link has-submenu {{ request()->routeIs('admin.settings.*') || request()->routeIs('admin.profile.*') ? '' : 'collapsed' }}"
                        data-bs-toggle="collapse" href="#settingsSubmenu" role="button"
@@ -785,29 +817,31 @@
                     $navPendingCount = $globalPendingProductsCount ?? \App\Models\Product::where('status', 'Pending_Approval')->count();
                 @endphp
 
+                <!-- Sound Alert Toggle Button -->
+                <li class="nav-item me-2">
+                    <button type="button" class="btn btn-light border rounded-pill px-2.5 py-1 text-decoration-none staff-sound-toggle-btn d-flex align-items-center gap-1" onclick="toggleStaffSound()" title="Toggle Alert Sound" style="height: 38px; background: #ffffff;">
+                        <i class="bi bi-volume-up-fill text-success fs-5"></i>
+                        <span class="d-none d-sm-inline small ms-1 fw-semibold text-success">Sound ON</span>
+                    </button>
+                </li>
+
                 <!-- Notifications Dropdown -->
                 <li class="nav-item dropdown me-2">
                     <a class="btn btn-light position-relative p-2 rounded-3 border d-flex align-items-center justify-content-center shadow-xs" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 38px; height: 38px; background: #ffffff;">
                         <i class="bi bi-bell fs-5 text-dark"></i>
-                        @if($navPendingCount > 0)
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-white" style="font-size: 0.65rem; padding: 0.25em 0.5em;">
-                                {{ $navPendingCount }}
-                                <span class="visually-hidden">pending approvals</span>
-                            </span>
-                        @endif
+                        <span id="pendingProductsBellBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-white {{ $navPendingCount > 0 ? '' : 'd-none' }}" style="font-size: 0.65rem; padding: 0.25em 0.5em;">
+                            {{ $navPendingCount }}
+                            <span class="visually-hidden">pending approvals</span>
+                        </span>
                     </a>
                     <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 p-0 mt-2" style="width: 350px; max-width: 90vw; z-index: 1060;">
                         <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-light rounded-top-4">
                             <h6 class="mb-0 fw-bold text-dark fs-6">
                                 <i class="bi bi-bell-fill text-primary me-1.5"></i> Pending Approvals
                             </h6>
-                            @if($navPendingCount > 0)
-                                <span class="badge bg-danger rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">
-                                    {{ $navPendingCount }} Action Required
-                                </span>
-                            @else
-                                <span class="badge bg-success rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">All Clean</span>
-                            @endif
+                            <span id="pendingProductsCountHeader" class="badge {{ $navPendingCount > 0 ? 'bg-danger' : 'bg-success' }} rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">
+                                {{ $navPendingCount > 0 ? $navPendingCount . ' Action Required' : 'All Clean' }}
+                            </span>
                         </div>
                         <div class="p-2" style="max-height: 320px; overflow-y: auto;">
                             @if($navPendingProducts->count() > 0)
@@ -880,6 +914,59 @@
 
             @include('components.toast')
 
+            @php
+                $flashSuccess = session('success') ?? (session('toast.type') === 'success' ? session('toast.message') : (is_array(session('toast')) && ($sessionToast['type'] ?? '') === 'success' ? ($sessionToast['message'] ?? null) : null));
+                $flashTitle = is_array(session('toast')) ? (session('toast')['title'] ?? 'Action Successful!') : 'Action Successful!';
+                $flashError = session('error') ?? (is_array(session('toast')) && in_array(session('toast')['type'] ?? '', ['error', 'danger']) ? session('toast')['message'] : null);
+                $flashStatus = session('status') ?? session('info') ?? null;
+            @endphp
+
+            @if(session('toast') || session('success') || session('error') || session('status'))
+                @php
+                    $tType = is_array(session('toast')) ? (session('toast')['type'] ?? 'success') : 'success';
+                    if (session('error') || $tType === 'danger' || $tType === 'error') {
+                        $alertBg = '#fef2f2'; $alertColor = '#991b1b'; $alertBorder = '#ef4444'; $alertIcon = 'bi-exclamation-octagon-fill';
+                        $alertTitle = is_array(session('toast')) ? (session('toast')['title'] ?? 'Error Occurred') : 'Error Occurred';
+                        $alertMsg = session('error') ?? (is_array(session('toast')) ? session('toast')['message'] : '');
+                    } elseif (session('status') || $tType === 'info') {
+                        $alertBg = '#eef2ff'; $alertColor = '#3730a3'; $alertBorder = '#6366f1'; $alertIcon = 'bi-info-circle-fill';
+                        $alertTitle = is_array(session('toast')) ? (session('toast')['title'] ?? 'Notice') : 'System Notice';
+                        $alertMsg = session('status') ?? (is_array(session('toast')) ? session('toast')['message'] : '');
+                    } else {
+                        $alertBg = '#ecfdf5'; $alertColor = '#065f46'; $alertBorder = '#10b981'; $alertIcon = 'bi-check-circle-fill';
+                        $alertTitle = is_array(session('toast')) ? (session('toast')['title'] ?? 'Settings & Changes Saved!') : 'Changes Saved Successfully!';
+                        $alertMsg = session('success') ?? (is_array(session('toast')) ? session('toast')['message'] : 'Your action was processed successfully.');
+                    }
+                @endphp
+                <div class="alert alert-dismissible fade show rounded-4 border-0 shadow-sm mb-4 d-flex align-items-center gap-3 p-3.5" role="alert" style="background: {{ $alertBg }}; color: {{ $alertColor }}; border-left: 5px solid {{ $alertBorder }} !important;">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px; background: {{ $alertBorder }}20; color: {{ $alertBorder }};">
+                        <i class="bi {{ $alertIcon }} fs-5"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="fw-bold mb-0" style="font-size: 0.95rem;">{{ $alertTitle }}</h6>
+                        <div class="small" style="font-size: 0.85rem;">{{ $alertMsg }}</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
+            @if($errors->any())
+                <div class="alert alert-dismissible fade show rounded-4 border-0 shadow-sm mb-4 d-flex align-items-start gap-3 p-3.5" role="alert" style="background: #fef2f2; color: #991b1b; border-left: 5px solid #ef4444 !important;">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px; background: #ef444420; color: #ef4444;">
+                        <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="fw-bold mb-1" style="font-size: 0.95rem;">Could Not Save Settings — Please Fix the Following:</h6>
+                        <ul class="mb-0 ps-3 small" style="font-size: 0.85rem;">
+                            @foreach($errors->all() as $err)
+                                <li>{{ $err }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
             @yield('content')
 
             <footer class="mt-5 mb-4 text-center text-muted">
@@ -902,6 +989,40 @@
             const backdrop = document.getElementById('sidebarBackdrop');
             if (sidebar) sidebar.classList.toggle('show');
             if (backdrop) backdrop.classList.toggle('show');
+        }
+
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const icon = btn ? btn.querySelector('i') : null;
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (icon) {
+                    icon.className = 'bi bi-eye-slash';
+                }
+            } else {
+                input.type = 'password';
+                if (icon) {
+                    icon.className = 'bi bi-eye';
+                }
+            }
+        }
+
+        function copyCredential(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input || !input.value) return;
+            navigator.clipboard.writeText(input.value).then(() => {
+                const icon = btn ? btn.querySelector('i') : null;
+                if (icon) {
+                    const origClass = icon.className;
+                    icon.className = 'bi bi-check2 text-success';
+                    setTimeout(() => { icon.className = origClass; }, 2000);
+                }
+            }).catch(() => {
+                // Fallback for older browsers
+                input.select();
+                document.execCommand('copy');
+            });
         }
 
         function initTinyMCE() {

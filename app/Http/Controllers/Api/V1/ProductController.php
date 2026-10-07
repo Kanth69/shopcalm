@@ -54,9 +54,10 @@ class ProductController extends BaseApiController
             }
         }
 
-        // 3. Category & Brand Filtering (Support arrays or single slugs/ids)
-        if ($request->filled('category')) {
-            $categories = (array) $request->input('category');
+        // 3. Category & Brand Filtering (Support arrays or single slugs/ids, and category_id alias)
+        $categoryInput = $request->input('category') ?? $request->input('category_id');
+        if (!empty($categoryInput)) {
+            $categories = (array) $categoryInput;
             $query->whereHas('category', function ($q) use ($categories) {
                 $q->whereIn('slug', $categories)->orWhereIn('id', $categories);
             });
@@ -76,24 +77,19 @@ class ProductController extends BaseApiController
 
         // 5. Price Range Filtering
         if ($request->filled('min_price')) {
-            $query->where(function($q) use ($request) {
-                $q->whereRaw('COALESCE(offer_price, selling_price) >= ?', [$request->input('min_price')]);
-            });
+            $query->where('price', '>=', (float) $request->input('min_price'));
         }
         if ($request->filled('max_price')) {
-            $query->where(function($q) use ($request) {
-                $q->whereRaw('COALESCE(offer_price, selling_price) <= ?', [$request->input('max_price')]);
-            });
+            $query->where('price', '<=', (float) $request->input('max_price'));
         }
 
         // 6. Availability & Badges
         if ($request->has('availability')) {
             if ($request->input('availability') === 'in_stock') $query->where('stock', '>', 0);
-            if ($request->input('availability') === 'out_of_stock') $query->where('stock', '=', 0);
+            if ($request->input('availability') === 'out_of_stock') $query->where('stock', '<=', 0);
         }
         if ($request->boolean('featured')) $query->where('featured', true);
         if ($request->boolean('trending')) $query->where('trending', true);
-        if ($request->boolean('only_discounted')) $query->whereNotNull('offer_price');
 
         // 7. Rating Filter
         if ($request->filled('rating')) {
@@ -105,10 +101,10 @@ class ProductController extends BaseApiController
         // 8. Sorting
         $sort = $request->input('sort', 'latest');
         switch ($sort) {
-            case 'price_asc': $query->orderByRaw('COALESCE(offer_price, selling_price) ASC'); break;
-            case 'price_desc': $query->orderByRaw('COALESCE(offer_price, selling_price) DESC'); break;
+            case 'price_asc': $query->orderBy('price', 'asc'); break;
+            case 'price_desc': $query->orderBy('price', 'desc'); break;
             case 'rating_high': $query->withAvg(['reviews' => fn($q) => $q->where('status', 'Approved')], 'rating')->orderBy('reviews_avg_rating', 'desc'); break;
-            case 'discount_high': $query->whereNotNull('offer_price')->orderByRaw('(selling_price - offer_price) / selling_price DESC'); break;
+            case 'discount_high': $query->latest(); break;
             case 'name_asc': $query->orderBy('name', 'asc'); break;
             case 'name_desc': $query->orderBy('name', 'desc'); break;
             default: $query->latest(); break; // 'latest'
@@ -117,7 +113,7 @@ class ProductController extends BaseApiController
         // --- Fetch Filter Metadata ---
         $filterCategories = Category::where('status', 'Active')->orderBy('name')->get(['id', 'name', 'slug']);
 
-        $categoryIds = (array) $request->input('category');
+        $categoryIds = array_filter((array) ($request->input('category') ?? $request->input('category_id')));
         $filterBrandsQuery = Brand::where('status', 1);
         if (!empty($categoryIds)) {
             $filterBrandsQuery->whereHas('products', function($q) use ($categoryIds) {
@@ -145,12 +141,13 @@ class ProductController extends BaseApiController
         // 9. Execute Pagination
         $products = $query->with(['category:id,name,slug', 'brand:id,name,slug'])->paginate(12)->appends($request->query());
 
-        // Transform for frontend
+        // Apply active OfferService discounts and transform for frontend
+        $this->offerService->applyOfferDiscountsToProducts($products->getCollection());
         $products->getCollection()->transform(function ($product) {
             $product->main_image_url = $product->main_image && !str_starts_with($product->main_image, 'http') ? asset('storage/' . $product->main_image) : ($product->main_image ?? null);
-            if ($product->offer_price) {
-                $product->discount_percentage = round((($product->selling_price - $product->offer_price) / $product->selling_price) * 100);
-            }
+            $product->selling_price = (float) $product->price;
+            $product->offer_price = isset($product->sale_price) ? (float) $product->sale_price : null;
+            $product->discount_percentage = $product->offer_discount_percentage ?? 0;
             $product->average_rating = $product->averageRating();
             return $product;
         });
@@ -179,11 +176,16 @@ class ProductController extends BaseApiController
     {
         $product = Product::with(['category', 'brand', 'galleryImages', 'reviews' => function($q) {
             $q->with('user')->where('status', 'Approved')->latest();
-        }])->where('slug', $slug)->where('status', 'Active')->first();
+        }])->where(function($q) use ($slug) {
+            $q->where('slug', $slug)->orWhere('id', $slug);
+        })->where('status', 'Active')->first();
 
         if (!$product) {
             return $this->sendError('Product not found or inactive.', [], 404);
         }
+
+        // Apply active OfferService discount
+        $this->offerService->applyOfferDiscountToProduct($product);
 
         // Standardize Images
         $product->main_image_url = $product->main_image && !str_starts_with($product->main_image, 'http') ? asset('storage/' . $product->main_image) : ($product->main_image ?? null);
@@ -193,11 +195,11 @@ class ProductController extends BaseApiController
         });
 
         // Compute aggregations
+        $product->selling_price = (float) $product->price;
+        $product->offer_price = isset($product->sale_price) ? (float) $product->sale_price : null;
+        $product->discount_percentage = $product->offer_discount_percentage ?? 0;
         $product->average_rating = $product->averageRating();
         $product->total_reviews = $product->reviews->count();
-        if ($product->offer_price) {
-            $product->discount_percentage = round((($product->selling_price - $product->offer_price) / $product->selling_price) * 100);
-        }
 
         $product->rating_breakdown = [
             5 => $product->ratingPercentage(5),
@@ -214,15 +216,17 @@ class ProductController extends BaseApiController
             ->where('id', '!=', $product->id)
             ->inRandomOrder()
             ->take(4)
-            ->get()
-            ->transform(function ($rp) {
-                $rp->main_image_url = $rp->main_image && !str_starts_with($rp->main_image, 'http') ? asset('storage/' . $rp->main_image) : ($rp->main_image ?? null);
-                if ($rp->offer_price) {
-                    $rp->discount_percentage = round((($rp->selling_price - $rp->offer_price) / $rp->selling_price) * 100);
-                }
-                $rp->average_rating = $rp->averageRating();
-                return $rp;
-            });
+            ->get();
+
+        $this->offerService->applyOfferDiscountsToProducts($relatedProducts);
+        $relatedProducts->transform(function ($rp) {
+            $rp->main_image_url = $rp->main_image && !str_starts_with($rp->main_image, 'http') ? asset('storage/' . $rp->main_image) : ($rp->main_image ?? null);
+            $rp->selling_price = (float) $rp->price;
+            $rp->offer_price = isset($rp->sale_price) ? (float) $rp->sale_price : null;
+            $rp->discount_percentage = $rp->offer_discount_percentage ?? 0;
+            $rp->average_rating = $rp->averageRating();
+            return $rp;
+        });
 
         return $this->sendResponse([
             'product' => $product,

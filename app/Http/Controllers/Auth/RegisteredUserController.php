@@ -170,12 +170,12 @@ class RegisteredUserController extends Controller
         $request->session()->forget('verified_registration_mobile');
 
         $user = User::create([
-            'name'              => $request->name,
-            'email'             => $request->email ?: null,
-            'mobile_number'     => $request->mobile_number,
-            'password'          => Hash::make($request->password),
-            'role_id'           => User::ROLE_CUSTOMER,
-            'email_verified_at' => now(),
+            'name'               => $request->name,
+            'email'              => $request->email ?: null,
+            'mobile_number'      => $request->mobile_number,
+            'mobile_verified_at' => now(),
+            'password'           => Hash::make($request->password),
+            'role_id'            => User::ROLE_CUSTOMER,
         ]);
 
         // Initialize wallet & apply referral rewards if referral code supplied

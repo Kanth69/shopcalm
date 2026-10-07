@@ -84,16 +84,7 @@ class OrderController extends Controller
 
         $request->validate([
             'cancellation_reason' => 'required|string|max:255',
-            'refund_method'       => 'nullable|string|in:original_source,bank_upi,none',
-            'refund_upi_id'       => [
-                'nullable',
-                'required_if:refund_method,bank_upi',
-                'string',
-                'max:100',
-                'regex:/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z0-9]{2,64}$/'
-            ],
-        ], [
-            'refund_upi_id.regex' => 'Please enter a valid UPI VPA handle (e.g. mobile@paytm, name@ybl, user@okicici).',
+            'refund_method'       => 'nullable|string|in:original_source,wallet,none',
         ]);
 
         try {
@@ -108,12 +99,30 @@ class OrderController extends Controller
                 // COD order: 100% FREE Cancellation, 0 Fee
                 $cancellation = $this->orderService->cancelCodOrderFree($order, $request->cancellation_reason);
 
+                $msg = $cancellation->refund_amount > 0
+                    ? "Order #{$order->order_number} cancelled! ₹" . number_format($cancellation->refund_amount, 2) . " has been refunded back to your ShopCalm Wallet balance instantly."
+                    : "Order #{$order->order_number} has been cancelled successfully (100% Free COD Cancellation).";
+
                 return response()->json([
                     'success' => true,
-                    'message' => "Order #{$order->order_number} has been cancelled successfully (100% Free COD Cancellation).",
+                    'message' => $msg,
+                ]);
+            } elseif ($order->payment_method === 'online' && $order->payment_status !== 'paid') {
+                // Unpaid Online Order: 100% Free Cancellation
+                $refundMethod = $request->input('refund_method', 'original_source');
+                $upiId = $request->input('refund_upi_id');
+                $cancellation = $this->orderService->cancelPrepaidOrder($order, $request->cancellation_reason, $refundMethod, $upiId);
+
+                $msg = $cancellation->wallet_refund_amount > 0
+                    ? "Order #{$order->order_number} cancelled! ₹" . number_format($cancellation->wallet_refund_amount, 2) . " has been refunded back to your ShopCalm Wallet balance instantly."
+                    : "Order #{$order->order_number} has been cancelled successfully.";
+
+                return response()->json([
+                    'success' => true,
+                    'message' => $msg,
                 ]);
             } else {
-                // Prepaid Order (Online Payment)
+                // Prepaid Order (Online Payment - Paid)
                 $refundMethod = $request->input('refund_method', 'original_source');
                 $upiId = $request->input('refund_upi_id');
                 $cancellation = $this->orderService->cancelPrepaidOrder($order, $request->cancellation_reason, $refundMethod, $upiId);

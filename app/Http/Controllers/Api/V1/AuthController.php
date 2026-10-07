@@ -148,6 +148,10 @@ class AuthController extends BaseApiController
      */
     public function resetPassword(Request $request): JsonResponse
     {
+        if (!$request->has('password_confirmation') && $request->has('password')) {
+            $request->merge(['password_confirmation' => $request->password]);
+        }
+
         $request->validate([
             'mobile_number' => 'required|string|digits:10',
             'otp'           => 'required|string|size:6',
@@ -193,9 +197,22 @@ class AuthController extends BaseApiController
      */
     public function login(Request $request): JsonResponse
     {
+        // Support all variations: login_identifier, identifier, mobile_number, or email
+        $identifier = $request->input('login_identifier')
+            ?? ($request->input('identifier')
+            ?? ($request->input('mobile_number')
+            ?? $request->input('email')));
+
+        if ($identifier) {
+            $request->merge(['login_identifier' => trim((string)$identifier)]);
+        }
+
         $request->validate([
             'login_identifier' => 'required|string',
             'password'         => 'required|string',
+        ], [
+            'login_identifier.required' => 'Please enter your mobile number or email address.',
+            'password.required'         => 'Please enter your password.',
         ]);
 
         $user = $this->findUserByIdentifier($request->login_identifier);
@@ -228,6 +245,10 @@ class AuthController extends BaseApiController
      */
     public function register(Request $request): JsonResponse
     {
+        if (!$request->has('password_confirmation') && $request->has('password')) {
+            $request->merge(['password_confirmation' => $request->password]);
+        }
+
         $request->validate([
             'name'          => 'required|string|max:255',
             'mobile_number' => 'required|string|max:15',

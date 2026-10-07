@@ -197,9 +197,14 @@ class OrderController extends Controller
                 'notes'           => $notes ?: "Status updated to " . ucfirst(str_replace('_', ' ', $newStatus)) . " by Order Manager.",
             ]);
 
-            // If marked as delivered, trigger Tiered Referral Milestone Rewards
+            // If marked as delivered, trigger Tiered Referral Milestone Rewards & WhatsApp Notification
             if ($newStatus === 'delivered') {
                 app(\App\Services\WalletService::class)->rewardReferrerOnDeliveredOrder($order);
+                try {
+                    app(\App\Services\WhatsAppService::class)->sendOrderDelivered($order);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("[OrderManager OrderController] WhatsApp Order Delivered notification failed: " . $e->getMessage());
+                }
             }
         });
 

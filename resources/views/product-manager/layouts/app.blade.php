@@ -454,6 +454,13 @@
             </nav>
 
             <ul class="navbar-nav ms-auto align-items-center">
+                <!-- Sound Alert Toggle Button -->
+                <li class="nav-item me-2">
+                    <button type="button" class="btn btn-light border rounded-pill px-2.5 py-1 text-decoration-none staff-sound-toggle-btn d-flex align-items-center gap-1" onclick="toggleStaffSound()" title="Toggle Alert Sound" style="height: 34px; background: #ffffff;">
+                        <i class="bi bi-volume-up-fill text-success fs-5"></i>
+                        <span class="d-none d-sm-inline small ms-1 fw-semibold text-success">Sound ON</span>
+                    </button>
+                </li>
                 <li class="nav-item me-2">
                     <a href="{{ route('shop') }}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-inline-flex align-items-center" style="font-size: 0.78rem; gap: 0.4rem !important;">
                         <i class="bi bi-box-arrow-up-right"></i> Live Store
@@ -502,7 +509,7 @@
     <script src="{{ asset('js/ui-interactions.js') }}?v={{ time() }}"></script>
     <script src="{{ asset('js/admin-filters.js') }}?v={{ time() }}"></script>
 
-    @include('components.staff-live-poller', ['endpoint' => route('admin.live-orders'), 'portal' => 'admin'])
+    @include('components.staff-live-poller', ['endpoint' => route('admin.live-orders'), 'portal' => 'product_manager'])
 
     @stack('scripts')
 </body>

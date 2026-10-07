@@ -42,6 +42,9 @@
                    style="font-size: 0.78rem; border-color: rgba(255,255,255,0.3);">
                     <i class="bi bi-box-seam me-1"></i> Orders
                 </a>
+                <a href="{{ url('account/wallet') }}" class="btn btn-success rounded-pill px-3 py-1.5 fw-semibold btn-sm text-center" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; font-size: 0.78rem;">
+                    <i class="bi bi-wallet2 me-1"></i> Wallet & Referral
+                </a>
             </div>
         </div>
     </div>
@@ -62,6 +65,27 @@
         @include('customer.account.components.recent-wishlist', ['recentWishlistItems' => $recentWishlistItems])
     </div>
 </div>
+    <style>
+        /* Mobile spacing improvements */
+        @media (max-width: 576px) {
+            .row.g-3.g-md-4 {
+                gap: 0.5rem !important;
+            }
+            .row.g-3.g-md-4 > .col-12 {
+                padding: 0.5rem;
+            }
+            .card {
+                padding: 0.75rem;
+            }
+            .card-body {
+                padding: 0.75rem;
+            }
+            .btn {
+                font-size: 0.75rem;
+                padding: 0.4rem 0.8rem;
+            }
+        }
+    </style>
 @endsection
 
 @section('full_width_account_content')

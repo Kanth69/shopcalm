@@ -1,6 +1,6 @@
 <div class="auth-header text-center">
-    <a href="{{ route('home') }}" class="auth-logo d-inline-flex justify-content-center mb-3 text-decoration-none">
-        <x-logo height="42" />
+    <a href="{{ route('home') }}" class="auth-logo d-inline-flex align-items-center justify-content-center mb-3 text-decoration-none">
+        <x-logo height="40" />
     </a>
     <h2 class="auth-title">Forgot Password</h2>
     <p class="auth-subtitle" id="forgot-subtitle-text">Enter your mobile number to receive a 6-digit WhatsApp OTP code.</p>
@@ -17,9 +17,9 @@
     @csrf
     <div class="form-group">
         <label for="mobile_number_for_forgot">Registered Mobile Number <span class="text-danger">*</span></label>
-        <div class="input-group">
+        <div class="input-group auth-phone-input-group">
             <span class="input-group-text bg-light fw-bold">+91</span>
-            <input id="mobile_number_for_forgot" class="auth-input form-control" type="text" name="mobile_number" maxlength="10" required placeholder="10-digit mobile number">
+            <input id="mobile_number_for_forgot" class="auth-input form-control" type="tel" inputmode="numeric" name="mobile_number" maxlength="10" required placeholder="10-digit mobile number">
         </div>
     </div>
 
@@ -36,17 +36,27 @@
 
     <div class="form-group mb-2">
         <label for="modal_otp">WhatsApp 6-Digit OTP Code <span class="text-danger">*</span></label>
-        <input id="modal_otp" class="auth-input form-control" type="text" name="otp" maxlength="6" required placeholder="123456" style="letter-spacing: 4px; font-weight: bold; text-align: center;">
+        <input id="modal_otp" class="auth-input form-control" type="tel" inputmode="numeric" name="otp" maxlength="6" required placeholder="123456" style="letter-spacing: 4px; font-weight: bold; text-align: center;">
     </div>
 
     <div class="form-group mb-2">
         <label for="modal_new_password">New Password <span class="text-danger">*</span></label>
-        <input id="modal_new_password" class="auth-input form-control" type="password" name="password" required placeholder="Minimum 8 characters">
+        <div class="password-input-wrapper">
+            <input id="modal_new_password" class="auth-input form-control" type="password" name="password" required placeholder="Minimum 8 characters">
+            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('modal_new_password', this)" title="Show password">
+                <i class="bi bi-eye-slash"></i>
+            </button>
+        </div>
     </div>
 
     <div class="form-group mb-2">
         <label for="modal_password_confirmation">Confirm Password <span class="text-danger">*</span></label>
-        <input id="modal_password_confirmation" class="auth-input form-control" type="password" name="password_confirmation" required placeholder="Re-enter new password">
+        <div class="password-input-wrapper">
+            <input id="modal_password_confirmation" class="auth-input form-control" type="password" name="password_confirmation" required placeholder="Re-enter new password">
+            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('modal_password_confirmation', this)" title="Show password">
+                <i class="bi bi-eye-slash"></i>
+            </button>
+        </div>
     </div>
 
     <button type="submit" id="forgot-reset-btn" class="auth-submit-btn">
@@ -56,7 +66,7 @@
 </form>
 
 <div class="text-center mt-3">
-    <button type="button" id="back-to-login" class="back-nav-btn mx-auto">
+    <button type="button" id="back-to-login" class="back-bottom-btn mx-auto">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>

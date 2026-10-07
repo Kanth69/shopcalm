@@ -46,7 +46,7 @@
                             </tr>
                             <tr>
                                 <td style="color: #64748b; font-size: 13px; font-weight: 600; border-bottom: 1px solid #e2e8f0;">Payment Method:</td>
-                                <td style="color: #0f172a; font-size: 13px; font-weight: 700; border-bottom: 1px solid #e2e8f0;">{{ strtoupper($order->payment_method) }} ({{ ucfirst($order->payment_status) }})</td>
+                                <td style="color: #0f172a; font-size: 13px; font-weight: 700; border-bottom: 1px solid #e2e8f0;">{{ ($order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0)) ? 'ShopCalm Wallet (100% Paid)' : strtoupper($order->payment_method) . ' (' . ucfirst($order->payment_status) . ')' }}</td>
                             </tr>
                             <tr>
                                 <td style="color: #64748b; font-size: 13px; font-weight: 600;">Delivery Address:</td>

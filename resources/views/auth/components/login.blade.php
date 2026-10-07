@@ -1,6 +1,6 @@
 <div class="auth-header text-center">
-    <a href="{{ route('home') }}" class="auth-logo d-inline-flex justify-content-center mb-3 text-decoration-none">
-        <x-logo height="42" />
+    <a href="{{ route('home') }}" class="auth-logo d-inline-flex align-items-center justify-content-center mb-3 text-decoration-none">
+        <x-logo height="40" />
     </a>
     <h2 class="auth-title">Welcome Back 👋</h2>
     <p class="auth-subtitle">Enter your password to sign in</p>

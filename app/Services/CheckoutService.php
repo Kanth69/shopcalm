@@ -44,19 +44,20 @@ class CheckoutService
             }
 
             // Validate shipping PIN code serviceability
+            $shippingZip = $data['shipping_zip'] ?? ($data['shipping_pincode'] ?? '');
             $deliveryService = app(\App\Services\DeliveryService::class);
-            $pincodeCheck = $deliveryService->checkServiceability($data['shipping_zip'] ?? '');
+            $pincodeCheck = $deliveryService->checkServiceability($shippingZip);
             if (!$pincodeCheck['is_serviceable']) {
-                throw new Exception("Delivery is currently unavailable to PIN code " . ($data['shipping_zip'] ?? '') . ". Please select a serviceable delivery address.");
+                throw new Exception("Delivery is currently unavailable to PIN code {$shippingZip}. Please select a serviceable delivery address.");
             }
 
-            $user = Auth::guard('customer')->user() ?? Auth::user();
+            $user = Auth::guard('customer')->user() ?? (Auth::user() ?? (Auth::guard('sanctum')->user() ?? request()->user('sanctum')));
             $subtotalAmount = $this->cartService->subtotal();
             $discountAmount = 0;
             $couponId = null;
 
             // Handle Coupon
-            $appliedCouponCode = Session::get('applied_coupon');
+            $appliedCouponCode = $data['coupon_code'] ?? Session::get('applied_coupon');
             if ($appliedCouponCode) {
                 $coupon = $this->couponService->validateCoupon($appliedCouponCode, $user, $subtotalAmount);
                 $discountAmount = $this->couponService->calculateDiscount($coupon, $subtotalAmount);
@@ -82,7 +83,7 @@ class CheckoutService
                 }
             }
 
-            $isFullyPaidByWallet = ($walletAmountUsed >= $payableBeforeWalletAndCod && $payableBeforeWalletAndCod > 0);
+            $isFullyPaidByWallet = ($useWallet && $walletAmountUsed >= $payableBeforeWalletAndCod);
             $codFee = $isFullyPaidByWallet ? 0.00 : $rawCodFee;
             $payableBeforeWallet = $payableBeforeWalletAndCod + $codFee;
             
@@ -224,6 +225,13 @@ class CheckoutService
             // 6. Clear Selected Cart Items
             $this->cartService->clearSelectedItems();
 
+            // 7. Trigger WhatsApp Order Confirmation
+            try {
+                app(\App\Services\WhatsAppService::class)->sendOrderConfirmation($order);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("[CheckoutService] WhatsApp order confirmation failed: " . $e->getMessage());
+            }
+
             return $order;
         });
     }
@@ -241,10 +249,11 @@ class CheckoutService
             }
 
             // Validate shipping PIN code serviceability
+            $shippingZip = $data['shipping_zip'] ?? ($data['shipping_pincode'] ?? '');
             $deliveryService = app(\App\Services\DeliveryService::class);
-            $pincodeCheck = $deliveryService->checkServiceability($data['shipping_zip'] ?? '');
+            $pincodeCheck = $deliveryService->checkServiceability($shippingZip);
             if (!$pincodeCheck['is_serviceable']) {
-                throw new Exception("Delivery is currently unavailable to PIN code " . ($data['shipping_zip'] ?? '') . ". Please select a serviceable delivery address.");
+                throw new Exception("Delivery is currently unavailable to PIN code {$shippingZip}. Please select a serviceable delivery address.");
             }
 
             $subtotalAmount = $this->cartService->subtotal();
@@ -252,7 +261,7 @@ class CheckoutService
             $couponId = null;
 
             // Handle Coupon
-            $appliedCouponCode = Session::get('applied_coupon');
+            $appliedCouponCode = $data['coupon_code'] ?? Session::get('applied_coupon');
             if ($appliedCouponCode) {
                 $coupon = $this->couponService->validateCoupon($appliedCouponCode, $user, $subtotalAmount);
                 $discountAmount = $this->couponService->calculateDiscount($coupon, $subtotalAmount);
@@ -297,6 +306,30 @@ class CheckoutService
                 ]);
             }
 
+            // Check for existing active pending online order for this user to avoid duplicate order creation
+            $existingPending = Order::where('user_id', $user->id)
+                ->where('payment_method', 'online')
+                ->where('payment_status', 'pending')
+                ->where('status', 'pending')
+                ->where('created_at', '>=', now()->subMinutes(30))
+                ->latest()
+                ->first();
+
+            if ($existingPending && abs((float)$existingPending->subtotal_amount - (float)$subtotalAmount) < 0.01) {
+                return $existingPending;
+            }
+
+            // Mark any older pending online orders as failed/abandoned so they don't clutter the user's order history
+            $oldPendingOrders = Order::where('user_id', $user->id)
+                ->where('payment_method', 'online')
+                ->where('payment_status', 'pending')
+                ->where('status', 'pending')
+                ->get();
+
+            foreach ($oldPendingOrders as $oldOrder) {
+                $this->markOrderPaymentFailed($oldOrder, 'Superseded by new checkout attempt.');
+            }
+
             $orderNumber = $this->generateOrderNumber();
 
             // 1. Create Initial Order with 'pending' status
@@ -314,15 +347,21 @@ class CheckoutService
                 'payment_status'         => 'pending',
                 'status'                 => 'pending',
                 'shipping_name'          => $data['shipping_name'],
-                'shipping_email'         => $data['shipping_email'],
+                'shipping_email'         => $data['shipping_email'] ?? ($user->email ?? null),
                 'shipping_phone'         => $data['shipping_phone'],
                 'shipping_address'       => $data['shipping_address'],
                 'shipping_city'          => $data['shipping_city'],
                 'shipping_state'         => $data['shipping_state'],
-                'shipping_zip'           => $data['shipping_zip'],
+                'shipping_zip'           => $data['shipping_zip'] ?? ($data['shipping_pincode'] ?? ''),
                 'shipping_country'       => $data['shipping_country'] ?? 'India',
                 'notes'                  => $data['notes'] ?? null,
             ]);
+
+            // 1.1 Debit Wallet Balance immediately if used (locks balance against double-spending)
+            if ($walletAmountUsed > 0) {
+                app(\App\Services\WalletService::class)->redeemWalletForOrder($user, $order, $walletAmountUsed);
+                Session::forget('use_wallet');
+            }
 
             // 2. Create Order Items and Tax Calculation
             $totalOrderTax = 0.00;
@@ -396,9 +435,14 @@ class CheckoutService
                 'status'         => 'confirmed',
             ]);
 
-            // 2. Debit Wallet Balance if used
+            // 2. Debit Wallet Balance if used (if not already debited at pending order creation)
             if ((float) $order->wallet_amount_used > 0) {
-                app(\App\Services\WalletService::class)->redeemWalletForOrder($user, $order, (float) $order->wallet_amount_used);
+                $alreadyDebited = \App\Models\WalletTransaction::where('order_id', $order->id)
+                    ->where('type', 'DEBIT')
+                    ->exists();
+                if (!$alreadyDebited) {
+                    app(\App\Services\WalletService::class)->redeemWalletForOrder($user, $order, (float) $order->wallet_amount_used);
+                }
                 Session::forget('use_wallet');
             }
 
@@ -465,11 +509,12 @@ class CheckoutService
             // 7. Clear Selected Cart Items
             $this->cartService->clearSelectedItems();
 
-            // 8. Trigger Email Confirmation
+            // 8. Trigger Email & WhatsApp Confirmation
             try {
                 app(\App\Services\EmailService::class)->sendOrderConfirmation($order);
+                app(\App\Services\WhatsAppService::class)->sendOrderConfirmation($order);
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning("[CheckoutService] Email order confirmation failed: " . $e->getMessage());
+                \Illuminate\Support\Facades\Log::warning("[CheckoutService] Order confirmation notifications failed: " . $e->getMessage());
             }
 
             return $order;
@@ -482,9 +527,35 @@ class CheckoutService
     public function markOrderPaymentFailed(Order $order, string $reason = 'Payment incomplete or cancelled.'): Order
     {
         return DB::transaction(function () use ($order, $reason) {
+            $prevStatus = $order->status;
             $order->update([
                 'payment_status' => 'failed',
+                'status'         => 'failed',
             ]);
+
+            // Release/Refund wallet amount back to customer if it was debited for this failed order
+            if ((float) $order->wallet_amount_used > 0) {
+                $debitedTxn = \App\Models\WalletTransaction::where('order_id', $order->id)
+                    ->where('type', 'DEBIT')
+                    ->first();
+                $alreadyRefunded = \App\Models\WalletTransaction::where('order_id', $order->id)
+                    ->where('type', 'CREDIT')
+                    ->where('source', 'ORDER_REFUND')
+                    ->exists();
+
+                if ($debitedTxn && !$alreadyRefunded) {
+                    $user = $order->user ?? User::find($order->user_id);
+                    if ($user) {
+                        $userWallet = app(\App\Services\WalletService::class)->getOrCreateWallet($user);
+                        $userWallet->credit(
+                            (float) $order->wallet_amount_used,
+                            'ORDER_REFUND',
+                            "Wallet refund for uncompleted online Order #{$order->order_number}",
+                            $order->id
+                        );
+                    }
+                }
+            }
 
             $payment = Payment::where('order_id', $order->id)->latest()->first();
             if ($payment) {
@@ -495,8 +566,8 @@ class CheckoutService
             }
 
             $order->statusHistories()->create([
-                'previous_status' => 'pending',
-                'current_status'  => 'pending',
+                'previous_status' => $prevStatus,
+                'current_status'  => 'failed',
                 'changed_by'      => $order->user_id,
                 'notes'           => "Payment failed: {$reason}",
             ]);
@@ -542,6 +613,16 @@ class CheckoutService
                 'payment_status' => 'pending',
                 'status'         => 'confirmed',
             ]);
+
+            // 3.1 Debit Wallet Balance if used and not currently debited (or if refunded on failure)
+            if ((float) $order->wallet_amount_used > 0) {
+                $debitedCount = \App\Models\WalletTransaction::where('order_id', $order->id)->where('type', 'DEBIT')->count();
+                $refundedCount = \App\Models\WalletTransaction::where('order_id', $order->id)->where('type', 'CREDIT')->count();
+
+                if ($debitedCount <= $refundedCount) {
+                    app(\App\Services\WalletService::class)->redeemWalletForOrder($user, $order, (float) $order->wallet_amount_used);
+                }
+            }
 
             // 4. Update Payment Ledger
             Payment::updateOrCreate(
@@ -595,11 +676,12 @@ class CheckoutService
             // 5. Clear Selected Cart Items
             $this->cartService->clearSelectedItems();
 
-            // 6. Trigger Email Confirmation
+            // 6. Trigger Email & WhatsApp Confirmation
             try {
                 app(\App\Services\EmailService::class)->sendOrderConfirmation($order);
+                app(\App\Services\WhatsAppService::class)->sendOrderConfirmation($order);
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning("[CheckoutService] Email order confirmation failed: " . $e->getMessage());
+                \Illuminate\Support\Facades\Log::warning("[CheckoutService] Order confirmation notifications failed: " . $e->getMessage());
             }
 
             return $order;
