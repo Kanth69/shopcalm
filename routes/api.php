@@ -50,6 +50,7 @@ Route::prefix('v1')->group(function () {
         Route::delete('/remove/{itemId}', [CartController::class, 'remove']);
         Route::delete('/clear', [CartController::class, 'clear']);
         Route::patch('/toggle-select/{itemId}', [CartController::class, 'toggleSelect']);
+        Route::patch('/toggle-select-all', [CartController::class, 'toggleSelectAll']);
     });
 
     // ── 4. CHECKOUT & ACCOUNT (Protected Sanctum Routes) ──

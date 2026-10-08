@@ -14,10 +14,13 @@ class CartService
         $userId = Auth::id() ?? (Auth::guard('sanctum')->id() ?? request()->user('sanctum')?->id);
 
         if ($userId) {
-            $cart = Cart::with('items.product')->firstOrCreate(['user_id' => $userId]);
+            if (request()->header('X-Device-Id')) {
+                $this->mergeSessionCart(request()->header('X-Device-Id'));
+            }
+            $cart = Cart::with('items.product.brand')->firstOrCreate(['user_id' => $userId]);
         } else {
             $sessionId = request()->header('X-Device-Id') ?: Session::getId();
-            $cart = Cart::with('items.product')->firstOrCreate(['session_id' => $sessionId]);
+            $cart = Cart::with('items.product.brand')->firstOrCreate(['session_id' => $sessionId]);
         }
 
         $this->sanitizeCartQuantities($cart);

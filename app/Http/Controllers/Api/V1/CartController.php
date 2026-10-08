@@ -23,58 +23,72 @@ class CartController extends BaseApiController
      */
     protected function formatCartResponse(Cart $cart): array
     {
-        $cart->load(['items.product']);
+        $cart->load(['items.product.brand']);
 
         $items = [];
         $subtotal = 0.00;
+        $totalMrp = 0.00;
         $totalSavings = 0.00;
 
         foreach ($cart->items as $item) {
             $product = $item->product;
             $unitPrice = (float) $item->unit_price;
             $originalPrice = (float) ($product ? $product->price : $unitPrice);
+            if ($originalPrice < $unitPrice) {
+                $originalPrice = $unitPrice;
+            }
             $itemTotal = round($unitPrice * $item->quantity, 2);
 
             if ($item->is_selected) {
                 $subtotal += $itemTotal;
+                $totalMrp += round($originalPrice * $item->quantity, 2);
                 if ($originalPrice > $unitPrice) {
                     $totalSavings += ($originalPrice - $unitPrice) * $item->quantity;
                 }
             }
 
             $imgPath = $product ? ($product->main_image ?? $product->featured_image ?? null) : null;
+            $maxAvail = $product ? $product->getOptionStock($item->selected_option) : 0;
+
             $items[] = [
+                'id'              => (int) $item->id,
                 'cart_item_id'    => (int) $item->id,
                 'product_id'      => (int) $item->product_id,
                 'name'            => $product ? $product->name : 'Product',
+                'product_name'    => $product ? $product->name : 'Product',
                 'slug'            => $product ? $product->slug : '',
+                'brand_name'      => ($product && $product->brand) ? $product->brand->name : null,
                 'quantity'        => (int) $item->quantity,
                 'price'           => $unitPrice,
+                'unit_price'      => $unitPrice,
                 'original_price'  => $originalPrice,
                 'image_url'       => $imgPath ? (str_starts_with($imgPath, 'http') ? $imgPath : asset('storage/' . $imgPath)) : null,
                 'selected_option' => $item->selected_option,
                 'is_selected'     => (bool) $item->is_selected,
                 'total'           => $itemTotal,
-                'in_stock'        => $product ? ($product->stock > 0 && $product->status === 'Active') : false,
-                'max_available'   => $product ? $product->getOptionStock($item->selected_option) : 0,
+                'subtotal'        => $itemTotal,
+                'in_stock'        => $product ? ($maxAvail > 0 && $product->status === 'Active') : false,
+                'max_available'   => $maxAvail,
             ];
         }
 
         $freeShippingMin = (float) Setting::get('free_shipping_min', 499);
-        $deliveryCharge = ($subtotal >= $freeShippingMin || count($items) === 0) ? 0.00 : 40.00;
-        $grandTotal = $subtotal + $deliveryCharge;
+        $selectedCount = count(array_filter($items, fn($i) => $i['is_selected']));
+        $deliveryCharge = ($subtotal >= $freeShippingMin || $selectedCount === 0) ? 0.00 : 40.00;
+        $grandTotal = $subtotal;
 
         return [
             'cart_id'                 => (int) $cart->id,
             'items'                   => $items,
             'item_count'              => count($items),
             'total_quantity'          => array_sum(array_column($items, 'quantity')),
-            'selected_items_count'    => count(array_filter($items, fn($i) => $i['is_selected'])),
+            'selected_items_count'    => $selectedCount,
+            'total_mrp'               => round($totalMrp, 2),
             'subtotal'                => round($subtotal, 2),
             'total_savings'           => round($totalSavings, 2),
             'delivery_charge'         => round($deliveryCharge, 2),
             'free_shipping_min'       => $freeShippingMin,
-            'qualifies_free_shipping' => ($subtotal >= $freeShippingMin),
+            'qualifies_free_shipping' => ($selectedCount > 0 && $subtotal >= $freeShippingMin),
             'grand_total'             => round($grandTotal, 2),
         ];
     }
@@ -182,6 +196,24 @@ class CartController extends BaseApiController
         return $this->sendResponse(
             $this->formatCartResponse($cart),
             'Cart selection updated.'
+        );
+    }
+
+    /**
+     * Toggle Select All / Deselect All Cart Items.
+     */
+    public function toggleSelectAll(Request $request): JsonResponse
+    {
+        $request->validate([
+            'is_selected' => 'required|boolean',
+        ]);
+
+        $this->cartService->toggleSelectAll((bool) $request->is_selected);
+        $cart = $this->cartService->getCart();
+
+        return $this->sendResponse(
+            $this->formatCartResponse($cart),
+            'All cart items selection updated.'
         );
     }
 }
