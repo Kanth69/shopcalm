@@ -244,59 +244,6 @@
 
             </div>
 
-            {{-- ── Progress Tracker ── --}}
-            @if($s !== 'cancelled' && $s !== 'failed' && $stepIdx !== false)
-            <div class="mt-4 pt-3" style="border-top:1px dashed #e2e8f0;">
-                <div class="position-relative d-flex align-items-center justify-content-between" style="padding:0 2px;">
-                    <div class="position-absolute" style="top:13px; left:14px; right:14px; height:3px; background:#e2e8f0; border-radius:99px; z-index:0;"></div>
-                    @php $fillPct = $stepIdx > 0 ? round(($stepIdx / (count($stageList) - 1)) * 100) : 0; @endphp
-                    <div class="position-absolute" style="top:13px; left:14px; width:calc({{ $fillPct }}% - 0px); max-width:calc(100% - 28px); height:3px; background:{{ $st['stripe'] }}; border-radius:99px; z-index:1; transition:width 0.5s ease;"></div>
-
-                    @foreach($stageList as $si => $stage)
-                    @php $done = $si <= $stepIdx; $current = $si === $stepIdx; @endphp
-                    <div class="d-flex flex-column align-items-center position-relative flex-fill" style="z-index:2;">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center"
-                             style="width:28px; height:28px;
-                                    background:{{ $done ? $st['stripe'] : '#e2e8f0' }};
-                                    border:2px solid {{ $done ? $st['stripe'] : '#e2e8f0' }};
-                                    box-shadow:{{ $current ? '0 0 0 4px '.$st['bg'] : 'none' }};
-                                    transition:all 0.3s;">
-                            @if($done)
-                                <i class="bi bi-check text-white" style="font-size:0.7rem; font-weight:900;"></i>
-                            @else
-                                <div style="width:7px;height:7px;border-radius:50%;background:#cbd5e1;"></div>
-                            @endif
-                        </div>
-                        <span class="mt-1 text-center"
-                              style="font-size:0.65rem; line-height:1.2; white-space:nowrap;
-                                     color:{{ $done ? $st['color'] : '#94a3b8' }};
-                                     font-weight:{{ $current ? '700' : ($done ? '600' : '400') }};">
-                            {{ $stage['label'] }}
-                        </span>
-                    </div>
-                    @endforeach
-                </div>
-            </div>
-
-            @elseif($s === 'cancelled')
-            <div class="mt-3 pt-3 d-flex align-items-center gap-2" style="border-top:1px dashed #e2e8f0;">
-                <div class="rounded-pill px-3 py-1 d-inline-flex align-items-center gap-2"
-                     style="background:#fee2e2; border:1px solid #fca5a5;">
-                    <i class="bi bi-x-circle-fill" style="color:#dc2626; font-size:0.8rem;"></i>
-                    <span style="color:#991b1b; font-size:0.78rem; font-weight:600;">Order Cancelled</span>
-                </div>
-            </div>
-
-            @elseif($s === 'failed')
-            <div class="mt-3 pt-3 d-flex align-items-center gap-2" style="border-top:1px dashed #e2e8f0;">
-                <div class="rounded-pill px-3 py-1 d-inline-flex align-items-center gap-2"
-                     style="background:#fee2e2; border:1px solid #fca5a5;">
-                    <i class="bi bi-exclamation-octagon-fill" style="color:#dc2626; font-size:0.8rem;"></i>
-                    <span style="color:#991b1b; font-size:0.78rem; font-weight:600;">Payment Failed (Order Not Placed)</span>
-                </div>
-            </div>
-            @endif
-
         </div>
     </div>
 </div>
