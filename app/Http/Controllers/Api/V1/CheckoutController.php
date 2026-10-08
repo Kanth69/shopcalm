@@ -56,23 +56,30 @@ class CheckoutController extends BaseApiController
             return $this->sendResponse([
                 'is_serviceable' => false,
                 'pincode'        => $request->pincode,
-            ], 'Sorry, delivery is currently unavailable to this PIN code.');
+                'city'           => $result['city'] ?? null,
+                'state'          => $result['state'] ?? null,
+                'message'        => $result['message'] ?? 'Sorry, delivery is currently unavailable to this PIN code.',
+            ], $result['message'] ?? 'Sorry, delivery is currently unavailable to this PIN code.');
         }
 
-        $pincodeRecord = Pincode::where('pincode', $request->pincode)->first();
-        $isCodAllowed = $pincodeRecord ? (bool) $pincodeRecord->is_cod_available : true;
-        $estimatedDays = $pincodeRecord && $pincodeRecord->estimated_days ? $pincodeRecord->estimated_days : ($result['delivery_days'] ?? 3) . ' Business Days';
+        $estimatedText = $result['estimated_delivery'] ?? (($result['delivery_days'] ?? 3) . ' Business Days');
 
         return $this->sendResponse([
-            'is_serviceable' => true,
-            'pincode'        => $request->pincode,
-            'city'           => $result['city'] ?? "PIN {$request->pincode}",
-            'state'          => $result['state'] ?? 'India',
-            'is_cod_allowed' => $isCodAllowed,
-            'cod_fee'        => (float) $result['cod_fee'],
-            'delivery_charge'=> (float) $result['delivery_charge'],
-            'estimated_days' => $estimatedDays,
-        ], 'PIN code is serviceable.');
+            'is_serviceable'     => true,
+            'pincode'            => $result['pincode'],
+            'city'               => $result['city'],
+            'state'              => $result['state'],
+            'location_text'      => $result['location_text'],
+            'is_cod_allowed'     => (bool) $result['is_cod_available'],
+            'is_cod_available'   => (bool) $result['is_cod_available'],
+            'cod_fee'            => (float) $result['cod_fee'],
+            'delivery_charge'    => (float) $result['delivery_charge'],
+            'free_shipping_min'  => (float) $result['free_shipping_min'],
+            'delivery_days'      => (int) $result['delivery_days'],
+            'estimated_delivery' => $estimatedText,
+            'estimated_days'     => $estimatedText,
+            'message'            => $result['message'],
+        ], $result['message'] ?? 'PIN code is serviceable.');
     }
 
     /**
@@ -91,16 +98,32 @@ class CheckoutController extends BaseApiController
         $freeShippingMin = (float) Setting::get('free_shipping_min', 499);
         $pincode = $request->input('shipping_pincode') ?: $request->input('shipping_zip');
 
-        $deliveryCharge = ($subtotal >= $freeShippingMin) ? 0.00 : 40.00;
-        $codFee = (float) Setting::get('cod_flat_fee', 40.00);
+        $deliveryCharge = 0.00;
+        $codFee = 0.00;
+        $isServiceable = false;
+        $isCodAllowed = true;
+        $estimatedDelivery = null;
+        $deliveryDays = null;
+        $pincodeCity = null;
+        $pincodeState = null;
+        $pincodeMessage = null;
 
         if ($pincode) {
-            $pincodeRecord = Pincode::where('pincode', $pincode)->first();
-            if ($pincodeRecord) {
-                $codFee = (float) $pincodeRecord->cod_fee;
-                if ($subtotal < $freeShippingMin && $pincodeRecord->delivery_charge !== null) {
-                    $deliveryCharge = (float) $pincodeRecord->delivery_charge;
-                }
+            $deliveryService = app(\App\Services\DeliveryService::class);
+            $pinCheck = $deliveryService->checkServiceability((string) $pincode);
+            $isServiceable = (bool) ($pinCheck['is_serviceable'] ?? false);
+            $pincodeCity = $pinCheck['city'] ?? null;
+            $pincodeState = $pinCheck['state'] ?? null;
+            $pincodeMessage = $pinCheck['message'] ?? null;
+
+            if ($isServiceable) {
+                $freeShippingMin = (float) ($pinCheck['free_shipping_min'] ?? $freeShippingMin);
+                $rawDeliveryCharge = (float) ($pinCheck['delivery_charge'] ?? 0.00);
+                $deliveryCharge = ($subtotal >= $freeShippingMin) ? 0.00 : $rawDeliveryCharge;
+                $isCodAllowed = (bool) ($pinCheck['is_cod_available'] ?? true);
+                $codFee = $isCodAllowed ? (float) ($pinCheck['cod_fee'] ?? 0.00) : 0.00;
+                $estimatedDelivery = $pinCheck['estimated_delivery'] ?? null;
+                $deliveryDays = isset($pinCheck['delivery_days']) ? (int) $pinCheck['delivery_days'] : null;
             }
         }
 
@@ -133,11 +156,55 @@ class CheckoutController extends BaseApiController
 
         $grandTotal = max(0, $payableBeforeWallet - $walletUsed);
 
+        // Fetch Active Available Coupons with Eligibility & Savings (matching Web CheckoutController)
+        $availableCoupons = \App\Models\Coupon::where('is_active', true)
+            ->where(function ($q) {
+                $q->whereNull('valid_until')->orWhere('valid_until', '>=', now()->startOfDay());
+            })
+            ->get()
+            ->map(function ($c) use ($user, $subtotal, $cart) {
+                $discType = is_object($c->discount_type) ? $c->discount_type->value : (string) $c->discount_type;
+                try {
+                    $this->couponService->validateCoupon($c->code, $user, $subtotal, $cart);
+                    $isEligible = true;
+                    $reason = null;
+                    $calcDiscount = (float) $this->couponService->calculateDiscount($c, $subtotal);
+                } catch (Exception $e) {
+                    $isEligible = false;
+                    $reason = $e->getMessage();
+                    $calcDiscount = 0.0;
+                }
+
+                return [
+                    'id'                      => $c->id,
+                    'code'                    => $c->code,
+                    'name'                    => $c->name,
+                    'description'             => $c->description,
+                    'discount_type'           => $discType,
+                    'discount_value'          => (float) $c->discount_value,
+                    'minimum_order_amount'    => (float) $c->minimum_order_amount,
+                    'maximum_discount_amount' => $c->maximum_discount_amount ? (float) $c->maximum_discount_amount : null,
+                    'is_eligible'             => $isEligible,
+                    'ineligibility_reason'    => $reason,
+                    'calculated_discount'     => round($calcDiscount, 2),
+                ];
+            })
+            ->values();
+
         return $this->sendResponse([
             'subtotal'                => round($subtotal, 2),
             'coupon_code'             => $couponCode,
             'coupon_discount'         => round($couponDiscount, 2),
             'coupon_message'          => $couponMessage,
+            'is_serviceable'          => $isServiceable,
+            'pincode'                 => $pincode,
+            'city'                    => $pincodeCity,
+            'state'                   => $pincodeState,
+            'pincode_message'         => $pincodeMessage,
+            'is_cod_allowed'          => $isCodAllowed,
+            'estimated_delivery'      => $estimatedDelivery,
+            'estimated_days'          => $estimatedDelivery,
+            'delivery_days'           => $deliveryDays,
             'free_shipping_min'       => $freeShippingMin,
             'delivery_charge'         => round($deliveryCharge, 2),
             'cod_fee'                 => round($codFee, 2),
@@ -146,6 +213,7 @@ class CheckoutController extends BaseApiController
             'grand_total'             => round($grandTotal, 2),
             'grand_total_with_cod'    => round($grandTotal + $codFee, 2),
             'item_count'              => $cart->items->count(),
+            'available_coupons'       => $availableCoupons,
         ], 'Checkout validation successful.');
     }
 

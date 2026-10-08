@@ -507,7 +507,7 @@
                         <div class="d-flex flex-column gap-1.5 mt-2" style="font-size: 0.84rem;">
                             <div class="d-flex align-items-center gap-2">
                                 <i class="bi bi-truck text-success fs-6"></i>
-                                <span class="text-dark">Delivery to <strong>{{ $activeLocation['location_text'] }}</strong> by <strong class="text-primary">{{ $activeLocation['estimated_delivery'] }}</strong> <span class="text-success fw-semibold">| FREE ₹499+</span></span>
+                                <span class="text-dark">Delivery to <strong>{{ $activeLocation['location_text'] }}</strong> by <strong class="text-primary">{{ $activeLocation['estimated_delivery'] }}</strong> <span class="text-success fw-semibold">| {{ ($activeLocation['delivery_charge'] ?? 0) == 0 ? 'FREE Delivery' : '₹' . number_format($activeLocation['delivery_charge'], 0) . ' (FREE ₹' . number_format($activeLocation['free_shipping_min'] ?? 499, 0) . '+)' }}</span></span>
                             </div>
                             <div class="d-flex align-items-center gap-2">
                                 <i class="bi bi-cash-stack text-success fs-6"></i>
@@ -1226,11 +1226,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (pdpResults) {
                 pdpResults.classList.remove('d-none');
                 if (data.is_serviceable) {
+                    const chargeLabel = (parseFloat(data.delivery_charge || 0) === 0)
+                        ? 'FREE Delivery'
+                        : `₹${parseFloat(data.delivery_charge).toFixed(0)} (FREE ₹${parseFloat(data.free_shipping_min || 499).toFixed(0)}+)`;
                     pdpResults.innerHTML = `
                         <div class="d-flex flex-column gap-1.5 mt-2" style="font-size: 0.84rem;">
                             <div class="d-flex align-items-center gap-2">
                                 <i class="bi bi-truck text-success fs-6"></i>
-                                <span class="text-dark">Delivery to <strong>${data.location_text}</strong> by <strong class="text-primary">${data.estimated_delivery}</strong> <span class="text-success fw-semibold">| FREE ₹499+</span></span>
+                                <span class="text-dark">Delivery to <strong>${data.location_text}</strong> by <strong class="text-primary">${data.estimated_delivery}</strong> <span class="text-success fw-semibold">| ${chargeLabel}</span></span>
                             </div>
                             <div class="d-flex align-items-center gap-2">
                                 <i class="bi bi-cash-stack text-success fs-6"></i>

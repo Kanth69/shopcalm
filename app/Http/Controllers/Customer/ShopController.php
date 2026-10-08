@@ -29,7 +29,7 @@ class ShopController extends Controller
         $liveMegaSale = $offerService->getLiveMegaSale();
 
         $banners = Cache::remember('home_banners', 300, function() {
-            return Banner::active()->orderBy('display_order')->get(['id','offer_id','banner_type','title','subtitle','desktop_image','mobile_image','primary_button_text','primary_button_link','display_order','is_active']);
+            return Banner::active()->orderBy('display_order')->get(['id','offer_id','banner_type','bg_gradient','title','subtitle','desktop_image','mobile_image','primary_button_text','primary_button_link','display_order','is_active']);
         });
 
         if ($liveMegaSale && $liveMegaSale->banner_image) {

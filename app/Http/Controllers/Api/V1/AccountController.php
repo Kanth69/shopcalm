@@ -37,23 +37,31 @@ class AccountController extends BaseApiController
 
         $orders = $query->paginate(20);
 
-        $formattedOrders = collect($orders->items())->map(function (Order $order) {
+        $allowCancellationSetting = Setting::get('allow_customer_cancellation', '1') == '1';
+
+        $formattedOrders = collect($orders->items())->map(function (Order $order) use ($allowCancellationSetting) {
+            $isPendingUnpaid = in_array($order->status, ['pending', 'failed', '']) || $order->payment_status === 'failed';
+            $canCustomerCancel = !in_array($order->status, ['cancelled', 'delivered']) &&
+                ($isPendingUnpaid || ($allowCancellationSetting && in_array($order->status, ['confirmed', 'processing'])));
+
             return [
-                'id'                   => $order->id,
-                'order_number'         => $order->order_number,
-                'status'               => $order->status,
-                'payment_method'       => $order->payment_method,
-                'payment_status'       => $order->payment_status,
-                'item_count'           => $order->items->count(),
-                'subtotal_amount'      => (float) $order->subtotal_amount,
-                'shipping_charge'      => (float) ($order->shipping_charge ?? 0),
-                'wallet_amount_used'   => (float) ($order->wallet_amount_used ?? 0),
-                'total_amount'         => (float) $order->total_amount,
-                'delivery_otp'         => $order->delivery_otp,
-                'is_local_bengaluru'   => $order->isLocalBengaluruDelivery(),
-                'created_at'           => $order->created_at ? $order->created_at->format('d M, Y') : '',
-                'created_at_full'      => $order->created_at ? $order->created_at->format('d M, Y h:i A') : '',
-                'items'                => $order->items->map(function ($item) {
+                'id'                          => $order->id,
+                'order_number'                => $order->order_number,
+                'status'                      => $order->status,
+                'payment_method'              => $order->payment_method,
+                'payment_status'              => $order->payment_status,
+                'item_count'                  => $order->items->count(),
+                'subtotal_amount'             => (float) $order->subtotal_amount,
+                'shipping_charge'             => (float) ($order->shipping_charge ?? 0),
+                'wallet_amount_used'          => (float) ($order->wallet_amount_used ?? 0),
+                'total_amount'                => (float) $order->total_amount,
+                'delivery_otp'                => $order->delivery_otp,
+                'is_local_bengaluru'          => $order->isLocalBengaluruDelivery(),
+                'can_customer_cancel'         => $canCustomerCancel,
+                'allow_customer_cancellation' => $allowCancellationSetting,
+                'created_at'                  => $order->created_at ? $order->created_at->format('d M, Y') : '',
+                'created_at_full'             => $order->created_at ? $order->created_at->format('d M, Y h:i A') : '',
+                'items'                       => $order->items->map(function ($item) {
                     $imgPath = $item->product ? ($item->product->main_image ?? $item->product->featured_image ?? null) : null;
                     $unitPrice = (float) ($item->unit_price ?? $item->price ?? 0);
                     $qty = (int) ($item->quantity ?? 1);
@@ -118,43 +126,45 @@ class AccountController extends BaseApiController
             ];
         }
 
-        $isPendingUnpaid = in_array($order->status, ['pending', 'failed']) || $order->payment_status === 'failed';
+        $isPendingUnpaid = in_array($order->status, ['pending', 'failed', '']) || $order->payment_status === 'failed';
         $allowCancellationSetting = Setting::get('allow_customer_cancellation', '1') == '1';
-        $canCustomerCancel = $isPendingUnpaid || ($allowCancellationSetting && $order->status === 'confirmed');
+        $canCustomerCancel = !in_array($order->status, ['cancelled', 'delivered']) &&
+            ($isPendingUnpaid || ($allowCancellationSetting && in_array($order->status, ['confirmed', 'processing'])));
 
         return $this->sendResponse([
-            'id'                       => $order->id,
-            'order_number'             => $order->order_number,
-            'status'                   => $order->status,
-            'payment_method'           => $order->payment_method,
-            'payment_status'           => $order->payment_status,
-            'bank_reference'           => $order->primaryPayment?->bank_reference,
-            'subtotal'                 => (float) $order->subtotal_amount,
-            'shipping_cost'            => (float) ($order->shipping_charge ?? $order->shipping_cost ?? 0),
-            'cod_fee'                  => (float) $order->cod_fee,
-            'coupon_code'              => $order->coupon?->code,
-            'coupon_discount'          => (float) $order->coupon_discount_amount,
-            'wallet_amount_used'       => (float) $order->wallet_amount_used,
-            'total_amount'             => (float) $order->total_amount,
-            'shipping_name'            => $order->shipping_name,
-            'shipping_email'           => $order->shipping_email,
-            'shipping_phone'           => $order->shipping_phone,
-            'shipping_address'         => $order->shipping_address,
-            'shipping_city'            => $order->shipping_city,
-            'shipping_state'           => $order->shipping_state,
-            'shipping_pincode'         => $order->shipping_zip,
-            'shipping_country'         => $order->shipping_country ?? 'India',
-            'is_local_bengaluru'       => $order->isLocalBengaluruDelivery(),
-            'courier_partner'          => $order->courier_partner,
-            'tracking_number'          => $order->tracking_number,
-            'tracking_url'             => $order->tracking_url,
-            'rider_name'               => $order->rider_name,
-            'rider_phone'              => $order->rider_phone,
-            'delivery_slot'            => $order->delivery_slot,
-            'delivery_otp'             => $order->delivery_otp,
-            'delivered_at'             => $order->delivered_at ? $order->delivered_at->format('d M, Y h:i A') : null,
-            'can_customer_cancel'      => $canCustomerCancel,
-            'cancellation'             => $cancellationData,
+            'id'                          => $order->id,
+            'order_number'                => $order->order_number,
+            'status'                      => $order->status,
+            'payment_method'              => $order->payment_method,
+            'payment_status'              => $order->payment_status,
+            'bank_reference'              => $order->primaryPayment?->bank_reference,
+            'subtotal'                    => (float) $order->subtotal_amount,
+            'shipping_cost'               => (float) ($order->shipping_charge ?? $order->shipping_cost ?? 0),
+            'cod_fee'                     => (float) $order->cod_fee,
+            'coupon_code'                 => $order->coupon?->code,
+            'coupon_discount'             => (float) $order->coupon_discount_amount,
+            'wallet_amount_used'          => (float) $order->wallet_amount_used,
+            'total_amount'                => (float) $order->total_amount,
+            'shipping_name'               => $order->shipping_name,
+            'shipping_email'              => $order->shipping_email,
+            'shipping_phone'              => $order->shipping_phone,
+            'shipping_address'            => $order->shipping_address,
+            'shipping_city'               => $order->shipping_city,
+            'shipping_state'              => $order->shipping_state,
+            'shipping_pincode'            => $order->shipping_zip,
+            'shipping_country'            => $order->shipping_country ?? 'India',
+            'is_local_bengaluru'          => $order->isLocalBengaluruDelivery(),
+            'courier_partner'             => $order->courier_partner,
+            'tracking_number'             => $order->tracking_number,
+            'tracking_url'                => $order->tracking_url,
+            'rider_name'                  => $order->rider_name,
+            'rider_phone'                 => $order->rider_phone,
+            'delivery_slot'               => $order->delivery_slot,
+            'delivery_otp'                => $order->delivery_otp,
+            'delivered_at'                => $order->delivered_at ? $order->delivered_at->format('d M, Y h:i A') : null,
+            'can_customer_cancel'         => $canCustomerCancel,
+            'allow_customer_cancellation' => $allowCancellationSetting,
+            'cancellation'                => $cancellationData,
             'created_at'               => $order->created_at ? $order->created_at->format('d M, Y h:i A') : '',
             'created_at_date'          => $order->created_at ? $order->created_at->format('d M, Y') : '',
             'items'                    => $order->items->map(function ($item) {
