@@ -134,10 +134,13 @@ class AccountController extends BaseApiController
         return $this->sendResponse([
             'id'                          => $order->id,
             'order_number'                => $order->order_number,
+            'invoice_number'              => 'INV-' . $order->order_number,
+            'invoice_url'                 => route('orders.public_invoice', $order->order_number),
             'status'                      => $order->status,
             'payment_method'              => $order->payment_method,
             'payment_status'              => $order->payment_status,
             'bank_reference'              => $order->primaryPayment?->bank_reference,
+            'gateway_payment_id'          => $order->primaryPayment?->gateway_payment_id,
             'subtotal'                    => (float) $order->subtotal_amount,
             'shipping_cost'               => (float) ($order->shipping_charge ?? $order->shipping_cost ?? 0),
             'cod_fee'                     => (float) $order->cod_fee,
@@ -165,24 +168,27 @@ class AccountController extends BaseApiController
             'can_customer_cancel'         => $canCustomerCancel,
             'allow_customer_cancellation' => $allowCancellationSetting,
             'cancellation'                => $cancellationData,
-            'created_at'               => $order->created_at ? $order->created_at->format('d M, Y h:i A') : '',
-            'created_at_date'          => $order->created_at ? $order->created_at->format('d M, Y') : '',
-            'items'                    => $order->items->map(function ($item) {
+            'created_at'                  => $order->created_at ? $order->created_at->format('d M, Y h:i A') : '',
+            'created_at_date'             => $order->created_at ? $order->created_at->format('d M, Y') : '',
+            'items'                       => $order->items->map(function ($item) {
                 $imgPath = $item->product ? ($item->product->main_image ?? $item->product->featured_image ?? null) : null;
                 $unitPrice = (float) ($item->unit_price ?? $item->price ?? 0);
                 $qty = (int) ($item->quantity ?? 1);
                 $totPrice = (float) ($item->total_price ?? $item->subtotal ?? ($unitPrice * $qty));
+                $sku = $item->product?->sku ?: ('SC-' . str_pad((string) ($item->product_id ?? $item->id), 5, '0', STR_PAD_LEFT));
                 return [
                     'id'              => $item->id,
                     'product_id'      => $item->product_id,
                     'product_slug'    => $item->product?->slug,
                     'product_name'    => $item->product_name ?? $item->product?->name ?? 'Product',
+                    'sku'             => $sku,
                     'brand_name'      => $item->product?->brand?->name,
                     'category_name'   => $item->product?->category?->name,
                     'product_image'   => $imgPath ? (str_starts_with($imgPath, 'http') ? $imgPath : asset('storage/' . $imgPath)) : null,
                     'selected_option' => $item->selected_option,
                     'quantity'        => $qty,
                     'original_price'  => (float) ($item->original_price ?? $unitPrice),
+                    'offer_discount'  => (float) ($item->offer_discount ?? max(0, (float) ($item->original_price ?? $unitPrice) - $unitPrice)),
                     'unit_price'      => $unitPrice,
                     'price'           => $unitPrice,
                     'total_price'     => $totPrice,
