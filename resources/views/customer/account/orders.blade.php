@@ -243,52 +243,6 @@
 
             </div>
 
-            {{-- ── Responsive Mini Progress Tracker ── --}}
-            @if($s !== 'cancelled' && $stepIdx !== false)
-            <div class="mt-3 pt-2.5 border-top border-dashed overflow-x-auto no-scrollbar" style="border-color: #e2e8f0 !important; scrollbar-width: none; -ms-overflow-style: none;">
-                <div class="position-relative d-flex align-items-center justify-content-between my-1" style="min-width: 440px; padding: 0 4px;">
-                    {{-- Background track --}}
-                    <div class="position-absolute" style="top: 11px; left: 14px; right: 14px; height: 3px; background: #e2e8f0; border-radius: 99px; z-index: 0;"></div>
-                    {{-- Filled track --}}
-                    @php $fillPct = $stepIdx > 0 ? ($stepIdx / (count($stageList) - 1)) * 100 : 0; @endphp
-                    <div class="position-absolute" style="top: 11px; left: 14px; width: calc({{ round($fillPct) }}% - 0px); max-width: calc(100% - 28px); height: 3px; background: {{ $st['stripe'] }}; border-radius: 99px; z-index: 1; transition: width 0.4s ease;"></div>
-
-                    @foreach($stageList as $si => $stage)
-                    @php $done = $si <= $stepIdx; $current = $si === $stepIdx; @endphp
-                    <div class="d-flex flex-column align-items-center position-relative flex-fill" style="z-index: 2;">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center"
-                             style="width: 24px; height: 24px;
-                                    background: {{ $done ? $st['stripe'] : '#ffffff' }};
-                                    border: 2px solid {{ $done ? $st['stripe'] : '#cbd5e1' }};
-                                    box-shadow: {{ $current ? '0 0 0 3px '.($st['bg']) : 'none' }};
-                                    transition: all 0.3s;">
-                            @if($done)
-                                <i class="bi bi-check text-white" style="font-size: 0.75rem; font-weight: 900;"></i>
-                            @else
-                                <div style="width: 5px; height: 5px; border-radius: 50%; background: #cbd5e1;"></div>
-                            @endif
-                        </div>
-                        <span class="mt-1 text-center"
-                              style="font-size: 0.68rem; line-height: 1.1; white-space: nowrap;
-                                     color: {{ $done ? $st['color'] : '#94a3b8' }};
-                                     font-weight: {{ $current ? '700' : ($done ? '600' : '400') }};">
-                            {{ $stage['label'] }}
-                        </span>
-                    </div>
-                    @endforeach
-                </div>
-            </div>
-
-            @elseif($s === 'cancelled')
-            <div class="mt-2.5 pt-2 d-flex align-items-center gap-2" style="border-top: 1px dashed #e2e8f0;">
-                <div class="rounded-pill px-2.5 py-0.5 d-inline-flex align-items-center gap-1.5"
-                     style="background: #fee2e2; border: 1px solid #fca5a5;">
-                    <i class="bi bi-x-circle-fill" style="color: #dc2626; font-size: 0.75rem;"></i>
-                    <span style="color: #991b1b; font-size: 0.74rem; font-weight: 600;">Order Cancelled</span>
-                </div>
-            </div>
-            @endif
-
             {{-- Mobile Full-Width Action Button --}}
             <div class="d-block d-sm-none mt-3 pt-2.5 border-top">
                 @if(in_array($order->status, ['pending', 'failed']) || $order->payment_status === 'failed')
