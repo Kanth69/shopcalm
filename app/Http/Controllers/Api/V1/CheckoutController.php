@@ -251,20 +251,6 @@ class CheckoutController extends BaseApiController
     {
         $user = $request->user();
 
-        $pendingOrder = $this->checkoutService->getActivePendingOrder($user);
-        if ($pendingOrder) {
-            return $this->sendError(
-                "You already have a pending order (#{$pendingOrder->order_number}). You cannot place a new order until you cancel or complete payment for that order.",
-                [
-                    'has_pending_order'    => true,
-                    'pending_order_id'     => (int) $pendingOrder->id,
-                    'pending_order_number' => $pendingOrder->order_number,
-                    'pending_order_total'  => (float) $pendingOrder->total_amount,
-                ],
-                422
-            );
-        }
-
         // Normalize inputs from mobile Flutter app
         $request->merge([
             'payment_method'   => strtolower($request->input('payment_method', 'cod')),
@@ -287,11 +273,19 @@ class CheckoutController extends BaseApiController
 
         // Standardize shipping PIN code for checkout service
         $validated['shipping_zip'] = $validated['shipping_pincode'];
+        $validated['shipping_country'] = $request->input('shipping_country', 'India');
         $validated['shipping_email'] = !empty($validated['shipping_email'])
             ? $validated['shipping_email']
             : ($user->email ?? 'customer@shopcalm.in');
 
         try {
+            // If user had a previous uncompleted/abandoned pending online order, release any locked wallet balance and cancel it
+            $pendingOrder = $this->checkoutService->getActivePendingOrder($user);
+            if ($pendingOrder && $pendingOrder->payment_status !== 'paid') {
+                $this->checkoutService->markOrderPaymentFailed($pendingOrder, 'Superseded by new checkout order.');
+                $pendingOrder->update(['status' => 'cancelled']);
+            }
+
             if ($validated['payment_method'] === 'cod') {
                 // Cash on Delivery Direct Confirmation
                 $order = $this->checkoutService->placeOrder($validated);
@@ -302,23 +296,77 @@ class CheckoutController extends BaseApiController
                     'order_number'   => $order->order_number,
                     'status'         => $order->status,
                     'total_amount'   => (float) $order->total_amount,
-                    'payment_method' => 'cod',
+                    'payment_method' => $order->payment_method,
                     'payment_status' => $order->payment_status,
                     'created_at'     => $order->created_at->format('Y-m-d H:i:s'),
                 ], 'Order placed successfully via Cash on Delivery.', 201);
 
             } else {
+                // Check if ShopCalm Wallet covers 100% of the order amount
+                $cart = $this->cartService->getSelectedCart();
+                if ($cart->items->isEmpty()) {
+                    return $this->sendError('Your cart has no items selected for checkout.', [], 422);
+                }
+
+                $subtotalAmount = (float) $this->cartService->subtotal();
+                $discountAmount = 0.0;
+                if (!empty($validated['coupon_code'])) {
+                    $coupon = $this->couponService->validateCoupon($validated['coupon_code'], $user, $subtotalAmount);
+                    $discountAmount = (float) $this->couponService->calculateDiscount($coupon, $subtotalAmount);
+                }
+                $offerDiscount = (float) app(\App\Services\OfferService::class)->calculateCheckoutOfferDiscount($cart);
+                $pincodeCheck = app(\App\Services\DeliveryService::class)->checkServiceability($validated['shipping_zip']);
+                if (!$pincodeCheck['is_serviceable']) {
+                    return $this->sendError($pincodeCheck['message'] ?? "Delivery is currently unavailable to PIN code {$validated['shipping_zip']}.", [], 422);
+                }
+                $freeShippingMin = (float) Setting::get('free_shipping_min', 499);
+                $shippingFee = ($subtotalAmount >= $freeShippingMin) ? 0.00 : (float) ($pincodeCheck['delivery_charge'] ?? 0.00);
+                $payableBeforeWallet = max(0, $subtotalAmount - $discountAmount - $offerDiscount + $shippingFee);
+
+                $useWallet = !empty($validated['use_wallet']);
+                $userWallet = $this->walletService->getOrCreateWallet($user);
+                $walletBalance = ($userWallet && $userWallet->status === 'active') ? (float) $userWallet->balance : 0.00;
+
+                if ($useWallet && $walletBalance >= $payableBeforeWallet) {
+                    $order = $this->checkoutService->placeOrder($validated);
+
+                    return $this->sendResponse([
+                        'order'          => $order,
+                        'order_id'       => (int) $order->id,
+                        'order_number'   => $order->order_number,
+                        'status'         => $order->status,
+                        'total_amount'   => 0.0,
+                        'payment_method' => 'wallet',
+                        'payment_status' => 'paid',
+                        'created_at'     => $order->created_at->format('Y-m-d H:i:s'),
+                    ], 'Order paid 100% via ShopCalm Wallet and confirmed!', 201);
+                }
+
                 // Online Payment Flow: Create Pending Order + Razorpay Gateway Order
                 $order = $this->checkoutService->createPendingOnlineOrder($validated, $user);
 
-                $rzpOrder = $this->razorpayService->createRazorpayOrder(
-                    $order->order_number,
-                    (float) $order->total_amount,
-                    [
-                        'order_id' => (string) $order->id,
-                        'customer' => $user->name ?? $validated['shipping_name'],
-                    ]
-                );
+                try {
+                    $rzpOrder = $this->razorpayService->createRazorpayOrder(
+                        $order->order_number,
+                        (float) $order->total_amount,
+                        [
+                            'order_id' => (string) $order->id,
+                            'customer' => $user->name ?? $validated['shipping_name'],
+                        ]
+                    );
+                } catch (Exception $e) {
+                    $this->checkoutService->markOrderPaymentFailed($order, $e->getMessage());
+                    $order->update(['status' => 'cancelled']);
+                    throw $e;
+                }
+
+                $payment = \App\Models\Payment::where('order_id', $order->id)->latest()->first();
+                if ($payment) {
+                    $payment->update([
+                        'gateway'          => 'razorpay',
+                        'gateway_order_id' => $rzpOrder['razorpay_order_id'] ?? null,
+                    ]);
+                }
 
                 return $this->sendResponse([
                     'order_id'          => (int) $order->id,
@@ -353,10 +401,10 @@ class CheckoutController extends BaseApiController
     public function verifyPayment(Request $request): JsonResponse
     {
         $request->validate([
-            'order_id'           => 'required|exists:orders,id',
-            'razorpay_order_id'  => 'required|string',
-            'razorpay_payment_id'=> 'required|string',
-            'razorpay_signature' => 'required|string',
+            'order_id'            => 'required|exists:orders,id',
+            'razorpay_order_id'   => 'required|string',
+            'razorpay_payment_id' => 'required|string',
+            'razorpay_signature'  => 'required|string',
         ]);
 
         $user = $request->user();
@@ -379,15 +427,16 @@ class CheckoutController extends BaseApiController
 
         try {
             $paymentData = [
-                'gateway'            => 'razorpay',
-                'gateway_order_id'   => $request->razorpay_order_id,
-                'gateway_payment_id' => $request->razorpay_payment_id,
-                'bank_reference'     => $request->razorpay_payment_id,
-                'payment_time'       => now(),
-                'gateway_message'    => 'Payment Verified Successfully via Native App SDK',
+                'gateway'              => 'razorpay',
+                'gateway_order_id'     => $request->razorpay_order_id,
+                'gateway_payment_id'   => $request->razorpay_payment_id,
+                'payment_method_group' => 'online',
+                'bank_reference'       => $request->razorpay_payment_id,
+                'payment_time'         => now(),
+                'gateway_message'      => 'Payment Verified Successfully via ShopCalm App',
             ];
 
-            $confirmedOrder = $this->checkoutService->confirmOnlinePayment($order, $paymentData);
+            $confirmedOrder = $this->checkoutService->markOrderPaid($order, $paymentData, $user);
 
             return $this->sendResponse([
                 'order_id'       => (int) $confirmedOrder->id,
@@ -418,23 +467,14 @@ class CheckoutController extends BaseApiController
         }
 
         try {
-            $pincodeRecord = Pincode::where('pincode', $order->shipping_zip)->first();
-            $codFee = $pincodeRecord ? (float) $pincodeRecord->cod_fee : (float) Setting::get('cod_flat_fee', 40.00);
-
-            $order->update([
-                'payment_method' => 'cod',
-                'payment_status' => 'pending',
-                'cod_fee'        => $codFee,
-                'total_amount'   => $order->subtotal_amount + $order->shipping_cost + $codFee - $order->coupon_discount_amount - $order->wallet_amount_used,
-                'status'         => 'confirmed',
-            ]);
+            $confirmedOrder = $this->checkoutService->switchToCod($order, $user);
 
             return $this->sendResponse([
-                'order_id'       => (int) $order->id,
-                'order_number'   => $order->order_number,
-                'status'         => $order->status,
+                'order_id'       => (int) $confirmedOrder->id,
+                'order_number'   => $confirmedOrder->order_number,
+                'status'         => $confirmedOrder->status,
                 'payment_method' => 'cod',
-                'total_amount'   => (float) $order->total_amount,
+                'total_amount'   => (float) $confirmedOrder->total_amount,
             ], 'Order switched to Cash on Delivery & confirmed.');
         } catch (Exception $e) {
             return $this->sendError($e->getMessage(), [], 422);

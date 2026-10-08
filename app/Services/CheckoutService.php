@@ -426,6 +426,15 @@ class CheckoutService
     }
 
     /**
+     * Confirm online payment for an existing pending Order (used by Mobile API & Web).
+     */
+    public function confirmOnlinePayment(Order $order, array $paymentData, ?User $user = null): Order
+    {
+        $resolvedUser = $user ?? $order->user ?? User::findOrFail($order->user_id);
+        return $this->markOrderPaid($order, $paymentData, $resolvedUser);
+    }
+
+    /**
      * Mark an existing Order as PAID upon verified Razorpay payment callback/webhook.
      */
     public function markOrderPaid(Order $order, array $paymentData, User $user): Order
