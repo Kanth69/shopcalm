@@ -14,6 +14,10 @@ use App\Http\Controllers\Api\V1\AccountController;
 |--------------------------------------------------------------------------
 */
 
+// Standard Razorpay Checkout API Endpoints (/api/create-order & /api/verify-payment)
+Route::post('/create-order', [CheckoutController::class, 'createRazorpayOrder']);
+Route::post('/verify-payment', [CheckoutController::class, 'verifyPayment']);
+
 Route::prefix('v1')->group(function () {
 
     // ── 1. AUTHENTICATION & PROFILE ENDPOINTS ──
@@ -59,6 +63,7 @@ Route::prefix('v1')->group(function () {
         Route::prefix('checkout')->group(function () {
             Route::post('/validate', [CheckoutController::class, 'validateCheckout']);
             Route::post('/apply-coupon', [CheckoutController::class, 'applyCoupon']);
+            Route::post('/create-order', [CheckoutController::class, 'createRazorpayOrder']);
             Route::post('/place-order', [CheckoutController::class, 'placeOrder']);
             Route::post('/verify-payment', [CheckoutController::class, 'verifyPayment']);
             Route::post('/orders/{order}/switch-to-cod', [CheckoutController::class, 'switchToCod']);

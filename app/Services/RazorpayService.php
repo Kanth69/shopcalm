@@ -16,11 +16,23 @@ class RazorpayService
 
     public function __construct()
     {
-        $dbKeyId = \App\Models\Setting::get('razorpay_key_id');
-        $dbKeySecret = \App\Models\Setting::get('razorpay_key_secret');
+        $envKeyId = (string) (config('services.razorpay.key_id') ?: env('RAZORPAY_KEY_ID', ''));
+        $envKeySecret = (string) (config('services.razorpay.key_secret') ?: env('RAZORPAY_KEY_SECRET', ''));
 
-        $this->keyId = !empty($dbKeyId) ? $dbKeyId : (config('services.razorpay.key_id') ?? env('RAZORPAY_KEY_ID', 'rzp_test_samplekeyid'));
-        $this->keySecret = !empty($dbKeySecret) ? $dbKeySecret : (config('services.razorpay.key_secret') ?? env('RAZORPAY_KEY_SECRET', 'samplekeysecret'));
+        $dbKeyId = (string) (\App\Models\Setting::get('razorpay_key_id') ?? '');
+        $dbKeySecret = (string) (\App\Models\Setting::get('razorpay_key_secret') ?? '');
+
+        // If .env has live keys while DB still has test keys, prefer .env live keys
+        if (str_starts_with($envKeyId, 'rzp_live_') && !str_starts_with($dbKeyId, 'rzp_live_')) {
+            $this->keyId = $envKeyId;
+            $this->keySecret = $envKeySecret;
+        } elseif (!empty($dbKeyId) && !empty($dbKeySecret)) {
+            $this->keyId = $dbKeyId;
+            $this->keySecret = $dbKeySecret;
+        } else {
+            $this->keyId = $envKeyId;
+            $this->keySecret = $envKeySecret;
+        }
     }
 
     public function getKeyId(): string
@@ -29,7 +41,7 @@ class RazorpayService
     }
 
     /**
-     * Create a Razorpay Order for Checkout.
+     * Create a Razorpay Order for Checkout (amount in INR).
      */
     public function createOrder(string $orderNumber, float $amount, array $notes = []): array
     {
@@ -37,62 +49,82 @@ class RazorpayService
     }
 
     /**
-     * Create a Razorpay Order for Checkout.
+     * Create a Razorpay Order directly from paise amount (minimum 100 paise).
      */
-    public function createRazorpayOrder(string $orderNumber, float $amount, array $notes = []): array
+    public function createOrderFromPaise(int $amountInPaise, string $currency = 'INR', string $receipt = '', array $notes = []): array
     {
-        if (empty($this->keyId) || empty($this->keySecret)) {
-            throw new Exception("Razorpay Key ID or Secret Key is not configured in settings / .env.");
+        if ($amountInPaise < 100) {
+            throw new \InvalidArgumentException('Order amount must be at least 100 paise (INR 1.00).', 400);
         }
 
-        $amountInPaise = (int) round($amount * 100);
+        if (empty($this->keyId) || empty($this->keySecret)) {
+            throw new \RuntimeException('Razorpay credentials are not configured in .env.', 401);
+        }
 
+        $receiptId = $receipt !== '' ? $receipt : ('rcpt_' . uniqid());
         $payload = [
             'amount'   => $amountInPaise,
-            'currency' => 'INR',
-            'receipt'  => $orderNumber,
-            'notes'    => array_merge(['order_number' => $orderNumber], $notes),
+            'currency' => strtoupper($currency ?: 'INR'),
+            'receipt'  => $receiptId,
+            'notes'    => array_merge(['receipt' => $receiptId], $notes),
         ];
 
-        Log::info("Razorpay: Creating order for #{$orderNumber} (₹{$amount})", $payload);
+        Log::info("Razorpay: Creating order for receipt {$receiptId} ({$amountInPaise} paise)", $payload);
 
         $response = Http::withBasicAuth($this->keyId, $this->keySecret)
             ->post("{$this->baseUrl}/orders", $payload);
 
         if ($response->successful()) {
             $data = $response->json();
-            Log::info("Razorpay: Order created successfully", $data);
+            Log::info('Razorpay: Order created successfully', $data);
 
             return [
                 'success'           => true,
+                'order_id'          => $data['id'] ?? null,
                 'razorpay_order_id' => $data['id'] ?? null,
                 'amount'            => $data['amount'] ?? $amountInPaise,
                 'currency'          => $data['currency'] ?? 'INR',
+                'receipt'           => $data['receipt'] ?? $receiptId,
                 'status'            => $data['status'] ?? 'created',
                 'raw'               => $data,
             ];
         }
 
         $errorBody = $response->json();
-        Log::error("Razorpay: Order creation failed for #{$orderNumber}", [
-            'status' => $response->status(),
+        $httpStatus = $response->status();
+        Log::error("Razorpay: Order creation failed for {$receiptId}", [
+            'status' => $httpStatus,
             'body'   => $errorBody,
         ]);
 
         $description = $errorBody['error']['description'] ?? 'Failed to initialize Razorpay payment order.';
-        if ($response->status() === 401 || stripos($description, 'Authentication failed') !== false) {
-            throw new Exception("Razorpay API Error: Authentication failed with Razorpay gateway. Please verify your Razorpay Key ID & Key Secret in Admin Settings.");
+        if ($httpStatus === 401 || stripos($description, 'Authentication failed') !== false) {
+            throw new \RuntimeException('Razorpay API Error: Authentication failed with Razorpay gateway.', 401);
         }
 
-        throw new Exception("Razorpay Payment Gateway Error: " . $description);
+        throw new \RuntimeException('Razorpay Payment Gateway Error: ' . $description, 500);
     }
 
     /**
-     * Verify Razorpay Payment Signature.
+     * Create a Razorpay Order for Checkout (amount in INR).
+     */
+    public function createRazorpayOrder(string $orderNumber, float $amount, array $notes = []): array
+    {
+        $amountInPaise = (int) round($amount * 100);
+        return $this->createOrderFromPaise(
+            $amountInPaise,
+            'INR',
+            $orderNumber,
+            array_merge(['order_number' => $orderNumber], $notes)
+        );
+    }
+
+    /**
+     * Verify Razorpay Payment Signature using HMAC-SHA256(order_id + "|" + payment_id, KEY_SECRET).
      */
     public function verifyPaymentSignature(string $razorpayOrderId, string $razorpayPaymentId, string $razorpaySignature): bool
     {
-        if (empty($razorpayOrderId) || empty($razorpayPaymentId) || empty($razorpaySignature)) {
+        if (empty($razorpayOrderId) || empty($razorpayPaymentId) || empty($razorpaySignature) || empty($this->keySecret)) {
             return false;
         }
 

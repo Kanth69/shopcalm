@@ -390,55 +390,135 @@ class CheckoutController extends BaseApiController
                     ],
                 ], 'Razorpay payment initialized. Proceed to native checkout sheet.', 201);
             }
+        } catch (\InvalidArgumentException $e) {
+            return $this->sendError($e->getMessage(), [], 400);
+        } catch (\RuntimeException $e) {
+            $code = in_array($e->getCode(), [400, 401, 500], true) ? $e->getCode() : 500;
+            return $this->sendError($e->getMessage(), [], $code);
         } catch (Exception $e) {
             return $this->sendError($e->getMessage(), [], 422);
         }
     }
 
     /**
-     * Verify Razorpay Payment Signature Endpoint (Called by Mobile App SDK on completion).
+     * Standard Create Order Endpoint: POST /api/create-order
+     * Expects { amount (paise >= 100), currency, receipt }
+     */
+    public function createRazorpayOrder(Request $request): JsonResponse
+    {
+        $amount = $request->input('amount');
+        if ($amount === null || !is_numeric($amount) || (int) $amount < 100) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid amount. Minimum order amount is 100 paise (INR 1.00).',
+            ], 400);
+        }
+
+        $currency = (string) $request->input('currency', 'INR');
+        $receipt = (string) $request->input('receipt', 'rcpt_' . uniqid());
+        $notes = is_array($request->input('notes')) ? $request->input('notes') : [];
+
+        try {
+            $rzpOrder = $this->razorpayService->createOrderFromPaise(
+                (int) $amount,
+                $currency,
+                $receipt,
+                $notes
+            );
+
+            return response()->json([
+                'success'           => true,
+                'order_id'          => $rzpOrder['order_id'],
+                'razorpay_order_id' => $rzpOrder['razorpay_order_id'],
+                'amount'            => $rzpOrder['amount'],
+                'currency'          => $rzpOrder['currency'],
+                'receipt'           => $rzpOrder['receipt'],
+                'key_id'            => $this->razorpayService->getKeyId(),
+            ], 200);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        } catch (\RuntimeException $e) {
+            $status = in_array($e->getCode(), [400, 401, 500], true) ? $e->getCode() : 500;
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $status);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create Razorpay order: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Verify Razorpay Payment Signature Endpoint: POST /api/verify-payment & POST /api/v1/checkout/verify-payment
+     * Algorithm: HMAC-SHA256(order_id + "|" + payment_id, KEY_SECRET)
      */
     public function verifyPayment(Request $request): JsonResponse
     {
-        $request->validate([
-            'order_id'            => 'required|exists:orders,id',
-            'razorpay_order_id'   => 'required|string',
-            'razorpay_payment_id' => 'required|string',
-            'razorpay_signature'  => 'required|string',
-        ]);
+        $razorpayOrderId = (string) $request->input('razorpay_order_id', '');
+        $razorpayPaymentId = (string) $request->input('razorpay_payment_id', '');
+        $razorpaySignature = (string) $request->input('razorpay_signature', '');
 
-        $user = $request->user();
-        $order = Order::findOrFail($request->order_id);
-
-        if ((int)$order->user_id !== (int)$user->id) {
-            return $this->sendError('Unauthorized access to this order.', [], 403);
+        if ($razorpayOrderId === '' || $razorpayPaymentId === '' || $razorpaySignature === '') {
+            return $this->sendError('Missing required payment verification fields (razorpay_order_id, razorpay_payment_id, razorpay_signature).', [], 400);
         }
 
-        // Verify cryptographic signature
+        // Verify cryptographic signature first (do NOT mark as paid on mismatch)
         $isValid = $this->razorpayService->verifyPaymentSignature(
-            $request->razorpay_order_id,
-            $request->razorpay_payment_id,
-            $request->razorpay_signature
+            $razorpayOrderId,
+            $razorpayPaymentId,
+            $razorpaySignature
         );
 
         if (!$isValid) {
             return $this->sendError('Payment signature verification failed.', [], 400);
         }
 
+        // Resolve optional internal Order if order_id or gateway_order_id matches
+        $order = null;
+        if ($request->filled('order_id') && is_numeric($request->input('order_id'))) {
+            $order = Order::find((int) $request->input('order_id'));
+        }
+        if (!$order) {
+            $paymentRecord = \App\Models\Payment::where('gateway_order_id', $razorpayOrderId)->latest()->first();
+            if ($paymentRecord) {
+                $order = $paymentRecord->order;
+            }
+        }
+
+        if (!$order) {
+            return $this->sendResponse([
+                'verified'            => true,
+                'razorpay_order_id'   => $razorpayOrderId,
+                'razorpay_payment_id' => $razorpayPaymentId,
+            ], 'Payment signature verified successfully.');
+        }
+
+        $user = $request->user() ?? $order->user;
+        if ($request->user() && (int) $order->user_id !== (int) $request->user()->id) {
+            return $this->sendError('Unauthorized access to this order.', [], 403);
+        }
+
         try {
             $paymentData = [
                 'gateway'              => 'razorpay',
-                'gateway_order_id'     => $request->razorpay_order_id,
-                'gateway_payment_id'   => $request->razorpay_payment_id,
+                'gateway_order_id'     => $razorpayOrderId,
+                'gateway_payment_id'   => $razorpayPaymentId,
                 'payment_method_group' => 'online',
-                'bank_reference'       => $request->razorpay_payment_id,
+                'bank_reference'       => $razorpayPaymentId,
                 'payment_time'         => now(),
-                'gateway_message'      => 'Payment Verified Successfully via ShopCalm App',
+                'gateway_message'      => 'Payment Verified Successfully via Razorpay Standard Checkout',
             ];
 
             $confirmedOrder = $this->checkoutService->markOrderPaid($order, $paymentData, $user);
 
             return $this->sendResponse([
+                'verified'       => true,
                 'order_id'       => (int) $confirmedOrder->id,
                 'order_number'   => $confirmedOrder->order_number,
                 'status'         => $confirmedOrder->status,

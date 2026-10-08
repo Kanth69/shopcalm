@@ -463,6 +463,17 @@ class CheckoutController extends Controller
             }
 
             return redirect()->route('checkout.success', $order);
+        } catch (\InvalidArgumentException $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+            }
+            return back()->with('toast', ['type' => 'error', 'title' => 'Error', 'message' => $e->getMessage()]);
+        } catch (\RuntimeException $e) {
+            $status = in_array($e->getCode(), [400, 401, 500], true) ? $e->getCode() : 500;
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], $status);
+            }
+            return back()->with('toast', ['type' => 'error', 'title' => 'Error', 'message' => $e->getMessage()]);
         } catch (\Exception $e) {
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
@@ -564,6 +575,12 @@ class CheckoutController extends Controller
                 'verify_url'        => route('checkout.razorpay.verify'),
                 'callback_url'      => route('account.orders.show', $order),
             ]);
+        } catch (\RuntimeException $e) {
+            $status = in_array($e->getCode(), [400, 401, 500], true) ? $e->getCode() : 500;
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $status);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -603,21 +620,33 @@ class CheckoutController extends Controller
      */
     public function verifyRazorpayPayment(Request $request)
     {
-        $request->validate([
-            'order_id'            => 'required|exists:orders,id',
-            'razorpay_order_id'   => 'required|string',
-            'razorpay_payment_id' => 'required|string',
-            'razorpay_signature'  => 'required|string',
-        ]);
+        $orderId = $request->input('order_id');
+        $razorpayOrderId = (string) $request->input('razorpay_order_id', '');
+        $razorpayPaymentId = (string) $request->input('razorpay_payment_id', '');
+        $razorpaySignature = (string) $request->input('razorpay_signature', '');
 
-        $order = Order::findOrFail($request->order_id);
+        if (empty($orderId) || $razorpayOrderId === '' || $razorpayPaymentId === '' || $razorpaySignature === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Missing required payment verification fields.',
+            ], 400);
+        }
+
+        $order = Order::find($orderId);
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found.',
+            ], 400);
+        }
+
         $user = Auth::guard('customer')->user() ?? Auth::user() ?? $order->user;
 
         $razorpay = app(\App\Services\RazorpayService::class);
         $isValid = $razorpay->verifyPaymentSignature(
-            $request->razorpay_order_id,
-            $request->razorpay_payment_id,
-            $request->razorpay_signature
+            $razorpayOrderId,
+            $razorpayPaymentId,
+            $razorpaySignature
         );
 
         if (!$isValid) {
@@ -625,7 +654,7 @@ class CheckoutController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Payment verification failed due to invalid signature.',
-            ], 422);
+            ], 400);
         }
 
         $paymentDetails = [

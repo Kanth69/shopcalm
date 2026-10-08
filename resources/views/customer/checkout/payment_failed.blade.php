@@ -255,6 +255,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 };
                 const rzp = new Razorpay(options);
+                rzp.on('payment.failed', function (resp) {
+                    btnRetry.disabled = false;
+                    btnRetry.innerHTML = '<i class="bi bi-arrow-repeat fs-5"></i><span>Retry Online Payment (UPI / Cards)</span>';
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Payment Failed',
+                        text: (resp && resp.error && resp.error.description) ? resp.error.description : 'Payment authorization failed. Please try again.'
+                    });
+                });
                 rzp.open();
             } else {
                 Swal.fire('Gateway Notice', data.message || "Failed to initialize payment retry.", 'error');
