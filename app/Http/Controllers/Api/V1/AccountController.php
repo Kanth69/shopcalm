@@ -135,7 +135,7 @@ class AccountController extends BaseApiController
             'id'                          => $order->id,
             'order_number'                => $order->order_number,
             'invoice_number'              => 'INV-' . $order->order_number,
-            'invoice_url'                 => route('orders.public_invoice', $order->order_number),
+            'invoice_url'                 => url('/orders/' . $order->id . '/tax-invoice'),
             'status'                      => $order->status,
             'payment_method'              => $order->payment_method,
             'payment_status'              => $order->payment_status,

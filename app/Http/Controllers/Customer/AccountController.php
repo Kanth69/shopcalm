@@ -73,8 +73,11 @@ class AccountController extends Controller
         return view('order-manager.orders.invoice', compact('order'));
     }
 
-    public function publicInvoice(Order $order)
+    public function publicInvoice($orderParam)
     {
+        $order = Order::where('id', $orderParam)
+            ->orWhere('order_number', $orderParam)
+            ->firstOrFail();
         $order->load(['user', 'items.product', 'coupon']);
         return view('order-manager.orders.invoice', compact('order'));
     }
