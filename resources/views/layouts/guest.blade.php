@@ -11,18 +11,15 @@
         @endphp
         <title>{{ isset($title) ? $title . ' | ' : '' }}{{ ucfirst($storeName) }}</title>
 
-        @if($customFavicon)
-            @php
-                $favPath = storage_path('app/public/' . $customFavicon);
-                $favVer = file_exists($favPath) ? filemtime($favPath) : time();
-                $favUrl = asset('storage/' . $customFavicon) . '?v=' . $favVer;
-            @endphp
-            <link rel="icon" href="{{ $favUrl }}">
-            <link rel="shortcut icon" href="{{ $favUrl }}">
-            <link rel="apple-touch-icon" href="{{ $favUrl }}">
-        @else
-            <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
-        @endif
+        @php
+            $hasStorageFav = $customFavicon && file_exists(storage_path('app/public/' . $customFavicon));
+            $favUrl = $hasStorageFav
+                ? asset('storage/' . $customFavicon) . '?v=' . (@filemtime(storage_path('app/public/' . $customFavicon)) ?: time())
+                : asset('favicon.png') . '?v=' . (@filemtime(public_path('favicon.png')) ?: '2');
+        @endphp
+        <link rel="icon" type="image/png" href="{{ $favUrl }}">
+        <link rel="shortcut icon" type="image/png" href="{{ $favUrl }}">
+        <link rel="apple-touch-icon" href="{{ $favUrl }}">
 
         <!-- Google Fonts: Plus Jakarta Sans & Figtree -->
         <link rel="preconnect" href="https://fonts.googleapis.com">

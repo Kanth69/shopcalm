@@ -10,10 +10,13 @@
     <link rel="canonical" href="{{ url()->current() }}">
     @php
         $storeFavicon = \App\Models\Setting::get('favicon');
-        $storeFaviconUrl = $storeFavicon ? asset('storage/' . $storeFavicon) . '?v=' . (@filemtime(storage_path('app/public/' . $storeFavicon)) ?: time()) : asset('favicon.ico');
+        $hasStorageFavicon = $storeFavicon && file_exists(storage_path('app/public/' . $storeFavicon));
+        $storeFaviconUrl = $hasStorageFavicon
+            ? asset('storage/' . $storeFavicon) . '?v=' . (@filemtime(storage_path('app/public/' . $storeFavicon)) ?: time())
+            : asset('favicon.png') . '?v=' . (@filemtime(public_path('favicon.png')) ?: '2');
     @endphp
-    <link rel="icon" href="{{ $storeFaviconUrl }}">
-    <link rel="shortcut icon" href="{{ $storeFaviconUrl }}">
+    <link rel="icon" type="image/png" href="{{ $storeFaviconUrl }}">
+    <link rel="shortcut icon" type="image/png" href="{{ $storeFaviconUrl }}">
     <link rel="apple-touch-icon" href="{{ $storeFaviconUrl }}">
 
     <!-- Open Graph / Social & WhatsApp Link Sharing Preview -->

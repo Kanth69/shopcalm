@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Customer Support') — ShopCalm</title>
+    @php
+        $supFavicon = \App\Models\Setting::get('favicon');
+        $hasSupFav = $supFavicon && file_exists(storage_path('app/public/' . $supFavicon));
+        $supFavUrl = $hasSupFav
+            ? asset('storage/' . $supFavicon) . '?v=' . (@filemtime(storage_path('app/public/' . $supFavicon)) ?: time())
+            : asset('favicon.png') . '?v=' . (@filemtime(public_path('favicon.png')) ?: '2');
+    @endphp
+    <link rel="icon" type="image/png" href="{{ $supFavUrl }}">
+    <link rel="shortcut icon" type="image/png" href="{{ $supFavUrl }}">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

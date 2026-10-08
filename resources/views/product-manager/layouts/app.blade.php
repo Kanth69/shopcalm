@@ -6,6 +6,15 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ config('app.name', 'Shopcalm') }} - Product Manager</title>
+    @php
+        $pmFavicon = \App\Models\Setting::get('favicon');
+        $hasPmFav = $pmFavicon && file_exists(storage_path('app/public/' . $pmFavicon));
+        $pmFavUrl = $hasPmFav
+            ? asset('storage/' . $pmFavicon) . '?v=' . (@filemtime(storage_path('app/public/' . $pmFavicon)) ?: time())
+            : asset('favicon.png') . '?v=' . (@filemtime(public_path('favicon.png')) ?: '2');
+    @endphp
+    <link rel="icon" type="image/png" href="{{ $pmFavUrl }}">
+    <link rel="shortcut icon" type="image/png" href="{{ $pmFavUrl }}">
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">

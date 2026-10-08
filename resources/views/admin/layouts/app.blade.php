@@ -8,10 +8,13 @@
     <title>{{ \App\Models\Setting::get('store_name', 'ShopCalm') }} - Admin</title>
     @php
         $adminFavicon = \App\Models\Setting::get('favicon');
-        $adminFaviconUrl = $adminFavicon ? asset('storage/' . $adminFavicon) . '?v=' . (@filemtime(storage_path('app/public/' . $adminFavicon)) ?: time()) : asset('favicon.ico');
+        $hasAdminFav = $adminFavicon && file_exists(storage_path('app/public/' . $adminFavicon));
+        $adminFaviconUrl = $hasAdminFav
+            ? asset('storage/' . $adminFavicon) . '?v=' . (@filemtime(storage_path('app/public/' . $adminFavicon)) ?: time())
+            : asset('favicon.png') . '?v=' . (@filemtime(public_path('favicon.png')) ?: '2');
     @endphp
-    <link rel="icon" href="{{ $adminFaviconUrl }}">
-    <link rel="shortcut icon" href="{{ $adminFaviconUrl }}">
+    <link rel="icon" type="image/png" href="{{ $adminFaviconUrl }}">
+    <link rel="shortcut icon" type="image/png" href="{{ $adminFaviconUrl }}">
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">

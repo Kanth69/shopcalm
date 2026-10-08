@@ -106,8 +106,9 @@ class SettingController extends Controller
                     if ($key === 'favicon') {
                         try {
                             @copy(Storage::disk('public')->path($storedPath), public_path('favicon.ico'));
+                            @copy(Storage::disk('public')->path($storedPath), public_path('favicon.png'));
                         } catch (\Throwable $e) {
-                            // Ignore if public/favicon.ico is not writable
+                            // Ignore if public/favicon is not writable
                         }
                     }
                 }

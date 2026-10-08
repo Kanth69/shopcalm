@@ -6,6 +6,15 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', 'Order Operations') — ShopCalm Staff</title>
+    @php
+        $omFavicon = \App\Models\Setting::get('favicon');
+        $hasOmFav = $omFavicon && file_exists(storage_path('app/public/' . $omFavicon));
+        $omFavUrl = $hasOmFav
+            ? asset('storage/' . $omFavicon) . '?v=' . (@filemtime(storage_path('app/public/' . $omFavicon)) ?: time())
+            : asset('favicon.png') . '?v=' . (@filemtime(public_path('favicon.png')) ?: '2');
+    @endphp
+    <link rel="icon" type="image/png" href="{{ $omFavUrl }}">
+    <link rel="shortcut icon" type="image/png" href="{{ $omFavUrl }}">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

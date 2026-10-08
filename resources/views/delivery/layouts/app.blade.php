@@ -6,6 +6,15 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', 'Rider Portal') — ShopCalm Fleet</title>
+    @php
+        $delFavicon = \App\Models\Setting::get('favicon');
+        $hasDelFav = $delFavicon && file_exists(storage_path('app/public/' . $delFavicon));
+        $delFavUrl = $hasDelFav
+            ? asset('storage/' . $delFavicon) . '?v=' . (@filemtime(storage_path('app/public/' . $delFavicon)) ?: time())
+            : asset('favicon.png') . '?v=' . (@filemtime(public_path('favicon.png')) ?: '2');
+    @endphp
+    <link rel="icon" type="image/png" href="{{ $delFavUrl }}">
+    <link rel="shortcut icon" type="image/png" href="{{ $delFavUrl }}">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
