@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Models\ContactEnquiry;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -96,5 +97,60 @@ class AccountController extends Controller
     public function changePassword()
     {
         return view('customer.account.change_password');
+    }
+
+    public function tickets(Request $request)
+    {
+        $user = Auth::guard('customer')->user() ?? Auth::user();
+        $email = $user?->email;
+        $mobile = $user?->mobile_number ?? $user?->phone;
+
+        $cleanMobile = $mobile ? preg_replace('/\D/', '', $mobile) : null;
+        if ($cleanMobile && strlen($cleanMobile) > 10) {
+            $cleanMobile = substr($cleanMobile, -10);
+        }
+
+        $baseQuery = ContactEnquiry::query()
+            ->with('resolver')
+            ->where(function ($q) use ($email, $mobile, $cleanMobile) {
+                $hasCond = false;
+                if (!empty($email)) {
+                    $q->where('email', $email);
+                    $hasCond = true;
+                }
+                if (!empty($mobile)) {
+                    $hasCond ? $q->orWhere('mobile', $mobile) : $q->where('mobile', $mobile);
+                    $hasCond = true;
+                }
+                if (!empty($cleanMobile)) {
+                    $hasCond ? $q->orWhere('mobile', 'LIKE', '%' . $cleanMobile . '%') : $q->where('mobile', 'LIKE', '%' . $cleanMobile . '%');
+                    $hasCond = true;
+                }
+                if (!$hasCond) {
+                    $q->whereRaw('1 = 0');
+                }
+            });
+
+        $filter = $request->query('status');
+        $query = clone $baseQuery;
+        if ($filter === 'open') {
+            $query->where(function ($q) {
+                $q->whereIn('status', ['unread', 'in_progress'])
+                  ->orWhereNull('status');
+            });
+        } elseif ($filter === 'resolved') {
+            $query->whereIn('status', ['resolved', 'closed']);
+        }
+
+        $tickets = $query->latest()->paginate(10)->withQueryString();
+
+        $totalTickets = (clone $baseQuery)->count();
+        $openTickets = (clone $baseQuery)->where(function ($q) {
+            $q->whereIn('status', ['unread', 'in_progress'])
+              ->orWhereNull('status');
+        })->count();
+        $resolvedTickets = (clone $baseQuery)->whereIn('status', ['resolved', 'closed'])->count();
+
+        return view('customer.account.tickets', compact('tickets', 'totalTickets', 'openTickets', 'resolvedTickets', 'user', 'filter'));
     }
 }

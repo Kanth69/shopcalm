@@ -102,6 +102,19 @@
                 </div>
                 <i class="bi bi-chevron-right small {{ $isRev ? 'text-white' : 'text-muted opacity-50' }}" style="font-size: 0.75rem;"></i>
             </a>
+
+            {{-- My Tickets --}}
+            @php $isTickets = request()->routeIs('account.tickets*'); @endphp
+            <a class="nav-link rounded-3 px-3 py-2.5 d-flex align-items-center justify-content-between text-decoration-none fw-semibold {{ $isTickets ? 'active-menu-pill text-white' : 'text-dark hover-menu-item' }}" 
+               href="{{ route('account.tickets') }}" style="font-size: 0.88rem;">
+                <div class="d-flex align-items-center" style="gap: 1rem !important;">
+                    <div class="menu-icon-box {{ $isTickets ? 'menu-icon-active' : '' }}" style="color: #f59e0b; background: {{ $isTickets ? 'rgba(255,255,255,0.22)' : '#fef3c7' }};">
+                        <i class="bi bi-ticket-perforated-fill"></i>
+                    </div>
+                    <span>My Tickets</span>
+                </div>
+                <i class="bi bi-chevron-right small {{ $isTickets ? 'text-white' : 'text-muted opacity-50' }}" style="font-size: 0.75rem;"></i>
+            </a>
         </nav>
 
         {{-- Section 2: Account Settings --}}
@@ -178,9 +191,14 @@
         </div>
         <h6 class="fw-bold text-dark mb-1" style="font-size: 0.95rem;">Need Assistance?</h6>
         <p class="text-muted small mb-3" style="font-size: 0.8rem; line-height: 1.5;">Have questions about an order or delivery? Our support team is here to help 24/7!</p>
-        <a href="{{ route('page.contact') }}" class="btn btn-sm btn-primary rounded-pill px-4 py-2 fw-bold w-100 shadow-sm" style="font-size: 0.82rem;">
-            <i class="bi bi-chat-dots me-1.5"></i> Contact Support
-        </a>
+        <div class="d-flex flex-column gap-2">
+            <a href="{{ route('account.tickets') }}" class="btn btn-sm btn-primary rounded-pill px-4 py-2 fw-bold w-100 shadow-sm" style="font-size: 0.82rem; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border: none;">
+                <i class="bi bi-ticket-perforated me-1.5"></i> My Support Tickets
+            </a>
+            <a href="{{ route('page.contact') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 fw-semibold w-100" style="font-size: 0.78rem;">
+                <i class="bi bi-chat-dots me-1.5"></i> Contact Support
+            </a>
+        </div>
     </div>
     <div class="card-footer bg-white border-top py-2.5 px-3">
         <div class="d-flex align-items-center justify-content-around text-muted small" style="font-size: 0.72rem;">

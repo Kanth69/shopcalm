@@ -193,6 +193,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <a class="dropdown-item py-2 px-3 rounded-2 text-dark" href="{{ route('account.orders.index') }}">
                                     <i class="bi bi-box-seam me-2 text-info"></i> My Orders
                                 </a>
+                                <a class="dropdown-item py-2 px-3 rounded-2 text-dark" href="{{ route('account.tickets') }}">
+                                    <i class="bi bi-ticket-perforated me-2 text-warning"></i> My Tickets
+                                </a>
                                 <div class="dropdown-divider my-1"></div>
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
@@ -319,6 +322,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     <a href="{{ url('/contact-us') }}" class="drawer-sublink py-1.5">
                         <i class="bi bi-headset drawer-icon me-3 text-muted"></i> <span>Contact & Support</span>
                     </a>
+                    @auth('customer')
+                    <a href="{{ route('account.tickets') }}" class="drawer-sublink py-1.5">
+                        <i class="bi bi-ticket-perforated drawer-icon me-3 text-warning"></i> <span class="fw-semibold text-dark">My Tickets</span>
+                    </a>
+                    @endauth
                     <a href="{{ url('/faq') }}" class="drawer-sublink py-1.5">
                         <i class="bi bi-question-circle drawer-icon me-3 text-muted"></i> <span>FAQs</span>
                     </a>

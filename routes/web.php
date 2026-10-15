@@ -387,6 +387,7 @@ $registerCustomerRoutes = function () {
             Route::get('/orders/{order}/invoice', [AccountController::class, 'invoice'])->name('orders.invoice');
             Route::get('/wallet', [\App\Http\Controllers\Customer\WalletController::class, 'index'])->name('wallet');
             Route::get('/reviews', [AccountController::class, 'reviews'])->name('reviews');
+            Route::get('/tickets', [AccountController::class, 'tickets'])->name('tickets');
             Route::get('/change-password', [AccountController::class, 'changePassword'])->name('change-password');
             Route::resource('addresses', AddressController::class);
         });

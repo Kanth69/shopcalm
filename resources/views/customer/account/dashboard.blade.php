@@ -45,6 +45,9 @@
                 <a href="{{ url('account/wallet') }}" class="btn btn-success rounded-pill px-3 py-1.5 fw-semibold btn-sm text-center" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; font-size: 0.78rem;">
                     <i class="bi bi-wallet2 me-1"></i> Wallet & Referral
                 </a>
+                <a href="{{ route('account.tickets') }}" class="btn btn-warning rounded-pill px-3 py-1.5 fw-semibold btn-sm text-dark text-center" style="background: #fbbf24; border: none; font-size: 0.78rem;">
+                    <i class="bi bi-ticket-perforated me-1"></i> My Tickets
+                </a>
             </div>
         </div>
     </div>
