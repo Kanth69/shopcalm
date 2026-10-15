@@ -443,5 +443,70 @@ class AccountController extends BaseApiController
 
         return $this->sendResponse([], 'Password updated successfully.');
     }
+
+    /**
+     * Customer Raised Support Tickets / Enquiries
+     */
+    public function tickets(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $email = $user?->email ?? $request->query('email');
+        $mobile = $user?->phone ?? $user?->mobile_number ?? $request->query('mobile');
+
+        if (empty($email) && empty($mobile)) {
+            return $this->sendResponse([], 'No tickets found');
+        }
+
+        // Clean up mobile (remove country code or formatting for robust matching)
+        $cleanMobile = $mobile ? preg_replace('/\D/', '', $mobile) : null;
+        if ($cleanMobile && strlen($cleanMobile) > 10) {
+            $cleanMobile = substr($cleanMobile, -10);
+        }
+
+        $tickets = \App\Models\ContactEnquiry::query()
+            ->where(function ($q) use ($email, $mobile, $cleanMobile) {
+                if (!empty($email)) {
+                    $q->where('email', $email);
+                }
+                if (!empty($mobile)) {
+                    $q->orWhere('mobile', $mobile);
+                }
+                if (!empty($cleanMobile)) {
+                    $q->orWhere('mobile', 'LIKE', '%' . $cleanMobile . '%');
+                }
+            })
+            ->latest()
+            ->get()
+            ->map(function ($ticket) {
+                $statusKey = $ticket->status ?? 'unread';
+                if ($ticket->is_read && $statusKey === 'unread') {
+                    $statusKey = 'in_progress';
+                }
+
+                $statusLabel = match ($statusKey) {
+                    'in_progress' => 'In Progress',
+                    'resolved', 'closed' => 'Resolved',
+                    default => 'Open / Under Review',
+                };
+
+                return [
+                    'id'            => $ticket->id,
+                    'ticket_number' => '#TKT-' . str_pad($ticket->id, 5, '0', STR_PAD_LEFT),
+                    'name'          => $ticket->name,
+                    'email'         => $ticket->email,
+                    'mobile'        => $ticket->mobile,
+                    'subject'       => $ticket->subject,
+                    'message'       => $ticket->message,
+                    'status'        => $statusKey,
+                    'status_label'  => $statusLabel,
+                    'reply_notes'   => $ticket->reply_notes,
+                    'resolved_at'   => $ticket->resolved_at?->format('d M Y, h:i A'),
+                    'created_at'    => $ticket->created_at?->format('d M Y, h:i A'),
+                    'created_ago'   => $ticket->created_at?->diffForHumans(),
+                ];
+            });
+
+        return $this->sendResponse($tickets, 'Tickets retrieved successfully.');
+    }
 }
 

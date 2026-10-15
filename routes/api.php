@@ -46,6 +46,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/products/{slug}', [ProductController::class, 'show']);
     Route::post('/delivery/check-pincode', [CheckoutController::class, 'checkPincode']);
     Route::post('/contact', [\App\Http\Controllers\ContactController::class, 'submit']);
+    Route::get('/tickets', [AccountController::class, 'tickets']);
 
     // ── 3. CART ENDPOINTS ──
     Route::prefix('cart')->group(function () {
@@ -82,6 +83,7 @@ Route::prefix('v1')->group(function () {
             Route::delete('/addresses/{address}', [AccountController::class, 'deleteAddress']);
             Route::post('/profile', [AccountController::class, 'updateProfile']);
             Route::post('/change-password', [AccountController::class, 'changePassword']);
+            Route::get('/tickets', [AccountController::class, 'tickets']);
         });
 
         // Reviews
