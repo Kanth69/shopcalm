@@ -254,6 +254,7 @@ class AuthController extends BaseApiController
             'mobile_number' => 'required|string|max:15',
             'email'         => 'nullable|string|email|max:255',
             'password'      => ['required', 'confirmed', Rules\Password::defaults()],
+            'referral_code' => 'nullable|string|max:50',
         ], [
             'name.required'          => 'Please enter your full name.',
             'mobile_number.required' => 'Please enter your mobile number.',
@@ -287,6 +288,14 @@ class AuthController extends BaseApiController
             'role_id'       => 2, // Customer role
             'status'        => 'active',
         ]);
+
+        if ($request->filled('referral_code')) {
+            try {
+                app(\App\Services\WalletService::class)->applySignupReferral($user, $request->input('referral_code'));
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("Signup referral error for user #{$user->id}: " . $e->getMessage());
+            }
+        }
 
         $token = $user->createToken('mobile_app_auth_token')->plainTextToken;
 
