@@ -287,6 +287,14 @@ class CheckoutController extends BaseApiController
             }
 
             if ($validated['payment_method'] === 'cod') {
+                $pincodeCheck = app(\App\Services\DeliveryService::class)->checkServiceability($validated['shipping_zip']);
+                if (!$pincodeCheck['is_serviceable']) {
+                    return $this->sendError($pincodeCheck['message'] ?? "Delivery is currently unavailable to PIN code {$validated['shipping_zip']}.", [], 422);
+                }
+                if (empty($pincodeCheck['is_cod_available'])) {
+                    return $this->sendError("Cash on Delivery (COD) is not available for PIN code {$validated['shipping_zip']}. Please select Online Payment.", [], 422);
+                }
+
                 // Cash on Delivery Direct Confirmation
                 $order = $this->checkoutService->placeOrder($validated);
 
@@ -544,6 +552,14 @@ class CheckoutController extends BaseApiController
 
         if (!in_array($order->payment_status, ['failed', 'pending'])) {
             return $this->sendError('This order cannot be switched to COD.', [], 400);
+        }
+
+        $shippingZip = $order->shipping_zip ?? $order->shipping_pincode;
+        if (!empty($shippingZip)) {
+            $pincodeCheck = app(\App\Services\DeliveryService::class)->checkServiceability($shippingZip);
+            if (empty($pincodeCheck['is_cod_available'])) {
+                return $this->sendError("Cash on Delivery (COD) is not available for PIN code {$shippingZip}.", [], 422);
+            }
         }
 
         try {
