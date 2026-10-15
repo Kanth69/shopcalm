@@ -121,6 +121,10 @@ class CheckoutService
             $finalPaymentMethod = $isFullyPaidByWallet ? 'wallet' : 'cod';
             $finalPaymentStatus = $isFullyPaidByWallet ? 'paid' : 'pending';
 
+            if ($finalPaymentMethod === 'cod' && empty($pincodeCheck['is_cod_available'])) {
+                throw new Exception("Cash on Delivery (COD) is not available for PIN code {$shippingZip}. Please choose Online Payment.");
+            }
+
             // Save address to user's address book if new
             if ($user) {
                 $existingAddress = $user->addresses()

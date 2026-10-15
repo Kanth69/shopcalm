@@ -447,6 +447,14 @@ class CheckoutController extends Controller
             }
 
             // 2. CASH ON DELIVERY (COD) FLOW
+            // Verify serviceability and COD availability for the shipping address
+            if (!$pincodeCheck['is_serviceable']) {
+                throw new \Exception("Delivery is currently unavailable to PIN code " . ($data['shipping_zip'] ?? '') . ".");
+            }
+            if (empty($pincodeCheck['is_cod_available'])) {
+                throw new \Exception("Cash on Delivery (COD) is not available for PIN code " . ($data['shipping_zip'] ?? '') . ". Please select Online Payment.");
+            }
+
             // Directly places the order, creates fulfillment, and clears cart
             $order = $this->checkoutService->placeOrder($data);
             Session::forget('applied_coupon');

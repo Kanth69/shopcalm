@@ -36,6 +36,16 @@
         background: #f5f3ff !important;
         box-shadow: 0 4px 16px rgba(79, 70, 229, 0.12);
     }
+    .payment-tile.disabled-tile {
+        border-color: #fca5a5 !important;
+        background: #fff5f5 !important;
+        cursor: not-allowed !important;
+        opacity: 0.72;
+    }
+    .payment-tile.disabled-tile:hover {
+        border-color: #fca5a5 !important;
+        background: #fff5f5 !important;
+    }
     
     /* Promo Input */
     #coupon_code_input {
@@ -497,19 +507,22 @@
                             </div>
 
                             <!-- Option 2: Cash On Delivery -->
-                            <div class="payment-tile mb-3" onclick="document.getElementById('cod').checked = true; document.getElementById('cod').dispatchEvent(new Event('change'));">
+                            <div class="payment-tile mb-3" id="payment-tile-cod" onclick="handleCodTileClick()">
                                 <div class="d-flex align-items-start gap-2.5">
                                     <input class="form-check-input mt-1 flex-shrink-0" type="radio" name="payment_method" id="cod" value="cod" form="checkout-form">
                                     <div class="flex-grow-1">
                                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-1 mb-1">
-                                            <label class="form-check-label fw-bold text-dark mb-0 cursor-pointer" style="font-size: 0.92rem;" for="cod">
+                                            <label class="form-check-label fw-bold text-dark mb-0 cursor-pointer" style="font-size: 0.92rem;" for="cod" id="cod-label">
                                                 💵 Cash on Delivery (COD)
                                             </label>
-                                            <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">PAY AT DOORSTEP</span>
+                                            <span id="cod-badge" class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">PAY AT DOORSTEP</span>
                                         </div>
-                                        <p class="text-secondary small mb-0" style="font-size: 0.78rem;">
+                                        <p class="text-secondary small mb-0" id="cod-description" style="font-size: 0.78rem;">
                                             Pay via cash / UPI to our delivery executive when your parcel arrives.
                                         </p>
+                                        <div id="cod-unavailable-notice" class="text-danger small mt-1.5 fw-semibold d-none" style="font-size: 0.75rem;">
+                                            <i class="bi bi-slash-circle me-1"></i> Cash on Delivery is unavailable for this delivery PIN code. Please select Online Payment.
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1097,6 +1110,18 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        const selectedPayMethod = document.querySelector('input[name="payment_method"]:checked')?.value || 'online';
+        if (selectedPayMethod === 'cod' && window.isCurrentAddressCodAvailable === false) {
+            Swal.fire({
+                icon: 'error',
+                title: 'COD Not Available',
+                text: 'Cash on Delivery (COD) is not available for this delivery PIN code. Please select Online Payment.',
+                confirmButtonColor: '#ef4444'
+            });
+            editStep2();
+            return;
+        }
+
         const placeOrderBtn = document.getElementById('btn-place-order');
         const mobPlaceOrderBtn = document.getElementById('mobile-btn-place-order');
 
@@ -1426,9 +1451,24 @@ function proceedToStep2() {
 }
 
 function proceedToStep3() {
+    const selectedPayMethod = document.querySelector('input[name="payment_method"]:checked')?.value || 'online';
+    if (selectedPayMethod === 'cod' && window.isCurrentAddressCodAvailable === false) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'COD Not Available',
+            text: 'Cash on Delivery is unavailable for your delivery PIN code. Switched to Online Payment.',
+            confirmButtonColor: '#4f46e5'
+        });
+        const onlineRadio = document.getElementById('pay_online');
+        if (onlineRadio) {
+            onlineRadio.checked = true;
+            onlineRadio.dispatchEvent(new Event('change'));
+        }
+        return;
+    }
+
     window.currentCheckoutStep = 3;
 
-    const selectedPayMethod = document.querySelector('input[name="payment_method"]:checked')?.value || 'online';
     const grandTotalRaw = document.getElementById('summary-grand-total')?.textContent.replace(/[^0-9.]/g, '') || '0';
     const grandTotalVal = parseFloat(grandTotalRaw);
 
@@ -2147,6 +2187,8 @@ function checkPincodeServiceability(pincode) {
     .then(data => {
         if (data.is_serviceable) {
             window.isCurrentAddressServiceable = true;
+            window.isCurrentAddressCodAvailable = (data.is_cod_available === true || data.is_cod_available === 1);
+            updateCodAvailabilityUI(window.isCurrentAddressCodAvailable, pincode);
             if (errorBanner) errorBanner.style.display = 'none';
 
             if (badgeEl) {
@@ -2178,6 +2220,8 @@ function checkPincodeServiceability(pincode) {
             }
         } else {
             window.isCurrentAddressServiceable = false;
+            window.isCurrentAddressCodAvailable = false;
+            updateCodAvailabilityUI(false, pincode);
             
             if (badgeEl) {
                 badgeEl.innerHTML = `
@@ -2205,6 +2249,79 @@ function checkPincodeServiceability(pincode) {
     .catch(err => {
         console.error("Serviceability check error:", err);
     });
+}
+
+function handleCodTileClick() {
+    if (window.isCurrentAddressCodAvailable === false) {
+        const pin = currentSelectedAddress?.zip || '';
+        Swal.fire({
+            icon: 'info',
+            title: 'COD Not Available',
+            text: pin ? `Cash on Delivery (COD) is not available for PIN ${pin}. Please pay securely online.` : 'Cash on Delivery (COD) is not available for this delivery address. Please pay securely online.',
+            confirmButtonColor: '#4f46e5'
+        });
+        return;
+    }
+    const codRadio = document.getElementById('cod');
+    if (codRadio && !codRadio.disabled) {
+        codRadio.checked = true;
+        codRadio.dispatchEvent(new Event('change'));
+    }
+}
+
+function updateCodAvailabilityUI(isAvailable, pincode) {
+    const codTile = document.getElementById('payment-tile-cod');
+    const codRadio = document.getElementById('cod');
+    const codBadge = document.getElementById('cod-badge');
+    const codNotice = document.getElementById('cod-unavailable-notice');
+    const codLabel = document.getElementById('cod-label');
+
+    if (!isAvailable) {
+        if (codTile) {
+            codTile.classList.add('disabled-tile');
+            codTile.classList.remove('active-tile');
+        }
+        if (codRadio) {
+            codRadio.disabled = true;
+            if (codRadio.checked) {
+                const onlineRadio = document.getElementById('pay_online');
+                if (onlineRadio) {
+                    onlineRadio.checked = true;
+                    onlineRadio.dispatchEvent(new Event('change'));
+                }
+            }
+        }
+        if (codBadge) {
+            codBadge.className = 'badge bg-danger text-white rounded-pill px-2 py-0.5 fw-bold';
+            codBadge.innerHTML = '<i class="bi bi-slash-circle me-1"></i>NOT AVAILABLE';
+        }
+        if (codLabel) {
+            codLabel.classList.add('text-muted');
+        }
+        if (codNotice) {
+            codNotice.classList.remove('d-none');
+            if (pincode) {
+                codNotice.innerHTML = `<i class="bi bi-slash-circle me-1"></i>Cash on Delivery (COD) is not available for PIN <strong>${pincode}</strong>. Please select Online Payment.`;
+            }
+        }
+    } else {
+        if (codTile) {
+            codTile.classList.remove('disabled-tile');
+        }
+        if (codRadio) {
+            codRadio.disabled = false;
+        }
+        if (codBadge) {
+            codBadge.className = 'badge bg-light text-secondary border rounded-pill px-2 py-0.5';
+            codBadge.textContent = 'PAY AT DOORSTEP';
+        }
+        if (codLabel) {
+            codLabel.classList.remove('text-muted');
+        }
+        if (codNotice) {
+            codNotice.classList.add('d-none');
+        }
+    }
 }
 </script>
 @endpush
