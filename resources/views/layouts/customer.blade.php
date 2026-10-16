@@ -27,6 +27,19 @@
     <meta property="og:type" content="website">
     @yield('og_tags')
 
+    <!-- Google Search Schema.org Organization Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "ShopCalm",
+        "legalName": "ShopCalm E-Commerce Solutions",
+        "url": "{{ config('app.url', 'https://shopcalm.in') }}",
+        "email": "support@shopcalm.in",
+        "description": "ShopCalm is an Indian e-commerce store offering curated products, fast shipping across India, and pre-dispatch cancellations with instant refunds."
+    }
+    </script>
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
