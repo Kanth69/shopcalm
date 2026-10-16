@@ -101,26 +101,55 @@
                     </div>
                 </div>
 
+                {{-- Out of Stock Alert Banner --}}
+                @php
+                    $hasAnyOutOfStock = $activeItems->contains(function($i) {
+                        return !$i->product || $i->product->status !== 'Active' || $i->product->getOptionStock($i->selected_option) <= 0;
+                    });
+                @endphp
+                @if($hasAnyOutOfStock)
+                    <div class="alert alert-danger border-0 rounded-4 shadow-xs p-3 mb-3 d-flex align-items-center gap-2.5" style="background: #fef2f2; color: #991b1b; border-left: 4px solid #ef4444 !important;">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 text-danger flex-shrink-0"></i>
+                        <div class="small">
+                            <strong>Some items in your shopping bag are currently out of stock.</strong>
+                            <div class="text-secondary mt-0.5" style="font-size: 0.8rem;">
+                                They have been automatically unselected so you can proceed to checkout with available items.
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
                 {{-- Modern Cart Items List (Clean Unified Cards for Laptop & Mobile) --}}
                 <div class="d-flex flex-column gap-3 mb-3">
                     @foreach($activeItems as $item)
                     @php
                         $hasDiscount = $item->product->price > $item->unit_price;
                         $discountPct = $hasDiscount ? round((($item->product->price - $item->unit_price) / $item->product->price) * 100) : 0;
+                        $maxStock = $item->product ? $item->product->getOptionStock($item->selected_option) : 0;
+                        $isOutOfStock = (!$item->product || $item->product->status !== 'Active' || $maxStock <= 0);
                     @endphp
-                    <div class="card border-0 shadow-xs rounded-4 overflow-hidden cart-item-card transition-all" id="cart-item-{{ $item->id }}" style="background: #ffffff; border: 1px solid #e2e8f0 !important; {{ !$item->is_selected ? 'opacity: 0.6; filter: grayscale(35%);' : '' }}">
+                    <div class="card border-0 shadow-xs rounded-4 overflow-hidden cart-item-card transition-all" id="cart-item-{{ $item->id }}" style="background: #ffffff; border: 1px solid {{ $isOutOfStock ? '#fca5a5' : '#e2e8f0' }} !important; {{ ($isOutOfStock || !$item->is_selected) ? 'opacity: 0.65; filter: grayscale(30%);' : '' }}">
                         <div class="card-body p-3 p-md-3.5">
                             <div class="row align-items-center g-3">
                                 
                                 {{-- 1. Checkbox + Thumbnail + Info --}}
                                 <div class="col-12 col-md-6 d-flex align-items-center gap-2.5 min-w-0">
                                     <div class="form-check mb-0 flex-shrink-0">
-                                        <input type="checkbox" class="form-check-input item-select-checkbox" 
-                                               id="checkbox-item-{{ $item->id }}" 
-                                               data-item-id="{{ $item->id }}" 
-                                               style="width: 1.25em; height: 1.25em; cursor: pointer;" 
-                                               {{ $item->is_selected ? 'checked' : '' }} 
-                                               onchange="toggleSelectItem({{ $item->id }}, this.checked)">
+                                        @if($isOutOfStock)
+                                            <input type="checkbox" class="form-check-input item-select-checkbox" 
+                                                   id="checkbox-item-{{ $item->id }}" 
+                                                   data-item-id="{{ $item->id }}" 
+                                                   style="width: 1.25em; height: 1.25em; cursor: not-allowed;" 
+                                                   disabled
+                                                   title="Out of stock - cannot be checked out">
+                                        @else
+                                            <input type="checkbox" class="form-check-input item-select-checkbox" 
+                                                   id="checkbox-item-{{ $item->id }}" 
+                                                   data-item-id="{{ $item->id }}" 
+                                                   style="width: 1.25em; height: 1.25em; cursor: pointer;" 
+                                                   {{ $item->is_selected ? 'checked' : '' }} 
+                                                   onchange="toggleSelectItem({{ $item->id }}, this.checked)">
+                                        @endif
                                     </div>
                                     <a href="{{ route('product.show', $item->product->slug) }}" class="flex-shrink-0 position-relative">
                                         @if($item->product->main_image)
@@ -157,27 +186,38 @@
                                                 <span class="text-muted text-decoration-line-through small" style="font-size: 0.76rem;">₹{{ number_format($item->product->price, 2) }}</span>
                                                 <span class="badge bg-success bg-opacity-10 text-success fw-bold px-1.5 py-0.5" style="font-size: 0.65rem;">-{{ $discountPct }}%</span>
                                             @endif
+                                            @if($isOutOfStock)
+                                                <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.65rem;">
+                                                    <i class="bi bi-x-circle me-1"></i>OUT OF STOCK
+                                                </span>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
 
                                 {{-- 2. Quantity Stepper --}}
                                 <div class="col-6 col-md-3 d-flex align-items-center justify-content-start justify-content-md-center">
-                                    @php $maxStock = $item->product->getOptionStock($item->selected_option); @endphp
                                     <div>
-                                        <div class="input-group input-group-sm border rounded-pill overflow-hidden shadow-xs bg-white" style="width: 110px;">
-                                            <button type="button" class="btn btn-light border-0 shadow-none px-2.5 py-1 text-muted" onclick="updateQty({{ $item->id }}, -1)">
-                                                <i class="bi bi-dash"></i>
-                                            </button>
-                                            <input type="number" id="qty-{{ $item->id }}" value="{{ $item->quantity }}" min="1" max="{{ $maxStock }}" class="form-control text-center border-0 fw-bold shadow-none bg-white p-0" readonly style="font-size: 0.85rem;">
-                                            <button type="button" class="btn btn-light border-0 shadow-none px-2.5 py-1 text-muted" onclick="updateQty({{ $item->id }}, 1)">
-                                                <i class="bi bi-plus"></i>
-                                            </button>
-                                        </div>
-                                        @if($maxStock <= 5 && $maxStock > 0)
-                                            <small class="text-danger d-block text-center mt-1 fw-semibold" style="font-size: 0.7rem;">Only {{ $maxStock }} left</small>
-                                        @elseif($maxStock <= 0)
-                                            <small class="text-danger d-block text-center mt-1 fw-bold" style="font-size: 0.7rem;">Out of stock</small>
+                                        @if($isOutOfStock)
+                                            <div class="text-center">
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.75rem;">
+                                                    <i class="bi bi-slash-circle me-1"></i>Out of Stock
+                                                </span>
+                                                <small class="text-muted d-block mt-1" style="font-size: 0.7rem;">Cannot be ordered</small>
+                                            </div>
+                                        @else
+                                            <div class="input-group input-group-sm border rounded-pill overflow-hidden shadow-xs bg-white" style="width: 110px;">
+                                                <button type="button" class="btn btn-light border-0 shadow-none px-2.5 py-1 text-muted" onclick="updateQty({{ $item->id }}, -1)">
+                                                    <i class="bi bi-dash"></i>
+                                                </button>
+                                                <input type="number" id="qty-{{ $item->id }}" value="{{ $item->quantity }}" min="1" max="{{ $maxStock }}" class="form-control text-center border-0 fw-bold shadow-none bg-white p-0" readonly style="font-size: 0.85rem;">
+                                                <button type="button" class="btn btn-light border-0 shadow-none px-2.5 py-1 text-muted" onclick="updateQty({{ $item->id }}, 1)">
+                                                    <i class="bi bi-plus"></i>
+                                                </button>
+                                            </div>
+                                            @if($maxStock <= 5 && $maxStock > 0)
+                                                <small class="text-danger d-block text-center mt-1 fw-semibold" style="font-size: 0.7rem;">Only {{ $maxStock }} left</small>
+                                            @endif
                                         @endif
                                     </div>
                                 </div>
@@ -682,22 +722,72 @@
     }
 
     function handleProceedToCheckout(e) {
+        if (e) e.preventDefault();
+
         const checkedCount = document.querySelectorAll('.item-select-checkbox:checked').length;
         if (checkedCount === 0) {
-            if (e) e.preventDefault();
             if (window.Swal) {
                 Swal.fire({
                     icon: 'warning',
                     title: 'No Items Selected',
-                    text: 'Please select at least 1 item to proceed to checkout.',
+                    text: 'Please select at least 1 in-stock item to proceed to checkout.',
                     confirmButtonColor: '#4f46e5'
                 });
             } else {
-                alert('Please select at least 1 item to proceed to checkout.');
+                alert('Please select at least 1 in-stock item to proceed to checkout.');
             }
             return false;
         }
-        window.location.href = '{{ route("checkout.index") }}';
+
+        const proceedBtn = document.getElementById('proceed-checkout-btn');
+        const mobileProceedBtn = document.getElementById('mobile-proceed-checkout-btn');
+        const origText = proceedBtn ? proceedBtn.innerHTML : '';
+
+        if (proceedBtn) {
+            proceedBtn.disabled = true;
+            proceedBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Checking Stock...';
+        }
+        if (mobileProceedBtn) {
+            mobileProceedBtn.disabled = true;
+        }
+
+        fetch('{{ route("cart.validate-stock") }}', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(async res => {
+            const data = await res.json();
+            if (!res.ok || !data.valid) {
+                throw new Error(data.message || 'One or more items in your bag are currently out of stock.');
+            }
+            window.location.href = '{{ route("checkout.index") }}';
+        })
+        .catch(err => {
+            if (proceedBtn) {
+                proceedBtn.disabled = false;
+                proceedBtn.innerHTML = origText;
+            }
+            if (mobileProceedBtn) {
+                mobileProceedBtn.disabled = false;
+            }
+
+            if (window.Swal) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Stock Availability Update',
+                    text: err.message,
+                    confirmButtonColor: '#4f46e5'
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                alert(err.message);
+                window.location.reload();
+            }
+        });
     }
 </script>
 @endpush

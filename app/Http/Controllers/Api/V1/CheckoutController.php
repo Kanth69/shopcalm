@@ -94,6 +94,11 @@ class CheckoutController extends BaseApiController
             return $this->sendError('Your cart has no items selected for checkout.', [], 400);
         }
 
+        $stockValidation = $this->cartService->validateSelectedItemsStock();
+        if (!$stockValidation['valid']) {
+            return $this->sendError($stockValidation['message'], $stockValidation, 422);
+        }
+
         $subtotal = (float) $this->cartService->subtotal();
         $freeShippingMin = (float) Setting::get('free_shipping_min', 499);
         $pincode = $request->input('shipping_pincode') ?: $request->input('shipping_zip');

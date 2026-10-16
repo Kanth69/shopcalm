@@ -325,4 +325,13 @@ class CartController extends Controller
         
         return back()->with('toast', ['type' => 'success', 'title' => 'Cleared', 'message' => 'Your cart is now empty.']);
     }
+
+    /**
+     * Live Stock Validation endpoint for web cart checkout button.
+     */
+    public function validateStock()
+    {
+        $validation = $this->cartService->validateSelectedItemsStock();
+        return response()->json($validation, $validation['valid'] ? 200 : 422);
+    }
 }

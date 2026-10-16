@@ -313,6 +313,7 @@ $registerCustomerRoutes = function () {
     Route::post('/cart/toggle-select-all', [CartController::class, 'toggleSelectAll'])->name('cart.toggle-select-all');
     Route::delete('/cart/remove/{itemId}', [CartController::class, 'remove'])->name('cart.remove');
     Route::post('/cart/move-to-wishlist/{itemId}', [CartController::class, 'moveToWishlist'])->name('cart.move-to-wishlist');
+    Route::get('/cart/validate-stock', [CartController::class, 'validateStock'])->name('cart.validate-stock');
     Route::delete('/cart/clear-all', [CartController::class, 'clear'])->name('cart.clear');
 
     // Delivery & Pincode Checker Routes

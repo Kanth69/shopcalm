@@ -70,6 +70,11 @@ class CheckoutService
                 throw new Exception("Shopping cart has no items selected for checkout.");
             }
 
+            $stockValidation = $this->cartService->validateSelectedItemsStock();
+            if (!$stockValidation['valid']) {
+                throw new Exception($stockValidation['message']);
+            }
+
             // Validate shipping PIN code serviceability
             $shippingZip = $data['shipping_zip'] ?? ($data['shipping_pincode'] ?? '');
             $deliveryService = app(\App\Services\DeliveryService::class);
@@ -281,6 +286,11 @@ class CheckoutService
             $cart = $this->cartService->getSelectedCart();
             if ($cart->items->isEmpty()) {
                 throw new Exception("Shopping cart has no items selected for checkout.");
+            }
+
+            $stockValidation = $this->cartService->validateSelectedItemsStock();
+            if (!$stockValidation['valid']) {
+                throw new Exception($stockValidation['message']);
             }
 
             // Validate shipping PIN code serviceability

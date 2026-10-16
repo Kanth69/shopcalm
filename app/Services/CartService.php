@@ -34,13 +34,25 @@ class CartService
         }
 
         foreach ($cart->items as $item) {
-            if (!$item->product || $item->product->status !== 'Active') {
+            $product = $item->product;
+            if (!$product || $product->status !== 'Active') {
+                if ($item->is_selected) {
+                    $item->is_selected = false;
+                    $item->save();
+                }
                 continue;
             }
 
-            $maxStock = $item->product->getOptionStock($item->selected_option);
+            $maxStock = $product->getOptionStock($item->selected_option);
 
-            if ($maxStock > 0 && $item->quantity > $maxStock) {
+            if ($maxStock <= 0) {
+                // Out of stock items must never remain selected for checkout
+                if ($item->is_selected) {
+                    $item->is_selected = false;
+                    $item->save();
+                }
+            } elseif ($item->quantity > $maxStock) {
+                // Limit quantity to available stock
                 $item->quantity = $maxStock;
                 $item->save();
             }
@@ -229,6 +241,21 @@ class CartService
         }
 
         $newVal = $isSelected !== null ? (bool) $isSelected : !$cartItem->is_selected;
+
+        // If attempting to select, strictly ensure product is active and in stock
+        if ($newVal) {
+            $product = $cartItem->product;
+            if (!$product || $product->status !== 'Active') {
+                $cartItem->update(['is_selected' => false]);
+                return false;
+            }
+            $maxStock = $product->getOptionStock($cartItem->selected_option);
+            if ($maxStock <= 0) {
+                $cartItem->update(['is_selected' => false]);
+                return false;
+            }
+        }
+
         $cartItem->update(['is_selected' => $newVal]);
         return true;
     }
@@ -236,8 +263,82 @@ class CartService
     public function toggleSelectAll(bool $isSelected)
     {
         $cart = $this->getCart();
-        $cart->items()->update(['is_selected' => (bool) $isSelected]);
+        if ($isSelected) {
+            // Only select items that are active and strictly in stock
+            foreach ($cart->items as $item) {
+                $product = $item->product;
+                $maxStock = $product ? $product->getOptionStock($item->selected_option) : 0;
+                $canSelect = ($product && $product->status === 'Active' && $maxStock > 0);
+                $item->update(['is_selected' => $canSelect]);
+            }
+        } else {
+            $cart->items()->update(['is_selected' => false]);
+        }
         return true;
+    }
+
+    /**
+     * Real-time stock validation on selected cart items.
+     * Prevents checkout if any item is out of stock or insufficient.
+     */
+    public function validateSelectedItemsStock(): array
+    {
+        $cart = $this->getSelectedCart();
+        if ($cart->items->isEmpty()) {
+            return [
+                'valid'           => false,
+                'empty'           => true,
+                'has_stock_error' => false,
+                'message'         => 'No available in-stock items are selected for checkout.',
+            ];
+        }
+
+        foreach ($cart->items as $item) {
+            $product = $item->product;
+            if (!$product || $product->status !== 'Active') {
+                $item->update(['is_selected' => false]);
+                return [
+                    'valid'           => false,
+                    'empty'           => false,
+                    'has_stock_error' => true,
+                    'product_name'    => $product ? $product->name : 'Product',
+                    'available_stock' => 0,
+                    'message'         => ($product ? "Product '{$product->name}'" : 'An item') . ' is currently unavailable and has been unselected.',
+                ];
+            }
+
+            $availStock = $product->getOptionStock($item->selected_option);
+            if ($availStock <= 0) {
+                $item->update(['is_selected' => false]);
+                return [
+                    'valid'           => false,
+                    'empty'           => false,
+                    'has_stock_error' => true,
+                    'product_name'    => $product->name,
+                    'available_stock' => 0,
+                    'message'         => "Product '{$product->name}' is currently out of stock and has been unselected.",
+                ];
+            }
+
+            if ($availStock < $item->quantity) {
+                $item->update(['quantity' => $availStock]);
+                return [
+                    'valid'           => false,
+                    'empty'           => false,
+                    'has_stock_error' => true,
+                    'product_name'    => $product->name,
+                    'available_stock' => $availStock,
+                    'message'         => "Only {$availStock} units of '{$product->name}' are currently available. Quantity in your bag was adjusted.",
+                ];
+            }
+        }
+
+        return [
+            'valid'           => true,
+            'empty'           => false,
+            'has_stock_error' => false,
+            'message'         => 'All selected items are available in stock.',
+        ];
     }
 
     public function subtotal()

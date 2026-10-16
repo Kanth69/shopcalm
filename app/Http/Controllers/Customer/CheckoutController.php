@@ -117,6 +117,15 @@ class CheckoutController extends Controller
             return redirect()->route('cart.index')->with('toast', ['type' => 'warning', 'title' => 'No items selected', 'message' => 'Please select at least one item to proceed to checkout.']);
         }
 
+        $stockValidation = $this->cartService->validateSelectedItemsStock();
+        if (!$stockValidation['valid']) {
+            return redirect()->route('cart.index')->with('toast', [
+                'type' => 'warning',
+                'title' => 'Stock Availability Notice',
+                'message' => $stockValidation['message'],
+            ]);
+        }
+
         $user = Auth::guard('customer')->user() ?? Auth::user();
         $addresses = $user ? $user->addresses()->latest()->get() : collect();
         $activeAddr = $addresses->count() > 0 ? ($addresses->firstWhere('is_default', true) ?? $addresses->first()) : null;

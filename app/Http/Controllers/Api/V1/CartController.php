@@ -29,6 +29,7 @@ class CartController extends BaseApiController
         $subtotal = 0.00;
         $totalMrp = 0.00;
         $totalSavings = 0.00;
+        $outOfStockCount = 0;
 
         foreach ($cart->items as $item) {
             $product = $item->product;
@@ -39,16 +40,21 @@ class CartController extends BaseApiController
             }
             $itemTotal = round($unitPrice * $item->quantity, 2);
 
-            if ($item->is_selected) {
+            $imgPath = $product ? ($product->main_image ?? $product->featured_image ?? null) : null;
+            $maxAvail = $product ? $product->getOptionStock($item->selected_option) : 0;
+            $inStock = $product ? ($maxAvail > 0 && $product->status === 'Active') : false;
+
+            if (!$inStock) {
+                $outOfStockCount++;
+            }
+
+            if ($item->is_selected && $inStock) {
                 $subtotal += $itemTotal;
                 $totalMrp += round($originalPrice * $item->quantity, 2);
                 if ($originalPrice > $unitPrice) {
                     $totalSavings += ($originalPrice - $unitPrice) * $item->quantity;
                 }
             }
-
-            $imgPath = $product ? ($product->main_image ?? $product->featured_image ?? null) : null;
-            $maxAvail = $product ? $product->getOptionStock($item->selected_option) : 0;
 
             $items[] = [
                 'id'              => (int) $item->id,
@@ -64,11 +70,13 @@ class CartController extends BaseApiController
                 'original_price'  => $originalPrice,
                 'image_url'       => $imgPath ? (str_starts_with($imgPath, 'http') ? $imgPath : asset('storage/' . $imgPath)) : null,
                 'selected_option' => $item->selected_option,
-                'is_selected'     => (bool) $item->is_selected,
+                'is_selected'     => (bool) ($item->is_selected && $inStock),
                 'total'           => $itemTotal,
                 'subtotal'        => $itemTotal,
-                'in_stock'        => $product ? ($maxAvail > 0 && $product->status === 'Active') : false,
+                'in_stock'        => $inStock,
                 'max_available'   => $maxAvail,
+                'stock_status'    => !$inStock ? 'out_of_stock' : ($maxAvail <= 5 ? 'limited_stock' : 'in_stock'),
+                'stock_message'   => !$inStock ? 'Currently out of stock' : ($maxAvail <= 5 ? "Only {$maxAvail} left in stock" : null),
             ];
         }
 
@@ -83,6 +91,8 @@ class CartController extends BaseApiController
             'item_count'              => count($items),
             'total_quantity'          => array_sum(array_column($items, 'quantity')),
             'selected_items_count'    => $selectedCount,
+            'has_out_of_stock'        => $outOfStockCount > 0,
+            'out_of_stock_count'      => $outOfStockCount,
             'total_mrp'               => round($totalMrp, 2),
             'subtotal'                => round($subtotal, 2),
             'total_savings'           => round($totalSavings, 2),
@@ -215,5 +225,19 @@ class CartController extends BaseApiController
             $this->formatCartResponse($cart),
             'All cart items selection updated.'
         );
+    }
+
+    /**
+     * Real-time Live Stock Validation for Selected Items.
+     * Prevents checkout if any item is out of stock or quantity exceeds availability.
+     */
+    public function validateStock(): JsonResponse
+    {
+        $validation = $this->cartService->validateSelectedItemsStock();
+        if (!$validation['valid']) {
+            return $this->sendError($validation['message'], $validation, 422);
+        }
+
+        return $this->sendResponse($validation, 'All selected items are available in stock.');
     }
 }
