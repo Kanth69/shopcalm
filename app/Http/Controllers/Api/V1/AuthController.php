@@ -320,13 +320,15 @@ class AuthController extends BaseApiController
         $wallet = app(\App\Services\WalletService::class)->getOrCreateWallet($user);
 
         return $this->sendResponse([
-            'id'             => $user->id,
-            'name'           => $user->name,
-            'email'          => $user->email,
-            'mobile_number'  => $user->mobile_number,
-            'avatar'         => $user->avatar ? asset('storage/' . $user->avatar) : null,
-            'wallet_balance' => (float) $wallet->balance,
-            'created_at'     => $user->created_at ? $user->created_at->format('Y-m-d H:i:s') : null,
+            'id'                 => $user->id,
+            'name'               => $user->name,
+            'email'              => $user->email,
+            'mobile_number'      => $user->mobile_number,
+            'avatar'             => $user->avatar ? asset('storage/' . $user->avatar) : null,
+            'wallet_balance'     => (float) $wallet->balance,
+            'referral_code'      => $wallet->referral_code,
+            'is_referral_active' => \App\Services\WalletService::isReferralProgramActive(),
+            'created_at'         => $user->created_at ? $user->created_at->format('Y-m-d H:i:s') : null,
         ], 'Authenticated user profile retrieved.');
     }
 

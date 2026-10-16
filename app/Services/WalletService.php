@@ -63,7 +63,7 @@ class WalletService
      */
     public function getOrCreateWallet(User $user): Wallet
     {
-        return Wallet::firstOrCreate(
+        $wallet = Wallet::firstOrCreate(
             ['user_id' => $user->id],
             [
                 'balance' => 0.00,
@@ -72,6 +72,13 @@ class WalletService
                 'status' => 'active',
             ]
         );
+
+        if (empty($wallet->referral_code)) {
+            $wallet->referral_code = Wallet::generateReferralCode($user);
+            $wallet->save();
+        }
+
+        return $wallet;
     }
 
     /**

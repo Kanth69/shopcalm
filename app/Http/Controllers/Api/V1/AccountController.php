@@ -285,9 +285,13 @@ class AccountController extends BaseApiController
         });
 
         return $this->sendResponse([
-            'balance'      => (float) $wallet->balance,
-            'is_active'    => (bool) $wallet->is_active,
-            'transactions' => $transactions,
+            'balance'            => (float) $wallet->balance,
+            'is_active'          => (bool) $wallet->is_active,
+            'referral_code'      => $wallet->referral_code,
+            'is_referral_active' => \App\Services\WalletService::isReferralProgramActive(),
+            'signup_bonus'       => \App\Services\WalletService::getSignupBonus(),
+            'first_order_reward' => \App\Services\WalletService::getFirstOrderReward(),
+            'transactions'       => $transactions,
         ], 'Store wallet data retrieved.');
     }
 
