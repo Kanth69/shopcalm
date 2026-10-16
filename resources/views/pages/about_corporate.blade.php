@@ -21,7 +21,7 @@
         ['title' => 'Frictionless Checkout', 'desc' => 'Lightning-fast, simple browsing with smart filters, live search, and 1-click ordering.'],
         ['title' => 'Bank-Grade Security', 'desc' => 'Your payment details and personal data are encrypted with state-of-the-art security.'],
         ['title' => 'Fast Dispatch & Tracking', 'desc' => 'Reliable courier partners providing live parcel tracking right to your doorstep.'],
-        ['title' => '30-Day Hassle-Free Returns', 'desc' => 'Simple, transparent return, cancellation, and instant refund processing.'],
+        ['title' => 'Pre-Dispatch Easy Cancellations', 'desc' => 'Simple, transparent pre-dispatch cancellation and instant refund processing.'],
         ['title' => '24/7 Dedicated Helpdesk', 'desc' => 'Friendly support team ready to assist you anytime via live helpdesk and email.']
     ];
 

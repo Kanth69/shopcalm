@@ -12,12 +12,19 @@ class PageSeeder extends Seeder
      */
     public function run(): void
     {
-        $storeName = config('app.name', 'ShopCalm');
+        // Clean out legacy CMS pages to ensure zero stale or obsolete brand records
+        Page::truncate();
+
+        $storeName = 'ShopCalm';
+        $companyName = 'ShopCalm E-Commerce Solutions';
+        $domain = 'shopcalm.in';
+        $supportEmail = 'support@shopcalm.in';
+        $grievanceEmail = 'grievance@shopcalm.in';
 
         // 1. PRIVACY POLICY
         $privacyData = [
             'desc' => 'How we securely collect, protect, and handle your data under DPDP Act 2023.',
-            'intro' => '<p class="lead">At <strong>' . $storeName . '</strong> (operated by ShopCalm E-Commerce Solutions), accessible from shopcalm.in, protecting your personal data and upholding your digital privacy is our topmost priority. This Privacy Policy outlines how we collect, process, store, and safeguard your information in accordance with the <strong>Digital Personal Data Protection Act, 2023 (DPDP Act)</strong>, the <strong>Information Technology Act, 2000 (Section 43A)</strong>, and the <strong>Consumer Protection (E-Commerce) Rules, 2020</strong> of India.</p>',
+            'intro' => '<p class="lead">At <strong>' . $storeName . '</strong> (operated by ' . $companyName . '), accessible from ' . $domain . ', protecting your personal data and upholding your digital privacy is our topmost priority. This Privacy Policy outlines how we collect, process, store, and safeguard your information in accordance with the <strong>Digital Personal Data Protection Act, 2023 (DPDP Act)</strong>, the <strong>Information Technology Act, 2000 (Section 43A)</strong>, and the <strong>Consumer Protection (E-Commerce) Rules, 2020</strong> of India.</p>',
             'sections' => [
                 [
                     'title' => 'Personal Data We Collect',
@@ -81,9 +88,9 @@ class PageSeeder extends Seeder
                     'content' => '<p>In compliance with Rule 5(9) of the <strong>Consumer Protection (E-Commerce) Rules, 2020</strong>, the name and contact details of our designated Grievance Officer for privacy and customer concerns are provided below:</p>
                     <div class="p-3 bg-light rounded border">
                         <p class="mb-1"><strong>Grievance Redressal Officer:</strong> Nodal Officer - Customer Experience</p>
-                        <p class="mb-1"><strong>Entity:</strong> ' . $storeName . ' E-Commerce Solutions</p>
-                        <p class="mb-1"><strong>Email:</strong> <a href="mailto:grievance@shopcalm.in">grievance@shopcalm.in</a></p>
-                        <p class="mb-1"><strong>Support Helpline:</strong> +91 98765 43210 (Mon - Sat: 9:00 AM - 6:00 PM IST)</p>
+                        <p class="mb-1"><strong>Entity:</strong> ' . $companyName . '</p>
+                        <p class="mb-1"><strong>Email:</strong> <a href="mailto:' . $grievanceEmail . '">' . $grievanceEmail . '</a></p>
+                        <p class="mb-1"><strong>Support Helpline:</strong> +91 81973 16916 (Mon - Sat: 9:00 AM - 6:00 PM IST)</p>
                         <p class="mb-0"><strong>Response Turnaround:</strong> Acknowledgment within 48 hours; resolution within 30 days.</p>
                     </div>'
                 ]
@@ -93,7 +100,7 @@ class PageSeeder extends Seeder
         // 2. TERMS & CONDITIONS
         $termsData = [
             'desc' => 'Rules, policies, and guidelines for using our store services.',
-            'intro' => '<p class="lead">Welcome to <strong>' . $storeName . '</strong>. These Terms & Conditions constitute a legally binding agreement between you ("Customer", "User") and ' . $storeName . ' E-Commerce Solutions regarding your access to and use of shopcalm.in and our mobile application. By accessing our platform or making a purchase, you agree to be bound by these Terms and our Privacy Policy.</p>',
+            'intro' => '<p class="lead">Welcome to <strong>' . $storeName . '</strong>. These Terms & Conditions constitute a legally binding agreement between you ("Customer", "User") and ' . $companyName . ' regarding your access to and use of ' . $domain . ' and our mobile application. By accessing our platform or making a purchase, you agree to be bound by these Terms and our Privacy Policy.</p>',
             'sections' => [
                 [
                     'title' => 'Account Registration & User Eligibility',
@@ -165,7 +172,7 @@ class PageSeeder extends Seeder
                     'title' => 'Damaged or Wrong Product Transit Exceptions',
                     'content' => '<p>In the rare event that you receive a physically damaged package or wrong product delivered due to transit error:</p>
                     <ul>
-                        <li>You must report the issue to our support team within <strong>24 hours</strong> of package delivery by emailing <a href="mailto:support@shopcalm.in">support@shopcalm.in</a> or contacting our support helpline.</li>
+                        <li>You must report the issue to our support team within <strong>24 hours</strong> of package delivery by emailing <a href="mailto:' . $supportEmail . '">' . $supportEmail . '</a> or contacting our support helpline.</li>
                         <li>An <strong>unboxing video</strong> clearly showing the shipping label and package opening must be provided for claim verification.</li>
                         <li>Upon verification by our audit team, an appropriate resolution or replacement approval will be processed on a case-by-case basis.</li>
                     </ul>'
@@ -175,7 +182,7 @@ class PageSeeder extends Seeder
                     'content' => '<p>For eligible cancellations initiated <strong>before package dispatch</strong>:</p>
                     <ul>
                         <li><strong>ShopCalm Wallet Refund:</strong> Instant 100% credit to your ShopCalm Wallet balance for immediate store shopping.</li>
-                        <li><strong>Original Payment Method:</strong> Prepaid card, UPI, or netbanking payments will be refunded back to the source account within 3 to 5 business days.</li>
+                        <li><strong>Original Payment Method:</strong> Prepaid card, UPI, or netbanking payments will be refunded back to the source account within 3 to 5 business days via Razorpay.</li>
                     </ul>'
                 ]
             ]
@@ -218,7 +225,7 @@ class PageSeeder extends Seeder
                         <li>Go to <strong>My Account &rarr; My Orders</strong>.</li>
                         <li>Click the <strong>Cancel Order</strong> button on the order details page.</li>
                         <li>Select a reason for cancellation and confirm.</li>
-                        <li>Prepaid orders cancelled before dispatch receive an <strong>instant 100% refund</strong>.</li>
+                        <li>Prepaid orders cancelled before dispatch receive an <strong>instant 100% refund</strong> to your ShopCalm Wallet or original payment method.</li>
                     </ul>'
                 ],
                 [
@@ -232,6 +239,7 @@ class PageSeeder extends Seeder
             ]
         ];
 
+        // 6. ABOUT US DATA
         $aboutData = [
             'hero_title' => 'About ' . $storeName,
             'tagline' => 'Simple. Transparent. Trustworthy.',
@@ -264,7 +272,7 @@ class PageSeeder extends Seeder
                     ['title' => '100% Genuine Products', 'desc' => 'Direct from verified brand partners and licensed distributors.', 'icon' => 'bi-patch-check-fill', 'color' => '#10b981'],
                     ['title' => 'Zero Hidden Fees', 'desc' => 'What you see is what you pay. Transparent pricing at every step.', 'icon' => 'bi-tag-fill', 'color' => '#6366f1'],
                     ['title' => 'Insured Safe Delivery', 'desc' => 'Every package is insured and tracked with trusted national couriers.', 'icon' => 'bi-shield-fill-check', 'color' => '#06b6d4'],
-                    ['title' => 'Instant Refund Assurance', 'desc' => 'Prompt refund processing directly to your original payment method.', 'icon' => 'bi-arrow-clockwise', 'color' => '#8b5cf6']
+                    ['title' => 'Instant Refund Assurance', 'desc' => 'Prompt refund processing directly to your original payment method or ShopCalm Wallet.', 'icon' => 'bi-arrow-clockwise', 'color' => '#8b5cf6']
                 ]
             ],
             'focus_areas' => [
@@ -272,7 +280,7 @@ class PageSeeder extends Seeder
                 ['title' => 'Frictionless Checkout', 'desc' => 'Lightning-fast, simple browsing with smart filters, live search, and 1-click ordering.'],
                 ['title' => 'Bank-Grade Security', 'desc' => 'Your payment details and personal data are encrypted with state-of-the-art security.'],
                 ['title' => 'Fast Dispatch & Tracking', 'desc' => 'Reliable courier partners providing live parcel tracking right to your doorstep.'],
-                ['title' => '30-Day Hassle-Free Returns', 'desc' => 'Simple, transparent return, cancellation, and instant refund processing.'],
+                ['title' => 'Pre-Dispatch Easy Cancellations', 'desc' => 'Simple, transparent pre-dispatch cancellation and instant refund processing.'],
                 ['title' => '24/7 Dedicated Helpdesk', 'desc' => 'Friendly support team ready to assist you anytime via live helpdesk and email.']
             ],
             'cta' => [
@@ -281,12 +289,152 @@ class PageSeeder extends Seeder
             ]
         ];
 
+        // 7. CONTACT US DATA
         $contactData = [
             'hero_title' => 'Get in Touch with ' . $storeName,
             'hero_subtitle' => 'Have questions about your order, tracking, or products? Our dedicated support team is here to assist you 24/7.',
             'info_title' => 'Customer Care & Support',
             'info_subtitle' => 'Reach out through any channel below. Our customer support agents respond promptly.',
             'form_title' => 'Send us a message'
+        ];
+
+        // 8. COOKIE POLICY DATA
+        $cookieData = [
+            'desc' => 'Information on how we use essential and analytics cookies to optimize your experience.',
+            'intro' => '<p class="lead">This Cookie Policy explains how <strong>' . $storeName . '</strong> uses cookies and similar tracking technologies to recognize you when you visit ' . $domain . ' or use our mobile application.</p>',
+            'sections' => [
+                [
+                    'title' => 'What Are Cookies?',
+                    'content' => '<p>Cookies are small text files stored on your device that enable websites and web applications to remember your preferences, cart items, and login sessions for a seamless browsing experience.</p>'
+                ],
+                [
+                    'title' => 'Types of Cookies We Use',
+                    'content' => '<ul>
+                        <li><strong>Strictly Necessary Cookies:</strong> Essential for account login, shopping cart persistence, and secure checkout processing.</li>
+                        <li><strong>Preference & Session Cookies:</strong> Remember your pincode selection, filter preferences, and theme choices.</li>
+                        <li><strong>Performance & Security Cookies:</strong> Help identify and prevent potential security risks and analyze site loading speed.</li>
+                    </ul>'
+                ],
+                [
+                    'title' => 'Managing Your Cookie Preferences',
+                    'content' => '<p>You can choose to disable or block non-essential cookies through your browser settings. However, disabling essential cookies may impact your ability to checkout or access account features on ' . $storeName . '.</p>'
+                ]
+            ]
+        ];
+
+        // 9. DISCLAIMER DATA
+        $disclaimerData = [
+            'desc' => 'General terms regarding product listings, warranties, and platform usage.',
+            'intro' => '<p class="lead">The information provided on <strong>' . $storeName . '</strong> (' . $domain . ') is for general retail purchasing and informational purposes.</p>',
+            'sections' => [
+                [
+                    'title' => 'Product Authenticity & Warranties',
+                    'content' => '<p>All brand logos, trademarks, and registered names displayed on ' . $storeName . ' are the property of their respective trademark holders. ' . $storeName . ' operates as an authorized retailer/distributor. Product warranties, where applicable, are fulfilled directly by the original product manufacturer or brand partner under their standard warranty terms.</p>'
+                ],
+                [
+                    'title' => 'Accuracy of Listings',
+                    'content' => '<p>We take every reasonable measure to ensure that product images, specifications, and prices are accurate. Minor color variations may occur due to device display calibration. In case of an unintentional typographical or inventory error, ' . $storeName . ' reserves the right to cancel the order and provide a full refund.</p>'
+                ]
+            ]
+        ];
+
+        // 10. FAQ DATA (Categorized to match UI filter chips)
+        $faqData = [
+            'hero_title' => 'Frequently Asked Questions',
+            'hero_subtitle' => 'Find quick answers to common questions about orders, shipping, returns, and payments.',
+            'faqs' => [
+                // Orders & Tracking
+                [
+                    'question' => 'How can I track my order status?',
+                    'answer' => '<p>Once your order is dispatched, real-time tracking updates and courier tracking numbers are sent directly to your registered <strong>WhatsApp number and Email</strong>. You can also view live order progress anytime from your Account Dashboard under <strong>My Account &rarr; My Orders</strong>.</p>',
+                    'category' => 'Orders & Tracking',
+                    'icon' => 'bi-truck'
+                ],
+                [
+                    'question' => 'How do I cancel my order before dispatch?',
+                    'answer' => '<p>You can cancel your order free of cost anytime before it is dispatched by navigating to <strong>My Account &rarr; My Orders</strong> and clicking <em>Cancel Order</em>. Prepaid cancellations are refunded 100% instantly to your ShopCalm Wallet or to your source payment method.</p>',
+                    'category' => 'Orders & Tracking',
+                    'icon' => 'bi-x-circle'
+                ],
+                [
+                    'question' => 'Can I modify my delivery address after placing an order?',
+                    'answer' => '<p>If your order has not yet been dispatched, our support team can help update your delivery address or contact number. Please contact us immediately at <a href="mailto:' . $supportEmail . '">' . $supportEmail . '</a> or via WhatsApp with your Order ID.</p>',
+                    'category' => 'Orders & Tracking',
+                    'icon' => 'bi-geo-alt'
+                ],
+                [
+                    'question' => 'How do I know if my order has been confirmed?',
+                    'answer' => '<p>As soon as you complete checkout, you will receive an immediate confirmation SMS and WhatsApp message with your unique Order ID and summary. You can also verify your order instantly under <strong>My Orders</strong> in your account.</p>',
+                    'category' => 'Orders & Tracking',
+                    'icon' => 'bi-check-circle'
+                ],
+
+                // Shipping & Delivery
+                [
+                    'question' => 'What are the delivery timelines and shipping charges?',
+                    'answer' => '<p>We offer <strong>Free Shipping on all orders above ₹499</strong> across all serviceable pincodes. Orders below ₹499 incur a nominal standard shipping fee of ₹49. Orders in metro cities deliver within 2 to 3 business days, while rest of India delivers within 3 to 5 business days.</p>',
+                    'category' => 'Shipping & Delivery',
+                    'icon' => 'bi-box-seam'
+                ],
+                [
+                    'question' => 'Which courier partners handle deliveries for ShopCalm?',
+                    'answer' => '<p>We partner with leading, verified logistics carriers including <strong>Delhivery, Shiprocket, BlueDart, and Shadowfax</strong> to ensure fast, insured, and tamper-proof delivery right to your doorstep.</p>',
+                    'category' => 'Shipping & Delivery',
+                    'icon' => 'bi-send'
+                ],
+                [
+                    'question' => 'What should I do if my package delivery is delayed?',
+                    'answer' => '<p>While 99.8% of our orders deliver on time, unexpected weather or regional logistical delays may rarely occur. You can track live courier milestones via the tracking link sent to your WhatsApp. If your package is delayed past the estimated date, reach out to <a href="mailto:' . $supportEmail . '">' . $supportEmail . '</a> for expedited escalation.</p>',
+                    'category' => 'Shipping & Delivery',
+                    'icon' => 'bi-hourglass-split'
+                ],
+
+                // Returns & Quality
+                [
+                    'question' => 'What is ShopCalm\'s Return and Replacement Policy?',
+                    'answer' => '<p>ShopCalm follows a <strong>Strict No Return & No Replacement Policy</strong> once a package is dispatched and delivered. All items undergo rigorous multi-point quality inspection prior to packing. Free 100% cancellation is permitted anytime before package dispatch.</p>',
+                    'category' => 'Returns & Quality',
+                    'icon' => 'bi-shield-check'
+                ],
+                [
+                    'question' => 'What if I receive a physically damaged or wrong product in transit?',
+                    'answer' => '<p>In the rare event that you receive a physically damaged package or incorrect item due to transit handling, you must report it within <strong>24 hours of delivery</strong> by emailing <a href="mailto:' . $supportEmail . '">' . $supportEmail . '</a> with an unboxing video clearly displaying the package shipping label. Upon inspection by our verification team, an appropriate resolution or replacement will be arranged.</p>',
+                    'category' => 'Returns & Quality',
+                    'icon' => 'bi-exclamation-triangle'
+                ],
+                [
+                    'question' => 'Are all products sold on ShopCalm original and authentic?',
+                    'answer' => '<p>Yes, 100%. Every single product on ShopCalm is sourced directly from brand manufacturers and authorized distributors. We guarantee genuine quality, tamper-evident packaging, and official brand warranties where applicable.</p>',
+                    'category' => 'Returns & Quality',
+                    'icon' => 'bi-patch-check'
+                ],
+
+                // Payments & COD
+                [
+                    'question' => 'What payment methods do you accept?',
+                    'answer' => '<p>We accept all major <strong>UPI apps (Google Pay, PhonePe, Paytm, BHIM), Credit/Debit Cards (Visa, MasterCard, RuPay), NetBanking</strong> via RBI-approved PCI-DSS compliant Razorpay payment gateway, <strong>ShopCalm Wallet balance</strong>, and <strong>Cash on Delivery (COD)</strong>.</p>',
+                    'category' => 'Payments & COD',
+                    'icon' => 'bi-credit-card-2-front'
+                ],
+                [
+                    'question' => 'How does ShopCalm Wallet balance work?',
+                    'answer' => '<p>Your ShopCalm Wallet receives instant 100% credits for pre-dispatch cancellations and promotional rewards. Wallet balance can be used at checkout with 1-click zero transaction fee checkout.</p>',
+                    'category' => 'Payments & COD',
+                    'icon' => 'bi-wallet2'
+                ],
+                [
+                    'question' => 'How long does a refund take if I cancel a prepaid order?',
+                    'answer' => '<p>If you choose refund to your <strong>ShopCalm Wallet</strong>, the refund is credited <strong>instantly</strong>. If you choose refund to the <strong>original payment method</strong> (UPI/Card/Bank), it is initiated immediately via Razorpay and typically reflects in your bank account within 3 to 5 business days.</p>',
+                    'category' => 'Payments & COD',
+                    'icon' => 'bi-arrow-clockwise'
+                ],
+                [
+                    'question' => 'Is Cash on Delivery (COD) available for my area?',
+                    'answer' => '<p>Yes, COD is available across most serviceable pincodes in India. You can enter your 6-digit delivery pincode on the product page or at checkout to verify COD availability instantly.</p>',
+                    'category' => 'Payments & COD',
+                    'icon' => 'bi-cash-coin'
+                ]
+            ]
         ];
 
         $pages = [
@@ -303,7 +451,7 @@ class PageSeeder extends Seeder
                 'slug' => 'contact-us',
                 'content' => json_encode($contactData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
                 'meta_title' => 'Contact Us & Customer Support | ' . $storeName,
-                'meta_description' => 'Get in touch with the ' . $storeName . ' support team. We are available 24/7 to help you with orders, returns, and queries.',
+                'meta_description' => 'Get in touch with the ' . $storeName . ' support team. We are available 24/7 to help you with orders, inquiries, and assistance.',
                 'is_active' => true,
             ],
             [
@@ -349,54 +497,31 @@ class PageSeeder extends Seeder
             [
                 'title' => 'Help & Frequently Asked Questions',
                 'slug' => 'faq',
-                'content' => json_encode([
-                    'faqs' => [
-                        [
-                            'question' => 'How can I track my order status?',
-                            'answer' => '<p>Once your order is dispatched, real-time tracking updates are sent directly to your registered <strong>WhatsApp number and Email</strong>. You can also view live order progress anytime from your Account Dashboard under <strong>My Account &rarr; My Orders</strong>.</p>',
-                            'category' => 'Orders & Tracking',
-                            'icon' => 'bi-truck'
-                        ],
-                        [
-                            'question' => 'What are the delivery timelines and shipping charges?',
-                            'answer' => '<p>We offer <strong>Free Shipping on all orders above ₹499</strong>. Orders below ₹499 incur a nominal standard shipping fee of ₹49. Orders in metro cities deliver within 2-3 business days, while rest of India delivers within 3-5 business days.</p>',
-                            'category' => 'Shipping & Delivery',
-                            'icon' => 'bi-box-seam'
-                        ],
-                        [
-                            'question' => 'What is your Return and Replacement Policy?',
-                            'answer' => '<p>ShopCalm follows a <strong>Strict No Return & No Replacement Policy</strong> once a package is dispatched and delivered. All items undergo rigorous multi-point quality inspection prior to packing. Free cancellation is permitted anytime before package dispatch.</p>',
-                            'category' => 'Returns & Quality',
-                            'icon' => 'bi-shield-check'
-                        ],
-                        [
-                            'question' => 'How do I cancel my order before dispatch?',
-                            'answer' => '<p>You can cancel your order free of cost anytime before dispatch by navigating to <strong>My Account &rarr; My Orders</strong> and clicking <em>Cancel Order</em>. Prepaid cancellations are refunded 100% instantly to your ShopCalm Wallet or source payment account.</p>',
-                            'category' => 'Orders & Tracking',
-                            'icon' => 'bi-x-circle'
-                        ],
-                        [
-                            'question' => 'What payment methods do you accept?',
-                            'answer' => '<p>We accept all major <strong>UPI apps (GPay, PhonePe, Paytm, BHIM), Credit/Debit Cards, NetBanking</strong> via PCI-DSS compliant Razorpay payment gateway, <strong>ShopCalm Wallet balance</strong>, and <strong>Cash on Delivery (COD)</strong>.</p>',
-                            'category' => 'Payments & COD',
-                            'icon' => 'bi-credit-card-2-front'
-                        ],
-                        [
-                            'question' => 'How does ShopCalm Wallet balance work?',
-                            'answer' => '<p>Your ShopCalm Wallet receives instant 100% credits for pre-dispatch cancellations and referral rewards. Wallet balance can be used at checkout with 1-click zero transaction fee checkout.</p>',
-                            'category' => 'Payments & COD',
-                            'icon' => 'bi-wallet2'
-                        ]
-                    ]
-                ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                'content' => json_encode($faqData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
                 'meta_title' => 'Help & Frequently Asked Questions (FAQ) | ' . $storeName,
                 'meta_description' => 'Find quick answers to common questions about orders, shipping, payments, returns, and wallet balance at ' . $storeName . '.',
+                'is_active' => true,
+            ],
+            [
+                'title' => 'Cookie Policy',
+                'slug' => 'cookie-policy',
+                'content' => json_encode($cookieData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                'meta_title' => 'Cookie Policy | ' . $storeName,
+                'meta_description' => 'Learn how ' . $storeName . ' uses cookies and session management to provide a secure and customized shopping experience.',
+                'is_active' => true,
+            ],
+            [
+                'title' => 'Disclaimer',
+                'slug' => 'disclaimer',
+                'content' => json_encode($disclaimerData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                'meta_title' => 'Disclaimer | ' . $storeName,
+                'meta_description' => 'Official disclaimer regarding product authenticity, manufacturer warranties, and platform usage at ' . $storeName . '.',
                 'is_active' => true,
             ],
         ];
 
         foreach ($pages as $page) {
-            Page::updateOrCreate(['slug' => $page['slug']], $page);
+            Page::create($page);
         }
     }
 }
