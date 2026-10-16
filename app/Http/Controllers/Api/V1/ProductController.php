@@ -37,20 +37,45 @@ class ProductController extends BaseApiController
 
         // 2. Offer/Collection Filtering
         $activeOffer = null;
-        if ($request->filled('offer')) {
-            $offer = Offer::where('slug', $request->input('offer'))->active()->first();
+        if ($request->filled('offer') || $request->filled('offer_id')) {
+            $offerQueryBuilder = Offer::live()->with('targets');
+            if ($request->filled('offer_id')) {
+                $offer = $offerQueryBuilder->where('id', $request->input('offer_id'))->first();
+            } else {
+                $offer = $offerQueryBuilder->where('slug', $request->input('offer'))->first();
+            }
+
             if ($offer) {
+                $rawImg = $offer->banner_image;
+                $imageUrl = !empty($rawImg) ? (str_starts_with($rawImg, 'http') ? $rawImg : asset('storage/' . ltrim($rawImg, '/'))) : null;
                 $activeOffer = [
-                    'name' => $offer->name,
-                    'slug' => $offer->slug,
-                    'description' => $offer->description,
-                    'banner_image' => $offer->banner_image ? asset('storage/' . $offer->banner_image) : null,
-                    'offer_type' => $offer->offer_type,
-                    'end_date' => $offer->end_date
+                    'id'            => $offer->id,
+                    'name'          => $offer->title,
+                    'title'         => $offer->title,
+                    'slug'          => $offer->slug,
+                    'description'   => $offer->description,
+                    'banner_image'  => $imageUrl,
+                    'image'         => $imageUrl,
+                    'theme_color'   => $offer->theme_color ?? '#6366f1',
+                    'badge_text'    => $offer->badge_text,
+                    'offer_type'    => $offer->type,
+                    'type'          => $offer->type,
+                    'discount_type' => $offer->discount_type,
+                    'discount_value'=> (float) $offer->discount_value,
+                    'end_date'      => $offer->end_time ? $offer->end_time->toISOString() : null,
                 ];
-                // Intersect the base query with the offer query
-                $offerQuery = $this->offerService->getProductsQuery($offer);
-                $query->whereIn('id', $offerQuery->pluck('products.id'));
+
+                if ($offer->targets->isNotEmpty()) {
+                    $targetCatIds = $offer->targets->where('target_type', 'CATEGORY')->pluck('target_id')->filter()->toArray();
+                    $targetBrandIds = $offer->targets->where('target_type', 'BRAND')->pluck('target_id')->filter()->toArray();
+                    $targetProductIds = $offer->targets->where('target_type', 'PRODUCT')->pluck('target_id')->filter()->toArray();
+
+                    $query->where(function ($q) use ($targetCatIds, $targetBrandIds, $targetProductIds) {
+                        if (!empty($targetCatIds)) $q->orWhereIn('category_id', $targetCatIds);
+                        if (!empty($targetBrandIds)) $q->orWhereIn('brand_id', $targetBrandIds);
+                        if (!empty($targetProductIds)) $q->orWhereIn('id', $targetProductIds);
+                    });
+                }
             }
         }
 

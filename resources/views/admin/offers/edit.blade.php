@@ -269,7 +269,8 @@
     const categories = @json($categories ?? []);
     const brands = @json($brands ?? []);
     const products = @json($products ?? []);
-    const currentTargetId = "{{ old('target_id', $currentTarget?->target_id) }}";
+    const initialTargetType = "{{ old('target_type', $currentTarget?->target_type) }}";
+    const initialTargetId = "{{ old('target_id', $currentTarget?->target_id) }}";
 
     function setThemeColor(hex) {
         document.getElementById('theme_color').value = hex;
@@ -305,23 +306,26 @@
 
         container.classList.remove('d-none');
 
+        const matchInitial = (type === initialTargetType);
+
         if (type === 'CATEGORY') {
             label.innerText = 'Select Target Category';
             categories.forEach(c => {
-                const isSelected = (c.id == currentTargetId) ? 'selected' : '';
+                const isSelected = (matchInitial && c.id == initialTargetId) ? 'selected' : '';
                 select.innerHTML += `<option value="${c.id}" ${isSelected}>${c.name}</option>`;
             });
         } else if (type === 'BRAND') {
             label.innerText = 'Select Target Brand';
             brands.forEach(b => {
-                const isSelected = (b.id == currentTargetId) ? 'selected' : '';
+                const isSelected = (matchInitial && b.id == initialTargetId) ? 'selected' : '';
                 select.innerHTML += `<option value="${b.id}" ${isSelected}>${b.name}</option>`;
             });
         } else if (type === 'PRODUCT') {
             label.innerText = 'Select Target Product';
             products.forEach(p => {
-                const isSelected = (p.id == currentTargetId) ? 'selected' : '';
-                select.innerHTML += `<option value="${p.id}" ${isSelected}>${p.name}</option>`;
+                const isSelected = (matchInitial && p.id == initialTargetId) ? 'selected' : '';
+                const priceFormatted = p.price ? ` - ₹${parseFloat(p.price).toLocaleString('en-IN')}` : '';
+                select.innerHTML += `<option value="${p.id}" ${isSelected}>${p.name}${priceFormatted}</option>`;
             });
         }
     }

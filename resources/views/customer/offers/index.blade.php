@@ -5,10 +5,13 @@
 @section('content')
 <div class="container my-3.5 my-md-4 px-3 px-md-4 pb-5">
 
-    <!-- 1. FULL HERO MEGA SALE CAMPAIGN BANNER (RESPONSIVE FOR ALL SCREENS) -->
-    @if($liveMegaSale)
+    <!-- 1. FULL HERO CAMPAIGN BANNER (DYNAMIC: SELECTED OFFER OR MEGA SALE) -->
+    @php
+        $heroOffer = $selectedOffer ?: $liveMegaSale;
+    @endphp
+    @if($heroOffer)
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 mb-md-5 position-relative text-white" 
-         style="background: linear-gradient(135deg, {{ $liveMegaSale->theme_color ?? '#4f46e5' }} 0%, #1e1b4b 60%, #0f172a 100%);">
+         style="background: linear-gradient(135deg, {{ $heroOffer->theme_color ?? '#4f46e5' }} 0%, #1e1b4b 60%, #0f172a 100%);">
         
         {{-- Decorative Pattern --}}
         <div class="position-absolute w-100 h-100"
@@ -18,23 +21,31 @@
             <div class="row align-items-center g-3 g-md-4">
                 <div class="col-lg-8">
                     {{-- Badge --}}
+                    @php
+                        $heroBadge = $heroOffer->badge_text;
+                        if (!$heroBadge) {
+                            $heroBadge = $heroOffer->discount_type === 'PERCENTAGE'
+                                ? round($heroOffer->discount_value) . '% OFF DEAL'
+                                : 'FLAT ₹' . round($heroOffer->discount_value) . ' OFF DEAL';
+                        }
+                    @endphp
                     <div class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-pill fw-bold text-uppercase mb-2.5 shadow-2xs" 
                          style="background: rgba(245, 158, 11, 0.22); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4); font-size: 0.74rem; letter-spacing: 0.05em;">
-                        <i class="bi bi-fire text-warning"></i> {{ $liveMegaSale->badge_text ?? 'MEGA SALE EVENT' }}
+                        <i class="bi bi-fire text-warning"></i> {{ $heroBadge }}
                     </div>
                     
                     {{-- Title --}}
                     <h1 class="fw-extrabold text-white mb-2" style="letter-spacing: -0.02em; font-size: clamp(1.4rem, 4vw, 2.3rem); line-height: 1.2;">
-                        {{ $liveMegaSale->title }}
+                        {{ $heroOffer->title }}
                     </h1>
                     
                     {{-- Description --}}
                     <p class="text-white text-opacity-85 mb-3.5 mb-md-4" style="max-width: 620px; font-size: clamp(0.86rem, 2vw, 1rem); line-height: 1.55;">
-                        {{ $liveMegaSale->description ?? 'Unbeatable discounts and instant bank offers across all top products! Grab your favorites before the timer runs out.' }}
+                        {{ $heroOffer->description ?? 'Unbeatable discounts and instant offers on selected products! Grab your favorites before the offer ends.' }}
                     </p>
 
                     {{-- Live Countdown Timer Blocks --}}
-                    @if($liveMegaSale->end_time)
+                    @if($heroOffer->end_time)
                     <div class="d-inline-flex align-items-center flex-wrap gap-2 p-2.5 p-sm-3 rounded-4 shadow-sm" 
                          style="background: rgba(15, 23, 42, 0.78); border: 1px solid rgba(255, 255, 255, 0.15); backdrop-filter: blur(8px);">
                         <span class="text-white-50 small text-uppercase fw-bold me-1 d-none d-sm-inline" style="font-size: 0.74rem;">
@@ -43,7 +54,7 @@
                         <span class="text-white-50 small text-uppercase fw-bold me-1 d-inline d-sm-none" style="font-size: 0.7rem;">
                             <i class="bi bi-clock-history text-warning me-0.5"></i> Ends In:
                         </span>
-                        <div class="d-flex align-items-center gap-1 gap-sm-1.5" id="dedicated-sale-timer" data-endtime="{{ $liveMegaSale->end_time->toISOString() }}">
+                        <div class="d-flex align-items-center gap-1 gap-sm-1.5" id="dedicated-sale-timer" data-endtime="{{ $heroOffer->end_time->toISOString() }}">
                             <div class="bg-dark text-warning rounded-2 px-2 py-1 text-center fw-bold shadow-xs border border-secondary border-opacity-50" style="min-width: 40px;">
                                 <span id="dt-days" class="fs-6 fw-extrabold d-block lh-1">00</span>
                                 <small class="text-white-50 text-uppercase" style="font-size: 8px;">Days</small>
@@ -68,9 +79,9 @@
                     @endif
                 </div>
 
-                @if($liveMegaSale->banner_image)
+                @if($heroOffer->banner_image)
                 <div class="col-lg-4 text-center mt-3 mt-lg-0">
-                    <img src="{{ asset('storage/' . $liveMegaSale->banner_image) }}" alt="{{ $liveMegaSale->title }}" class="img-fluid rounded-4 shadow-lg" style="max-height: 200px; object-fit: cover; border: 2px solid rgba(255,255,255,0.18);">
+                    <img src="{{ asset('storage/' . $heroOffer->banner_image) }}" alt="{{ $heroOffer->title }}" class="img-fluid rounded-4 shadow-lg" style="max-height: 200px; object-fit: cover; border: 2px solid rgba(255,255,255,0.18);">
                 </div>
                 @endif
             </div>
@@ -201,7 +212,7 @@
 }
 </style>
 
-@if($liveMegaSale && $liveMegaSale->end_time)
+@if(($heroOffer ?? $liveMegaSale) && ($heroOffer ?? $liveMegaSale)->end_time)
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const timerContainer = document.getElementById('dedicated-sale-timer');

@@ -30,22 +30,6 @@ class HomeController extends BaseApiController
 
         $banners = collect($cachedBanners)->map(fn($b) => clone $b);
 
-        if ($liveMegaSale && $liveMegaSale->banner_image) {
-            $campaignBanner = new Banner([
-                'id'                  => 0,
-                'offer_id'            => $liveMegaSale->id,
-                'banner_type'         => 'CAMPAIGN_OFFER',
-                'title'               => $liveMegaSale->title,
-                'subtitle'            => $liveMegaSale->badge_text ?? ($liveMegaSale->discount_type === 'PERCENTAGE' ? round($liveMegaSale->discount_value) . "% OFF" : "Flat ₹" . round($liveMegaSale->discount_value) . " OFF"),
-                'desktop_image'       => $liveMegaSale->banner_image,
-                'mobile_image'        => $liveMegaSale->banner_image,
-                'primary_button_text' => 'View Deals',
-                'primary_button_link' => '/offers?offer_id=' . $liveMegaSale->id,
-                'is_active'           => true,
-            ]);
-            $banners->prepend($campaignBanner);
-        }
-
         $banners = $banners->values()->map(function ($banner) {
             $rawImg = $banner->mobile_image ?: $banner->desktop_image;
             $imageUrl = null;
@@ -79,7 +63,31 @@ class HomeController extends BaseApiController
         });
 
         $offers = Cache::remember('home_offers', 300, function() {
-            return Offer::active()->latest()->take(5)->get();
+            return Offer::live()->orderBy('priority', 'desc')->get()->map(function($offer) {
+                $rawImg = $offer->banner_image;
+                $imageUrl = null;
+                if (!empty($rawImg)) {
+                    $imageUrl = str_starts_with($rawImg, 'http') ? $rawImg : asset('storage/' . ltrim($rawImg, '/'));
+                }
+                return [
+                    'id'                  => $offer->id,
+                    'title'               => $offer->title,
+                    'slug'                => $offer->slug,
+                    'type'                => $offer->type,
+                    'badge_text'          => $offer->badge_text ?? ($offer->discount_type === 'PERCENTAGE' ? round($offer->discount_value) . "% OFF" : "Flat ₹" . round($offer->discount_value) . " OFF"),
+                    'description'         => $offer->description,
+                    'banner_image'        => $imageUrl,
+                    'image'               => $imageUrl,
+                    'theme_color'         => $offer->theme_color ?? '#6366f1',
+                    'discount_type'       => $offer->discount_type,
+                    'discount_value'      => (float) $offer->discount_value,
+                    'min_purchase_amount' => (float) $offer->min_purchase_amount,
+                    'max_discount_amount' => (float) $offer->max_discount_amount,
+                    'start_time'          => $offer->start_time ? $offer->start_time->toISOString() : null,
+                    'end_time'            => $offer->end_time ? $offer->end_time->toISOString() : null,
+                    'is_active'           => (bool) $offer->is_active,
+                ];
+            });
         });
 
         $featuredProducts = Cache::remember('featured_products', 300, function () {

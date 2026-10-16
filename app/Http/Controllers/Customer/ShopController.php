@@ -32,18 +32,9 @@ class ShopController extends Controller
             return Banner::active()->orderBy('display_order')->get(['id','offer_id','banner_type','bg_gradient','title','subtitle','desktop_image','mobile_image','primary_button_text','primary_button_link','display_order','is_active']);
         });
 
-        if ($liveMegaSale && $liveMegaSale->banner_image) {
-            $campaignBanner = new Banner([
-                'offer_id'    => $liveMegaSale->id,
-                'banner_type' => 'CAMPAIGN_OFFER',
-                'title'       => $liveMegaSale->title,
-                'subtitle'    => $liveMegaSale->badge_text ?? ($liveMegaSale->discount_type === 'PERCENTAGE' ? "{$liveMegaSale->discount_value}% OFF" : "Flat ₹{$liveMegaSale->discount_value} OFF"),
-                'desktop_image'       => $liveMegaSale->banner_image,
-                'primary_button_text' => 'View Deals',
-                'primary_button_link' => '/offers?offer_id=' . $liveMegaSale->id,
-            ]);
-            $banners->prepend($campaignBanner);
-        }
+        $activeOffers = Cache::remember('home_active_offers', 300, function() {
+            return \App\Models\Offer::live()->orderBy('priority', 'desc')->get();
+        });
 
         $featuredProducts = Cache::remember('featured_products', 300, function () {
             return Product::with(['category', 'brand'])->withAvg(['reviews as avg_rating' => fn($q) => $q->where('status', 'Approved')], 'rating')->where('status', 'Active')->where('featured', true)->latest()->take(8)->get();
@@ -103,6 +94,7 @@ class ShopController extends Controller
 
         return view('customer.home', compact(
             'banners',
+            'activeOffers',
             'featuredProducts',
             'trendingProducts',
             'latestProducts',

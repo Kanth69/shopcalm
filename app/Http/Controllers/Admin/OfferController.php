@@ -12,10 +12,21 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
 use DB;
 
 class OfferController extends Controller
 {
+    protected function clearOfferCaches(): void
+    {
+        Cache::forget('home_active_offers');
+        Cache::forget('home_offers');
+        Cache::forget('home_banners');
+        Cache::forget('featured_products');
+        Cache::forget('trending_products');
+        Cache::forget('latest_products');
+    }
+
     public function index(Request $request)
     {
         $query = Offer::query();
@@ -37,7 +48,7 @@ class OfferController extends Controller
     {
         $categories = Category::where('status', 'Active')->orderBy('name')->get();
         $brands = Brand::where('status', 1)->orderBy('name')->get();
-        $products = Product::where('status', 'Active')->orderBy('name')->take(100)->get();
+        $products = Product::where('status', 'Active')->orderBy('name')->get(['id', 'name', 'price']);
 
         return view('admin.offers.create', compact('categories', 'brands', 'products'));
     }
@@ -111,6 +122,8 @@ class OfferController extends Controller
             }
         });
 
+        $this->clearOfferCaches();
+
         return redirect()->route('admin.offers.index')->with('toast', ['type' => 'success', 'title' => 'Created', 'message' => 'Sales Offer created successfully!']);
     }
 
@@ -119,7 +132,7 @@ class OfferController extends Controller
         $offer->load('targets');
         $categories = Category::where('status', 'Active')->orderBy('name')->get();
         $brands = Brand::where('status', 1)->orderBy('name')->get();
-        $products = Product::where('status', 'Active')->orderBy('name')->take(100)->get();
+        $products = Product::where('status', 'Active')->orderBy('name')->get(['id', 'name', 'price']);
 
         return view('admin.offers.edit', compact('offer', 'categories', 'brands', 'products'));
     }
@@ -181,12 +194,16 @@ class OfferController extends Controller
             }
         });
 
+        $this->clearOfferCaches();
+
         return redirect()->route('admin.offers.index')->with('toast', ['type' => 'success', 'title' => 'Updated', 'message' => 'Offer updated successfully!']);
     }
 
     public function destroy(Request $request, Offer $offer)
     {
         $offer->delete();
+
+        $this->clearOfferCaches();
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([

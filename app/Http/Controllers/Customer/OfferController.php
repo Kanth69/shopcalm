@@ -79,7 +79,11 @@ class OfferController extends Controller
         $products = $query->with(['category', 'brand'])->latest()->paginate(16)->appends($request->query());
 
         // Apply offer discount prices & badges
-        $this->offerService->applyOfferDiscountsToProducts($products->items());
+        if ($selectedOffer) {
+            $this->offerService->applySpecificOfferToProducts($products->items(), $selectedOffer);
+        } else {
+            $this->offerService->applyOfferDiscountsToProducts($products->items());
+        }
 
         return view('customer.offers.index', compact('liveMegaSale', 'flashDeals', 'allOffers', 'products', 'selectedOffer'));
     }

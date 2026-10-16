@@ -315,7 +315,8 @@
             label.innerText = 'Select Target Product';
             products.forEach(p => {
                 const isSelected = (p.id == selectedId) ? 'selected' : '';
-                select.innerHTML += `<option value="${p.id}" ${isSelected}>${p.name}</option>`;
+                const priceFormatted = p.price ? ` - ₹${parseFloat(p.price).toLocaleString('en-IN')}` : '';
+                select.innerHTML += `<option value="${p.id}" ${isSelected}>${p.name}${priceFormatted}</option>`;
             });
         }
     }

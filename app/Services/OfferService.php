@@ -81,33 +81,85 @@ class OfferService
     }
 
     /**
-     * Find the best matching active offer for a specific product.
+     * Apply a specific chosen offer to a list of products.
      */
-    public function findBestOfferForProduct(Product $product, Collection $offers): ?Offer
+    public function applySpecificOfferToProducts($products, Offer $offer)
     {
-        foreach ($offers as $offer) {
-            $type = $offer->type;
-            $targets = $offer->targets;
-
-            // Direct discount on all products
-            if ($targets->isEmpty() && in_array($type, ['MEGA_SALE', 'DIRECT_DISCOUNT'])) {
-                return $offer;
-            }
-
-            foreach ($targets as $target) {
-                if ($target->target_type === 'CATEGORY' && $target->target_id == $product->category_id) {
-                    return $offer;
-                }
-                if ($target->target_type === 'BRAND' && $target->target_id == $product->brand_id) {
-                    return $offer;
-                }
-                if ($target->target_type === 'PRODUCT' && $target->target_id == $product->id) {
-                    return $offer;
-                }
+        foreach ($products as $product) {
+            $basePrice = (float) ($product->price ?? 0);
+            if ($basePrice > 0) {
+                $discount = $offer->calculateDiscount($basePrice);
+                $product->sale_price = max(0, $basePrice - $discount);
+                $product->offer_badge = $offer->badge_text ?? "{$offer->title}";
+                $product->offer_discount_percentage = round(($discount / $basePrice) * 100);
             }
         }
 
-        return null;
+        return $products;
+    }
+
+    /**
+     * Find the best matching active offer for a specific product.
+     * Specificity hierarchy:
+     * 1. Exact PRODUCT match
+     * 2. CATEGORY or BRAND match
+     * 3. STOREWIDE (All products) match
+     */
+    public function findBestOfferForProduct(Product $product, Collection $offers): ?Offer
+    {
+        $basePrice = (float) ($product->price ?? 0);
+
+        $productMatches = collect();
+        $groupMatches = collect();
+        $storewideMatches = collect();
+
+        foreach ($offers as $offer) {
+            $targets = $offer->targets;
+            $type = $offer->type;
+
+            // Storewide discount
+            if ($targets->isEmpty() && in_array($type, ['MEGA_SALE', 'DIRECT_DISCOUNT'])) {
+                $storewideMatches->push($offer);
+                continue;
+            }
+
+            $matchedProduct = false;
+            $matchedGroup = false;
+
+            foreach ($targets as $target) {
+                if ($target->target_type === 'PRODUCT' && $target->target_id == $product->id) {
+                    $matchedProduct = true;
+                    break;
+                }
+                if ($target->target_type === 'CATEGORY' && $target->target_id == $product->category_id) {
+                    $matchedGroup = true;
+                }
+                if ($target->target_type === 'BRAND' && $target->target_id == $product->brand_id) {
+                    $matchedGroup = true;
+                }
+            }
+
+            if ($matchedProduct) {
+                $productMatches->push($offer);
+            } elseif ($matchedGroup) {
+                $groupMatches->push($offer);
+            }
+        }
+
+        // Candidates by specificity hierarchy: PRODUCT > GROUP (CATEGORY/BRAND) > STOREWIDE
+        $candidates = $productMatches->isNotEmpty()
+            ? $productMatches
+            : ($groupMatches->isNotEmpty() ? $groupMatches : $storewideMatches);
+
+        if ($candidates->isEmpty()) {
+            return null;
+        }
+
+        // Return candidate with highest calculated discount (and priority as tie-breaker)
+        return $candidates->sortByDesc(function ($offer) use ($basePrice) {
+            $discount = $offer->calculateDiscount($basePrice);
+            return ($discount * 10000) + (int) ($offer->priority ?? 0);
+        })->first();
     }
 
     /**

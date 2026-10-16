@@ -11,8 +11,8 @@
 
     @include('customer.components.home.shop-by-category', ['categories' => $categories])
 
-    @if(isset($activeFlashDeal) && !empty($flashProducts) && count($flashProducts) > 0)
-        @include('customer.components.home.flash-deals', ['activeFlashDeal' => $activeFlashDeal, 'flashProducts' => $flashProducts])
+    @if(isset($activeOffers) && $activeOffers->isNotEmpty())
+        @include('customer.components.home.offers-slider', ['offers' => $activeOffers])
     @endif
 
     @include('customer.components.home.featured-products', ['featuredProducts' => $featuredProducts])

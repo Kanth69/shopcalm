@@ -42,6 +42,7 @@ Route::prefix('v1')->group(function () {
 
     // ── 2. CATALOG & DISCOVERY ENDPOINTS (Public) ──
     Route::get('/home', [HomeController::class, 'index']);
+    Route::get('/offers', [\App\Http\Controllers\Api\V1\OfferController::class, 'index']);
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/search/suggestions', [ProductController::class, 'suggestions']);
     Route::get('/products/suggestions', [ProductController::class, 'suggestions']);
