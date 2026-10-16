@@ -97,12 +97,6 @@
                                             <span class="btn btn-primary px-3.5 px-md-4 py-1.5 py-md-2.5 rounded-pill shadow-lg fw-bold hover-elevate" style="font-size: 0.85rem;">
                                                 View Deals <i class="bi bi-arrow-right ms-1"></i>
                                             </span>
-
-                                            @if($offer->min_purchase_amount > 0)
-                                                <span class="text-white text-opacity-80 small d-inline-flex align-items-center">
-                                                    <i class="bi bi-info-circle me-1"></i> Min order ₹{{ round($offer->min_purchase_amount) }}
-                                                </span>
-                                            @endif
                                         </div>
                                     </div>
                                 </div>

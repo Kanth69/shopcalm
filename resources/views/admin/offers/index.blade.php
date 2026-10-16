@@ -116,9 +116,6 @@
                             <div class="fw-bolder text-primary fs-6">
                                 {{ $offer->discount_type === 'PERCENTAGE' ? round($offer->discount_value).'%' : '₹'.number_format($offer->discount_value, 2) }} OFF
                             </div>
-                            @if($offer->min_purchase_amount > 0)
-                                <div class="text-muted small" style="font-size: 0.7rem;">Min: ₹{{ number_format($offer->min_purchase_amount) }}</div>
-                            @endif
                         </td>
 
                         <!-- Target Scope -->

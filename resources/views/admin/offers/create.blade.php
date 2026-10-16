@@ -122,18 +122,8 @@
                         </div>
                     </div>
 
-                    <div class="row g-3 mb-3">
+                    <div class="row g-3 mb-3" id="max_discount_container">
                         <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark small">Minimum Cart Spend (₹)</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light text-muted">₹</span>
-                                <input type="number" name="min_purchase_amount" id="min_spend" step="0.01" min="0" 
-                                    class="form-control" value="{{ old('min_purchase_amount', '0') }}"
-                                    oninput="updatePreview();">
-                            </div>
-                        </div>
-
-                        <div class="col-md-6" id="max_discount_container">
                             <label class="form-label fw-bold text-dark small">Max Discount Cap (₹)</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted">₹</span>
@@ -141,7 +131,7 @@
                                     class="form-control" value="{{ old('max_discount_amount') }}" placeholder="e.g. 1000"
                                     oninput="updatePreview();">
                             </div>
-                            <div class="form-text text-muted" style="font-size: 0.72rem;">Maximum cap applied to percentage discounts.</div>
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Maximum cap applied to percentage discounts (leave blank for unlimited).</div>
                         </div>
                     </div>
 
@@ -188,13 +178,9 @@
                     </div>
 
                     <div class="mt-3 p-2 rounded-3 bg-white bg-opacity-10 border border-white border-opacity-25 small text-white-50" style="font-size: 0.72rem;">
-                        <div class="d-flex justify-content-between mb-1">
+                        <div class="d-flex justify-content-between">
                             <span>Applicability:</span>
                             <strong class="text-white" id="preview_scope_label">Storewide</strong>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>Min Cart:</span>
-                            <strong class="text-white" id="preview_min_cart">₹0</strong>
                         </div>
                     </div>
                 </div>
@@ -344,7 +330,6 @@
         const color = document.getElementById('theme_color').value || '#6366f1';
         const type = document.getElementById('discount_type').value;
         const value = document.getElementById('discount_value').value || '0';
-        const minSpend = document.getElementById('min_spend').value || '0';
         const isActive = document.getElementById('is_active').checked;
         const targetType = document.getElementById('target_type').value;
 
@@ -364,8 +349,6 @@
         } else {
             document.getElementById('preview_discount_rate').innerText = `₹${value} FLAT`;
         }
-
-        document.getElementById('preview_min_cart').innerText = `₹${minSpend}`;
 
         const scopeMap = {
             '': 'Storewide (All Products)',
