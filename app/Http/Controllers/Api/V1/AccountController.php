@@ -316,7 +316,6 @@ class AccountController extends BaseApiController
 
         $addresses = Cache::remember($cacheKey, 600, function () use ($user) {
             return Address::where('user_id', $user->id)
-                ->orderBy('is_default', 'desc')
                 ->latest('id')
                 ->get();
         });
