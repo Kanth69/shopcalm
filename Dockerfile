@@ -1,4 +1,4 @@
-# WiseKart Multi-stage Dockerfile for AWS ECS / App Runner / EC2
+# ShopCalm Multi-stage Dockerfile for AWS ECS / App Runner / EC2
 FROM php:8.2-fpm-alpine as base
 
 # Install system dependencies & PHP extensions

@@ -1,8 +1,8 @@
 #!/bin/bash
-# WiseKart AWS Production Deployment Script
+# ShopCalm AWS Production Deployment Script
 set -e
 
-echo "🚀 Starting Deployment for WiseKart..."
+echo "🚀 Starting Deployment for ShopCalm..."
 
 # Put app into maintenance mode
 php artisan down --refresh=15 --retry=60 || true
@@ -38,4 +38,4 @@ php artisan storage:link || true
 # Bring app back online
 php artisan up
 
-echo "✅ WiseKart successfully deployed to AWS Production!"
+echo "✅ ShopCalm successfully deployed to AWS Production!"
