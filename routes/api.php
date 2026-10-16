@@ -43,6 +43,8 @@ Route::prefix('v1')->group(function () {
     // ── 2. CATALOG & DISCOVERY ENDPOINTS (Public) ──
     Route::get('/home', [HomeController::class, 'index']);
     Route::get('/products', [ProductController::class, 'index']);
+    Route::get('/search/suggestions', [ProductController::class, 'suggestions']);
+    Route::get('/products/suggestions', [ProductController::class, 'suggestions']);
     Route::get('/products/{slug}', [ProductController::class, 'show']);
     Route::post('/delivery/check-pincode', [CheckoutController::class, 'checkPincode']);
     Route::post('/contact', [\App\Http\Controllers\ContactController::class, 'submit']);

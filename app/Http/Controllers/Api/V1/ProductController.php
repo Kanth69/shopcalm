@@ -233,4 +233,147 @@ class ProductController extends BaseApiController
             'relatedProducts' => $relatedProducts
         ], 'Product details retrieved successfully.');
     }
+
+    /**
+     * Real-time search suggestions & autocomplete.
+     * Searches product tags, name, category, and brand.
+     */
+    public function suggestions(Request $request)
+    {
+        $term = trim((string) ($request->input('q') ?? ($request->input('search') ?? ($request->input('query') ?? ''))));
+
+        if (mb_strlen($term) < 1) {
+            return $this->sendResponse([
+                'query'       => '',
+                'suggestions' => [],
+                'structured'  => [],
+                'products'    => [],
+            ], 'No search query provided.');
+        }
+
+        $termLower = mb_strtolower($term);
+        $structured = [];
+        $uniqueTexts = [];
+
+        // 1. Matches from `tags` column in `products` table
+        $tagRows = Product::where('status', 'Active')
+            ->whereNotNull('tags')
+            ->where('tags', '!=', '')
+            ->where('tags', 'like', "%{$term}%")
+            ->pluck('tags');
+
+        foreach ($tagRows as $rawTags) {
+            $tags = preg_split('/[,;\n]+/', (string) $rawTags);
+            foreach ($tags as $singleTag) {
+                $trimmed = trim($singleTag);
+                if ($trimmed !== '' && mb_stripos($trimmed, $termLower) !== false) {
+                    $key = mb_strtolower($trimmed);
+                    if (!isset($uniqueTexts[$key])) {
+                        $uniqueTexts[$key] = true;
+                        $structured[] = [
+                            'text'     => $trimmed,
+                            'type'     => 'tag',
+                            'category' => null,
+                        ];
+                    }
+                }
+            }
+        }
+
+        // 2. Matches from Product Names
+        $nameProducts = Product::where('status', 'Active')
+            ->where('name', 'like', "%{$term}%")
+            ->with('category:id,name')
+            ->take(6)
+            ->get(['id', 'name', 'slug', 'category_id', 'price', 'main_image']);
+
+        foreach ($nameProducts as $p) {
+            $key = mb_strtolower($p->name);
+            if (!isset($uniqueTexts[$key])) {
+                $uniqueTexts[$key] = true;
+                $structured[] = [
+                    'text'     => $p->name,
+                    'type'     => 'product',
+                    'category' => $p->category->name ?? null,
+                ];
+            }
+        }
+
+        // 3. Matches from Categories
+        $categories = Category::where('name', 'like', "%{$term}%")
+            ->take(3)
+            ->pluck('name');
+
+        foreach ($categories as $catName) {
+            $key = mb_strtolower($catName);
+            if (!isset($uniqueTexts[$key])) {
+                $uniqueTexts[$key] = true;
+                $structured[] = [
+                    'text'     => $catName,
+                    'type'     => 'category',
+                    'category' => null,
+                ];
+            }
+        }
+
+        // 4. Matches from Brands
+        $brands = Brand::where('name', 'like', "%{$term}%")
+            ->take(3)
+            ->pluck('name');
+
+        foreach ($brands as $brandName) {
+            $key = mb_strtolower($brandName);
+            if (!isset($uniqueTexts[$key])) {
+                $uniqueTexts[$key] = true;
+                $structured[] = [
+                    'text'     => $brandName,
+                    'type'     => 'brand',
+                    'category' => null,
+                ];
+            }
+        }
+
+        // Limit suggestions to top 8 items
+        $structured = array_slice($structured, 0, 8);
+        $suggestions = array_column($structured, 'text');
+
+        // 5. Quick Preview Products
+        $previewProducts = Product::where('status', 'Active')
+            ->where(function ($q) use ($term) {
+                $q->where('name', 'like', "%{$term}%")
+                  ->orWhere('tags', 'like', "%{$term}%")
+                  ->orWhereHas('category', fn($c) => $c->where('name', 'like', "%{$term}%"))
+                  ->orWhereHas('brand', fn($b) => $b->where('name', 'like', "%{$term}%"));
+            })
+            ->with(['category:id,name,slug', 'brand:id,name,slug'])
+            ->take(4)
+            ->get();
+
+        $this->offerService->applyOfferDiscountsToProducts($previewProducts);
+
+        $previewProductsFormatted = $previewProducts->map(function ($p) {
+            $img = $p->main_image ?? null;
+            if ($img && !str_starts_with($img, 'http')) {
+                $img = asset('storage/' . $img);
+            }
+            return [
+                'id'            => (int) $p->id,
+                'name'          => $p->name,
+                'slug'          => $p->slug,
+                'selling_price' => (float) ($p->sale_price ?? $p->price),
+                'mrp'           => (float) $p->price,
+                'image_url'     => $img,
+                'category_name' => $p->category->name ?? null,
+                'brand_name'    => $p->brand->name ?? null,
+                'rating'        => (float) $p->averageRating(),
+            ];
+        });
+
+        return $this->sendResponse([
+            'query'       => $term,
+            'suggestions' => $suggestions,
+            'structured'  => $structured,
+            'products'    => $previewProductsFormatted,
+        ], 'Search suggestions retrieved successfully.');
+    }
 }
