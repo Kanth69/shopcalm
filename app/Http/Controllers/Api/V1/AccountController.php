@@ -9,6 +9,7 @@ use App\Services\OrderService;
 use App\Services\WalletService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class AccountController extends BaseApiController
 {
@@ -306,12 +307,19 @@ class AccountController extends BaseApiController
     }
 
     /**
-     * Get Saved Customer Shipping Addresses.
+     * Get Saved Customer Shipping Addresses (Cached for high performance).
      */
     public function addresses(Request $request): JsonResponse
     {
         $user = $request->user();
-        $addresses = Address::where('user_id', $user->id)->latest()->get();
+        $cacheKey = "user_{$user->id}_addresses";
+
+        $addresses = Cache::remember($cacheKey, 600, function () use ($user) {
+            return Address::where('user_id', $user->id)
+                ->orderBy('is_default', 'desc')
+                ->latest('id')
+                ->get();
+        });
 
         return $this->sendResponse([
             'addresses' => $addresses,
@@ -342,6 +350,7 @@ class AccountController extends BaseApiController
         $validated['country'] = $validated['country'] ?? 'India';
 
         $address = $user->addresses()->create($validated);
+        Cache::forget("user_{$user->id}_addresses");
 
         return $this->sendResponse([
             'address' => $address,
@@ -374,6 +383,7 @@ class AccountController extends BaseApiController
         ]);
 
         $address->update($validated);
+        Cache::forget("user_{$user->id}_addresses");
 
         return $this->sendResponse([
             'address' => $address,
@@ -392,6 +402,7 @@ class AccountController extends BaseApiController
         }
 
         $address->delete();
+        Cache::forget("user_{$user->id}_addresses");
 
         return $this->sendResponse([], 'Delivery address deleted successfully.');
     }
