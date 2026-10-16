@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             BannerSeeder::class,
             CouponSeeder::class,
             PincodeSeeder::class,
+            OfferSeeder::class,
         ]);
 
         \Illuminate\Support\Facades\Cache::flush();
