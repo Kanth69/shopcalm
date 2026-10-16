@@ -258,4 +258,72 @@ class RazorpayService
             ];
         }
     }
+
+    /**
+     * Fetch status of a specific Razorpay Refund by its ID (e.g. rfnd_xxxxx).
+     */
+    public function fetchRefund(string $refundId): array
+    {
+        if (empty($this->keyId) || empty($this->keySecret)) {
+            return [
+                'success' => false,
+                'message' => 'Razorpay API credentials not configured.',
+            ];
+        }
+
+        try {
+            $response = Http::withBasicAuth($this->keyId, $this->keySecret)
+                ->get("{$this->baseUrl}/refunds/{$refundId}");
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return [
+                    'success'            => true,
+                    'razorpay_refund_id' => $data['id'] ?? $refundId,
+                    'status'             => strtolower($data['status'] ?? 'processed'),
+                    'refund_status'      => strtolower($data['status'] ?? 'processed'),
+                    'amount'             => isset($data['amount']) ? ((float) $data['amount'] / 100) : 0,
+                    'payment_id'         => $data['payment_id'] ?? null,
+                    'data'               => $data,
+                ];
+            }
+
+            $errorBody = $response->json();
+            return [
+                'success' => false,
+                'message' => $errorBody['error']['description'] ?? 'Unable to fetch refund from Razorpay.',
+            ];
+        } catch (\Exception $e) {
+            Log::error("Razorpay: Fetch refund exception for {$refundId}: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Fetch all refunds associated with a payment ID.
+     */
+    public function getPaymentRefunds(string $paymentId): array
+    {
+        if (empty($this->keyId) || empty($this->keySecret) || empty($paymentId)) {
+            return [];
+        }
+
+        try {
+            $response = Http::withBasicAuth($this->keyId, $this->keySecret)
+                ->get("{$this->baseUrl}/payments/{$paymentId}/refunds");
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return $data['items'] ?? [];
+            }
+        } catch (\Exception $e) {
+            Log::error("Razorpay: Fetch payment refunds exception for {$paymentId}: " . $e->getMessage());
+        }
+
+        return [];
+    }
 }
+

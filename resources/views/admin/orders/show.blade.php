@@ -58,6 +58,100 @@
     </div>
 </div>
 
+{{-- ── Cancellation & Refund Audit Card (If Cancelled) ── --}}
+@if($order->cancellation)
+@php
+    $c = $order->cancellation;
+    $onlineAmt = (float) ($c->online_refund_amount ?? 0);
+    $walletAmt = (float) ($c->wallet_refund_amount ?? 0);
+    $totalRefund = (float) ($c->refund_amount ?? ($onlineAmt + $walletAmt));
+    $rzStatus = strtolower($c->online_refund_status ?: $c->refund_status);
+    $isRz = in_array($c->refund_method, ['original_source', 'online', 'dual']) || $onlineAmt > 0;
+    $syncRoute = request()->routeIs('order-manager.*') ? 'order-manager.refunds.sync-razorpay' : 'admin.refunds.sync-razorpay';
+    $triggerRoute = request()->routeIs('order-manager.*') ? 'order-manager.refunds.trigger-razorpay' : 'admin.refunds.trigger-razorpay';
+@endphp
+<div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="border-left: 5px solid #ef4444 !important; background: #fff;">
+    <div class="card-header bg-danger bg-opacity-10 py-3 px-4 border-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge bg-danger rounded-pill px-3 py-1.5 fw-bold" style="font-size: 0.76rem;">
+                <i class="bi bi-x-circle-fill me-1"></i> ORDER CANCELLED
+            </span>
+            <span class="text-danger fw-bold small">
+                {{ $c->cancelled_by_type === 'admin' ? 'Cancelled by Store Management' : 'Cancelled by Customer' }}
+            </span>
+            <span class="text-muted small">&bull; {{ $c->created_at ? $c->created_at->format('d M, Y h:i A') : '' }}</span>
+        </div>
+        @if($isRz)
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <form action="{{ route($syncRoute, $c) }}" method="POST" class="d-inline">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs">
+                        <i class="bi bi-arrow-repeat"></i> Sync Razorpay Status
+                    </button>
+                </form>
+                @if($rzStatus !== 'processed' && $c->online_refund_status !== 'processed')
+                    <form action="{{ route($triggerRoute, $c) }}" method="POST" class="d-inline" onsubmit="return confirm('Initiate Razorpay PG refund of ₹{{ number_format($onlineAmt, 2) }} now?');">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-danger rounded-pill px-3 py-1 fw-bold d-inline-flex align-items-center gap-1.5 shadow-xs">
+                            <i class="bi bi-lightning-charge-fill"></i> Trigger Gateway Refund
+                        </button>
+                    </form>
+                @endif
+            </div>
+        @endif
+    </div>
+    <div class="card-body p-4">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Cancellation Reason</div>
+                <div class="fw-bold text-dark mt-1" style="font-size: 0.92rem;">{{ $c->cancellation_reason ?: 'No reason specified' }}</div>
+                @if($c->admin_notes)
+                    <div class="text-muted small fst-italic mt-1">Admin Remark: {{ $c->admin_notes }}</div>
+                @endif
+            </div>
+            <div class="col-md-4">
+                <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Refund Destination &amp; Live Status</div>
+                <div class="mt-1 d-flex flex-column gap-1.5">
+                    @if($walletAmt > 0)
+                        <div>
+                            <span class="badge bg-success bg-opacity-25 text-success-emphasis border border-success px-2 py-0.5" style="font-size: 0.72rem;">
+                                ⚡ Wallet: ₹{{ number_format($walletAmt, 2) }} (PROCESSED)
+                            </span>
+                        </div>
+                    @endif
+                    @if($onlineAmt > 0 || $isRz)
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="badge {{ $rzStatus === 'processed' ? 'bg-success' : ($rzStatus === 'failed' ? 'bg-danger' : 'bg-warning text-dark') }} rounded-pill px-2.5 py-1 fw-semibold" style="font-size: 0.72rem;">
+                                💳 Razorpay PG: ₹{{ number_format($onlineAmt, 2) }} ({{ strtoupper($rzStatus) }})
+                            </span>
+                            @if($c->razorpay_refund_id || $c->payment_reference)
+                                <code class="bg-light text-dark px-2 py-0.5 rounded border small font-monospace">
+                                    {{ $c->razorpay_refund_id ?: $c->payment_reference }}
+                                </code>
+                            @endif
+                        </div>
+                    @endif
+                    @if($walletAmt == 0 && $onlineAmt == 0 && $totalRefund == 0)
+                        <span class="badge bg-light text-muted border px-2 py-1" style="font-size: 0.72rem; width: fit-content;">
+                            100% Free Cancellation (No payment collected)
+                        </span>
+                    @endif
+                </div>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Financial Breakdown</div>
+                <div class="mt-1">
+                    @if($c->cancellation_fee > 0)
+                        <div class="text-danger small fw-semibold">Retained GST Tax Fee: -₹{{ number_format($c->cancellation_fee, 2) }}</div>
+                    @endif
+                    <div class="fs-5 fw-bold text-success">Net Refund: ₹{{ number_format($totalRefund, 2) }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 {{-- 2. Top Overview Row: 3 Equal Information Cards --}}
 <div class="row g-3 mb-4">
     {{-- Card 1: Customer Information --}}

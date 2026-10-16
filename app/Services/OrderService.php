@@ -204,7 +204,8 @@ class OrderService
                 } else {
                     // Trigger Direct Gateway Refund via Razorpay API back to Original Payment Method
                     try {
-                        $targetRef = $order->payment_reference ?: $order->order_number;
+                        $payment = $order->primaryPayment ?? $order->payments()->where('status', 'SUCCESS')->latest()->first();
+                        $targetRef = $payment?->gateway_payment_id ?: ($payment?->gateway_order_id ?: ($order->payment_reference ?? $order->order_number));
                         $razorpay = app(\App\Services\RazorpayService::class);
                         $rzResult = $razorpay->createRefund(
                             $targetRef,
@@ -213,8 +214,11 @@ class OrderService
                         );
 
                         if (!empty($rzResult['success'])) {
-                            $refundStatus = ($rzResult['refund_status'] === 'success' || $rzResult['refund_status'] === 'processed') ? 'processed' : 'pending';
-                            $refundRef = $rzResult['razorpay_refund_id'] ?? ('RFD-' . time());
+                            $refundStatus = in_array(strtolower($rzResult['refund_status'] ?? ''), ['success', 'processed']) ? 'processed' : 'pending';
+                            $refundRef = $rzResult['razorpay_refund_id'] ?? null;
+                        } else {
+                            $refundStatus = 'pending';
+                            $refundRef = $rzResult['razorpay_refund_id'] ?? null;
                         }
                     } catch (\Throwable $e) {
                         \Illuminate\Support\Facades\Log::warning("Direct Razorpay Refund attempt error for #{$order->order_number}: " . $e->getMessage());
@@ -360,38 +364,87 @@ class OrderService
                 return $existing;
             }
 
-            $totalPaid = (float) $order->total_amount;
-            $refundAmount = 0.00;
-            $refundStatus = 'none';
+            $walletPortion = (float) ($order->wallet_amount_used ?? 0);
+            $onlinePortion = ($order->payment_status === 'paid' && strtolower($order->payment_method) === 'online') ? (float) $order->total_amount : 0.00;
+            $refundRef = null;
+            $onlineRefundStatus = 'none';
 
-            // If order was paid online or via wallet, issue full 100% refund (zero fee)
-            if ($order->payment_status === 'paid' || $order->wallet_amount_used > 0) {
-                $refundAmount = $totalPaid;
-                if ($refundMethod === 'wallet') {
+            if ($refundMethod === 'wallet') {
+                // 100% full refund to customer wallet
+                $refundAmount = $walletPortion + $onlinePortion;
+                if ($refundAmount > 0 && $customer) {
                     app(\App\Services\WalletService::class)->getOrCreateWallet($customer)->credit(
                         $refundAmount,
                         'ORDER_REFUND',
                         "Full Refund for Order #{$order->order_number} cancelled by store admin ({$reason})",
                         $order->id
                     );
-                    $refundStatus = 'processed';
-                } else {
-                    $refundStatus = 'pending';
                 }
+                $walletPortion = $refundAmount;
+                $onlinePortion = 0.00;
+                $refundStatus = 'processed';
+                $onlineRefundStatus = 'none';
+            } else {
+                // Bank / Gateway refund
+                // If wallet was used, credit wallet portion to wallet instantly
+                if ($walletPortion > 0 && $customer) {
+                    app(\App\Services\WalletService::class)->getOrCreateWallet($customer)->credit(
+                        $walletPortion,
+                        'ORDER_REFUND',
+                        "Wallet refund portion for Order #{$order->order_number} cancelled by store admin ({$reason})",
+                        $order->id
+                    );
+                }
+
+                // If online paid, trigger Razorpay Gateway refund
+                if ($onlinePortion > 0) {
+                    try {
+                        $payment = $order->primaryPayment ?? $order->payments()->where('status', 'SUCCESS')->latest()->first();
+                        $targetRef = $payment?->gateway_payment_id ?: ($payment?->gateway_order_id ?: $order->order_number);
+                        $razorpay = app(\App\Services\RazorpayService::class);
+                        $rzResult = $razorpay->createRefund(
+                            $targetRef,
+                            $onlinePortion,
+                            "Full Admin Cancellation Refund for Order #{$order->order_number}"
+                        );
+
+                        if (!empty($rzResult['success'])) {
+                            $onlineRefundStatus = in_array(strtolower($rzResult['refund_status'] ?? ''), ['success', 'processed']) ? 'processed' : 'pending';
+                            $refundRef = $rzResult['razorpay_refund_id'] ?? null;
+                        } else {
+                            $onlineRefundStatus = 'pending';
+                        }
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning("Admin Razorpay Refund error for #{$order->order_number}: " . $e->getMessage());
+                        $onlineRefundStatus = 'pending';
+                    }
+                }
+
+                $refundAmount = $walletPortion + $onlinePortion;
+                $refundStatus = ($onlinePortion > 0) ? $onlineRefundStatus : ($walletPortion > 0 ? 'processed' : 'none');
             }
+
+            $recordedMethod = $refundMethod === 'wallet' 
+                ? 'wallet' 
+                : ($walletPortion > 0 && $onlinePortion > 0 ? 'dual' : ($onlinePortion > 0 ? 'original_source' : ($walletPortion > 0 ? 'wallet' : 'none')));
 
             // Record in order_cancellations table
             $cancellation = \App\Models\OrderCancellation::create([
-                'order_id'            => $order->id,
-                'user_id'             => $customer ? $customer->id : $order->user_id,
-                'cancelled_by_type'   => 'admin',
-                'cancelled_by_id'     => $adminId,
-                'cancellation_reason' => $reason,
-                'admin_notes'         => $adminNotes,
-                'cancellation_fee'    => 0.00, // Zero fee for admin cancellations
-                'refund_amount'       => $refundAmount,
-                'refund_status'       => $refundStatus,
-                'refund_method'       => $refundMethod,
+                'order_id'             => $order->id,
+                'user_id'              => $customer ? $customer->id : $order->user_id,
+                'cancelled_by_type'    => 'admin',
+                'cancelled_by_id'      => $adminId,
+                'cancellation_reason'  => $reason,
+                'admin_notes'          => $adminNotes,
+                'cancellation_fee'     => 0.00, // Zero fee for admin cancellations
+                'wallet_refund_amount' => $walletPortion,
+                'online_refund_amount' => $onlinePortion,
+                'refund_amount'        => $refundAmount,
+                'refund_status'        => $refundStatus,
+                'online_refund_status' => $onlineRefundStatus,
+                'refund_method'        => $recordedMethod,
+                'payment_reference'    => $refundRef,
+                'razorpay_refund_id'   => $refundRef,
             ]);
 
             // Restore product & option stocks
@@ -411,6 +464,133 @@ class OrderService
             return $cancellation;
         });
     }
+
+    /**
+     * Query Razorpay API and sync live refund status for an OrderCancellation.
+     */
+    public function syncRazorpayRefundStatus(\App\Models\OrderCancellation $cancellation): array
+    {
+        $razorpay = app(\App\Services\RazorpayService::class);
+        $order = $cancellation->order;
+
+        if (!$order) {
+            return ['success' => false, 'message' => 'Associated order not found.'];
+        }
+
+        // 1. If we already have a Razorpay Refund ID (starts with rfnd_), fetch directly
+        $refundId = $cancellation->razorpay_refund_id ?: ($cancellation->payment_reference && str_starts_with($cancellation->payment_reference, 'rfnd_') ? $cancellation->payment_reference : null);
+
+        if ($refundId) {
+            $rz = $razorpay->fetchRefund($refundId);
+            if (!empty($rz['success'])) {
+                $status = strtolower($rz['status'] ?? 'processed');
+                $isProcessed = in_array($status, ['processed', 'success']);
+                $newStatus = $isProcessed ? 'processed' : ($status === 'failed' ? 'failed' : 'pending');
+
+                $cancellation->update([
+                    'online_refund_status' => $newStatus,
+                    'refund_status'        => ($cancellation->wallet_refund_amount > 0 && $newStatus !== 'processed') ? 'partial' : $newStatus,
+                    'razorpay_refund_id'   => $refundId,
+                ]);
+
+                return [
+                    'success'            => true,
+                    'status'             => $newStatus,
+                    'razorpay_refund_id' => $refundId,
+                    'message'            => "Razorpay refund {$refundId} status synced: " . strtoupper($newStatus),
+                ];
+            }
+        }
+
+        // 2. Otherwise, check captured payment for any refunds recorded on Razorpay
+        $payment = $order->primaryPayment ?? $order->payments()->where('status', 'SUCCESS')->latest()->first();
+        if ($payment && $payment->gateway_payment_id) {
+            $refunds = $razorpay->getPaymentRefunds($payment->gateway_payment_id);
+            if (!empty($refunds)) {
+                $latestRzRefund = $refunds[0];
+                $status = strtolower($latestRzRefund['status'] ?? 'processed');
+                $isProcessed = in_array($status, ['processed', 'success']);
+                $newStatus = $isProcessed ? 'processed' : ($status === 'failed' ? 'failed' : 'pending');
+                $newRefundId = $latestRzRefund['id'] ?? null;
+
+                $cancellation->update([
+                    'online_refund_status' => $newStatus,
+                    'refund_status'        => ($cancellation->wallet_refund_amount > 0 && $newStatus !== 'processed') ? 'partial' : $newStatus,
+                    'razorpay_refund_id'   => $newRefundId,
+                    'payment_reference'    => $newRefundId ?: $cancellation->payment_reference,
+                ]);
+
+                return [
+                    'success'            => true,
+                    'status'             => $newStatus,
+                    'razorpay_refund_id' => $newRefundId,
+                    'message'            => "Found Razorpay refund {$newRefundId} with status: " . strtoupper($newStatus),
+                ];
+            }
+        }
+
+        return [
+            'success' => false,
+            'status'  => $cancellation->online_refund_status ?? $cancellation->refund_status,
+            'message' => 'No active Razorpay refund record found on gateway yet.',
+        ];
+    }
+
+    /**
+     * Trigger / Retry Razorpay Refund for an online cancellation.
+     */
+    public function triggerRazorpayRefund(\App\Models\OrderCancellation $cancellation): array
+    {
+        $order = $cancellation->order;
+        if (!$order) {
+            return ['success' => false, 'message' => 'Associated order not found.'];
+        }
+
+        $onlineAmount = (float) ($cancellation->online_refund_amount > 0 
+            ? $cancellation->online_refund_amount 
+            : max(0, $cancellation->refund_amount - (float) ($cancellation->wallet_refund_amount ?? 0)));
+
+        if ($onlineAmount <= 0) {
+            return ['success' => false, 'message' => 'No online payable refund amount recorded for this order.'];
+        }
+
+        $payment = $order->primaryPayment ?? $order->payments()->where('status', 'SUCCESS')->latest()->first();
+        $targetRef = $payment?->gateway_payment_id ?: ($payment?->gateway_order_id ?: $order->order_number);
+
+        $razorpay = app(\App\Services\RazorpayService::class);
+        $result = $razorpay->createRefund(
+            $targetRef,
+            $onlineAmount,
+            "Cancellation Refund for Order #{$order->order_number}"
+        );
+
+        if (!empty($result['success'])) {
+            $rzStatus = strtolower($result['refund_status'] ?? 'processed');
+            $status = in_array($rzStatus, ['success', 'processed']) ? 'processed' : 'pending';
+            $refundId = $result['razorpay_refund_id'] ?? null;
+
+            $cancellation->update([
+                'online_refund_amount' => $onlineAmount,
+                'online_refund_status' => $status,
+                'refund_status'        => ($cancellation->wallet_refund_amount > 0 && $status !== 'processed') ? 'partial' : $status,
+                'razorpay_refund_id'   => $refundId,
+                'payment_reference'    => $refundId ?: $cancellation->payment_reference,
+            ]);
+
+            return [
+                'success'            => true,
+                'status'             => $status,
+                'razorpay_refund_id' => $refundId,
+                'message'            => "Razorpay refund initiated successfully. Status: " . strtoupper($status),
+            ];
+        }
+
+        return [
+            'success' => false,
+            'message' => $result['message'] ?? 'Failed to trigger Razorpay refund.',
+        ];
+    }
+
 
     /**
      * Mark COD Cancellation Payment as Failed or Dropped.

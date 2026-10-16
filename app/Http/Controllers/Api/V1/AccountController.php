@@ -29,7 +29,7 @@ class AccountController extends BaseApiController
         $user = $request->user();
         $status = $request->query('status');
 
-        $query = $user->orders()->with(['items.product.brand', 'items.product.category', 'fulfillment'])->latest();
+        $query = $user->orders()->with(['items.product.brand', 'items.product.category', 'fulfillment', 'cancellation'])->latest();
 
         if ($status) {
             $query->where('status', $status);
@@ -61,6 +61,15 @@ class AccountController extends BaseApiController
                 'allow_customer_cancellation' => $allowCancellationSetting,
                 'created_at'                  => $order->created_at ? $order->created_at->format('d M, Y') : '',
                 'created_at_full'             => $order->created_at ? $order->created_at->format('d M, Y h:i A') : '',
+                'cancellation'                => $order->cancellation ? [
+                    'refund_status'        => $order->cancellation->refund_status,
+                    'online_refund_status' => $order->cancellation->online_refund_status,
+                    'refund_amount'        => (float) $order->cancellation->refund_amount,
+                    'wallet_refund_amount' => (float) ($order->cancellation->wallet_refund_amount ?? 0),
+                    'online_refund_amount' => (float) ($order->cancellation->online_refund_amount ?? 0),
+                    'refund_method'        => $order->cancellation->refund_method,
+                    'razorpay_refund_id'   => $order->cancellation->razorpay_refund_id,
+                ] : null,
                 'items'                       => $order->items->map(function ($item) {
                     $imgPath = $item->product ? ($item->product->main_image ?? $item->product->featured_image ?? null) : null;
                     $unitPrice = (float) ($item->unit_price ?? $item->price ?? 0);
@@ -122,6 +131,7 @@ class AccountController extends BaseApiController
                 'online_refund_status' => $cancellation->online_refund_status,
                 'refund_method'        => $cancellation->refund_method,
                 'payment_reference'    => $cancellation->razorpay_refund_id ?: $cancellation->payment_reference,
+                'razorpay_refund_id'   => $cancellation->razorpay_refund_id,
                 'cancelled_at'         => $cancellation->created_at ? $cancellation->created_at->format('d M, Y h:i A') : null,
             ];
         }

@@ -16,6 +16,7 @@
     </div>
 
     {{-- Alert Messages --}}
+    {{-- Alert Messages --}}
     @if(session('success'))
     <div class="alert alert-success border-0 shadow-sm rounded-3 d-flex align-items-center justify-content-between gap-2 mb-4 alert-dismissible fade show" role="alert" id="autoDismissAlert">
         <div class="d-flex align-items-center gap-2">
@@ -25,46 +26,69 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
     @endif
+    @if(session('error'))
+    <div class="alert alert-danger border-0 shadow-sm rounded-3 d-flex align-items-center justify-content-between gap-2 mb-4 alert-dismissible fade show" role="alert">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+            <div class="fw-semibold">{{ session('error') }}</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    @endif
 
     {{-- Stat Cards --}}
     <div class="row g-3 mb-4">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card border-0 shadow-sm rounded-4 p-3" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 1px solid #fde68a !important;">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <div class="text-warning-emphasis fw-semibold small">Pending Bank UPI Refunds</div>
-                        <div class="fs-3 fw-bold text-dark mt-1">₹{{ number_format($pendingUpiAmount, 2) }}</div>
+                        <div class="text-warning-emphasis fw-semibold small">Pending Bank UPI</div>
+                        <div class="fs-4 fw-bold text-dark mt-1">₹{{ number_format($pendingUpiAmount, 2) }}</div>
                         <div class="badge bg-warning text-dark rounded-pill mt-1" style="font-size: 0.72rem;">{{ $pendingUpiCount }} Requests Pending</div>
                     </div>
-                    <div class="rounded-circle bg-warning bg-opacity-25 d-flex align-items-center justify-content-center" style="width:48px; height:48px;">
+                    <div class="rounded-circle bg-warning bg-opacity-25 d-flex align-items-center justify-content-center" style="width:44px; height:44px;">
                         <i class="bi bi-bank fs-4 text-warning-emphasis"></i>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #bfdbfe !important;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-primary-emphasis fw-semibold small">Pending Razorpay PG</div>
+                        <div class="fs-4 fw-bold text-dark mt-1">₹{{ number_format($pendingRzAmount ?? 0, 2) }}</div>
+                        <div class="badge bg-primary rounded-pill mt-1" style="font-size: 0.72rem;">{{ $pendingRzCount ?? 0 }} In Transit / Pending</div>
+                    </div>
+                    <div class="rounded-circle bg-primary bg-opacity-25 d-flex align-items-center justify-content-center" style="width:44px; height:44px;">
+                        <i class="bi bi-credit-card fs-4 text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
             <div class="card border-0 shadow-sm rounded-4 p-3" style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #a7f3d0 !important;">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <div class="text-success-emphasis fw-semibold small">Processed Refunds</div>
-                        <div class="fs-3 fw-bold text-dark mt-1">₹{{ number_format($processedAmount, 2) }}</div>
+                        <div class="fs-4 fw-bold text-dark mt-1">₹{{ number_format($processedAmount, 2) }}</div>
                         <div class="badge bg-success rounded-pill mt-1" style="font-size: 0.72rem;">{{ $processedCount }} Completed</div>
                     </div>
-                    <div class="rounded-circle bg-success bg-opacity-25 d-flex align-items-center justify-content-center" style="width:48px; height:48px;">
+                    <div class="rounded-circle bg-success bg-opacity-25 d-flex align-items-center justify-content-center" style="width:44px; height:44px;">
                         <i class="bi bi-check2-circle fs-4 text-success-emphasis"></i>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card border-0 shadow-sm rounded-4 p-3" style="background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); border: 1px solid #a5b4fc !important;">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <div class="text-indigo-emphasis fw-semibold small">Total Retained GST Tax Fees</div>
-                        <div class="fs-3 fw-bold text-dark mt-1">₹{{ number_format($totalGstRetained, 2) }}</div>
-                        <div class="badge bg-indigo text-white rounded-pill mt-1" style="font-size: 0.72rem; background:#4338ca;">Non-Refundable Fee Revenue</div>
+                        <div class="text-indigo-emphasis fw-semibold small">Retained GST Fees</div>
+                        <div class="fs-4 fw-bold text-dark mt-1">₹{{ number_format($totalGstRetained, 2) }}</div>
+                        <div class="badge bg-indigo text-white rounded-pill mt-1" style="font-size: 0.72rem; background:#4338ca;">Non-Refundable Fee</div>
                     </div>
-                    <div class="rounded-circle bg-indigo bg-opacity-25 d-flex align-items-center justify-content-center" style="width:48px; height:48px;">
+                    <div class="rounded-circle bg-indigo bg-opacity-25 d-flex align-items-center justify-content-center" style="width:44px; height:44px;">
                         <i class="bi bi-receipt-cutoff fs-4 text-indigo"></i>
                     </div>
                 </div>
@@ -79,7 +103,7 @@
                 <div class="col-md-4">
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                        <input type="text" name="search" class="form-control border-start-0" placeholder="Search Order #, Customer, or UPI ID..." value="{{ request('search') }}">
+                        <input type="text" name="search" class="form-control border-start-0" placeholder="Search Order #, Customer, or UPI / Ref ID..." value="{{ request('search') }}">
                     </div>
                 </div>
                 <div class="col-md-3">
@@ -93,6 +117,8 @@
                 <div class="col-md-3">
                     <select name="method" class="form-select" onchange="this.form.submit()">
                         <option value="">All Refund Methods</option>
+                        <option value="original_source" {{ request('method') === 'original_source' ? 'selected' : '' }}>💳 Razorpay PG (Original Source)</option>
+                        <option value="dual" {{ request('method') === 'dual' ? 'selected' : '' }}>⚡💳 Dual (Wallet + Razorpay PG)</option>
                         <option value="bank_upi" {{ request('method') === 'bank_upi' ? 'selected' : '' }}>🏦 Bank UPI / Account</option>
                         <option value="wallet" {{ request('method') === 'wallet' ? 'selected' : '' }}>⚡ Store Wallet</option>
                     </select>
@@ -103,6 +129,7 @@
             </form>
         </div>
     </div>
+
 
     {{-- Table Card --}}
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
@@ -267,7 +294,40 @@
                             @endif
                         </td>
                         <td>
-                            @if($item->refund_status === 'processed' || $item->online_refund_status === 'processed')
+                            @php
+                                $isRzMethod = in_array($item->refund_method, ['original_source', 'online', 'dual']) || $onlineAmt > 0;
+                                $rzStatus = strtolower($item->online_refund_status ?: $item->refund_status);
+                                $syncRouteName = request()->routeIs('order-manager.*') ? 'order-manager.refunds.sync-razorpay' : 'admin.refunds.sync-razorpay';
+                                $triggerRouteName = request()->routeIs('order-manager.*') ? 'order-manager.refunds.trigger-razorpay' : 'admin.refunds.trigger-razorpay';
+                            @endphp
+                            @if($isRzMethod)
+                                @if($rzStatus === 'processed' || $item->online_refund_status === 'processed')
+                                    <span class="badge bg-success rounded-pill px-2.5 py-1">
+                                        <i class="bi bi-check-circle-fill me-1"></i> Razorpay Processed
+                                    </span>
+                                @elseif($rzStatus === 'failed')
+                                    <span class="badge bg-danger rounded-pill px-2.5 py-1">
+                                        <i class="bi bi-x-circle-fill me-1"></i> Razorpay Failed
+                                    </span>
+                                @else
+                                    <span class="badge bg-warning text-dark rounded-pill px-2.5 py-1">
+                                        <i class="bi bi-clock-history me-1"></i> PG In Transit
+                                    </span>
+                                @endif
+                                @if($item->razorpay_refund_id || $refundProof)
+                                    <div class="text-muted small mt-1 d-flex align-items-center gap-1 font-monospace" style="font-size: 0.71rem;">
+                                        <span>ID: {{ $item->razorpay_refund_id ?: $refundProof }}</span>
+                                        <button type="button" class="btn btn-link p-0 text-muted" onclick="navigator.clipboard.writeText('{{ $item->razorpay_refund_id ?: $refundProof }}')" title="Copy Refund ID">
+                                            <i class="bi bi-copy"></i>
+                                        </button>
+                                    </div>
+                                @endif
+                                @if($walletAmt > 0)
+                                    <div class="text-success small mt-0.5" style="font-size: 0.68rem;">
+                                        <i class="bi bi-check2"></i> Wallet Credited (₹{{ number_format($walletAmt, 2) }})
+                                    </div>
+                                @endif
+                            @elseif($item->refund_status === 'processed')
                                 <span class="badge bg-success rounded-pill px-3 py-1">
                                     <i class="bi bi-check-circle-fill me-1"></i> Processed
                                 </span>
@@ -288,14 +348,32 @@
                             @endif
                         </td>
                         <td class="pe-4 text-end">
-                            @if($item->refund_status === 'pending' && $item->refund_method === 'bank_upi')
-                                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" onclick="openProcessRefundModal({{ $item->id }}, '{{ $item->order->order_number ?? '' }}', '{{ $item->refund_upi_id }}', {{ $item->refund_amount }})">
-                                    ⚡ Process Refund
-                                </button>
-                            @else
-                                <span class="text-muted small">—</span>
-                            @endif
+                            <div class="d-flex align-items-center justify-content-end gap-1.5 flex-wrap">
+                                @if($item->refund_status === 'pending' && $item->refund_method === 'bank_upi')
+                                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" onclick="openProcessRefundModal({{ $item->id }}, '{{ $item->order->order_number ?? '' }}', '{{ $item->refund_upi_id }}', {{ $item->refund_amount }})">
+                                        ⚡ Process Refund
+                                    </button>
+                                @elseif($isRzMethod)
+                                    <form action="{{ route($syncRouteName, $item) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center gap-1" title="Sync live status with Razorpay" style="font-size: 0.74rem;">
+                                            <i class="bi bi-arrow-repeat"></i> Sync
+                                        </button>
+                                    </form>
+                                    @if($rzStatus !== 'processed' && $item->online_refund_status !== 'processed')
+                                        <form action="{{ route($triggerRouteName, $item) }}" method="POST" class="d-inline" onsubmit="return confirm('Initiate Razorpay PG refund of ₹{{ number_format($onlineAmt > 0 ? $onlineAmt : $totalNetRefund, 2) }} now?');">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-danger rounded-pill px-2.5 py-1 fw-bold d-inline-flex align-items-center gap-1" title="Trigger Razorpay PG refund now" style="font-size: 0.74rem;">
+                                                <i class="bi bi-lightning-charge-fill"></i> Trigger PG
+                                            </button>
+                                        </form>
+                                    @endif
+                                @else
+                                    <span class="text-muted small">—</span>
+                                @endif
+                            </div>
                         </td>
+
                     </tr>
                     @empty
                     <tr>

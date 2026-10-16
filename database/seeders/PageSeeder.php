@@ -17,7 +17,7 @@ class PageSeeder extends Seeder
         // 1. PRIVACY POLICY
         $privacyData = [
             'desc' => 'How we securely collect, protect, and handle your data under DPDP Act 2023.',
-            'intro' => '<p class="lead">At <strong>' . $storeName . '</strong> (operated by WiseKart E-Commerce Solutions), accessible from shopcalm.in, protecting your personal data and upholding your digital privacy is our topmost priority. This Privacy Policy outlines how we collect, process, store, and safeguard your information in accordance with the <strong>Digital Personal Data Protection Act, 2023 (DPDP Act)</strong>, the <strong>Information Technology Act, 2000 (Section 43A)</strong>, and the <strong>Consumer Protection (E-Commerce) Rules, 2020</strong> of India.</p>',
+            'intro' => '<p class="lead">At <strong>' . $storeName . '</strong> (operated by ShopCalm E-Commerce Solutions), accessible from shopcalm.in, protecting your personal data and upholding your digital privacy is our topmost priority. This Privacy Policy outlines how we collect, process, store, and safeguard your information in accordance with the <strong>Digital Personal Data Protection Act, 2023 (DPDP Act)</strong>, the <strong>Information Technology Act, 2000 (Section 43A)</strong>, and the <strong>Consumer Protection (E-Commerce) Rules, 2020</strong> of India.</p>',
             'sections' => [
                 [
                     'title' => 'Personal Data We Collect',
@@ -319,7 +319,7 @@ class PageSeeder extends Seeder
                 'slug' => 'privacy-policy',
                 'content' => json_encode($privacyData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
                 'meta_title' => 'Privacy Policy - DPDP Act 2023 Compliant | ' . $storeName,
-                'meta_description' => 'Read our DPDP Act 2023 compliant Privacy Policy. Learn how WiseKart securely collects, stores, and protects your personal data.',
+                'meta_description' => 'Read our DPDP Act 2023 compliant Privacy Policy. Learn how ' . $storeName . ' securely collects, stores, and protects your personal data.',
                 'is_active' => true,
             ],
             [

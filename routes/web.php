@@ -117,6 +117,8 @@ $registerStaffRoutes = function () {
         // Customer Refunds Management
         Route::get('refunds', [\App\Http\Controllers\Admin\RefundController::class, 'index'])->name('refunds.index');
         Route::post('refunds/{cancellation}/process', [\App\Http\Controllers\Admin\RefundController::class, 'processRefund'])->name('refunds.process');
+        Route::post('refunds/{cancellation}/sync-razorpay', [\App\Http\Controllers\Admin\RefundController::class, 'syncRazorpay'])->name('refunds.sync-razorpay');
+        Route::post('refunds/{cancellation}/trigger-razorpay', [\App\Http\Controllers\Admin\RefundController::class, 'triggerRazorpay'])->name('refunds.trigger-razorpay');
 
         Route::resource('pages', \App\Http\Controllers\Admin\PageController::class)->only(['index', 'edit', 'update']);
 
@@ -234,6 +236,8 @@ $registerStaffRoutes = function () {
             // Order Manager Refund Processing
             Route::get('refunds', [\App\Http\Controllers\Admin\RefundController::class, 'index'])->name('refunds.index');
             Route::post('refunds/{cancellation}/process', [\App\Http\Controllers\Admin\RefundController::class, 'processRefund'])->name('refunds.process');
+            Route::post('refunds/{cancellation}/sync-razorpay', [\App\Http\Controllers\Admin\RefundController::class, 'syncRazorpay'])->name('refunds.sync-razorpay');
+            Route::post('refunds/{cancellation}/trigger-razorpay', [\App\Http\Controllers\Admin\RefundController::class, 'triggerRazorpay'])->name('refunds.trigger-razorpay');
         });
     });
 
@@ -412,9 +416,9 @@ $registerCustomerRoutes();
 // ─── EMAIL TEST ROUTE ───────────────────────────────────────────
 Route::get('/test-email', function () {
     $to      = config('services.brevo.sender_email');
-    $subject = 'WiseKart Test Email';
-    $html    = '<h2 style="font-family:sans-serif;">Hello from WiseKart 👋</h2><p style="font-family:sans-serif;">Brevo integration is working successfully.</p>';
-    $text    = "Hello from WiseKart.\nBrevo integration is working successfully.";
+    $subject = 'ShopCalm Test Email';
+    $html    = '<h2 style="font-family:sans-serif;">Hello from ShopCalm 👋</h2><p style="font-family:sans-serif;">Brevo integration is working successfully.</p>';
+    $text    = "Hello from ShopCalm.\nBrevo integration is working successfully.";
 
     app(\App\Services\EmailService::class)->sendEmail($to, $subject, $html, $text);
 

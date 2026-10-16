@@ -10,7 +10,7 @@ use App\Http\Controllers\Api\V1\AccountController;
 
 /*
 |--------------------------------------------------------------------------
-| API V1 Routes — WiseKart / ShopCalm Mobile Apps
+| API V1 Routes — ShopCalm Mobile Apps
 |--------------------------------------------------------------------------
 */
 

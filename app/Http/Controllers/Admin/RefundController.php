@@ -41,14 +41,22 @@ class RefundController extends Controller
         // Key stats
         $pendingUpiCount   = OrderCancellation::where('refund_method', 'bank_upi')->where('refund_status', 'pending')->count();
         $pendingUpiAmount  = OrderCancellation::where('refund_method', 'bank_upi')->where('refund_status', 'pending')->sum('refund_amount');
-        $processedCount    = OrderCancellation::where('refund_status', 'processed')->count();
-        $processedAmount   = OrderCancellation::where('refund_status', 'processed')->sum('refund_amount');
+        $pendingRzCount    = OrderCancellation::whereIn('refund_method', ['original_source', 'online', 'dual'])->whereIn('online_refund_status', ['pending', 'none'])->where('online_refund_amount', '>', 0)->count();
+        $pendingRzAmount   = OrderCancellation::whereIn('refund_method', ['original_source', 'online', 'dual'])->whereIn('online_refund_status', ['pending', 'none'])->where('online_refund_amount', '>', 0)->sum('online_refund_amount');
+        $processedCount    = OrderCancellation::where(function($q) {
+            $q->where('refund_status', 'processed')->orWhere('online_refund_status', 'processed');
+        })->count();
+        $processedAmount   = OrderCancellation::where(function($q) {
+            $q->where('refund_status', 'processed')->orWhere('online_refund_status', 'processed');
+        })->sum('refund_amount');
         $totalGstRetained  = OrderCancellation::sum('cancellation_fee');
 
         return view('admin.refunds.index', compact(
             'cancellations',
             'pendingUpiCount',
             'pendingUpiAmount',
+            'pendingRzCount',
+            'pendingRzAmount',
             'processedCount',
             'processedAmount',
             'totalGstRetained'
@@ -95,4 +103,29 @@ class RefundController extends Controller
 
         return redirect()->back()->with('success', "Refund of ₹" . number_format($cancellation->refund_amount, 2) . " for Order #{$order->order_number} to UPI ({$cancellation->refund_upi_id}) has been marked as PROCESSED!");
     }
+
+    /**
+     * Live sync Razorpay refund status directly from gateway.
+     */
+    public function syncRazorpay(Request $request, OrderCancellation $cancellation)
+    {
+        $res = app(\App\Services\OrderService::class)->syncRazorpayRefundStatus($cancellation);
+        if ($res['success']) {
+            return redirect()->back()->with('success', $res['message']);
+        }
+        return redirect()->back()->with('error', $res['message']);
+    }
+
+    /**
+     * Trigger / Retry direct PG refund via Razorpay.
+     */
+    public function triggerRazorpay(Request $request, OrderCancellation $cancellation)
+    {
+        $res = app(\App\Services\OrderService::class)->triggerRazorpayRefund($cancellation);
+        if ($res['success']) {
+            return redirect()->back()->with('success', $res['message']);
+        }
+        return redirect()->back()->with('error', $res['message']);
+    }
 }
+
