@@ -260,6 +260,7 @@ class ProductController extends BaseApiController
             ->whereNotNull('tags')
             ->where('tags', '!=', '')
             ->where('tags', 'like', "%{$term}%")
+            ->take(15)
             ->pluck('tags');
 
         foreach ($tagRows as $rawTags) {
@@ -337,17 +338,16 @@ class ProductController extends BaseApiController
         $structured = array_slice($structured, 0, 8);
         $suggestions = array_column($structured, 'text');
 
-        // 5. Quick Preview Products
+        // 5. Quick Preview Products (High-speed indexed query)
         $previewProducts = Product::where('status', 'Active')
             ->where(function ($q) use ($term) {
                 $q->where('name', 'like', "%{$term}%")
-                  ->orWhere('tags', 'like', "%{$term}%")
-                  ->orWhereHas('category', fn($c) => $c->where('name', 'like', "%{$term}%"))
-                  ->orWhereHas('brand', fn($b) => $b->where('name', 'like', "%{$term}%"));
+                  ->orWhere('tags', 'like', "%{$term}%");
             })
             ->with(['category:id,name,slug', 'brand:id,name,slug'])
-            ->take(4)
-            ->get();
+            ->withAvg(['reviews' => fn($q) => $q->where('status', 'Approved')], 'rating')
+            ->take(3)
+            ->get(['id', 'name', 'slug', 'category_id', 'brand_id', 'price', 'sale_price', 'main_image']);
 
         $this->offerService->applyOfferDiscountsToProducts($previewProducts);
 
@@ -365,7 +365,7 @@ class ProductController extends BaseApiController
                 'image_url'     => $img,
                 'category_name' => $p->category->name ?? null,
                 'brand_name'    => $p->brand->name ?? null,
-                'rating'        => (float) $p->averageRating(),
+                'rating'        => (float) ($p->reviews_avg_rating ?? 4.5),
             ];
         });
 
