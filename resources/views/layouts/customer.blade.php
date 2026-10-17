@@ -30,8 +30,8 @@
     <!-- Google Search Schema.org Organization Structured Data -->
     <script type="application/ld+json">
     {
-        "@context": "https://schema.org",
-        "@type": "Organization",
+        "@@context": "https://schema.org",
+        "@@type": "Organization",
         "name": "ShopCalm",
         "legalName": "ShopCalm E-Commerce Solutions",
         "url": "{{ config('app.url', 'https://shopcalm.in') }}",
