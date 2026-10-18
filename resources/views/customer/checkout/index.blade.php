@@ -5,24 +5,47 @@
 @push('styles')
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 <style>
-    /* Checkout Stepper Badges */
+    /* Prevent zoom horizontal overflow */
+    html, body {
+        overflow-x: hidden !important;
+        max-width: 100vw;
+    }
+    .container {
+        max-width: 100% !important;
+    }
+    .card {
+        max-width: 100% !important;
+        overflow: hidden;
+    }
+    .text-break-word {
+        word-break: break-word !important;
+        overflow-wrap: anywhere !important;
+    }
+
+    /* 4-Step Stepper Progress Header */
     .checkout-step-badge {
-        width: 32px;
-        height: 32px;
+        width: 30px;
+        height: 30px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 700;
-        font-size: 0.85rem;
+        font-size: 0.82rem;
         transition: all 0.3s ease;
+        flex-shrink: 0;
+    }
+    .stepper-tab-item {
+        max-width: 78px;
+        text-align: center;
     }
     
     /* Payment Tiles */
     .payment-tile {
         border: 2px solid #e2e8f0;
-        border-radius: 1rem;
-        padding: 1.15rem 1.25rem;
+        border-radius: 0.85rem;
+        padding: 1.05rem 1.2rem;
+        margin-bottom: 1rem;
         cursor: pointer;
         transition: all 0.2s ease;
         background: #ffffff;
@@ -34,17 +57,13 @@
     .payment-tile.active-tile {
         border-color: #4f46e5 !important;
         background: #f5f3ff !important;
-        box-shadow: 0 4px 16px rgba(79, 70, 229, 0.12);
+        box-shadow: 0 3px 12px rgba(79, 70, 229, 0.1);
     }
     .payment-tile.disabled-tile {
         border-color: #fca5a5 !important;
         background: #fff5f5 !important;
         cursor: not-allowed !important;
         opacity: 0.72;
-    }
-    .payment-tile.disabled-tile:hover {
-        border-color: #fca5a5 !important;
-        background: #fff5f5 !important;
     }
     
     /* Promo Input */
@@ -54,6 +73,7 @@
         letter-spacing: 1px !important;
         background-color: #ffffff !important;
         border: 1.5px solid #cbd5e1 !important;
+        height: 42px;
     }
     #coupon_code_input:focus {
         border-color: #4f46e5 !important;
@@ -65,12 +85,12 @@
         background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
         color: #ffffff !important;
         border: none !important;
-        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.35) !important;
+        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3) !important;
         transition: all 0.2s ease;
     }
     .btn-checkout-cta:hover {
         transform: translateY(-1px);
-        box-shadow: 0 8px 24px rgba(79, 70, 229, 0.45) !important;
+        box-shadow: 0 6px 18px rgba(79, 70, 229, 0.4) !important;
     }
     
     /* Custom Wallet Switch */
@@ -85,128 +105,204 @@
         justify-content: space-between;
         align-items: center;
         font-size: 0.88rem;
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.82rem;
     }
     
     .address-card-selected {
         border: 2px solid #10b981 !important;
         background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%) !important;
+        max-width: 100%;
+        overflow: hidden;
     }
     
     .cursor-pointer { cursor: pointer; }
     .address-modal-option { transition: all 0.2s; }
-    .address-modal-option:hover { border-color: #4f46e5 !important; background-color: #f5f3ff; }
+    /* Step 2 Boxes Custom Spacing & Visual Depth */
+    .step2-box {
+        border-radius: 0.85rem;
+        padding: 1.25rem 1.35rem;
+        margin-bottom: 1.5rem !important;
+    }
+    @media (min-width: 768px) {
+        .step2-box {
+            padding: 1.45rem 1.6rem;
+            margin-bottom: 1.65rem !important;
+        }
+    }
+    .step2-wallet-box {
+        background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+        border: 1.5px solid #a7f3d0 !important;
+        box-shadow: 0 1px 4px rgba(16, 185, 129, 0.08);
+    }
+    .step2-coupon-box {
+        background: #f8fafc;
+        border: 1.5px solid #e2e8f0 !important;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    }
+    .step2-savings-box {
+        background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+        border: 1.5px solid #6ee7b7 !important;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.09);
+    }
+
+    /* Step 4 Confirm Order Spacious Styling */
+    .confirm-review-card {
+        border-radius: 0.95rem;
+        border: 1.5px solid #e2e8f0 !important;
+        background: #ffffff;
+        margin-bottom: 1.5rem !important;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+    }
+    .confirm-review-card .card-header {
+        background: #ffffff;
+        padding: 1rem 1.35rem !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+    }
+    .confirm-review-card .card-body {
+        padding: 1.25rem 1.35rem !important;
+    }
+    .confirm-delivery-banner {
+        background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+        border: 1.5px solid #a7f3d0 !important;
+        border-radius: 0.95rem;
+        padding: 1.25rem 1.35rem !important;
+        margin-bottom: 1.5rem !important;
+    }
+    .confirm-terms-box {
+        background: #f8fafc;
+        border: 1.5px solid #cbd5e1 !important;
+        border-radius: 0.85rem;
+        padding: 0.95rem 1.1rem !important;
+        margin-bottom: 1.15rem !important;
+        transition: border-color 0.2s ease, background-color 0.2s ease;
+    }
 
     @media (max-width: 767.98px) {
         .checkout-step-badge {
             width: 26px;
             height: 26px;
-            font-size: 0.75rem;
+            font-size: 0.72rem;
         }
-        body {
-            padding-bottom: 86px !important;
+        .stepper-tab-item {
+            max-width: 65px;
         }
         .payment-tile {
-            padding: 0.85rem 1rem !important;
-            border-radius: 0.85rem !important;
+            padding: 0.95rem 1.05rem !important;
+            border-radius: 0.75rem !important;
         }
-        .card-body {
-            padding: 0.95rem !important;
+        .confirm-review-card .card-body {
+            padding: 1.15rem 1.2rem !important;
         }
-        .card-header {
-            padding: 0.75rem 0.95rem !important;
+        .confirm-review-card .card-header {
+            padding: 0.85rem 1.15rem !important;
+        }
+        .confirm-delivery-banner {
+            padding: 1.15rem 1.2rem !important;
+        }
+        .confirm-terms-box {
+            padding: 0.9rem 1rem !important;
+            margin-bottom: 1rem !important;
         }
     }
 </style>
 @endpush
 
 @section('content')
-<div class="container py-2 py-md-4 px-2 px-sm-3 px-md-4">
+<div class="container py-2 py-md-3 px-2 px-sm-3 px-md-4 overflow-hidden" style="max-width: 1200px;">
     
-    <!-- Top Stepper Progress Header (1. Address -> 2. Payment & Coupons -> 3. Confirm & Pay) -->
-    <div class="row justify-content-center mb-3 mb-md-4">
-        <div class="col-lg-9">
-            <div class="d-flex align-items-center justify-content-between position-relative px-2 px-md-4">
-                <!-- Background Progress Line -->
-                <div class="position-absolute" style="top: 14px; left: 12%; right: 12%; height: 2.5px; background: #e2e8f0; z-index: 0;"></div>
-                <div class="position-absolute" id="stepper-progress-line" style="top: 14px; left: 12%; width: 0%; height: 2.5px; background: #4f46e5; z-index: 1; transition: width 0.4s ease;"></div>
+    <!-- Top Breadcrumb -->
+    <div class="d-flex align-items-center justify-content-between mb-2 mb-md-3">
+        <a href="{{ route('cart.index') }}" class="text-decoration-none small text-muted fw-bold d-inline-flex align-items-center">
+            <i class="bi bi-arrow-left me-1.5"></i> Back to Shopping Bag
+        </a>
+    </div>
 
-                <!-- Step 1 Tab: Address -->
-                <div class="d-flex flex-column align-items-center position-relative cursor-pointer" id="stepper-tab-1" onclick="editStep1()" style="z-index: 2;">
-                    <div class="checkout-step-badge text-white shadow-xs" id="stepper-badge-1" style="background: #4f46e5; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2) !important;">
+    <!-- 4-Step Stepper Progress Bar (1. Address -> 2. Offers & Wallet -> 3. Payment -> 4. Confirm) -->
+    <div class="row justify-content-center mb-3 mb-md-4">
+        <div class="col-12 col-md-10 col-lg-8">
+            <div class="d-flex align-items-start justify-content-between position-relative px-1 px-sm-2">
+                <!-- Background Progress Line -->
+                <div class="position-absolute" style="top: 15px; left: 12%; right: 12%; height: 2px; background: #e2e8f0; z-index: 0;"></div>
+                <!-- Active Progress Line -->
+                <div class="position-absolute" id="stepper-progress-line" style="top: 15px; left: 12%; width: 0%; height: 2px; background: #4f46e5; z-index: 1; transition: width 0.35s ease;"></div>
+
+                <!-- Step 1: Address -->
+                <div class="d-flex flex-column align-items-center position-relative cursor-pointer stepper-tab-item" id="stepper-tab-1" onclick="goToStep(1)" style="z-index: 2;">
+                    <div class="checkout-step-badge text-white shadow-xs" id="stepper-badge-1" style="background: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2) !important;">
                         1
                     </div>
-                    <span class="fw-bold text-primary mt-1" id="stepper-text-1" style="font-size: 0.76rem;">1. Address</span>
+                    <span class="fw-bold text-primary mt-1 text-center" id="stepper-text-1" style="font-size: 0.7rem; line-height: 1.15;">Address</span>
                 </div>
 
-                <!-- Step 2 Tab: Payment & Offers -->
-                <div class="d-flex flex-column align-items-center position-relative cursor-pointer" id="stepper-tab-2" onclick="editStep2()" style="z-index: 2;">
+                <!-- Step 2: Offers & Wallet -->
+                <div class="d-flex flex-column align-items-center position-relative cursor-pointer stepper-tab-item" id="stepper-tab-2" onclick="goToStep(2)" style="z-index: 2;">
                     <div class="checkout-step-badge bg-light text-muted border" id="stepper-badge-2">
                         2
                     </div>
-                    <span class="fw-semibold text-muted mt-1" id="stepper-text-2" style="font-size: 0.76rem;">2. Payment & Offers</span>
+                    <span class="fw-semibold text-muted mt-1 text-center" id="stepper-text-2" style="font-size: 0.7rem; line-height: 1.15;">Offers & Wallet</span>
                 </div>
 
-                <!-- Step 3 Tab: Confirm & Pay -->
-                <div class="d-flex flex-column align-items-center position-relative" id="stepper-tab-3" style="z-index: 2;">
+                <!-- Step 3: Payment -->
+                <div class="d-flex flex-column align-items-center position-relative cursor-pointer stepper-tab-item" id="stepper-tab-3" onclick="goToStep(3)" style="z-index: 2;">
                     <div class="checkout-step-badge bg-light text-muted border" id="stepper-badge-3">
                         3
                     </div>
-                    <span class="fw-semibold text-muted mt-1" id="stepper-text-3" style="font-size: 0.76rem;">3. Confirm & Pay</span>
+                    <span class="fw-semibold text-muted mt-1 text-center" id="stepper-text-3" style="font-size: 0.7rem; line-height: 1.15;">Payment</span>
+                </div>
+
+                <!-- Step 4: Confirm -->
+                <div class="d-flex flex-column align-items-center position-relative cursor-pointer stepper-tab-item" id="stepper-tab-4" onclick="goToStep(4)" style="z-index: 2;">
+                    <div class="checkout-step-badge bg-light text-muted border" id="stepper-badge-4">
+                        4
+                    </div>
+                    <span class="fw-semibold text-muted mt-1 text-center" id="stepper-text-4" style="font-size: 0.7rem; line-height: 1.15;">Confirm</span>
                 </div>
             </div>
         </div>
     </div>
 
     @if(isset($pendingOrder) && $pendingOrder)
-    <!-- Pending Order Restriction Alert Banner -->
-    <div id="pending-order-restriction-banner" class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 2px solid #f59e0b !important;">
-        <div class="p-3 p-md-4" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);">
+    <!-- Pending Order Restriction Banner -->
+    <div id="pending-order-restriction-banner" class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3.5" style="background: #ffffff; border: 2px solid #f59e0b !important;">
+        <div class="p-3 p-md-3.5" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);">
             <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
-                <div class="d-flex align-items-start gap-3">
+                <div class="d-flex align-items-start gap-2.5">
                     <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs"
-                         style="width: 48px; height: 48px; background: #ea580c; color: #ffffff; font-size: 1.4rem;">
+                         style="width: 42px; height: 42px; background: #ea580c; color: #ffffff; font-size: 1.25rem;">
                         <i class="bi bi-exclamation-triangle-fill"></i>
                     </div>
                     <div>
-                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                            <h6 class="fw-bolder text-dark mb-0" style="font-size: 1rem;">Action Required: You Have a Pending Order (#{{ $pendingOrder->order_number }})</h6>
-                            <span class="badge bg-warning text-dark border border-warning rounded-pill px-2.5 py-0.5 fw-bold font-monospace" style="font-size: 0.75rem;">
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-0.5">
+                            <h6 class="fw-bold text-dark mb-0" style="font-size: 0.92rem;">Pending Order (#{{ $pendingOrder->order_number }})</h6>
+                            <span class="badge bg-warning text-dark border border-warning rounded-pill px-2 py-0.5 fw-bold font-monospace" style="font-size: 0.72rem;">
                                 ₹{{ number_format($pendingOrder->total_amount, 2) }}
                             </span>
                         </div>
-                        <p class="text-secondary small mb-0" style="font-size: 0.84rem; line-height: 1.45;">
-                            You cannot place a new order while you have an active pending order (<strong class="text-dark">#{{ $pendingOrder->order_number }}</strong>, {{ $pendingOrder->items->count() }} item{{ $pendingOrder->items->count() !== 1 ? 's' : '' }}).
-                            Please either <strong>Proceed</strong> with that order (complete online payment / switch to COD) or <strong>Cancel</strong> it first.
+                        <p class="text-secondary small mb-0" style="font-size: 0.8rem; line-height: 1.4;">
+                            Please complete or cancel your pending order before placing a new one.
                         </p>
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
                     <a href="{{ route('checkout.payment_failed', $pendingOrder) }}"
-                       class="btn btn-primary rounded-pill px-4 py-2 fw-bold btn-sm shadow-xs d-inline-flex align-items-center gap-1.5"
-                       style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none; font-size: 0.82rem;">
-                        <i class="bi bi-credit-card-2-front"></i>
-                        <span>Proceed with Order #{{ $pendingOrder->order_number }}</span>
+                       class="btn btn-primary rounded-pill px-3 py-1.5 fw-semibold btn-sm shadow-xs"
+                       style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none; font-size: 0.8rem;">
+                        <i class="bi bi-credit-card me-1"></i> Proceed with #{{ $pendingOrder->order_number }}
                     </a>
                     <button type="button" id="btn-cancel-pending-banner"
                             onclick="cancelPendingOrderOnCheckout({{ $pendingOrder->id }}, '{{ $pendingOrder->order_number }}')"
-                            class="btn btn-outline-danger rounded-pill px-3.5 py-2 fw-bold btn-sm d-inline-flex align-items-center gap-1.5"
-                            style="font-size: 0.82rem; background: #ffffff;">
-                        <i class="bi bi-x-circle"></i>
-                        <span>Cancel Pending Order</span>
+                            class="btn btn-outline-danger rounded-pill px-3 py-1.5 fw-semibold btn-sm"
+                            style="font-size: 0.8rem; background: #ffffff;">
+                        <i class="bi bi-x-circle me-1"></i> Cancel
                     </button>
-                    <a href="{{ route('account.orders.show', $pendingOrder) }}"
-                       class="btn btn-light border rounded-pill px-3 py-2 fw-semibold btn-sm text-secondary"
-                       style="font-size: 0.8rem;">
-                        <i class="bi bi-box-seam me-1"></i> View Order
-                    </a>
                 </div>
             </div>
         </div>
     </div>
     @endif
 
-    <!-- Hidden Checkout Form -->
+    <!-- Main Checkout Form -->
     <form action="{{ route('checkout.place-order') }}" method="POST" id="checkout-form">
         @csrf
         <input type="hidden" name="use_wallet" id="hidden_use_wallet" value="{{ $useWallet ? '1' : '0' }}">
@@ -219,562 +315,739 @@
         <input type="hidden" name="shipping_zip" id="hidden_shipping_zip">
         <input type="hidden" name="shipping_country" id="hidden_shipping_country" value="India">
 
-        <!-- ====================================================== -->
-        <!-- TAB 1: DELIVERY ADDRESS & ORDER ITEMS PREVIEW          -->
-        <!-- ====================================================== -->
-        <div id="checkout-tab-1-view" class="row justify-content-center g-3 g-lg-4">
-            <div class="col-lg-8">
-                <!-- Back to Bag link -->
-                <div class="mb-2">
-                    <a href="{{ route('cart.index') }}" class="text-decoration-none small text-muted fw-semibold">
-                        <i class="bi bi-arrow-left me-1"></i> Back to Shopping Bag
-                    </a>
-                </div>
+        <!-- ========================================================================= -->
+        <!-- STEPS 1 & 2 CONTAINER: Focused, Distraction-Free (NO Price Details Card!) -->
+        <!-- ========================================================================= -->
+        <div id="checkout-step-1-2-col" class="row justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-7">
 
-                <!-- Delivery Address Selection Card -->
-                <div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-3.5" style="background: #ffffff; border: 1.5px solid #4f46e5 !important;">
-                    <div class="card-header bg-white py-3 px-3 px-md-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
-                        <div class="d-flex align-items-center gap-2.5">
-                            <div class="rounded-circle text-white d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background: #4f46e5;">
-                                <i class="bi bi-geo-alt-fill fs-6"></i>
-                            </div>
-                            <div>
-                                <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.95rem;">Select Delivery Address</h6>
-                                <small class="text-muted" style="font-size: 0.74rem;">Where should we send your package?</small>
-                            </div>
-                        </div>
-                        <button type="button" id="btn-saved-addresses-header" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold" onclick="showAddressSelectorModal()" style="font-size: 0.78rem; display: {{ $addresses->count() > 0 ? 'inline-block' : 'none' }};">
-                            <i class="bi bi-geo-alt me-1"></i> <span id="saved-addresses-count-text">Saved Addresses ({{ $addresses->count() }})</span>
-                        </button>
-                    </div>
-
-                    <div class="card-body p-3 p-md-4">
-                        <div id="address-error-banner" class="alert alert-danger small mb-3 rounded-3 border-0 bg-danger-subtle text-danger" style="display: none;">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i><span>Please select or add a valid delivery address before proceeding.</span>
-                        </div>
-
-                        <div id="address-success-banner" class="alert alert-success small mb-3 rounded-3 border-0 bg-success-subtle text-success" style="display: none;">
-                            <i class="bi bi-check-circle-fill me-2"></i><span>Address saved successfully!</span>
-                        </div>
-
-                        <!-- Active Address Box (Always Visible if Addresses Exist) -->
-                        <div id="active-address-display" class="p-3 p-md-3.5 rounded-3 border address-card-selected mb-3">
-                            <div id="no-address-msg" style="display: {{ $addresses->count() > 0 ? 'none' : 'block' }};" class="text-center py-3 text-muted">
-                                <i class="bi bi-building-add fs-2 text-primary d-block mb-1.5"></i>
-                                <span class="small fw-semibold text-dark">No saved address found. Fill in the form below or click <strong>"+ Add New Address"</strong> to add one.</span>
-                            </div>
-
-                            @php $activeAddr = $addresses->count() > 0 ? ($addresses->firstWhere('is_default', true) ?? $addresses->first()) : null; @endphp
-                            <div id="active-address-details" style="display: {{ $addresses->count() > 0 ? 'block' : 'none' }};">
-                                <div class="d-flex justify-content-between align-items-center mb-1.5 flex-wrap gap-1">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.92rem;" id="display-name">{{ $activeAddr ? $activeAddr->name : '' }}</h6>
-                                        <span class="badge bg-success text-white rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.68rem;">✓ Selected</span>
-                                    </div>
-                                    <button type="button" id="btn-switch-address" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="showAddressSelectorModal()" style="font-size: 0.78rem; display: {{ $addresses->count() > 1 ? 'inline-block' : 'none' }};">
-                                        <i class="bi bi-arrow-repeat me-1"></i> Switch Address
-                                    </button>
+                <!-- ====================================================== -->
+                <!-- STEP 1 VIEW: ADDRESS SELECTION                        -->
+                <!-- ====================================================== -->
+                <div id="checkout-step-1-view">
+                    <div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-3.5" style="background: #ffffff; border: 1.5px solid #4f46e5 !important;">
+                        <div class="card-header bg-white py-2.5 px-3 px-md-3.5 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle text-white d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background: #4f46e5; font-size: 0.85rem;">
+                                    <i class="bi bi-geo-alt-fill"></i>
                                 </div>
-                                <p class="text-secondary mb-1.5" id="display-street-city" style="line-height: 1.5; font-size: 0.85rem;">
-                                    {{ $activeAddr ? "{$activeAddr->address}, {$activeAddr->city}, {$activeAddr->state} - {$activeAddr->zip}" : '' }}
-                                </p>
-                                <div class="small text-muted" id="display-phone" style="font-size: 0.8rem;">
-                                    <i class="bi bi-telephone-fill text-muted me-1 small"></i> Mobile: <strong class="text-dark">{{ $activeAddr ? $activeAddr->phone : '' }}</strong>
-                                </div>
-                                <div id="active-address-serviceability-badge" class="mt-2"></div>
+                                <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.92rem;">Step 1: Select Delivery Address</h6>
                             </div>
-                        </div>
-
-                        <!-- Add New Address Button Action Bar -->
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 fw-semibold" onclick="openNewAddressForm()" style="font-size: 0.8rem;">
-                                <i class="bi bi-plus-lg me-1"></i> Add New Address
+                            <button type="button" id="btn-saved-addresses-header" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold" onclick="showAddressSelectorModal()" style="font-size: 0.76rem; display: {{ $addresses->count() > 0 ? 'inline-block' : 'none' }};">
+                                <i class="bi bi-geo-alt me-1"></i> <span id="saved-addresses-count-text">Saved Addresses ({{ $addresses->count() }})</span>
                             </button>
                         </div>
 
-                        <!-- Collapsible Add New Address Card (Note: MUST be a div, NOT a nested form!) -->
-                        <div class="card border rounded-3 mb-3.5 overflow-hidden shadow-xs" id="new-address-card" style="display: {{ $addresses->count() === 0 ? 'block' : 'none' }}; border-color: #cbd5e1 !important; background: #f8fafc;">
-                            <div class="card-header bg-white py-2.5 px-3 d-flex justify-content-between align-items-center border-bottom">
-                                <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.88rem;"><i class="bi bi-house-add text-primary me-2"></i>Add New Delivery Address</h6>
-                                <button type="button" class="btn-close" id="btn-close-new-address-header" onclick="closeNewAddressForm()" style="display: {{ $addresses->count() > 0 ? 'inline-block' : 'none' }};"></button>
+                        <div class="card-body p-3 p-md-3.5">
+                            <div id="address-error-banner" class="alert alert-danger small mb-3 rounded-3 border-0 bg-danger-subtle text-danger" style="display: none;">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i><span>Please select or add a valid delivery address before proceeding.</span>
                             </div>
-                            <div class="card-body p-3 p-md-3.5">
-                                <div id="new-address-form">
-                                    <div class="row g-2.5">
-                                        <div class="col-12">
-                                            <label for="new_name" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Full Name <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control rounded-3" id="new_name" value="{{ auth()->user()->name ?? '' }}" placeholder="Enter full name" style="font-size: 0.88rem;">
-                                        </div>
-                                        <div class="col-6">
-                                            <label for="new_phone" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Mobile Number <span class="text-danger">*</span></label>
-                                            <input type="tel" class="form-control rounded-3" id="new_phone" value="{{ auth()->user()->mobile_number ?? '' }}" placeholder="10-digit mobile" maxlength="15" style="font-size: 0.88rem;">
-                                        </div>
-                                        <div class="col-6">
-                                            <label for="new_zip" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Pincode <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control rounded-3 font-monospace fw-bold" id="new_zip" placeholder="6-digit PIN" maxlength="6" oninput="handleNewPincodeLookup(this.value)" style="font-size: 0.88rem;">
-                                            <small id="new_zip_lookup_hint" class="text-muted d-block mt-0.5" style="font-size: 0.7rem;"></small>
-                                        </div>
-                                        <div class="col-12">
-                                            <label for="new_address" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Flat / House / Building / Street Address <span class="text-danger">*</span></label>
-                                            <textarea class="form-control rounded-3" id="new_address" rows="2" placeholder="Complete street address, landmark" style="font-size: 0.88rem;"></textarea>
-                                        </div>
-                                        <div class="col-6">
-                                            <label for="new_city" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">City <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control rounded-3" id="new_city" placeholder="City" style="font-size: 0.88rem;">
-                                        </div>
-                                        <div class="col-6">
-                                            <label for="new_state" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">State <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control rounded-3" id="new_state" placeholder="State" style="font-size: 0.88rem;">
-                                        </div>
-                                    </div>
 
-                                    <div class="d-flex justify-content-end gap-2 mt-3">
-                                        <button type="button" id="btn-cancel-new-address" class="btn btn-light border rounded-pill px-3.5 btn-sm fw-semibold" onclick="closeNewAddressForm()" style="display: {{ $addresses->count() > 0 ? 'inline-block' : 'none' }};">Cancel</button>
-                                        <button type="button" onclick="handleSaveAddress(event)" class="btn btn-primary rounded-pill px-4 btn-sm shadow-xs fw-semibold" id="btn-save-address" style="background: #4f46e5; border: none;">
-                                            <i class="bi bi-bookmark-check me-1"></i> Save Address & Continue
+                            <div id="address-success-banner" class="alert alert-success small mb-3 rounded-3 border-0 bg-success-subtle text-success" style="display: none;">
+                                <i class="bi bi-check-circle-fill me-2"></i><span>Address saved successfully!</span>
+                            </div>
+
+                            <!-- Active Address Box (Zoom-Safe, Full Fit) -->
+                            <div id="active-address-display" class="p-3 rounded-3 border address-card-selected mb-3 overflow-hidden">
+                                <div id="no-address-msg" style="display: {{ $addresses->count() > 0 ? 'none' : 'block' }};" class="text-center py-3 text-muted">
+                                    <i class="bi bi-building-add fs-2 text-primary d-block mb-1"></i>
+                                    <span class="small fw-semibold text-dark">No saved address found. Click <strong>"+ Add New Address"</strong> to add one.</span>
+                                </div>
+
+                                @php $activeAddr = $addresses->count() > 0 ? ($addresses->firstWhere('is_default', true) ?? $addresses->first()) : null; @endphp
+                                <div id="active-address-details" style="display: {{ $addresses->count() > 0 ? 'block' : 'none' }};">
+                                    <div class="d-flex justify-content-between align-items-center mb-1.5 flex-wrap gap-1">
+                                        <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1">
+                                            <h6 class="fw-bold mb-0 text-dark text-truncate" style="font-size: 0.9rem;" id="display-name">{{ $activeAddr ? $activeAddr->name : '' }}</h6>
+                                            <span class="badge bg-success text-white rounded-pill px-2 py-0.5 fw-bold flex-shrink-0" style="font-size: 0.65rem;">✓ Selected</span>
+                                        </div>
+                                        <button type="button" id="btn-switch-address" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0 flex-shrink-0" onclick="showAddressSelectorModal()" style="font-size: 0.76rem; display: {{ $addresses->count() > 1 ? 'inline-block' : 'none' }};">
+                                            <i class="bi bi-arrow-repeat me-1"></i> Switch Address
                                         </button>
+                                    </div>
+                                    <p class="text-secondary mb-1.5 text-break-word" id="display-street-city" style="line-height: 1.45; font-size: 0.83rem;">
+                                        {{ $activeAddr ? "{$activeAddr->address}, {$activeAddr->city}, {$activeAddr->state} - {$activeAddr->zip}" : '' }}
+                                    </p>
+                                    <div class="small text-muted" id="display-phone" style="font-size: 0.78rem;">
+                                        <i class="bi bi-telephone-fill text-muted me-1 small"></i> Mobile: <strong class="text-dark">{{ $activeAddr ? $activeAddr->phone : '' }}</strong>
+                                    </div>
+                                    <div id="active-address-serviceability-badge" class="mt-2 text-break-word"></div>
+                                </div>
+                            </div>
+
+                            <!-- Add New Address Button -->
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 fw-semibold" onclick="openNewAddressForm()" style="font-size: 0.78rem;">
+                                    <i class="bi bi-plus-lg me-1"></i> Add New Address
+                                </button>
+                            </div>
+
+                            <!-- Collapsible Add New Address Form -->
+                            <div class="card border rounded-3 mb-3 overflow-hidden shadow-xs" id="new-address-card" style="display: {{ $addresses->count() === 0 ? 'block' : 'none' }}; border-color: #cbd5e1 !important; background: #f8fafc;">
+                                <div class="card-header bg-white py-2 px-3 d-flex justify-content-between align-items-center border-bottom">
+                                    <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.85rem;"><i class="bi bi-house-add text-primary me-1.5"></i>Add New Address</h6>
+                                    <button type="button" class="btn-close" id="btn-close-new-address-header" onclick="closeNewAddressForm()" style="display: {{ $addresses->count() > 0 ? 'inline-block' : 'none' }};"></button>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div id="new-address-form">
+                                        <div class="row g-2">
+                                            <div class="col-12">
+                                                <label for="new_name" class="form-label fw-semibold small mb-0.5" style="font-size: 0.78rem;">Full Name <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control form-control-sm rounded-3" id="new_name" value="{{ auth()->user()->name ?? '' }}" placeholder="Enter full name">
+                                            </div>
+                                            <div class="col-12 col-sm-6">
+                                                <label for="new_phone" class="form-label fw-semibold small mb-0.5" style="font-size: 0.78rem;">Mobile Number <span class="text-danger">*</span></label>
+                                                <input type="tel" class="form-control form-control-sm rounded-3" id="new_phone" value="{{ auth()->user()->mobile_number ?? '' }}" placeholder="10-digit mobile" maxlength="15">
+                                            </div>
+                                            <div class="col-12 col-sm-6">
+                                                <label for="new_zip" class="form-label fw-semibold small mb-0.5" style="font-size: 0.78rem;">Pincode <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control form-control-sm rounded-3 font-monospace fw-bold" id="new_zip" placeholder="6-digit PIN" maxlength="6" oninput="handleNewPincodeLookup(this.value)">
+                                                <small id="new_zip_lookup_hint" class="text-muted d-block mt-0.5" style="font-size: 0.68rem;"></small>
+                                            </div>
+                                            <div class="col-12">
+                                                <label for="new_address" class="form-label fw-semibold small mb-0.5" style="font-size: 0.78rem;">Street Address <span class="text-danger">*</span></label>
+                                                <textarea class="form-control form-control-sm rounded-3" id="new_address" rows="2" placeholder="House no, Street, Landmark"></textarea>
+                                            </div>
+                                            <div class="col-12 col-sm-6">
+                                                <label for="new_city" class="form-label fw-semibold small mb-0.5" style="font-size: 0.78rem;">City <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control form-control-sm rounded-3" id="new_city" placeholder="City">
+                                            </div>
+                                            <div class="col-12 col-sm-6">
+                                                <label for="new_state" class="form-label fw-semibold small mb-0.5" style="font-size: 0.78rem;">State <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control form-control-sm rounded-3" id="new_state" placeholder="State">
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex justify-content-end gap-2 mt-2.5">
+                                            <button type="button" id="btn-cancel-new-address" class="btn btn-light border rounded-pill px-3 btn-sm fw-semibold" onclick="closeNewAddressForm()" style="display: {{ $addresses->count() > 0 ? 'inline-block' : 'none' }};">Cancel</button>
+                                            <button type="button" onclick="handleSaveAddress(event)" class="btn btn-primary rounded-pill px-3.5 btn-sm shadow-xs fw-semibold" id="btn-save-address" style="background: #4f46e5; border: none;">
+                                                <i class="bi bi-bookmark-check me-1"></i> Save Address
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Delivery Instructions / Notes (Optional) -->
-                        <div class="p-3 rounded-3 border bg-light mb-3">
-                            <h6 class="fw-bold mb-1.5 text-dark" style="font-size: 0.84rem;">
-                                <i class="bi bi-chat-left-text text-primary me-1.5"></i>Delivery Notes (Optional)
-                            </h6>
-                            <textarea class="form-control rounded-3" id="notes" name="notes" rows="2" placeholder="e.g. Leave with security / Call before ringing the bell." style="font-size: 0.82rem;"></textarea>
-                        </div>
+                            <!-- Delivery Notes (Spacious & Clean) -->
+                            <div class="card border-0 rounded-4 shadow-xs mb-3.5" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
+                                <div class="card-body p-3.5 p-md-4">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <label for="notes" class="fw-bold text-dark d-flex align-items-center gap-2 mb-0" style="font-size: 0.92rem;">
+                                            <span class="rounded-circle d-flex align-items-center justify-content-center text-primary bg-primary bg-opacity-10" style="width: 28px; height: 28px;">
+                                                <i class="bi bi-chat-left-text-fill" style="font-size: 0.82rem;"></i>
+                                            </span>
+                                            Delivery Instructions / Notes
+                                        </label>
+                                        <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">Optional</span>
+                                    </div>
+                                    <p class="text-secondary small mb-2.5" style="font-size: 0.8rem; line-height: 1.45;">
+                                        Add special instructions for the delivery executive (e.g. landmark, call before delivery, leave with security or neighbor).
+                                    </p>
+                                    <textarea class="form-control rounded-3 p-3" 
+                                              id="notes" 
+                                              name="notes" 
+                                              rows="2" 
+                                              placeholder="e.g. Ring the bell twice / Call before reaching / Leave parcel at security desk." 
+                                              style="font-size: 0.85rem; line-height: 1.5; border: 1.5px solid #cbd5e1 !important;"></textarea>
+                                </div>
+                            </div>
 
-                        <!-- Deliver to This Address Button -->
-                        <button type="button" class="btn btn-primary btn-lg rounded-pill w-100 py-3 fw-bold shadow-xs text-white d-flex align-items-center justify-content-center gap-2" id="btn-confirm-address" onclick="proceedToStep2()" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none; font-size: 0.92rem; letter-spacing: 0.02em;">
-                            <span>DELIVER TO THIS ADDRESS</span>
-                            <i class="bi bi-arrow-right fs-5"></i>
-                        </button>
+                            <!-- Items Summary Pill -->
+                            <div class="p-3 rounded-3 border bg-white mb-3.5 d-flex align-items-center justify-content-between shadow-xs">
+                                <span class="small text-muted"><i class="bi bi-bag-check me-1.5 text-primary"></i>Items in Order: <strong class="text-dark">{{ $cart->items->sum('quantity') }} items</strong></span>
+                                <a href="{{ route('cart.index') }}" class="small text-primary text-decoration-none fw-bold" style="font-size: 0.76rem;">View Bag</a>
+                            </div>
+
+                            <!-- Step 1 Sleek Proceed Button (Compact, Not Huge) -->
+                            <div class="d-flex justify-content-end mt-2">
+                                <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold shadow-xs d-inline-flex align-items-center gap-2" id="btn-confirm-address" onclick="proceedFromStep1()">
+                                    <span>Proceed to Offers & Wallet</span>
+                                    <i class="bi bi-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Order Items Summary Preview Card -->
-                <div class="card border-0 shadow-xs rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
-                    <div class="card-header bg-white py-3 px-3 px-md-4 border-bottom">
-                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.95rem;">
-                            <i class="bi bi-bag-check-fill text-primary me-1.5"></i>Items in Order ({{ $cart->items->sum('quantity') }})
-                        </h6>
+                <!-- ====================================================== -->
+                <!-- STEP 2 VIEW: OFFERS & WALLET (Spacious, No Quick Apply)-->
+                <!-- ====================================================== -->
+                <div id="checkout-step-2-view" class="d-none">
+                    
+                    <!-- Selected Address Summary Strip (Zoom-Safe, Full Fit) -->
+                    <div class="p-3 rounded-4 border mb-4 bg-white shadow-xs d-flex justify-content-between align-items-start gap-2 flex-wrap flex-sm-nowrap overflow-hidden" style="border-color: #cbd5e1 !important; max-width: 100%;">
+                        <div class="d-flex align-items-start gap-2 min-w-0 flex-grow-1">
+                            <div class="rounded-circle text-success bg-success bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0 mt-0.5" style="width: 32px; height: 32px;">
+                                <i class="bi bi-geo-alt-fill fs-6"></i>
+                            </div>
+                            <div class="min-w-0 flex-grow-1 text-break-word">
+                                <span class="text-muted small d-block mb-0.5" style="font-size: 0.7rem; line-height: 1;">Delivering To:</span>
+                                <strong class="text-dark d-block text-break-word" id="step-2-address-summary" style="font-size: 0.84rem; line-height: 1.45;"></strong>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold flex-shrink-0 align-self-start" onclick="goToStep(1)" style="font-size: 0.74rem;">
+                            <i class="bi bi-pencil me-1"></i> Change
+                        </button>
                     </div>
-                    <div class="card-body p-3 p-md-4">
-                        <div class="checkout-items-wrapper" style="max-height: 240px; overflow-y: auto;">
-                            @foreach($cart->items as $item)
-                            @php
-                                $origPrice = (float) ($item->product->price ?? $item->unit_price);
-                                $currPrice = (float) $item->unit_price;
-                                $origLineTotal = $item->quantity * $origPrice;
-                                $lineTotal = $item->quantity * $currPrice;
-                                $hasDiscount = ($origPrice > $currPrice);
-                            @endphp
-                            <div class="p-2.5 mb-2 bg-white rounded-3 border shadow-xs d-flex align-items-center justify-content-between gap-2.5" style="border-color: #f1f5f9 !important;">
-                                <div class="d-flex align-items-center gap-2.5 min-w-0">
-                                    @if($item->product && $item->product->main_image)
-                                        <img src="{{ asset('storage/' . $item->product->main_image) }}" alt="{{ $item->product->name }}" class="rounded-2 border flex-shrink-0" style="width: 44px; height: 44px; object-fit: contain;">
+
+                    <!-- Offers & Wallet Card (With generous breathing spacing) -->
+                    <div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 1.5px solid #10b981 !important;">
+                        <div class="card-header bg-white py-3 px-3 px-md-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle text-white d-flex align-items-center justify-content-center" style="width: 30px; height: 30px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); font-size: 0.9rem;">
+                                    <i class="bi bi-gift-fill"></i>
+                                </div>
+                                <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.95rem;">Step 2: Offers, Coupons & Wallet</h6>
+                            </div>
+                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.72rem;">
+                                <i class="bi bi-stars me-1"></i> Instant Savings
+                            </span>
+                        </div>
+
+                        <div class="card-body p-3 p-md-4">
+                            
+                            <!-- ============================================================== -->
+                            <!-- SECTION 1 (FIRST): SHOPCALM WALLET                             -->
+                            <!-- ============================================================== -->
+                            @if(isset($userWallet))
+                            <div class="step2-box step2-wallet-box mb-4">
+                                <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap flex-sm-nowrap">
+                                    <div class="d-flex align-items-center gap-3 min-w-0">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs" style="width: 44px; height: 44px; background: #dcfce7; color: #16a34a;">
+                                            <i class="bi bi-wallet2 fs-4"></i>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                <span class="fw-bold text-dark" style="font-size: 0.95rem;">ShopCalm Wallet</span>
+                                                @if($userWallet->balance > 0)
+                                                    <span class="badge bg-success text-white rounded-pill px-2.5 py-1 fw-bold font-monospace" style="font-size: 0.74rem;">
+                                                        ₹{{ number_format($userWallet->balance, 2) }} Available
+                                                    </span>
+                                                @else
+                                                    <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 0.7rem;">
+                                                        ₹0.00 Balance
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            <div class="text-secondary small mt-1 text-break-word" style="font-size: 0.78rem; line-height: 1.45;">
+                                                @if($isWalletFrozen)
+                                                    <span class="text-danger fw-semibold"><i class="bi bi-lock-fill me-1"></i>Wallet is locked by admin for security.</span>
+                                                @elseif($userWallet->balance > 0)
+                                                    <span>Use your wallet balance to pay for this order instantly.</span>
+                                                @else
+                                                    <span>Available balance is ₹0.00. Earn wallet credits with returns and rewards.</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @if($userWallet->balance > 0 && !$isWalletFrozen)
+                                    <div class="form-check form-switch mb-0 flex-shrink-0 ms-auto">
+                                        <input class="form-check-input custom-wallet-switch" type="checkbox" role="switch" id="toggle-wallet-switch" {{ $useWallet ? 'checked' : '' }} style="cursor: pointer; width: 2.7em; height: 1.4em;">
+                                    </div>
+                                    @endif
+                                </div>
+                            </div>
+                            @endif
+
+                            <!-- 100% Wallet Paid Notice Banner -->
+                            <div id="full-wallet-pay-notice" class="alert alert-success border-0 rounded-3 mb-4 p-3 shadow-xs {{ ($useWallet && $grandTotal <= 0) ? '' : 'd-none' }}" style="background: #dcfce7; color: #166534;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-shield-check fs-4 text-success flex-shrink-0"></i>
+                                    <div>
+                                        <h6 class="fw-bold mb-0.5" style="font-size: 0.88rem;">100% Covered by ShopCalm Wallet!</h6>
+                                        <small style="font-size: 0.76rem; line-height: 1.4;" class="d-block">Your order is completely covered by wallet credits (₹0.00 remaining to pay).</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ============================================================== -->
+                            <!-- SECTION 2 (THEN): APPLY COUPONS & PROMO CODES                  -->
+                            <!-- ============================================================== -->
+                            <div class="step2-box step2-coupon-box mb-4">
+                                <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px; background: #e0e7ff; color: #4338ca;">
+                                            <i class="bi bi-tag-fill" style="font-size: 0.82rem;"></i>
+                                        </div>
+                                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.92rem;">Apply Coupon Code</h6>
+                                    </div>
+                                    @if(isset($availableCoupons) && $availableCoupons->count() > 0)
+                                        <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" data-bs-toggle="modal" data-bs-target="#couponsModal" style="font-size: 0.78rem;">
+                                            <i class="bi bi-ticket-perforated text-warning me-1"></i>View Available Coupons ({{ $availableCoupons->count() }})
+                                        </button>
+                                    @endif
+                                </div>
+
+                                <div id="coupon-status-wrapper">
+                                    @if($couponCode)
+                                        <div class="p-3 rounded-3 shadow-xs d-flex align-items-center justify-content-between bg-white border" id="applied-coupon-box" style="border-color: #86efac !important;">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                                <div>
+                                                    <span class="font-monospace fw-bold text-success px-2.5 py-0.5 rounded" style="background: #dcfce7; border: 1px dashed #22c55e; font-size: 0.82rem;">{{ $couponCode }}</span>
+                                                    <small class="text-dark d-block mt-1 fw-semibold" style="font-size: 0.76rem;">Saved ₹{{ number_format($discountAmount, 2) }} on your order</small>
+                                                </div>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-bold" id="btn-remove-coupon-ajax" onclick="handleRemoveCoupon()" style="font-size: 0.74rem;">Remove</button>
+                                        </div>
                                     @else
-                                        <div class="rounded-2 bg-light border d-flex align-items-center justify-content-center flex-shrink-0 text-muted" style="width: 44px; height: 44px;">
-                                            <i class="bi bi-box-seam fs-5"></i>
+                                        <div class="d-flex gap-2">
+                                            <input type="text" id="coupon_code_input" class="form-control rounded-3 font-monospace fw-bold" placeholder="ENTER COUPON CODE" style="text-transform: uppercase; font-size: 0.88rem; height: 44px;">
+                                            <button type="button" class="btn btn-primary rounded-3 px-4 fw-bold flex-shrink-0" onclick="handleApplyCoupon()" style="background: #4f46e5; border: none; font-size: 0.84rem; height: 44px;">APPLY</button>
+                                        </div>
+                                        <div class="text-muted mt-2 small" style="font-size: 0.75rem;">
+                                            <i class="bi bi-info-circle text-primary me-1"></i>Apply valid promo code to get instant order discounts.
                                         </div>
                                     @endif
-                                    <div class="min-w-0">
-                                        <h6 class="mb-0.5 fw-bold text-dark text-truncate" style="font-size: 0.84rem;" title="{{ $item->product->name ?? 'Product' }}">
-                                            {{ $item->product->name ?? 'Product' }}
-                                        </h6>
-                                        <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                                            <span class="badge bg-light text-dark border px-2 py-0.5" style="font-size: 0.65rem;">
-                                                Qty: {{ $item->quantity }} @if(!empty($item->selected_option)) | {{ $item->selected_option }} @endif
-                                            </span>
-                                            @if($hasDiscount)
-                                                <span class="text-success fw-bold" style="font-size: 0.68rem;">
-                                                    ({{ round((($origPrice - $currPrice) / $origPrice) * 100) }}% OFF)
-                                                </span>
-                                            @endif
+                                </div>
+                            </div>
+
+                            <!-- ============================================================== -->
+                            <!-- SECTION 3 (FINALLY): SAVED THINGS & TOTAL SAVINGS SUMMARY      -->
+                            <!-- ============================================================== -->
+                            <div class="step2-box step2-savings-box mb-4">
+                                <!-- Top Total Savings Row -->
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle text-white d-flex align-items-center justify-content-center shadow-xs flex-shrink-0" style="width: 32px; height: 32px; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                                            <i class="bi bi-stars fs-6"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="fw-bold mb-0 text-success" style="font-size: 0.94rem;">Total Savings on This Order</h6>
+                                            <small class="text-muted d-block" style="font-size: 0.74rem;">Combined discounts applied to your cart</small>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="font-monospace fw-bolder fs-5 text-success d-block" id="card-total-savings">
+                                            ₹{{ number_format($totalSavings, 2) }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Detailed Saved Things Breakdown -->
+                                <div class="mt-3 pt-2.5 border-top" style="border-color: #a7f3d0 !important;">
+                                    <div class="d-flex justify-content-between align-items-center py-1 text-secondary" style="font-size: 0.82rem;" id="saved-breakdown-mrp-row">
+                                        <span><i class="bi bi-check2 text-success me-1.5"></i>Product MRP Discount</span>
+                                        <span class="font-monospace fw-bold text-success">- ₹{{ number_format($totalDiscount, 2) }}</span>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center py-1 text-secondary {{ $discountAmount > 0 ? '' : 'd-none' }}" style="font-size: 0.82rem;" id="saved-breakdown-coupon-row">
+                                        <span><i class="bi bi-check2 text-success me-1.5"></i>Coupon Discount</span>
+                                        <span class="font-monospace fw-bold text-success" id="saved-breakdown-coupon">- ₹{{ number_format($discountAmount, 2) }}</span>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center py-1 text-secondary {{ $walletDiscount > 0 ? '' : 'd-none' }}" style="font-size: 0.82rem;" id="saved-breakdown-wallet-row">
+                                        <span><i class="bi bi-check2 text-success me-1.5"></i>ShopCalm Wallet Balance</span>
+                                        <span class="font-monospace fw-bold text-success" id="saved-breakdown-wallet">- ₹{{ number_format($walletDiscount, 2) }}</span>
+                                    </div>
+
+                                    @if($offerDiscount > 0)
+                                    <div class="d-flex justify-content-between align-items-center py-1 text-secondary" style="font-size: 0.82rem;" id="saved-breakdown-offer-row">
+                                        <span><i class="bi bi-check2 text-success me-1.5"></i>Special Offer Discount</span>
+                                        <span class="font-monospace fw-bold text-success">- ₹{{ number_format($offerDiscount, 2) }}</span>
+                                    </div>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <!-- Step 2 Compact Action Buttons with Generous Spacing -->
+                            <div class="d-flex justify-content-between align-items-center gap-2 mt-4 pt-2">
+                                <button type="button" class="btn btn-light border rounded-pill px-3 py-2 fw-semibold text-secondary btn-sm" onclick="goToStep(1)">
+                                    <i class="bi bi-arrow-left me-1"></i> Back to Address
+                                </button>
+                                <button type="button" class="btn btn-primary rounded-pill px-4 py-2.5 fw-semibold shadow-xs d-inline-flex align-items-center gap-2" onclick="proceedFromStep2()">
+                                    <span>Proceed to Payment</span>
+                                    <i class="bi bi-arrow-right"></i>
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- STEPS 3 & 4 CONTAINER: 2-Column Layout (With Price Details Card on Right) -->
+        <!-- ========================================================================= -->
+        <div id="checkout-step-3-4-col" class="row g-3 g-lg-4 d-none">
+            
+            <!-- Left Column: Step 3 (Payment) OR Step 4 (Confirm) -->
+            <div class="col-lg-7 col-xl-8">
+
+                <!-- ====================================================== -->
+                <!-- STEP 3 VIEW: PAYMENT METHOD SELECTION                 -->
+                <!-- ====================================================== -->
+                <div id="checkout-step-3-view" class="d-none">
+                    
+                    <!-- Selected Address & Offers Summary Strip (Zoom-Safe, Full Fit) -->
+                    <div class="p-3 rounded-4 border mb-3.5 bg-white shadow-xs d-flex justify-content-between align-items-start gap-2.5 flex-wrap flex-sm-nowrap overflow-hidden" style="border-color: #cbd5e1 !important; max-width: 100%;">
+                        <div class="d-flex align-items-start gap-2.5 min-w-0 flex-grow-1">
+                            <div class="rounded-circle text-success bg-success bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0 mt-0.5" style="width: 32px; height: 32px;">
+                                <i class="bi bi-geo-alt-fill fs-6"></i>
+                            </div>
+                            <div class="min-w-0 flex-grow-1 text-break-word">
+                                <span class="text-muted small d-block mb-0.5" style="font-size: 0.7rem; line-height: 1;">Delivering To:</span>
+                                <strong class="text-dark d-block text-break-word" id="step-3-address-summary" style="font-size: 0.84rem; line-height: 1.45;"></strong>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold flex-shrink-0 align-self-start" onclick="goToStep(1)" style="font-size: 0.74rem;">
+                            <i class="bi bi-pencil me-1"></i> Edit
+                        </button>
+                    </div>
+
+                    <!-- Step 3: 100% Wallet/Offers Covered Notice Banner -->
+                    <div id="step-3-wallet-full-notice" class="alert alert-success border-0 rounded-4 mb-3.5 p-3.5 shadow-xs {{ ($useWallet && $grandTotal <= 0) ? '' : 'd-none' }}" style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1.5px solid #6ee7b7 !important; color: #065f46;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 40px; height: 40px; background: #10b981;">
+                                <i class="bi bi-shield-fill-check fs-5"></i>
+                            </div>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                    <span class="badge bg-success text-white fw-bold rounded-pill px-2.5 py-0.5" style="font-size: 0.72rem;">100% COVERED</span>
+                                    <strong class="text-dark" style="font-size: 0.95rem;">No Payment Required (₹0.00 Due)</strong>
+                                </div>
+                                <p class="mb-0 small text-secondary" style="font-size: 0.8rem; line-height: 1.45;">
+                                    Your order amount is fully covered by your <strong>ShopCalm Wallet &amp; Offers</strong>. Online &amp; COD payment options are automatically blocked because no external payment is needed. Click <strong>"Continue to Confirm"</strong> to review and place your order!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Method Card -->
+                    <div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-3.5" style="background: #ffffff; border: 1.5px solid #6366f1 !important;">
+                        <div class="card-header bg-white py-2.5 px-3 px-md-3.5 border-bottom d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle text-white d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background: #6366f1; font-size: 0.85rem;">
+                                    <i class="bi bi-credit-card-2-front-fill"></i>
+                                </div>
+                                <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.92rem;">Step 3: Select Payment Method</h6>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="goToStep(2)" style="font-size: 0.74rem;">
+                                <i class="bi bi-gift me-1"></i> Edit Offers
+                            </button>
+                        </div>
+
+                        <div class="card-body p-3 p-md-3.5">
+                            <!-- Payment Tiles Container -->
+                            <div id="payment-tiles-container" style="{{ ($useWallet && $grandTotal <= 0) ? 'opacity: 0.45; pointer-events: none; filter: grayscale(1);' : '' }}">
+                                
+                                <!-- Option 1: Razorpay Online Payment (Default) -->
+                                <div class="payment-tile active-tile mb-2.5" onclick="document.getElementById('pay_online').checked = true; document.getElementById('pay_online').dispatchEvent(new Event('change'));">
+                                    <div class="d-flex align-items-start gap-2.5">
+                                        <input class="form-check-input mt-1 flex-shrink-0" type="radio" name="payment_method" id="pay_online" value="online" checked form="checkout-form">
+                                        <div class="flex-grow-1 min-w-0 text-break-word">
+                                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-1 mb-1">
+                                                <label class="form-check-label fw-bold text-dark mb-0 cursor-pointer" style="font-size: 0.88rem;" for="pay_online">
+                                                    ⚡ UPI / Cards / NetBanking / PhonePe
+                                                </label>
+                                                <span class="badge bg-success text-white rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.65rem;">RECOMMENDED</span>
+                                            </div>
+                                            <p class="text-secondary small mb-1.5" style="font-size: 0.76rem; line-height: 1.35;">
+                                                Google Pay, PhonePe, Paytm, BHIM UPI, Visa, Mastercard, RuPay & All Banks.
+                                            </p>
+                                            <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                                <span class="badge bg-white border text-dark px-2 py-0.5 rounded" style="font-size: 0.68rem;"><i class="bi bi-lightning-charge-fill text-warning me-1"></i>Instant Dispatch</span>
+                                                <span class="badge bg-white border text-dark px-2 py-0.5 rounded" style="font-size: 0.68rem;"><i class="bi bi-arrow-repeat text-success me-1"></i>Auto Refund</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="text-end flex-shrink-0">
-                                    @if($hasDiscount)
-                                        <div class="text-muted text-decoration-line-through font-monospace" style="font-size: 0.74rem;">
-                                            ₹{{ number_format($origLineTotal, 2) }}
+
+                                <!-- Option 2: Cash On Delivery (COD) -->
+                                <div class="payment-tile mb-3" id="payment-tile-cod" onclick="handleCodTileClick()">
+                                    <div class="d-flex align-items-start gap-2.5">
+                                        <input class="form-check-input mt-1 flex-shrink-0" type="radio" name="payment_method" id="cod" value="cod" form="checkout-form">
+                                        <div class="flex-grow-1 min-w-0 text-break-word">
+                                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-1 mb-1">
+                                                <label class="form-check-label fw-bold text-dark mb-0 cursor-pointer" style="font-size: 0.88rem;" for="cod" id="cod-label">
+                                                    💵 Cash on Delivery (COD)
+                                                </label>
+                                                <span id="cod-badge" class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">PAY AT DOORSTEP</span>
+                                            </div>
+                                            <p class="text-secondary small mb-0" id="cod-description" style="font-size: 0.76rem;">
+                                                Pay via cash / UPI to our delivery executive when your parcel arrives.
+                                            </p>
+                                            <div id="cod-unavailable-notice" class="text-danger small mt-1 fw-semibold d-none" style="font-size: 0.74rem;">
+                                                <i class="bi bi-slash-circle me-1"></i> Cash on Delivery is unavailable for this PIN code.
+                                            </div>
                                         </div>
-                                    @endif
-                                    <div class="fw-bold text-dark font-monospace" style="font-size: 0.88rem;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- ====================================================== -->
+                <!-- STEP 4 VIEW: CONFIRM ORDER & PLACE ORDER / PAY        -->
+                <!-- ====================================================== -->
+                <div id="checkout-step-4-view" class="d-none">
+                    
+                    <!-- Estimated Delivery Date Banner (Spacious) -->
+                    <div class="confirm-delivery-banner shadow-xs d-flex align-items-center gap-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center text-success flex-shrink-0 shadow-xs" style="width: 44px; height: 44px; background: #dcfce7;">
+                            <i class="bi bi-truck fs-4"></i>
+                        </div>
+                        <div class="min-w-0 text-break-word">
+                            <span class="fw-bold text-dark d-block" style="font-size: 0.95rem;" id="review-delivery-date-title">Estimated Delivery</span>
+                            <small class="text-secondary d-block mt-0.5" id="review-delivery-date-text" style="font-size: 0.82rem; line-height: 1.45;">Standard Dispatch within 24-48 hours • Safe Doorstep Delivery</small>
+                        </div>
+                    </div>
+
+                    <!-- Review Card 1: Confirmed Shipping Address (Spacious) -->
+                    <div class="confirm-review-card shadow-xs">
+                        <div class="card-header bg-white d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px; background: #4f46e5; font-size: 0.85rem;">
+                                    <i class="bi bi-geo-alt-fill"></i>
+                                </div>
+                                <span class="fw-bold text-dark" style="font-size: 0.92rem;">1. Delivering To</span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold" onclick="goToStep(1)" style="font-size: 0.76rem;">
+                                <i class="bi bi-pencil me-1"></i> Change
+                            </button>
+                        </div>
+                        <div class="card-body text-break-word">
+                            <div class="fw-bold text-dark mb-1" id="review-address-name" style="font-size: 0.94rem;"></div>
+                            <div class="text-secondary mb-2 text-break-word" id="review-address-text" style="font-size: 0.86rem; line-height: 1.55;"></div>
+                            <div class="text-dark fw-semibold" id="review-address-phone" style="font-size: 0.82rem;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Review Card 2: Applied Offers & Wallet (Spacious) -->
+                    <div class="confirm-review-card shadow-xs">
+                        <div class="card-header bg-white d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px; background: #10b981; font-size: 0.85rem;">
+                                    <i class="bi bi-gift-fill"></i>
+                                </div>
+                                <span class="fw-bold text-dark" style="font-size: 0.92rem;">2. Offers & Wallet Applied</span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold" onclick="goToStep(2)" style="font-size: 0.76rem;">
+                                <i class="bi bi-pencil me-1"></i> Change
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="review-offers-summary-text" class="text-secondary text-break-word" style="font-size: 0.86rem; line-height: 1.55;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Review Card 3: Payment Method (Spacious) -->
+                    <div class="confirm-review-card shadow-xs">
+                        <div class="card-header bg-white d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px; background: #6366f1; font-size: 0.85rem;">
+                                    <i class="bi bi-credit-card-2-front-fill"></i>
+                                </div>
+                                <span class="fw-bold text-dark" style="font-size: 0.92rem;">3. Selected Payment Method</span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold" onclick="goToStep(3)" style="font-size: 0.76rem;">
+                                <i class="bi bi-pencil me-1"></i> Change
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="review-payment-mode-text" class="text-break-word">
+                                <div class="d-flex align-items-center gap-2 flex-wrap mb-1.5">
+                                    <span class="badge text-white px-3 py-1.5 rounded-pill fw-bold shadow-xs" style="background: #4f46e5; font-size: 0.78rem; letter-spacing: 0.4px;">
+                                        <i class="bi bi-lightning-charge-fill me-1 text-warning"></i>ONLINE PAYMENT
+                                    </span>
+                                    <span class="fw-bold text-dark fs-6">UPI / Cards / NetBanking / PhonePe</span>
+                                </div>
+                                <small class="text-secondary d-block" style="font-size: 0.82rem; line-height: 1.45;">
+                                    Instant payment via Razorpay with instant order confirmation.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Right Column: Price Details & Items Preview (Visible ONLY on Steps 3 & 4!) -->
+            <div class="col-lg-5 col-xl-4" id="checkout-summary-column">
+                <div class="sticky-top" style="top: 20px; z-index: 10;">
+                    
+                    <!-- Order Items Summary Card -->
+                    <div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-3" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+                        <div class="card-header bg-white py-2 px-3 border-bottom d-flex align-items-center justify-content-between">
+                            <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.85rem;">
+                                <i class="bi bi-bag-check-fill text-primary me-1.5"></i>Items in Order ({{ $cart->items->sum('quantity') }})
+                            </h6>
+                            <a href="{{ route('cart.index') }}" class="small text-primary text-decoration-none fw-bold" style="font-size: 0.74rem;">Edit</a>
+                        </div>
+                        <div class="card-body p-2.5">
+                            <div class="checkout-items-wrapper" style="max-height: 180px; overflow-y: auto;">
+                                @foreach($cart->items as $item)
+                                @php
+                                    $origPrice = (float) ($item->product->price ?? $item->unit_price);
+                                    $currPrice = (float) $item->unit_price;
+                                    $origLineTotal = $item->quantity * $origPrice;
+                                    $lineTotal = $item->quantity * $currPrice;
+                                    $hasDiscount = ($origPrice > $currPrice);
+                                @endphp
+                                <div class="p-1.5 mb-1.5 bg-white rounded-3 border shadow-xs d-flex align-items-center justify-content-between gap-2" style="border-color: #f1f5f9 !important;">
+                                    <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1">
+                                        @if($item->product && $item->product->main_image)
+                                            <img src="{{ asset('storage/' . $item->product->main_image) }}" alt="{{ $item->product->name }}" class="rounded-2 border flex-shrink-0" style="width: 34px; height: 34px; object-fit: contain;">
+                                        @else
+                                            <div class="rounded-2 bg-light border d-flex align-items-center justify-content-center flex-shrink-0 text-muted" style="width: 34px; height: 34px;">
+                                                <i class="bi bi-box-seam fs-6"></i>
+                                            </div>
+                                        @endif
+                                        <div class="min-w-0 flex-grow-1">
+                                            <h6 class="mb-0 fw-bold text-dark text-truncate" style="font-size: 0.78rem;" title="{{ $item->product->name ?? 'Product' }}">
+                                                {{ $item->product->name ?? 'Product' }}
+                                            </h6>
+                                            <span class="badge bg-light text-dark border px-1 py-0.2" style="font-size: 0.6rem;">
+                                                Qty: {{ $item->quantity }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="text-end flex-shrink-0 font-monospace fw-bold text-dark" style="font-size: 0.8rem;">
                                         ₹{{ number_format($lineTotal, 2) }}
                                     </div>
                                 </div>
-                            </div>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ====================================================== -->
-        <!-- TAB 2: PAYMENT METHOD & PROMO COUPONS                  -->
-        <!-- ====================================================== -->
-        <div id="checkout-tab-2-view" class="row justify-content-center g-3 g-lg-4 d-none">
-            <div class="col-lg-8">
-                
-                <!-- Confirmed Delivery Address Summary Strip -->
-                <div class="p-3 rounded-4 border mb-3.5 bg-white shadow-xs d-flex align-items-center justify-content-between" style="border-color: #cbd5e1 !important;">
-                    <div class="d-flex align-items-center gap-2.5 min-w-0">
-                        <div class="rounded-circle text-success bg-success bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;">
-                            <i class="bi bi-geo-alt-fill fs-6"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <span class="text-muted small d-block" style="font-size: 0.72rem; line-height: 1;">Delivering To:</span>
-                            <strong class="text-dark d-block text-truncate" id="tab-2-address-summary-title" style="font-size: 0.88rem;"></strong>
-                        </div>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold flex-shrink-0" onclick="editStep1()" style="font-size: 0.76rem;">
-                        <i class="bi bi-pencil me-1"></i> Edit Address
-                    </button>
-                </div>
-
-                <!-- Payment Methods Card -->
-                <div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-3.5" style="background: #ffffff; border: 1.5px solid #4f46e5 !important;">
-                    <div class="card-header bg-white py-3 px-3 px-md-4 border-bottom d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center gap-2.5">
-                            <div class="rounded-circle text-white d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background: #4f46e5;">
-                                <i class="bi bi-credit-card-2-front-fill fs-6"></i>
-                            </div>
-                            <div>
-                                <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.95rem;">Select Payment Method</h6>
-                                <small class="text-muted" style="font-size: 0.74rem;">Choose how you want to pay</small>
+                                @endforeach
                             </div>
                         </div>
                     </div>
 
-                    <div class="card-body p-3 p-md-4">
-                        <!-- Wallet Switch Box -->
-                        @if(isset($userWallet) && $userWallet->balance > 0 && (!isset($isWalletFrozen) || !$isWalletFrozen))
-                        <div class="p-3 rounded-3 border bg-light mb-3" style="border-color: #a7f3d0 !important;">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div class="d-flex align-items-center gap-2.5">
-                                    <div class="rounded-circle bg-success bg-opacity-10 p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
-                                        <i class="bi bi-wallet2 text-success fs-5"></i>
-                                    </div>
-                                    <div>
-                                        <span class="fw-bold text-dark d-block" style="font-size: 0.88rem;">Use ShopCalm Wallet Balance</span>
-                                        <small class="text-muted d-block" style="font-size: 0.75rem;">Available Balance: <strong class="text-success">₹{{ number_format($userWallet->balance, 2) }}</strong></small>
-                                    </div>
-                                </div>
-                                <div class="form-check form-switch mb-0">
-                                    <input class="form-check-input custom-wallet-switch" type="checkbox" role="switch" id="toggle-wallet-switch" {{ $useWallet ? 'checked' : '' }} style="cursor: pointer; width: 2.5em; height: 1.3em;">
-                                </div>
-                            </div>
+                    <!-- Price Details Card -->
+                    <div class="card border-0 shadow-xs rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+                        <div class="card-header bg-white py-2.5 px-3 border-bottom">
+                            <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.9rem;">Price Details</h6>
                         </div>
-                        @endif
-
-                        <!-- 100% Wallet Paid Notice Banner -->
-                        <div id="full-wallet-pay-notice" class="alert alert-success border-0 rounded-3 mb-3 p-3 shadow-xs {{ ($useWallet && $grandTotal <= 0) ? '' : 'd-none' }}" style="background: #dcfce7; color: #166534;">
-                            <div class="d-flex align-items-center gap-2.5">
-                                <i class="bi bi-shield-check fs-4 text-success flex-shrink-0"></i>
-                                <div>
-                                    <h6 class="fw-bold mb-0.5" style="font-size: 0.88rem;">100% Covered by ShopCalm Wallet!</h6>
-                                    <small style="font-size: 0.76rem; line-height: 1.4;" class="d-block">Your wallet balance covers the full order amount (₹0.00 remaining to pay). Payment gateway selection is disabled.</small>
+                        <div class="card-body p-3">
+                            <div class="p-2.5 rounded-3 bg-light border mb-2.5" style="border-color: #e2e8f0 !important;">
+                                <div class="price-row text-secondary">
+                                    <span>Total MRP:</span>
+                                    <span class="font-monospace text-dark fw-semibold">₹{{ number_format($totalMrp ?? $subtotal, 2) }}</span>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- Payment Tiles Container -->
-                        <div id="payment-tiles-container" style="{{ ($useWallet && $grandTotal <= 0) ? 'opacity: 0.45; pointer-events: none; filter: grayscale(1);' : '' }}">
-                            <!-- Option 1: Razorpay Online Payment (Active) -->
-                            <div class="payment-tile active-tile mb-2.5" onclick="document.getElementById('pay_online').checked = true; document.getElementById('pay_online').dispatchEvent(new Event('change'));">
-                                <div class="d-flex align-items-start gap-2.5">
-                                    <input class="form-check-input mt-1 flex-shrink-0" type="radio" name="payment_method" id="pay_online" value="online" checked form="checkout-form">
-                                    <div class="flex-grow-1">
-                                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-1 mb-1">
-                                            <label class="form-check-label fw-bold text-dark mb-0 cursor-pointer" style="font-size: 0.92rem;" for="pay_online">
-                                                ⚡ UPI / Cards / NetBanking / PhonePe
-                                            </label>
-                                            <span class="badge bg-success text-white rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.68rem;">FASTEST</span>
-                                        </div>
-                                        <p class="text-secondary small mb-2" style="font-size: 0.78rem; line-height: 1.4;">
-                                            Google Pay, PhonePe, Paytm, BHIM UPI, Visa, Mastercard, RuPay & All Banks.
-                                        </p>
-                                        <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                                            <span class="badge bg-white border text-dark px-2 py-0.5 rounded" style="font-size: 0.7rem;"><i class="bi bi-lightning-charge-fill text-warning me-1"></i>Instant Dispatch</span>
-                                            <span class="badge bg-white border text-dark px-2 py-0.5 rounded" style="font-size: 0.7rem;"><i class="bi bi-arrow-repeat text-success me-1"></i>Auto Refund</span>
-                                        </div>
-                                    </div>
+                                @if(isset($totalDiscount) && $totalDiscount > 0)
+                                <div class="price-row text-success">
+                                    <span>Discount on MRP:</span>
+                                    <span class="font-monospace fw-bold">- ₹{{ number_format($totalDiscount, 2) }}</span>
                                 </div>
-                            </div>
-
-                            <!-- Option 2: Cash On Delivery -->
-                            <div class="payment-tile mb-3" id="payment-tile-cod" onclick="handleCodTileClick()">
-                                <div class="d-flex align-items-start gap-2.5">
-                                    <input class="form-check-input mt-1 flex-shrink-0" type="radio" name="payment_method" id="cod" value="cod" form="checkout-form">
-                                    <div class="flex-grow-1">
-                                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-1 mb-1">
-                                            <label class="form-check-label fw-bold text-dark mb-0 cursor-pointer" style="font-size: 0.92rem;" for="cod" id="cod-label">
-                                                💵 Cash on Delivery (COD)
-                                            </label>
-                                            <span id="cod-badge" class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">PAY AT DOORSTEP</span>
-                                        </div>
-                                        <p class="text-secondary small mb-0" id="cod-description" style="font-size: 0.78rem;">
-                                            Pay via cash / UPI to our delivery executive when your parcel arrives.
-                                        </p>
-                                        <div id="cod-unavailable-notice" class="text-danger small mt-1.5 fw-semibold d-none" style="font-size: 0.75rem;">
-                                            <i class="bi bi-slash-circle me-1"></i> Cash on Delivery is unavailable for this delivery PIN code. Please select Online Payment.
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Promo Coupons Box -->
-                        <div class="p-3 rounded-3 border bg-light mb-3">
-                            <h6 class="fw-bold mb-2 text-dark" style="font-size: 0.88rem;">
-                                <i class="bi bi-tag-fill text-primary me-1.5"></i>Coupons & Offers
-                            </h6>
-                            <div id="coupon-status-wrapper">
-                                @if($couponCode)
-                                    <div class="p-2.5 rounded-3 shadow-xs d-flex align-items-center justify-content-between bg-white border" id="applied-coupon-box" style="border-color: #86efac !important;">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <i class="bi bi-check-circle-fill text-success fs-5"></i>
-                                            <div>
-                                                <span class="font-monospace fw-bold text-success px-2 py-0.5 rounded" style="background: #dcfce7; border: 1px dashed #22c55e; font-size: 0.8rem;">{{ $couponCode }}</span>
-                                                <small class="text-dark d-block mt-0.5 fw-semibold" style="font-size: 0.76rem;">Saved ₹{{ number_format($discountAmount, 2) }}</small>
-                                            </div>
-                                        </div>
-                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-0.5 fw-bold" id="btn-remove-coupon-ajax" onclick="handleRemoveCoupon()" style="font-size: 0.74rem;">Remove</button>
-                                    </div>
-                                @else
-                                    <div class="d-flex gap-2">
-                                        <input type="text" id="coupon_code_input" class="form-control rounded-3 font-monospace fw-bold" placeholder="ENTER COUPON CODE" style="text-transform: uppercase; font-size: 0.88rem;">
-                                        <button type="button" class="btn btn-primary rounded-3 px-3.5 fw-bold flex-shrink-0" onclick="handleApplyCoupon()" style="background: #4f46e5; border: none; font-size: 0.84rem;">APPLY</button>
-                                    </div>
-                                    @if(isset($availableCoupons) && $availableCoupons->count() > 0)
-                                        <div class="mt-2 text-center">
-                                            <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold" data-bs-toggle="modal" data-bs-target="#couponsModal" style="font-size: 0.8rem;">
-                                                <i class="bi bi-ticket-perforated-fill text-warning me-1"></i> View Available Coupons ({{ $availableCoupons->count() }})
-                                            </button>
-                                        </div>
-                                    @endif
                                 @endif
-                            </div>
-                        </div>
-
-                        <!-- Step 2 CTA: Continue to Confirm -->
-                        <button type="button" class="btn btn-primary btn-lg rounded-pill w-100 py-3 fw-bold shadow-xs text-white d-flex align-items-center justify-content-center gap-2" onclick="proceedToStep3()" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none; font-size: 0.92rem; letter-spacing: 0.02em;">
-                            <span>CONTINUE TO CONFIRMATION</span>
-                            <i class="bi bi-arrow-right fs-5"></i>
-                        </button>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-
-        <!-- ====================================================== -->
-        <!-- TAB 3: CONFIRM ORDER & PLACE ORDER / PAY              -->
-        <!-- ====================================================== -->
-        <div id="checkout-tab-3-view" class="row justify-content-center g-3 g-lg-4 d-none">
-            <div class="col-lg-7">
-                
-                <!-- Estimated Delivery Date Banner -->
-                <div class="p-3 rounded-4 mb-3.5 d-flex align-items-center gap-3 bg-white border shadow-xs" style="border-color: #cbd5e1 !important;">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center text-primary flex-shrink-0" style="width: 42px; height: 42px; background: #eff6ff;">
-                        <i class="bi bi-truck fs-4"></i>
-                    </div>
-                    <div>
-                        <span class="fw-bold text-dark d-block" style="font-size: 0.92rem;" id="review-delivery-date-title">Estimated Delivery</span>
-                        <small class="text-secondary d-block" id="review-delivery-date-text" style="font-size: 0.78rem;">Standard Dispatch within 24-48 hours</small>
-                    </div>
-                </div>
-
-                <!-- Confirmed Shipping Address Card -->
-                <div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-3.5" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
-                    <div class="card-header bg-white py-2.5 px-3 px-md-4 border-bottom d-flex align-items-center justify-content-between">
-                        <span class="fw-bold text-dark small"><i class="bi bi-geo-alt-fill text-primary me-1.5"></i>1. Delivering To</span>
-                        <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="editStep1()" style="font-size: 0.78rem;">Change</button>
-                    </div>
-                    <div class="card-body p-3 p-md-3.5">
-                        <div class="fw-bold text-dark" id="review-address-name" style="font-size: 0.9rem;"></div>
-                        <div class="text-secondary small" id="review-address-text" style="font-size: 0.83rem; line-height: 1.45;"></div>
-                        <div class="small text-muted mt-1" id="review-address-phone" style="font-size: 0.78rem;"></div>
-                    </div>
-                </div>
-
-                <!-- Confirmed Payment Mode Card -->
-                <div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-3.5" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
-                    <div class="card-header bg-white py-2.5 px-3 px-md-4 border-bottom d-flex align-items-center justify-content-between">
-                        <span class="fw-bold text-dark small"><i class="bi bi-credit-card-2-front-fill text-success me-1.5"></i>2. Payment Method</span>
-                        <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="editStep2()" style="font-size: 0.78rem;">Change</button>
-                    </div>
-                    <div class="card-body p-3 p-md-3.5">
-                        <div class="fw-bold text-dark" id="review-payment-mode-text" style="font-size: 0.9rem;"></div>
-                    </div>
-                </div>
-
-                <!-- Order Items Breakdown -->
-                <div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-3.5" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
-                    <div class="card-header bg-white py-2.5 px-3 px-md-4 border-bottom">
-                        <span class="fw-bold text-dark small"><i class="bi bi-bag-check-fill text-primary me-1.5"></i>Order Details ({{ $cart->items->sum('quantity') }} items)</span>
-                    </div>
-                    <div class="card-body p-3 p-md-3.5">
-                        <div class="checkout-items-wrapper" style="max-height: 220px; overflow-y: auto;">
-                            @foreach($cart->items as $item)
-                            @php
-                                $origPrice = (float) ($item->product->price ?? $item->unit_price);
-                                $currPrice = (float) $item->unit_price;
-                                $origLineTotal = $item->quantity * $origPrice;
-                                $lineTotal = $item->quantity * $currPrice;
-                                $hasDiscount = ($origPrice > $currPrice);
-                            @endphp
-                            <div class="p-2.5 mb-2 bg-white rounded-3 border d-flex align-items-center justify-content-between gap-2.5" style="border-color: #f1f5f9 !important;">
-                                <div class="d-flex align-items-center gap-2.5 min-w-0">
-                                    @if($item->product && $item->product->main_image)
-                                        <img src="{{ asset('storage/' . $item->product->main_image) }}" alt="{{ $item->product->name }}" class="rounded-2 border flex-shrink-0" style="width: 40px; height: 40px; object-fit: contain;">
-                                    @else
-                                        <div class="rounded-2 bg-light border d-flex align-items-center justify-content-center flex-shrink-0 text-muted" style="width: 40px; height: 40px;">
-                                            <i class="bi bi-box-seam fs-6"></i>
-                                        </div>
-                                    @endif
-                                    <div class="min-w-0">
-                                        <h6 class="mb-0.5 fw-bold text-dark text-truncate" style="font-size: 0.82rem;" title="{{ $item->product->name ?? 'Product' }}">
-                                            {{ $item->product->name ?? 'Product' }}
-                                        </h6>
-                                        <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                                            <span class="small text-muted" style="font-size: 0.72rem;">Qty: {{ $item->quantity }} @if(!empty($item->selected_option)) | {{ $item->selected_option }} @endif</span>
-                                            @if($hasDiscount)
-                                                <span class="text-success fw-bold" style="font-size: 0.65rem;">
-                                                    ({{ round((($origPrice - $currPrice) / $origPrice) * 100) }}% OFF)
-                                                </span>
-                                            @endif
-                                        </div>
+                                <div class="price-row text-secondary">
+                                    <span>Cart Subtotal:</span>
+                                    <span class="font-monospace fw-semibold text-dark" id="summary-subtotal">₹{{ number_format($subtotal, 2) }}</span>
+                                </div>
+                                <div class="price-row text-success {{ $discountAmount > 0 ? '' : 'd-none' }}" id="summary-discount-row">
+                                    <span class="d-flex align-items-center gap-1 fw-semibold">
+                                        <i class="bi bi-tag-fill"></i> <span id="summary-discount-label">Coupon ({{ $couponCode }})</span>
+                                    </span>
+                                    <span class="font-monospace fw-bold" id="summary-discount-val">- ₹{{ number_format($discountAmount, 2) }}</span>
+                                </div>
+                                <div class="price-row text-success {{ $walletDiscount > 0 ? '' : 'd-none' }}" id="summary-wallet-row">
+                                    <span class="d-flex align-items-center gap-1 fw-semibold">
+                                        <i class="bi bi-wallet2"></i> <span>Wallet Credits</span>
+                                    </span>
+                                    <span class="font-monospace fw-bold" id="summary-wallet-val">- ₹{{ number_format($walletDiscount, 2) }}</span>
+                                </div>
+                                <div class="price-row text-secondary mb-1">
+                                    <span>Delivery Fee:</span>
+                                    <span id="summary-shipping-fee">
+                                        @if(isset($shippingFee) && $shippingFee > 0)
+                                            <span class="font-monospace text-dark fw-bold">+ ₹{{ number_format($shippingFee, 2) }}</span>
+                                        @else
+                                            <span class="badge bg-success bg-opacity-10 text-success fw-bold rounded-pill px-2 py-0.5">FREE</span>
+                                        @endif
+                                    </span>
+                                </div>
+                                <div class="price-row text-secondary mb-1" id="summary-cod-fee-row">
+                                    <span>COD Handling Fee:</span>
+                                    <span id="summary-cod-fee-val">
+                                        <span class="badge bg-success bg-opacity-10 text-success fw-bold rounded-pill px-2 py-0.5">₹0.00 (Prepaid Offer)</span>
+                                    </span>
+                                </div>
+                                <hr class="my-2" style="border-color: #cbd5e1;">
+                                <div class="d-flex justify-content-between align-items-center pt-0.5">
+                                    <div>
+                                        <span class="fw-bold text-dark fs-6 d-block">Grand Total:</span>
+                                        <small class="text-muted" style="font-size: 0.68rem;"><i class="bi bi-shield-check text-success me-1"></i>Inclusive of all taxes</small>
                                     </div>
-                                </div>
-                                <div class="text-end flex-shrink-0">
-                                    @if($hasDiscount)
-                                        <div class="text-muted text-decoration-line-through font-monospace" style="font-size: 0.72rem;">
-                                            ₹{{ number_format($origLineTotal, 2) }}
-                                        </div>
-                                    @endif
-                                    <div class="fw-bold text-dark font-monospace small">₹{{ number_format($lineTotal, 2) }}</div>
+                                    <span class="fs-5 fw-bolder text-dark font-monospace" id="summary-grand-total">₹{{ number_format($grandTotal, 2) }}</span>
                                 </div>
                             </div>
-                            @endforeach
+
+                            <!-- Safe & Secure Badges -->
+                            <div class="d-flex align-items-center justify-content-center gap-3 text-muted small" style="font-size: 0.72rem;">
+                                <span><i class="bi bi-shield-lock-fill text-success me-1"></i>100% Safe</span>
+                                <span><i class="bi bi-truck text-primary me-1"></i>Fast Dispatch</span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-            </div>
-
-            <!-- Right Column: Final Price Breakdown & Pay Button -->
-            <div class="col-lg-5">
-                <div class="card border-0 shadow-xs rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
-                    <div class="card-header bg-white py-3 px-3 px-md-4 border-bottom">
-                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.95rem;">Price Details</h6>
-                    </div>
-                    <div class="card-body p-3 p-md-4">
-                        <div class="p-3 rounded-3 bg-light border mb-3" style="border-color: #e2e8f0 !important;">
-                            <div class="price-row text-secondary">
-                                <span>Total MRP:</span>
-                                <span class="font-monospace text-dark fw-semibold">₹{{ number_format($totalMrp ?? $subtotal, 2) }}</span>
-                            </div>
-                            @if(isset($totalDiscount) && $totalDiscount > 0)
-                            <div class="price-row text-success">
-                                <span>Discount on MRP:</span>
-                                <span class="font-monospace fw-bold">- ₹{{ number_format($totalDiscount, 2) }}</span>
-                            </div>
-                            @endif
-                            <div class="price-row text-secondary">
-                                <span>Cart Subtotal:</span>
-                                <span class="font-monospace fw-semibold text-dark" id="summary-subtotal">₹{{ number_format($subtotal, 2) }}</span>
-                            </div>
-                            <div class="price-row text-success {{ $discountAmount > 0 ? '' : 'd-none' }}" id="summary-discount-row">
-                                <span class="d-flex align-items-center gap-1 fw-semibold">
-                                    <i class="bi bi-tag-fill"></i> <span id="summary-discount-label">Coupon ({{ $couponCode }})</span>
-                                </span>
-                                <span class="font-monospace fw-bold" id="summary-discount-val">- ₹{{ number_format($discountAmount, 2) }}</span>
-                            </div>
-                            <div class="price-row text-success {{ $walletDiscount > 0 ? '' : 'd-none' }}" id="summary-wallet-row">
-                                <span class="d-flex align-items-center gap-1 fw-semibold">
-                                    <i class="bi bi-wallet2"></i> <span>Wallet Credits</span>
-                                </span>
-                                <span class="font-monospace fw-bold" id="summary-wallet-val">- ₹{{ number_format($walletDiscount, 2) }}</span>
-                            </div>
-                            <div class="price-row text-secondary mb-1">
-                                <span>Delivery Fee:</span>
-                                <span id="summary-shipping-fee">
-                                    @if(isset($shippingFee) && $shippingFee > 0)
-                                        <span class="font-monospace text-dark fw-bold">+ ₹{{ number_format($shippingFee, 2) }}</span>
-                                    @else
-                                        <span class="badge bg-success bg-opacity-10 text-success fw-bold rounded-pill px-2 py-0.5">FREE</span>
-                                    @endif
-                                </span>
-                            </div>
-                            <div class="price-row text-secondary mb-1" id="summary-cod-fee-row">
-                                <span>COD Handling Fee:</span>
-                                <span id="summary-cod-fee-val">
-                                    <span class="badge bg-success bg-opacity-10 text-success fw-bold rounded-pill px-2 py-0.5">₹0.00 (Prepaid Offer)</span>
-                                </span>
-                            </div>
-                            <hr class="my-2.5" style="border-color: #cbd5e1;">
-                            <div class="d-flex justify-content-between align-items-center pt-1">
-                                <div>
-                                    <span class="fw-bold text-dark fs-6 d-block">Grand Total:</span>
-                                    <small class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-shield-check text-success me-1"></i>Inclusive of all taxes</small>
-                                </div>
-                                <span class="fs-4 fw-bolder text-dark font-monospace" id="summary-grand-total">₹{{ number_format($grandTotal, 2) }}</span>
-                            </div>
+                    <!-- ============================================================== -->
+                    <!-- STEP 3 & STEP 4 ACTION BUTTONS (Placed at END after Price Details) -->
+                    <!-- ============================================================== -->
+                    <!-- Step 3 Action Buttons (Visible on Step 3) -->
+                    <div id="step-3-summary-actions" class="mt-3.5 mb-2">
+                        <div class="d-flex justify-content-between align-items-center gap-2">
+                            <button type="button" class="btn btn-light border rounded-pill px-3.5 py-2 fw-semibold text-secondary btn-sm" onclick="goToStep(2)">
+                                <i class="bi bi-arrow-left me-1"></i> Back to Offers
+                            </button>
+                            <button type="button" class="btn btn-primary rounded-pill px-4 py-2.5 fw-semibold shadow-xs d-inline-flex align-items-center gap-2" onclick="proceedFromStep3()">
+                                <span>Continue to Confirm</span>
+                                <i class="bi bi-arrow-right"></i>
+                            </button>
                         </div>
+                    </div>
 
-                        <div class="mb-3 p-2.5 p-md-3 rounded-3 border" style="background: #f8fafc; border-color: #cbd5e1 !important;">
-                            <div class="form-check mb-0 d-flex align-items-start gap-2">
-                                <input class="form-check-input cursor-pointer flex-shrink-0 mt-1" type="checkbox" id="terms-consent-checkbox" name="terms_consent" required form="checkout-form" style="cursor: pointer;">
-                                <label class="form-check-label text-dark small mb-0" for="terms-consent-checkbox" style="font-size: 0.78rem; line-height: 1.45; cursor: pointer;">
+                    <!-- Step 4 Action Buttons (Visible on Step 4) -->
+                    <div id="step-4-summary-actions" class="mt-3 mb-2 d-none">
+                        <!-- Mandatory Terms & Conditions Checkbox Card -->
+                        <div class="confirm-terms-box" id="confirm-terms-wrapper">
+                            <div class="form-check d-flex align-items-start gap-2.5 m-0">
+                                <input class="form-check-input cursor-pointer flex-shrink-0 mt-0.5" 
+                                       type="checkbox" 
+                                       id="terms-consent-checkbox" 
+                                       name="terms_consent" 
+                                       value="1" 
+                                       required 
+                                       form="checkout-form" 
+                                       style="cursor: pointer; width: 1.25rem; height: 1.25rem; accent-color: #4f46e5;">
+                                <label class="form-check-label text-dark small mb-0 user-select-none" for="terms-consent-checkbox" style="font-size: 0.82rem; line-height: 1.45; cursor: pointer;">
                                     I have reviewed my order and agree to {{ \App\Models\Setting::get('store_name', 'ShopCalm') }}'s 
-                                    <a href="{{ route('page.return') }}" target="_blank" class="text-primary text-decoration-none fw-semibold">No Return Policy</a> 
+                                    <a href="{{ route('page.return') }}" target="_blank" class="text-primary text-decoration-underline fw-semibold">No Return Policy</a> 
                                     and 
-                                    <a href="{{ route('page.terms') }}" target="_blank" class="text-primary text-decoration-none fw-semibold">Terms & Conditions</a>.
+                                    <a href="{{ route('page.terms') }}" target="_blank" class="text-primary text-decoration-underline fw-semibold">Terms &amp; Conditions</a>.
+                                    <span class="text-danger fw-bold ms-0.5">*</span>
                                 </label>
                             </div>
                         </div>
 
-                        <div class="d-none d-md-grid mb-3">
-                            <button type="submit" form="checkout-form" onclick="handleOrderSubmission(event)" class="btn btn-primary btn-lg rounded-pill btn-checkout-cta d-flex align-items-center justify-content-center gap-2 py-3 shadow-xs text-white" id="btn-place-order">
-                                <span id="btn-place-order-text" class="fw-bold text-white fs-6">Pay Online</span>
-                                <i class="bi bi-arrow-right fs-5 text-white"></i>
+                        <div class="d-flex justify-content-between align-items-center gap-2">
+                            <button type="button" class="btn btn-light border rounded-pill px-3.5 py-2 fw-semibold text-secondary btn-sm" onclick="goToStep(3)">
+                                <i class="bi bi-arrow-left me-1"></i> Back
+                            </button>
+                            <button type="submit" form="checkout-form" onclick="handleOrderSubmission(event)" class="btn btn-primary rounded-pill px-4 py-2.5 fw-bold shadow-xs d-inline-flex align-items-center gap-2 btn-checkout-cta" id="btn-place-order">
+                                <span id="btn-place-order-text">Pay Online (₹{{ number_format($grandTotal, 2) }})</span>
+                                <i class="bi bi-arrow-right"></i>
                             </button>
                         </div>
                     </div>
+
                 </div>
             </div>
+
+        </div>
+
+        <!-- Back to Shopping Bag link at bottom -->
+        <div class="text-center mt-3 pb-3">
+            <a href="{{ route('cart.index') }}" class="text-muted small text-decoration-none fw-semibold">
+                <i class="bi bi-bag me-1"></i> Return to Shopping Bag ({{ $cart->items->sum('quantity') }} items)
+            </a>
         </div>
     </form>
 </div>
 
-{{-- 📱 Mobile Sticky Bottom Checkout Bar --}}
-<div class="d-block d-md-none position-fixed bottom-0 start-0 end-0 bg-white border-top shadow-lg p-2.5 z-3" 
-     style="backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.98) !important; z-index: 1045;">
-    <div class="container-fluid px-2">
-        <div class="row g-2 align-items-center">
-            <div class="col-5">
-                <div class="d-flex flex-column">
-                    <span class="text-muted" style="font-size: 0.68rem; line-height: 1;">Grand Total:</span>
-                    <span class="fw-bolder text-dark font-monospace" id="mobile-summary-grand-total" style="font-size: 1.05rem; letter-spacing: -0.3px;">
-                        ₹{{ number_format($grandTotal, 2) }}
-                    </span>
-                </div>
-            </div>
-            <div class="col-7">
-                <button type="submit" form="checkout-form" onclick="handleOrderSubmission(event)" class="btn btn-primary w-100 rounded-pill py-2.5 fw-bold text-nowrap shadow-xs btn-checkout-cta" id="mobile-btn-place-order" style="font-size: 0.84rem;">
-                    <span id="mobile-btn-place-order-text">Place Order</span> <i class="bi bi-arrow-right ms-1"></i>
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Coupons Modal -->
+<!-- Available Coupons Modal -->
 <div class="modal fade" id="couponsModal" tabindex="-1" aria-labelledby="couponsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
@@ -783,7 +1056,7 @@
                     <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background: rgba(99, 102, 241, 0.12); color: #6366f1;">
                         <i class="bi bi-tag-fill"></i>
                     </div>
-                    <h5 class="modal-title fw-bolder text-dark mb-0" id="couponsModalLabel" style="font-size: 1rem;">Available Coupons</h5>
+                    <h5 class="modal-title fw-bolder text-dark mb-0" id="couponsModalLabel" style="font-size: 1rem;">Available Coupons & Offers</h5>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -797,7 +1070,7 @@
                     <!-- Eligible Coupons Section -->
                     @if($eligibleCoupons->count() > 0)
                         <div class="mb-3">
-                            <span class="fw-bold text-dark small mb-2 d-block text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Applicable Coupons ({{ $eligibleCoupons->count() }})</span>
+                            <span class="fw-bold text-dark small mb-2 d-block text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Applicable to Your Order ({{ $eligibleCoupons->count() }})</span>
                             <div class="d-flex flex-column gap-2.5">
                                 @foreach($eligibleCoupons as $c)
                                     @php $discType = is_object($c->discount_type) ? $c->discount_type->value : (string)$c->discount_type; @endphp
@@ -871,14 +1144,14 @@
                 <div class="row g-2.5" id="modal-address-list">
                     @foreach($addresses as $addr)
                     <div class="col-12">
-                        <div class="card border rounded-3 p-3 address-modal-option cursor-pointer" onclick="selectModalAddress({{ json_encode($addr) }})">
+                        <div class="card border rounded-3 p-2.5 address-modal-option cursor-pointer" onclick="selectModalAddress({{ json_encode($addr) }})">
                             <div class="d-flex justify-content-between align-items-start gap-2">
-                                <div>
-                                    <strong class="text-dark" style="font-size: 0.9rem;">{{ $addr->name }}</strong>
-                                    <p class="text-secondary mb-1 mt-0.5" style="font-size: 0.82rem;">{{ $addr->address }}, {{ $addr->city }}, {{ $addr->state }} - {{ $addr->zip }}</p>
-                                    <div class="small text-muted" style="font-size: 0.78rem;"><i class="bi bi-telephone me-1"></i> {{ $addr->phone }}</div>
+                                <div class="min-w-0 flex-grow-1 text-break-word">
+                                    <strong class="text-dark" style="font-size: 0.88rem;">{{ $addr->name }}</strong>
+                                    <p class="text-secondary mb-1 mt-0.5 text-break-word" style="font-size: 0.8rem;">{{ $addr->address }}, {{ $addr->city }}, {{ $addr->state }} - {{ $addr->zip }}</p>
+                                    <div class="small text-muted" style="font-size: 0.76rem;"><i class="bi bi-telephone me-1"></i> {{ $addr->phone }}</div>
                                 </div>
-                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-0.5 flex-shrink-0" style="font-size: 0.76rem;">Select Address</button>
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-0.5 flex-shrink-0" style="font-size: 0.74rem;">Select</button>
                             </div>
                         </div>
                     </div>
@@ -904,7 +1177,10 @@
 let userAddresses = {!! json_encode($addresses) !!};
 let currentSelectedAddress = userAddresses.length > 0 ? userAddresses[0] : null;
 window.isCurrentAddressServiceable = true;
+window.isCurrentAddressCodAvailable = true;
+window.activeShippingCharge = parseFloat("{{ $shippingFee ?? 0 }}");
 window.currentCheckoutStep = 1;
+
 @if(isset($pendingOrder) && $pendingOrder)
 window.activePendingOrder = {
     id: {{ $pendingOrder->id }},
@@ -932,7 +1208,7 @@ function showPendingOrderBlockModal() {
                 </p>
                 <div class="p-2.5 rounded-3 mb-2" style="background: #fffbeb; border: 1px solid #fde68a; color: #92400e;">
                     <i class="bi bi-info-circle-fill me-1"></i>
-                    <strong>Store Policy:</strong> You cannot place a new order until you either <strong>Proceed</strong> with your pending order (complete payment / switch to COD) or <strong>Cancel</strong> it.
+                    <strong>Store Policy:</strong> Please proceed with your pending order or cancel it before placing a new one.
                 </div>
             </div>
         `,
@@ -941,8 +1217,8 @@ function showPendingOrderBlockModal() {
         confirmButtonColor: '#4f46e5',
         denyButtonColor: '#ef4444',
         cancelButtonColor: '#64748b',
-        confirmButtonText: `<i class="bi bi-credit-card me-1"></i> Proceed with #${p.order_number}`,
-        denyButtonText: `<i class="bi bi-x-circle me-1"></i> Cancel Order #${p.order_number}`,
+        confirmButtonText: `Proceed with #${p.order_number}`,
+        denyButtonText: `Cancel Order #${p.order_number}`,
         cancelButtonText: 'Close'
     }).then((result) => {
         if (result.isConfirmed) {
@@ -998,13 +1274,13 @@ function cancelPendingOrderOnCheckout(orderId, orderNumber) {
                 Swal.fire({
                     icon: 'success',
                     title: 'Pending Order Cancelled!',
-                    text: data.message || `Order #${orderNumber} has been cancelled. You can now proceed with your new order.`,
+                    text: data.message || `Order #${orderNumber} has been cancelled.`,
                     confirmButtonColor: '#10b981'
                 });
             } else {
                 if (bannerBtn) {
                     bannerBtn.disabled = false;
-                    bannerBtn.innerHTML = '<i class="bi bi-x-circle"></i> <span>Cancel Pending Order</span>';
+                    bannerBtn.innerHTML = '<i class="bi bi-x-circle me-1"></i> Cancel';
                 }
                 Swal.fire('Error', data.message || 'Could not cancel the pending order.', 'error');
             }
@@ -1013,11 +1289,222 @@ function cancelPendingOrderOnCheckout(orderId, orderNumber) {
             console.error('Cancel pending order error:', err);
             if (bannerBtn) {
                 bannerBtn.disabled = false;
-                bannerBtn.innerHTML = '<i class="bi bi-x-circle"></i> <span>Cancel Pending Order</span>';
+                bannerBtn.innerHTML = '<i class="bi bi-x-circle me-1"></i> Cancel';
             }
             Swal.fire('Error', 'Network error while cancelling pending order.', 'error');
         });
     });
+}
+
+// -------------------------------------------------------------
+// STEP NAVIGATION CONTROLLER (1: Address -> 2: Offers -> 3: Payment -> 4: Confirm)
+// -------------------------------------------------------------
+function goToStep(step) {
+    if (step > 1 && (!currentSelectedAddress || !document.getElementById('hidden_shipping_address')?.value.trim())) {
+        const errorBanner = document.getElementById('address-error-banner');
+        if (errorBanner) {
+            errorBanner.style.display = 'block';
+            errorBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        step = 1;
+    }
+
+    if (step > 1 && window.isCurrentAddressServiceable === false) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Delivery Unavailable',
+            text: 'Delivery is currently unavailable to the selected PIN code. Please select or add a different delivery address.',
+            confirmButtonColor: '#ef4444'
+        });
+        step = 1;
+    }
+
+    window.currentCheckoutStep = step;
+
+    // Toggle 1-2 Container vs 3-4 Container (Price Details only appears on Step 3 & 4!)
+    const step12Col = document.getElementById('checkout-step-1-2-col');
+    const step34Col = document.getElementById('checkout-step-3-4-col');
+    if (step === 1 || step === 2) {
+        if (step12Col) step12Col.classList.remove('d-none');
+        if (step34Col) step34Col.classList.add('d-none');
+    } else {
+        if (step12Col) step12Col.classList.add('d-none');
+        if (step34Col) step34Col.classList.remove('d-none');
+    }
+
+    // Toggle Step Views
+    document.getElementById('checkout-step-1-view')?.classList.toggle('d-none', step !== 1);
+    document.getElementById('checkout-step-2-view')?.classList.toggle('d-none', step !== 2);
+    document.getElementById('checkout-step-3-view')?.classList.toggle('d-none', step !== 3);
+    document.getElementById('checkout-step-4-view')?.classList.toggle('d-none', step !== 4);
+
+    // Toggle Summary Action Buttons (placed after Price Details)
+    document.getElementById('step-3-summary-actions')?.classList.toggle('d-none', step !== 3);
+    document.getElementById('step-4-summary-actions')?.classList.toggle('d-none', step !== 4);
+
+    // Update Top Stepper Progress Bar
+    const progressLine = document.getElementById('stepper-progress-line');
+    const widths = { 1: '0%', 2: '27%', 3: '54%', 4: '80%' };
+    if (progressLine) progressLine.style.width = widths[step] || '0%';
+
+    for (let s = 1; s <= 4; s++) {
+        const badge = document.getElementById(`stepper-badge-${s}`);
+        const text = document.getElementById(`stepper-text-${s}`);
+        if (!badge || !text) continue;
+
+        if (s < step) {
+            badge.className = 'checkout-step-badge text-white shadow-xs';
+            badge.style.background = '#10b981';
+            badge.style.boxShadow = 'none';
+            badge.innerHTML = '<i class="bi bi-check-lg"></i>';
+            text.className = 'fw-semibold text-success mt-1 text-center';
+        } else if (s === step) {
+            badge.className = 'checkout-step-badge text-white shadow-xs';
+            badge.style.background = '#4f46e5';
+            badge.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.2) !important';
+            badge.innerHTML = s;
+            text.className = 'fw-bold text-primary mt-1 text-center';
+        } else {
+            badge.className = 'checkout-step-badge bg-light text-muted border';
+            badge.style.background = '';
+            badge.style.boxShadow = '';
+            badge.innerHTML = s;
+            text.className = 'fw-semibold text-muted mt-1 text-center';
+        }
+    }
+
+    // Populate Dynamic Summaries
+    if (currentSelectedAddress) {
+        const addrFmt = `${currentSelectedAddress.name} — ${currentSelectedAddress.address}, ${currentSelectedAddress.city} (${currentSelectedAddress.zip})`;
+        const st2Summary = document.getElementById('step-2-address-summary');
+        if (st2Summary) st2Summary.textContent = addrFmt;
+
+        const st3Summary = document.getElementById('step-3-address-summary');
+        if (st3Summary) st3Summary.textContent = addrFmt;
+
+        const revName = document.getElementById('review-address-name');
+        if (revName) revName.textContent = currentSelectedAddress.name;
+
+        const revText = document.getElementById('review-address-text');
+        if (revText) revText.textContent = `${currentSelectedAddress.address}, ${currentSelectedAddress.city}, ${currentSelectedAddress.state} - ${currentSelectedAddress.zip}`;
+
+        const revPhone = document.getElementById('review-address-phone');
+        if (revPhone) revPhone.innerHTML = `<i class="bi bi-telephone-fill text-muted me-1.5"></i> Mobile: <strong class="text-dark">${currentSelectedAddress.phone}</strong>`;
+    }
+
+    // Update Step 4 Reviews
+    updateReviewSummaries();
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function proceedFromStep1() {
+    if (window.activePendingOrder) {
+        showPendingOrderBlockModal();
+        return;
+    }
+
+    const hiddenAddress = document.getElementById('hidden_shipping_address');
+    if (!currentSelectedAddress || !hiddenAddress || !hiddenAddress.value.trim()) {
+        const errorBanner = document.getElementById('address-error-banner');
+        if (errorBanner) {
+            errorBanner.style.display = 'block';
+            errorBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+    }
+
+    if (window.isCurrentAddressServiceable === false) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Delivery Unavailable',
+            text: 'Delivery is currently unavailable to the selected PIN code. Please select or add a different delivery address.',
+            confirmButtonColor: '#ef4444'
+        });
+        return;
+    }
+
+    goToStep(2);
+}
+
+function proceedFromStep2() {
+    goToStep(3);
+}
+
+function proceedFromStep3() {
+    const grandTotalRaw = document.getElementById('summary-grand-total')?.textContent.replace(/[^0-9.]/g, '') || '0';
+    const grandTotalVal = parseFloat(grandTotalRaw);
+    const selectedPayMethod = document.querySelector('input[name="payment_method"]:checked')?.value || 'online';
+    if (grandTotalVal > 0 && selectedPayMethod === 'cod' && window.isCurrentAddressCodAvailable === false) {
+        Swal.fire({
+            icon: 'error',
+            title: 'COD Not Available',
+            text: 'Cash on Delivery (COD) is not available for this delivery PIN code. Please select Online Payment.',
+            confirmButtonColor: '#ef4444'
+        });
+        const onlineRadio = document.getElementById('pay_online');
+        if (onlineRadio) {
+            onlineRadio.checked = true;
+            onlineRadio.dispatchEvent(new Event('change'));
+        }
+        return;
+    }
+
+    goToStep(4);
+}
+
+function updateReviewSummaries() {
+    const grandTotalRaw = document.getElementById('summary-grand-total')?.textContent.replace(/[^0-9.]/g, '') || '0';
+    const grandTotalVal = parseFloat(grandTotalRaw);
+    const selectedPayMethod = document.querySelector('input[name="payment_method"]:checked')?.value || 'online';
+    const isOnline = (selectedPayMethod === 'online');
+
+    // Step 4 Offers Summary
+    const revOffers = document.getElementById('review-offers-summary-text');
+    if (revOffers) {
+        const discountRow = document.getElementById('summary-discount-row');
+        const walletRow = document.getElementById('summary-wallet-row');
+        const discountVal = discountRow && !discountRow.classList.contains('d-none') ? document.getElementById('summary-discount-val')?.textContent : null;
+        const discountLabel = document.getElementById('summary-discount-label')?.textContent || 'Coupon';
+        const walletVal = walletRow && !walletRow.classList.contains('d-none') ? document.getElementById('summary-wallet-val')?.textContent : null;
+
+        let offersHtml = '';
+        if (discountVal) {
+            offersHtml += `<div class="d-flex align-items-center gap-2 mb-1.5 flex-wrap"><span class="badge text-white fw-bold px-2.5 py-1 rounded-pill" style="background: #059669; font-size: 0.78rem;"><i class="bi bi-tag-fill me-1"></i>${discountLabel}</span> <span class="font-monospace fw-bold text-success">${discountVal}</span></div>`;
+        }
+        if (walletVal) {
+            offersHtml += `<div class="d-flex align-items-center gap-2 flex-wrap"><span class="badge bg-success text-white fw-bold px-2.5 py-1 rounded-pill" style="font-size: 0.78rem;"><i class="bi bi-wallet2 me-1"></i>ShopCalm Wallet</span> <span class="font-monospace fw-bold text-success">${walletVal}</span></div>`;
+        }
+        if (!discountVal && !walletVal) {
+            offersHtml = '<span class="text-muted" style="font-size: 0.84rem;">No coupon code or wallet balance applied to this order.</span>';
+        }
+        revOffers.innerHTML = offersHtml;
+    }
+
+    // Step 4 Payment Mode Summary
+    const revPay = document.getElementById('review-payment-mode-text');
+    if (revPay) {
+        if (grandTotalVal <= 0) {
+            revPay.innerHTML = '<div class="d-flex align-items-center gap-2 flex-wrap mb-1.5"><span class="badge bg-success text-white px-3 py-1.5 rounded-pill fw-bold shadow-xs" style="font-size: 0.78rem; letter-spacing: 0.3px;"><i class="bi bi-shield-fill-check me-1"></i>100% COVERED</span> <span class="fw-bold text-dark fs-6">ShopCalm Wallet & Offers (₹0.00 Due)</span></div><small class="text-secondary d-block" style="font-size: 0.82rem; line-height: 1.45;">Your entire order amount is covered by wallet/offers. Payment methods are disabled as no gateway payment or cash collection is required.</small>';
+        } else if (isOnline) {
+            revPay.innerHTML = '<div class="d-flex align-items-center gap-2 flex-wrap mb-1.5"><span class="badge text-white px-3 py-1.5 rounded-pill fw-bold shadow-xs" style="background: #4f46e5; font-size: 0.78rem; letter-spacing: 0.4px;"><i class="bi bi-lightning-charge-fill me-1 text-warning"></i>ONLINE PAYMENT</span> <span class="fw-bold text-dark fs-6">UPI / Cards / NetBanking / PhonePe</span></div><small class="text-secondary d-block" style="font-size: 0.82rem; line-height: 1.45;">Instant payment via Razorpay with instant order confirmation.</small>';
+        } else {
+            revPay.innerHTML = '<div class="d-flex align-items-center gap-2 flex-wrap mb-1.5"><span class="badge bg-dark text-white px-3 py-1.5 rounded-pill fw-bold shadow-xs" style="font-size: 0.78rem; letter-spacing: 0.4px;"><i class="bi bi-cash-stack me-1 text-success"></i>CASH ON DELIVERY</span> <span class="fw-bold text-dark fs-6">Cash on Delivery (Pay at Doorstep)</span></div><small class="text-secondary d-block" style="font-size: 0.82rem; line-height: 1.45;">Pay via cash or UPI directly to our delivery executive when parcel arrives.</small>';
+        }
+    }
+
+    // Step 4 Final CTA button label
+    const grandTotalFmt = document.getElementById('summary-grand-total')?.textContent || '₹{{ number_format($grandTotal, 2) }}';
+    const placeOrderText = document.getElementById('btn-place-order-text');
+    if (placeOrderText) {
+        if (grandTotalVal <= 0) {
+            placeOrderText.textContent = 'Confirm Order (₹0.00 - Paid)';
+        } else if (isOnline) {
+            placeOrderText.textContent = `Pay Online (${grandTotalFmt})`;
+        } else {
+            placeOrderText.textContent = `Place COD Order (${grandTotalFmt})`;
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1027,53 +1514,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const checkoutForm = document.getElementById('checkout-form');
 
-    window.updatePaymentButtonLabel = function() {
-        const placeOrderBtn = document.getElementById('btn-place-order');
-        const mobPlaceOrderBtn = document.getElementById('mobile-btn-place-order');
-
-        const selectedVal = document.querySelector('input[name="payment_method"]:checked')?.value;
-        const isOnline = (selectedVal === 'online');
-        const grandTotalRaw = document.getElementById('summary-grand-total')?.textContent.replace(/[^0-9.]/g, '') || '0';
-        const grandTotalVal = parseFloat(grandTotalRaw);
-        const grandTotalFmt = document.getElementById('summary-grand-total')?.textContent || '₹{{ number_format($grandTotal, 2) }}';
-
-        const mobGrandEl = document.getElementById('mobile-summary-grand-total');
-        if (mobGrandEl) mobGrandEl.textContent = grandTotalFmt;
-
-        let desktopText = `Place COD Order (${grandTotalFmt})`;
-        let mobText = `Place COD Order (${grandTotalFmt})`;
-
-        if (grandTotalVal <= 0) {
-            desktopText = `Confirm & Place Order (Wallet Paid)`;
-            mobText = `Place Order (Wallet)`;
-        } else if (isOnline) {
-            desktopText = `Pay Online ${grandTotalFmt}`;
-            mobText = `Pay Online (${grandTotalFmt})`;
-        }
-
-        if (placeOrderBtn) {
-            placeOrderBtn.disabled = false;
-            placeOrderBtn.innerHTML = `<span id="btn-place-order-text" class="fw-bold text-white fs-6">${desktopText}</span><i class="bi bi-arrow-right fs-5 text-white"></i>`;
-        }
-
-        if (mobPlaceOrderBtn) {
-            mobPlaceOrderBtn.disabled = false;
-            mobPlaceOrderBtn.innerHTML = `<span id="mobile-btn-place-order-text">${mobText}</span> <i class="bi bi-arrow-right ms-1"></i>`;
-        }
-    };
-
     document.querySelectorAll('input[name="payment_method"]').forEach(radio => {
         radio.addEventListener('change', function() {
             if (typeof updateShippingFeeAndTotal === 'function') {
                 updateShippingFeeAndTotal(window.activeShippingCharge, 499);
             } else {
-                window.updatePaymentButtonLabel();
+                updateReviewSummaries();
             }
             document.querySelectorAll('.payment-tile').forEach(tile => tile.classList.remove('active-tile'));
             const parentTile = this.closest('.payment-tile');
             if (parentTile) parentTile.classList.add('active-tile');
         });
     });
+
+    const consentInput = document.getElementById('terms-consent-checkbox');
+    if (consentInput) {
+        consentInput.addEventListener('change', function() {
+            const termsBox = document.getElementById('confirm-terms-wrapper');
+            if (termsBox && this.checked) {
+                termsBox.style.borderColor = '#cbd5e1';
+                termsBox.style.background = '#f8fafc';
+            }
+        });
+    }
 
     window.handleOrderSubmission = function(e) {
         if (e) e.preventDefault();
@@ -1084,54 +1547,66 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (window.currentCheckoutStep === 1) {
-            proceedToStep2();
+            proceedFromStep1();
             return;
         }
         if (window.currentCheckoutStep === 2) {
-            proceedToStep3();
+            proceedFromStep2();
+            return;
+        }
+        if (window.currentCheckoutStep === 3) {
+            proceedFromStep3();
             return;
         }
 
+        // Step 4: Final Place Order Validation
         const consentCb = document.getElementById('terms-consent-checkbox');
         if (consentCb && !consentCb.checked) {
+            const termsBox = document.getElementById('confirm-terms-wrapper');
+            if (termsBox) {
+                termsBox.style.borderColor = '#ef4444';
+                termsBox.style.background = '#fef2f2';
+            }
             Swal.fire({
                 icon: 'warning',
                 title: 'Agreement Required',
                 text: 'Please check the agreement box for the No Return Policy & Terms & Conditions before placing your order.',
-                confirmButtonColor: '#6366f1'
+                confirmButtonColor: '#4f46e5'
             });
             consentCb.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
 
-        if (!document.getElementById('hidden_shipping_address').value || window.isCurrentAddressServiceable === false) {
-            Swal.fire('Invalid Address', 'Please select or add a valid delivery address before proceeding.', 'error');
-            editStep1();
+        const hiddenAddress = document.getElementById('hidden_shipping_address');
+        if (!currentSelectedAddress || !hiddenAddress || !hiddenAddress.value.trim() || window.isCurrentAddressServiceable === false) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Delivery Address Required',
+                text: 'Please select or add a serviceable delivery address.',
+                confirmButtonColor: '#4f46e5'
+            });
+            goToStep(1);
             return;
         }
 
+        const grandTotalRaw = document.getElementById('summary-grand-total')?.textContent.replace(/[^0-9.]/g, '') || '0';
+        const grandTotalVal = parseFloat(grandTotalRaw);
         const selectedPayMethod = document.querySelector('input[name="payment_method"]:checked')?.value || 'online';
-        if (selectedPayMethod === 'cod' && window.isCurrentAddressCodAvailable === false) {
+        if (grandTotalVal > 0 && selectedPayMethod === 'cod' && window.isCurrentAddressCodAvailable === false) {
             Swal.fire({
                 icon: 'error',
                 title: 'COD Not Available',
                 text: 'Cash on Delivery (COD) is not available for this delivery PIN code. Please select Online Payment.',
                 confirmButtonColor: '#ef4444'
             });
-            editStep2();
+            goToStep(3);
             return;
         }
 
         const placeOrderBtn = document.getElementById('btn-place-order');
-        const mobPlaceOrderBtn = document.getElementById('mobile-btn-place-order');
-
         if (placeOrderBtn) {
             placeOrderBtn.disabled = true;
             placeOrderBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing...';
-        }
-        if (mobPlaceOrderBtn) {
-            mobPlaceOrderBtn.disabled = true;
-            mobPlaceOrderBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Processing...';
         }
 
         const checkoutForm = document.getElementById('checkout-form');
@@ -1157,7 +1632,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         order_url: data.order_url,
                         cancel_url: data.cancel_url
                     };
-                    window.updatePaymentButtonLabel();
+                    updateReviewSummaries();
                     showPendingOrderBlockModal();
                     return null;
                 }
@@ -1181,7 +1656,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     theme: { color: "#4f46e5" },
                     handler: function(response) {
                         if (placeOrderBtn) placeOrderBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Verifying Payment...';
-                        if (mobPlaceOrderBtn) mobPlaceOrderBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Verifying Payment...';
                         fetch('{{ route("checkout.razorpay.verify") }}', {
                             method: 'POST',
                             headers: {
@@ -1201,13 +1675,13 @@ document.addEventListener('DOMContentLoaded', function() {
                             if (verifyData.success && verifyData.redirect_url) {
                                 window.location.href = verifyData.redirect_url;
                             } else {
-                                window.updatePaymentButtonLabel();
+                                updateReviewSummaries();
                                 Swal.fire('Verification Failed', verifyData.message || 'Payment signature error.', 'error');
                             }
                         })
                         .catch(err => {
                             console.error("Verification error:", err);
-                            window.updatePaymentButtonLabel();
+                            updateReviewSummaries();
                             Swal.fire('Error', 'Payment verification error.', 'error');
                         });
                     },
@@ -1216,7 +1690,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             if (data.failed_url) {
                                 window.location.href = data.failed_url;
                             } else {
-                                window.updatePaymentButtonLabel();
+                                updateReviewSummaries();
                             }
                         }
                     }
@@ -1229,7 +1703,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             window.location.href = data.failed_url;
                             return;
                         }
-                        window.updatePaymentButtonLabel();
+                        updateReviewSummaries();
                         Swal.fire({
                             icon: 'error',
                             title: 'Payment Failed',
@@ -1239,7 +1713,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     rzp.open();
                 } catch (rzpErr) {
                     console.error("Razorpay open error:", rzpErr);
-                    window.updatePaymentButtonLabel();
+                    updateReviewSummaries();
                     Swal.fire({
                         icon: 'error',
                         title: 'Gateway Notice',
@@ -1250,7 +1724,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(err => {
             console.error("Place Order Error:", err);
-            window.updatePaymentButtonLabel();
+            updateReviewSummaries();
             Swal.fire({
                 icon: 'error',
                 title: 'Order Notice',
@@ -1264,7 +1738,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     window.addEventListener('pageshow', function() {
-        updatePaymentButtonLabel();
+        updateReviewSummaries();
     });
 
     const walletSwitch = document.getElementById('toggle-wallet-switch');
@@ -1289,7 +1763,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (typeof updateShippingFeeAndTotal === 'function') {
                         updateShippingFeeAndTotal(window.activeShippingCharge, 499);
                     } else {
-                        updatePaymentButtonLabel();
+                        updateReviewSummaries();
                     }
                 }
             })
@@ -1363,11 +1837,34 @@ document.addEventListener('DOMContentLoaded', function() {
             summaryGrandTotal.textContent = `₹${calculatedGrandTotal.toFixed(2)}`;
         }
 
+        // Live Total Savings Counter & Breakdown Update
+        const cardSavingsEl = document.getElementById('card-total-savings');
+        if (cardSavingsEl) {
+            let totalSavedNow = parseFloat("{{ $totalDiscount ?? 0 }}") + discountAmt + walletDiscount + parseFloat("{{ $offerDiscount ?? 0 }}");
+            cardSavingsEl.textContent = `₹${totalSavedNow.toFixed(2)}`;
+        }
+
+        const savedBreakdownCoupon = document.getElementById('saved-breakdown-coupon');
+        const savedBreakdownCouponRow = document.getElementById('saved-breakdown-coupon-row');
+        if (savedBreakdownCoupon && savedBreakdownCouponRow) {
+            savedBreakdownCoupon.textContent = `- ₹${discountAmt.toFixed(2)}`;
+            savedBreakdownCouponRow.classList.toggle('d-none', discountAmt <= 0);
+        }
+
+        const savedBreakdownWallet = document.getElementById('saved-breakdown-wallet');
+        const savedBreakdownWalletRow = document.getElementById('saved-breakdown-wallet-row');
+        if (savedBreakdownWallet && savedBreakdownWalletRow) {
+            savedBreakdownWallet.textContent = `- ₹${walletDiscount.toFixed(2)}`;
+            savedBreakdownWalletRow.classList.toggle('d-none', walletDiscount <= 0);
+        }
+
         const fullWalletNotice = document.getElementById('full-wallet-pay-notice');
+        const step3WalletNotice = document.getElementById('step-3-wallet-full-notice');
         const paymentContainer = document.getElementById('payment-tiles-container');
 
         if (isFullyCoveredByWallet || calculatedGrandTotal <= 0) {
             if (fullWalletNotice) fullWalletNotice.classList.remove('d-none');
+            if (step3WalletNotice) step3WalletNotice.classList.remove('d-none');
             if (paymentContainer) {
                 paymentContainer.style.opacity = '0.45';
                 paymentContainer.style.pointerEvents = 'none';
@@ -1375,6 +1872,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } else {
             if (fullWalletNotice) fullWalletNotice.classList.add('d-none');
+            if (step3WalletNotice) step3WalletNotice.classList.add('d-none');
             if (paymentContainer) {
                 paymentContainer.style.opacity = '1';
                 paymentContainer.style.pointerEvents = 'auto';
@@ -1382,244 +1880,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        window.updatePaymentButtonLabel();
+        updateReviewSummaries();
     };
+
+    // Run initial check on page load to ensure zero-amount / covered state is synced
+    window.updateShippingFeeAndTotal(window.activeShippingCharge, 499);
 });
-
-// Clean Step Switchers
-function proceedToStep2() {
-    if (window.activePendingOrder) {
-        showPendingOrderBlockModal();
-        return;
-    }
-
-    if (!currentSelectedAddress || !document.getElementById('hidden_shipping_address').value) {
-        const errorBanner = document.getElementById('address-error-banner');
-        if (errorBanner) {
-            errorBanner.style.display = 'block';
-            errorBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        return;
-    }
-
-    if (window.isCurrentAddressServiceable === false) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Delivery Unavailable',
-            text: 'Delivery is currently unavailable to the selected PIN code. Please select or add a different delivery address.',
-            confirmButtonColor: '#ef4444'
-        });
-        return;
-    }
-
-    window.currentCheckoutStep = 2;
-
-    // Show Tab 2, Hide Tab 1 & Tab 3
-    document.getElementById('checkout-tab-1-view').classList.add('d-none');
-    document.getElementById('checkout-tab-2-view').classList.remove('d-none');
-    document.getElementById('checkout-tab-3-view').classList.add('d-none');
-
-    // Update Tab 2 Address Summary Strip
-    document.getElementById('tab-2-address-summary-title').textContent = `${currentSelectedAddress.name} — ${currentSelectedAddress.address}, ${currentSelectedAddress.city} (${currentSelectedAddress.zip})`;
-
-    // Update Top Stepper Progress (35%)
-    const progressLine = document.getElementById('stepper-progress-line');
-    if (progressLine) progressLine.style.width = '35%';
-
-    const stBadge1 = document.getElementById('stepper-badge-1');
-    if (stBadge1) {
-        stBadge1.style.background = '#10b981';
-        stBadge1.style.boxShadow = 'none';
-        stBadge1.innerHTML = '<i class="bi bi-check-lg"></i>';
-    }
-
-    const stBadge2 = document.getElementById('stepper-badge-2');
-    if (stBadge2) {
-        stBadge2.classList.remove('bg-light', 'text-muted', 'border');
-        stBadge2.classList.add('text-white', 'shadow-xs');
-        stBadge2.style.background = '#4f46e5';
-        stBadge2.style.boxShadow = '0 0 0 4px rgba(79, 70, 229, 0.2)';
-    }
-    const stText2 = document.getElementById('stepper-text-2');
-    if (stText2) {
-        stText2.classList.remove('text-muted');
-        stText2.classList.add('text-primary', 'fw-bold');
-    }
-
-    window.updatePaymentButtonLabel();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function proceedToStep3() {
-    const selectedPayMethod = document.querySelector('input[name="payment_method"]:checked')?.value || 'online';
-    if (selectedPayMethod === 'cod' && window.isCurrentAddressCodAvailable === false) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'COD Not Available',
-            text: 'Cash on Delivery is unavailable for your delivery PIN code. Switched to Online Payment.',
-            confirmButtonColor: '#4f46e5'
-        });
-        const onlineRadio = document.getElementById('pay_online');
-        if (onlineRadio) {
-            onlineRadio.checked = true;
-            onlineRadio.dispatchEvent(new Event('change'));
-        }
-        return;
-    }
-
-    window.currentCheckoutStep = 3;
-
-    const grandTotalRaw = document.getElementById('summary-grand-total')?.textContent.replace(/[^0-9.]/g, '') || '0';
-    const grandTotalVal = parseFloat(grandTotalRaw);
-
-    let payTitle = '';
-    if (grandTotalVal <= 0) {
-        payTitle = '💳 ShopCalm Wallet (100% Paid — ₹0.00 Remaining)';
-    } else {
-        payTitle = selectedPayMethod === 'online' ? '⚡ UPI / Cards / NetBanking / PhonePe' : '💵 Cash on Delivery (COD)';
-        const walletVal = document.getElementById('summary-wallet-row')?.classList.contains('d-none') ? 0 : parseFloat(document.getElementById('summary-wallet-val')?.textContent.replace(/[^0-9.]/g, '') || 0);
-        if (walletVal > 0) {
-            payTitle += ` (Partial Wallet Used: ₹${walletVal.toFixed(2)})`;
-        }
-    }
-
-    // Show Tab 3, Hide Tab 1 & Tab 2
-    document.getElementById('checkout-tab-1-view').classList.add('d-none');
-    document.getElementById('checkout-tab-2-view').classList.add('d-none');
-    document.getElementById('checkout-tab-3-view').classList.remove('d-none');
-
-    // Populate Tab 3 Summary Details
-    if (currentSelectedAddress) {
-        document.getElementById('review-address-name').textContent = currentSelectedAddress.name;
-        document.getElementById('review-address-text').textContent = `${currentSelectedAddress.address}, ${currentSelectedAddress.city}, ${currentSelectedAddress.state} - ${currentSelectedAddress.zip}`;
-        document.getElementById('review-address-phone').textContent = `Mobile: ${currentSelectedAddress.phone}`;
-    }
-    
-    const reviewPayEl = document.getElementById('review-payment-mode-text');
-    if (reviewPayEl) {
-        if (grandTotalVal <= 0) {
-            reviewPayEl.innerHTML = `<span class="badge bg-success text-white px-2.5 py-1 rounded-pill fw-bold me-1.5" style="font-size: 0.76rem;">✓ 100% WALLET PAID</span> <span class="fw-bold text-dark">${payTitle}</span>`;
-        } else {
-            reviewPayEl.textContent = payTitle;
-        }
-    }
-
-    // Update Top Stepper Progress (80%)
-    const progressLine = document.getElementById('stepper-progress-line');
-    if (progressLine) progressLine.style.width = '80%';
-
-    const stBadge2 = document.getElementById('stepper-badge-2');
-    if (stBadge2) {
-        stBadge2.style.background = '#10b981';
-        stBadge2.style.boxShadow = 'none';
-        stBadge2.innerHTML = '<i class="bi bi-check-lg"></i>';
-    }
-
-    const stBadge3 = document.getElementById('stepper-badge-3');
-    if (stBadge3) {
-        stBadge3.classList.remove('bg-light', 'text-muted', 'border');
-        stBadge3.classList.add('text-white', 'shadow-xs');
-        stBadge3.style.background = '#4f46e5';
-        stBadge3.style.boxShadow = '0 0 0 4px rgba(79, 70, 229, 0.2)';
-    }
-    const stText3 = document.getElementById('stepper-text-3');
-    if (stText3) {
-        stText3.classList.remove('text-muted');
-        stText3.classList.add('text-primary', 'fw-bold');
-    }
-
-    window.updatePaymentButtonLabel();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function editStep1() {
-    window.currentCheckoutStep = 1;
-
-    document.getElementById('checkout-tab-1-view').classList.remove('d-none');
-    document.getElementById('checkout-tab-2-view').classList.add('d-none');
-    document.getElementById('checkout-tab-3-view').classList.add('d-none');
-
-    const progressLine = document.getElementById('stepper-progress-line');
-    if (progressLine) progressLine.style.width = '0%';
-
-    const stBadge1 = document.getElementById('stepper-badge-1');
-    if (stBadge1) {
-        stBadge1.style.background = '#4f46e5';
-        stBadge1.style.boxShadow = '0 0 0 4px rgba(79, 70, 229, 0.2)';
-        stBadge1.innerHTML = '1';
-    }
-
-    const stBadge2 = document.getElementById('stepper-badge-2');
-    if (stBadge2) {
-        stBadge2.classList.add('bg-light', 'text-muted', 'border');
-        stBadge2.classList.remove('text-white', 'shadow-xs');
-        stBadge2.style.background = '';
-        stBadge2.style.boxShadow = '';
-        stBadge2.innerHTML = '2';
-    }
-    const stText2 = document.getElementById('stepper-text-2');
-    if (stText2) {
-        stText2.classList.add('text-muted');
-        stText2.classList.remove('text-primary', 'fw-bold');
-    }
-
-    const stBadge3 = document.getElementById('stepper-badge-3');
-    if (stBadge3) {
-        stBadge3.classList.add('bg-light', 'text-muted', 'border');
-        stBadge3.classList.remove('text-white', 'shadow-xs');
-        stBadge3.style.background = '';
-        stBadge3.style.boxShadow = '';
-        stBadge3.innerHTML = '3';
-    }
-    const stText3 = document.getElementById('stepper-text-3');
-    if (stText3) {
-        stText3.classList.add('text-muted');
-        stText3.classList.remove('text-primary', 'fw-bold');
-    }
-
-    window.updatePaymentButtonLabel();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function editStep2() {
-    if (!currentSelectedAddress || window.isCurrentAddressServiceable === false) {
-        editStep1();
-        return;
-    }
-
-    window.currentCheckoutStep = 2;
-
-    document.getElementById('checkout-tab-1-view').classList.add('d-none');
-    document.getElementById('checkout-tab-2-view').classList.remove('d-none');
-    document.getElementById('checkout-tab-3-view').classList.add('d-none');
-
-    const progressLine = document.getElementById('stepper-progress-line');
-    if (progressLine) progressLine.style.width = '35%';
-
-    const stBadge2 = document.getElementById('stepper-badge-2');
-    if (stBadge2) {
-        stBadge2.style.background = '#4f46e5';
-        stBadge2.style.boxShadow = '0 0 0 4px rgba(79, 70, 229, 0.2)';
-        stBadge2.innerHTML = '2';
-    }
-
-    const stBadge3 = document.getElementById('stepper-badge-3');
-    if (stBadge3) {
-        stBadge3.classList.add('bg-light', 'text-muted', 'border');
-        stBadge3.classList.remove('text-white', 'shadow-xs');
-        stBadge3.style.background = '';
-        stBadge3.style.boxShadow = '';
-        stBadge3.innerHTML = '3';
-    }
-    const stText3 = document.getElementById('stepper-text-3');
-    if (stText3) {
-        stText3.classList.add('text-muted');
-        stText3.classList.remove('text-primary', 'fw-bold');
-    }
-
-    window.updatePaymentButtonLabel();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
 
 function handleApplyCoupon() {
     const input = document.getElementById('coupon_code_input');
@@ -1674,15 +1940,15 @@ function handleApplyCoupon() {
 
             if (couponContainer) {
                 couponContainer.innerHTML = `
-                    <div class="p-2.5 rounded-3 shadow-xs d-flex align-items-center justify-content-between bg-white border" id="applied-coupon-box" style="border-color: #86efac !important;">
+                    <div class="p-3 rounded-3 shadow-xs d-flex align-items-center justify-content-between bg-white border" id="applied-coupon-box" style="border-color: #86efac !important;">
                         <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                            <i class="bi bi-check-circle-fill text-success fs-4"></i>
                             <div>
-                                <span class="font-monospace fw-bold text-success px-2 py-0.5 rounded" style="background: #dcfce7; border: 1px dashed #22c55e; font-size: 0.8rem;">${data.coupon_code}</span>
-                                <small class="text-dark d-block mt-0.5 fw-semibold" style="font-size: 0.76rem;">Saved ₹${parseFloat(data.discount_amount).toFixed(2)}</small>
+                                <span class="font-monospace fw-bold text-success px-2 py-0.5 rounded" style="background: #dcfce7; border: 1px dashed #22c55e; font-size: 0.82rem;">${data.coupon_code}</span>
+                                <small class="text-dark d-block mt-1 fw-semibold" style="font-size: 0.76rem;">Saved ₹${parseFloat(data.discount_amount).toFixed(2)} on your order</small>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-0.5 fw-bold" id="btn-remove-coupon-ajax" onclick="handleRemoveCoupon()" style="font-size: 0.74rem;">Remove</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-bold" id="btn-remove-coupon-ajax" onclick="handleRemoveCoupon()" style="font-size: 0.74rem;">Remove</button>
                     </div>
                 `;
             }
@@ -1700,7 +1966,7 @@ function handleApplyCoupon() {
             if (typeof updateShippingFeeAndTotal === 'function') {
                 updateShippingFeeAndTotal(window.activeShippingCharge, 499);
             } else {
-                updatePaymentButtonLabel();
+                updateReviewSummaries();
             }
 
             Swal.fire({
@@ -1763,15 +2029,15 @@ function applyCouponFromModal(code) {
                 const couponContainer = document.getElementById('coupon-status-wrapper');
                 if (couponContainer) {
                     couponContainer.innerHTML = `
-                        <div class="p-2.5 rounded-3 shadow-xs d-flex align-items-center justify-content-between bg-white border" id="applied-coupon-box" style="border-color: #86efac !important;">
+                        <div class="p-3 rounded-3 shadow-xs d-flex align-items-center justify-content-between bg-white border" id="applied-coupon-box" style="border-color: #86efac !important;">
                             <div class="d-flex align-items-center gap-2">
-                                <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                                <i class="bi bi-check-circle-fill text-success fs-4"></i>
                                 <div>
-                                    <span class="font-monospace fw-bold text-success px-2 py-0.5 rounded" style="background: #dcfce7; border: 1px dashed #22c55e; font-size: 0.8rem;">${data.coupon_code}</span>
-                                    <small class="text-dark d-block mt-0.5 fw-semibold" style="font-size: 0.76rem;">Saved ₹${parseFloat(data.discount_amount).toFixed(2)}</small>
+                                    <span class="font-monospace fw-bold text-success px-2 py-0.5 rounded" style="background: #dcfce7; border: 1px dashed #22c55e; font-size: 0.82rem;">${data.coupon_code}</span>
+                                    <small class="text-dark d-block mt-1 fw-semibold" style="font-size: 0.76rem;">Saved ₹${parseFloat(data.discount_amount).toFixed(2)} on your order</small>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-0.5 fw-bold" id="btn-remove-coupon-ajax" onclick="handleRemoveCoupon()" style="font-size: 0.74rem;">Remove</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-bold" id="btn-remove-coupon-ajax" onclick="handleRemoveCoupon()" style="font-size: 0.74rem;">Remove</button>
                         </div>
                     `;
                 }
@@ -1814,7 +2080,7 @@ function handleRemoveCoupon() {
     const btn = document.getElementById('btn-remove-coupon-ajax');
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Removing...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>';
     }
 
     fetch('{{ route("checkout.remove-coupon") }}', {
@@ -1829,25 +2095,15 @@ function handleRemoveCoupon() {
     .then(data => {
         if (data.success) {
             const couponContainer = document.getElementById('coupon-status-wrapper');
-            const availableCount = {{ isset($availableCoupons) ? $availableCoupons->count() : 0 }};
-            let availBtnHtml = '';
-            if (availableCount > 0) {
-                availBtnHtml = `
-                    <div class="mt-2 text-center" id="view-available-coupons-wrapper">
-                        <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold" data-bs-toggle="modal" data-bs-target="#couponsModal" style="font-size: 0.8rem;">
-                            <i class="bi bi-ticket-perforated-fill text-warning me-1"></i> View Available Coupons (${availableCount})
-                        </button>
-                    </div>
-                `;
-            }
-
             if (couponContainer) {
                 couponContainer.innerHTML = `
                     <div class="d-flex gap-2">
-                        <input type="text" id="coupon_code_input" class="form-control rounded-3 font-monospace fw-bold" placeholder="ENTER COUPON CODE" style="text-transform: uppercase; font-size: 0.88rem;">
-                        <button type="button" class="btn btn-primary rounded-3 px-3.5 fw-bold flex-shrink-0" onclick="handleApplyCoupon()" style="background: #4f46e5; border: none; font-size: 0.84rem;">APPLY</button>
+                        <input type="text" id="coupon_code_input" class="form-control rounded-3 font-monospace fw-bold" placeholder="ENTER COUPON CODE" style="text-transform: uppercase; font-size: 0.88rem; height: 44px;">
+                        <button type="button" class="btn btn-primary rounded-3 px-4 fw-bold flex-shrink-0" onclick="handleApplyCoupon()" style="background: #4f46e5; border: none; font-size: 0.84rem; height: 44px;">APPLY</button>
                     </div>
-                    ${availBtnHtml}
+                    <div class="text-muted mt-2 small" style="font-size: 0.75rem;">
+                        <i class="bi bi-info-circle text-primary me-1"></i>Apply valid promo code to get instant order discounts.
+                    </div>
                 `;
             }
 
@@ -1862,7 +2118,7 @@ function handleRemoveCoupon() {
             if (typeof updateShippingFeeAndTotal === 'function') {
                 updateShippingFeeAndTotal(window.activeShippingCharge, 499);
             } else {
-                updatePaymentButtonLabel();
+                updateReviewSummaries();
             }
         } else {
             if (btn) btn.disabled = false;
@@ -1974,7 +2230,7 @@ function handleNewPincodeLookup(val) {
 
     if (hintEl) {
         hintEl.className = 'text-muted d-block mt-0.5';
-        hintEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1" style="width:0.6rem;height:0.6rem;"></span> Looking up PIN code...';
+        hintEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1" style="width:0.6rem;height:0.6rem;"></span> Looking up PIN...';
     }
 
     fetch('{{ route("delivery.check") }}', {
@@ -2020,16 +2276,16 @@ function renderModalAddressList() {
         const col = document.createElement('div');
         col.className = 'col-12';
         const card = document.createElement('div');
-        card.className = 'card border rounded-3 p-3 address-modal-option cursor-pointer';
+        card.className = 'card border rounded-3 p-2.5 address-modal-option cursor-pointer';
         card.onclick = () => selectModalAddress(addr);
         card.innerHTML = `
             <div class="d-flex justify-content-between align-items-start gap-2">
-                <div>
-                    <strong class="text-dark" style="font-size: 0.9rem;"></strong>
-                    <p class="text-secondary mb-1 mt-0.5" style="font-size: 0.82rem;"></p>
-                    <div class="small text-muted" style="font-size: 0.78rem;"><i class="bi bi-telephone me-1"></i> <span class="addr-phone"></span></div>
+                <div class="min-w-0 flex-grow-1 text-break-word">
+                    <strong class="text-dark" style="font-size: 0.88rem;"></strong>
+                    <p class="text-secondary mb-1 mt-0.5 text-break-word" style="font-size: 0.8rem;"></p>
+                    <div class="small text-muted" style="font-size: 0.76rem;"><i class="bi bi-telephone me-1"></i> <span class="addr-phone"></span></div>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-0.5 flex-shrink-0" style="font-size: 0.76rem;">Select Address</button>
+                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-0.5 flex-shrink-0" style="font-size: 0.74rem;">Select</button>
             </div>
         `;
         card.querySelector('strong').textContent = addr.name || '';
@@ -2083,7 +2339,7 @@ function handleSaveAddress(e) {
     }
 
     const btn = document.getElementById('btn-save-address');
-    const origText = btn ? btn.innerHTML : '<i class="bi bi-bookmark-check me-1"></i> Save Address & Continue';
+    const origText = btn ? btn.innerHTML : '<i class="bi bi-bookmark-check me-1"></i> Save Address';
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
@@ -2132,7 +2388,6 @@ function handleSaveAddress(e) {
             applySelectedAddress(savedAddr);
             closeNewAddressForm();
 
-            // Clear new address inputs for next use
             document.getElementById('new_address').value = '';
             document.getElementById('new_zip').value = '';
             document.getElementById('new_city').value = '';
@@ -2143,11 +2398,11 @@ function handleSaveAddress(e) {
             const successBanner = document.getElementById('address-success-banner');
             if (successBanner) {
                 successBanner.style.display = 'block';
-                setTimeout(() => { successBanner.style.display = 'none'; }, 3500);
+                setTimeout(() => { successBanner.style.display = 'none'; }, 3000);
             }
 
             if (!window.activePendingOrder) {
-                proceedToStep2();
+                goToStep(2);
             }
         } else {
             Swal.fire('Error', data.message || 'Could not save address.', 'error');
@@ -2159,19 +2414,18 @@ function handleSaveAddress(e) {
             btn.disabled = false;
             btn.innerHTML = origText;
         }
-        Swal.fire('Error', err.message || 'Could not save address. Please check your details and try again.', 'error');
+        Swal.fire('Error', err.message || 'Could not save address.', 'error');
     });
 }
 
 function checkPincodeServiceability(pincode) {
     const badgeEl = document.getElementById('active-address-serviceability-badge');
-    const confirmBtn = document.getElementById('btn-confirm-address');
     const errorBanner = document.getElementById('address-error-banner');
 
     if (!pincode) return;
 
     if (badgeEl) {
-        badgeEl.innerHTML = `<span class="badge bg-light text-muted border font-monospace"><span class="spinner-border spinner-border-sm me-1" style="width:0.6rem;height:0.6rem;"></span> Checking delivery to ${pincode}...</span>`;
+        badgeEl.innerHTML = `<span class="badge bg-light text-muted border font-monospace"><span class="spinner-border spinner-border-sm me-1" style="width:0.6rem;height:0.6rem;"></span> Checking PIN ${pincode}...</span>`;
     }
 
     fetch('{{ route("delivery.check") }}', {
@@ -2193,11 +2447,11 @@ function checkPincodeServiceability(pincode) {
 
             if (badgeEl) {
                 badgeEl.innerHTML = `
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <span class="badge bg-success bg-opacity-10 text-success fw-bold rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
+                    <div class="d-flex align-items-center gap-2 flex-wrap text-break-word">
+                        <span class="badge bg-success bg-opacity-10 text-success fw-bold rounded-pill px-2.5 py-0.5" style="font-size: 0.72rem;">
                             <i class="bi bi-truck me-1"></i> Delivery Available (${data.delivery_charge > 0 ? '₹' + data.delivery_charge : 'FREE'})
                         </span>
-                        ${data.estimated_delivery ? `<span class="small text-muted" style="font-size: 0.75rem;"><i class="bi bi-clock me-1"></i> Est: ${data.estimated_delivery}</span>` : ''}
+                        ${data.estimated_delivery ? `<span class="small text-muted" style="font-size: 0.74rem;"><i class="bi bi-clock me-1"></i> Est: ${data.estimated_delivery}</span>` : ''}
                     </div>
                 `;
 
@@ -2205,14 +2459,6 @@ function checkPincodeServiceability(pincode) {
                 const revDateText = document.getElementById('review-delivery-date-text');
                 if (revDateTitle) revDateTitle.textContent = `Estimated Delivery: ${data.estimated_delivery}`;
                 if (revDateText) revDateText.textContent = `Delivering to ${data.city} (${data.pincode})`;
-            }
-
-            if (confirmBtn) {
-                confirmBtn.disabled = false;
-                confirmBtn.classList.remove('btn-secondary');
-                confirmBtn.classList.add('btn-primary');
-                confirmBtn.style.background = 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)';
-                confirmBtn.innerHTML = `<span>DELIVER TO THIS ADDRESS</span><i class="bi bi-arrow-right fs-5"></i>`;
             }
 
             if (typeof updateShippingFeeAndTotal === 'function') {
@@ -2225,7 +2471,7 @@ function checkPincodeServiceability(pincode) {
             
             if (badgeEl) {
                 badgeEl.innerHTML = `
-                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
+                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill px-2.5 py-0.5" style="font-size: 0.72rem;">
                         <i class="bi bi-x-circle-fill text-danger me-1"></i> Delivery Unavailable (${pincode})
                     </span>
                 `;
@@ -2233,16 +2479,8 @@ function checkPincodeServiceability(pincode) {
 
             if (errorBanner) {
                 errorBanner.className = 'alert alert-danger small mb-3 rounded-3 border-0 bg-danger-subtle text-danger';
-                errorBanner.innerHTML = `<i class="bi bi-exclamation-octagon-fill me-2"></i><strong>Delivery Unavailable:</strong> We currently do not deliver to PIN code <strong>${pincode}</strong>. Please select or add a different address.`;
+                errorBanner.innerHTML = `<i class="bi bi-exclamation-octagon-fill me-2"></i><strong>Delivery Unavailable:</strong> We do not deliver to PIN code <strong>${pincode}</strong>. Please choose a different address.`;
                 errorBanner.style.display = 'block';
-            }
-
-            if (confirmBtn) {
-                confirmBtn.disabled = true;
-                confirmBtn.classList.remove('btn-primary');
-                confirmBtn.classList.add('btn-secondary');
-                confirmBtn.style.background = '#94a3b8';
-                confirmBtn.innerHTML = `<span>DELIVERY NOT AVAILABLE TO THIS PINCODE</span><i class="bi bi-slash-circle fs-5 ms-1"></i>`;
             }
         }
     })
@@ -2301,7 +2539,7 @@ function updateCodAvailabilityUI(isAvailable, pincode) {
         if (codNotice) {
             codNotice.classList.remove('d-none');
             if (pincode) {
-                codNotice.innerHTML = `<i class="bi bi-slash-circle me-1"></i>Cash on Delivery (COD) is not available for PIN <strong>${pincode}</strong>. Please select Online Payment.`;
+                codNotice.innerHTML = `<i class="bi bi-slash-circle me-1"></i>COD is not available for PIN <strong>${pincode}</strong>. Please select Online Payment.`;
             }
         }
     } else {

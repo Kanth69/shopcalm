@@ -132,15 +132,6 @@
 
 @section('content')
 <div class="container py-3 py-md-4">
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb mb-0" style="font-size: 0.82rem;">
-            <li class="breadcrumb-item"><a href="{{ route('home') }}" class="text-decoration-none text-muted"><i class="bi bi-house-door me-1"></i>Home</a></li>
-            <li class="breadcrumb-item"><span class="text-muted">Company</span></li>
-            <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">Contact Us</li>
-        </ol>
-    </nav>
-
     <!-- 1. Hero Header (Clean Minimalist Design) -->
     <div class="contact-hero-clean mb-4 mb-md-5 pb-lg-2">
         <div class="mx-auto" style="max-width: 760px;">

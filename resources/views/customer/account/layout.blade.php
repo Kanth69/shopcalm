@@ -1,8 +1,9 @@
 @extends('layouts.customer')
 
 @section('content')
-<div class="container px-2 px-sm-3 my-2 my-md-4">
-    {{-- 📱 Mobile Horizontal Navigation Chips (Hidden in Desktop Mode) --}}
+<div class="container px-3 px-sm-3 my-3 my-md-4">
+    {{-- 📱 Mobile Horizontal Navigation Chips (Hidden on Dashboard for clean app-like UX, visible on subpages) --}}
+    @if(!request()->routeIs('dashboard'))
     <div class="d-block d-md-none mb-3">
         <div class="d-flex align-items-center gap-1.5 overflow-x-auto py-1 px-0.5 text-nowrap no-scrollbar" 
              style="scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch;">
@@ -68,6 +69,7 @@
             </a>
         </div>
     </div>
+    @endif
 
     <div class="row g-3 g-md-4">
         {{-- Desktop / Laptop Sidebar (Visible in Desktop Mode) --}}

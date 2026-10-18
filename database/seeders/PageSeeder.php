@@ -23,75 +23,64 @@ class PageSeeder extends Seeder
 
         // 1. PRIVACY POLICY
         $privacyData = [
-            'desc' => 'How we securely collect, protect, and handle your data under DPDP Act 2023.',
-            'intro' => '<p class="lead">At <strong>' . $storeName . '</strong> (operated by ' . $companyName . '), accessible from ' . $domain . ', protecting your personal data and upholding your digital privacy is our topmost priority. This Privacy Policy outlines how we collect, process, store, and safeguard your information in accordance with the <strong>Digital Personal Data Protection Act, 2023 (DPDP Act)</strong>, the <strong>Information Technology Act, 2000 (Section 43A)</strong>, and the <strong>Consumer Protection (E-Commerce) Rules, 2020</strong> of India.</p>',
+            'desc' => 'How we securely handle and protect your personal information.',
+            'intro' => '<p class="lead">At <strong>' . $storeName . '</strong>, we value your trust. We collect only the information needed to deliver your orders safely and never sell or rent your personal data.</p>',
             'sections' => [
                 [
-                    'title' => 'Personal Data We Collect',
-                    'content' => '<p>We collect digital personal data that you explicitly provide to us when creating an account, placing an order, or interacting with our store:</p>
+                    'title' => 'Information We Collect',
+                    'content' => '<p>We collect essential information to process your orders smoothly:</p>
                     <ul>
-                        <li><strong>Identity & Account Details:</strong> Full Name, Primary Mobile Number, Email Address (Optional), and Hashed Password (`Bcrypt`).</li>
-                        <li><strong>Delivery & Logistics Data:</strong> Recipient Name, Contact Phone Number, Flat/House No., Street Address, Landmark, City, State, Pincode, and Geolocation coordinates (for pincode serviceability).</li>
-                        <li><strong>Transaction & Payment Logs:</strong> Order purchase history, items bought, total bill breakdown, payment method (COD or Online), and Gateway Transaction Reference IDs (Razorpay/PhonePe IDs). <em>Note: We do NOT store credit card numbers, CVVs, netbanking passwords, or UPI PINs. All payment authentication is processed securely by RBI-approved payment gateways.</em></li>
-                        <li><strong>Communication & Review Data:</strong> WhatsApp OTP verification logs, customer support queries, written product reviews, ratings, and uploaded review images.</li>
+                        <li><strong>Account Details:</strong> Your name, mobile number, and encrypted password.</li>
+                        <li><strong>Delivery Address:</strong> House number, street name, city, state, and pincode.</li>
+                        <li><strong>Payment Records:</strong> Order summary and payment gateway reference IDs. <em>We never store card numbers, CVVs, or UPI PINs.</em></li>
+                        <li><strong>Support & Feedback:</strong> Support messages, WhatsApp delivery updates, and product reviews.</li>
                     </ul>'
                 ],
                 [
-                    'title' => 'Purpose & Legal Basis of Processing',
-                    'content' => '<p>Under Section 4 of the DPDP Act 2023, your personal data is processed strictly for specified, lawful, and necessary business purposes:</p>
+                    'title' => 'How We Use Your Data',
+                    'content' => '<p>Your information is used strictly to provide you with a great shopping experience:</p>
                     <ul>
-                        <li><strong>Order Fulfillment & Delivery:</strong> To process your orders, generate GST tax invoices, and dispatch products via our authorized courier logistics partners.</li>
-                        <li><strong>WhatsApp & SMS Notifications:</strong> To send real-time order status updates, WhatsApp OTPs, tracking links, and delivery notifications.</li>
-                        <li><strong>Customer Support & Grievance Redressal:</strong> To assist you with order inquiries, pre-dispatch cancellations, wallet credits, and support queries.</li>
-                        <li><strong>Legal & Tax Compliance:</strong> To comply with mandatory record retention under the Central Goods and Services Tax (CGST) Act, 2017 and Income Tax Act, 1961.</li>
+                        <li>Processing and delivering your orders to your doorstep.</li>
+                        <li>Sending live delivery updates and tracking links via WhatsApp and SMS.</li>
+                        <li>Assisting you with customer support, pre-dispatch cancellations, and instant wallet refunds.</li>
+                        <li>Generating official GST tax invoices for your purchases.</li>
                     </ul>'
                 ],
                 [
-                    'title' => 'Third-Party Data Sharing & Logistics',
-                    'content' => '<p>We strictly respect your privacy. <strong>We NEVER sell, rent, or trade your personal data to third-party marketing companies.</strong> Data is shared only with trusted operational partners under strict data processing agreements:</p>
+                    'title' => 'Data Sharing with Trusted Partners',
+                    'content' => '<p><strong>We never sell your data to third parties.</strong> We only share necessary details with trusted service partners:</p>
                     <ul>
-                        <li><strong>Logistics & Courier Partners:</strong> Delivery details (Name, Address, Phone) are shared with verified logistics partners (e.g., Shiprocket, Delhivery, BlueDart) solely for order delivery.</li>
-                        <li><strong>Payment Gateways:</strong> Order amounts and reference numbers are passed to PCI-DSS compliant payment gateways (Razorpay/PhonePe) for secure payment processing.</li>
-                        <li><strong>Messaging Service Providers:</strong> Phone numbers are processed through Meta Cloud API for sending official WhatsApp notifications and OTP codes.</li>
-                        <li><strong>Law Enforcement & Statutory Bodies:</strong> Information may be disclosed if required by law, court order, or government authority under applicable Indian legal statutes.</li>
+                        <li><strong>Delivery Couriers:</strong> Your name, phone, and address are shared with verified couriers (Delhivery, BlueDart, Shiprocket) solely for delivery.</li>
+                        <li><strong>Payment Gateways:</strong> Payments are processed directly through RBI-authorized, PCI-DSS compliant gateways (Razorpay/PhonePe).</li>
+                        <li><strong>Order Alerts:</strong> Your phone number is used to send automated WhatsApp order notifications.</li>
                     </ul>'
                 ],
                 [
-                    'title' => 'Data Retention & Tax Compliance',
-                    'content' => '<p>We retain your personal data only as long as necessary to fulfill the purposes for which it was collected or to comply with statutory legal requirements:</p>
+                    'title' => 'Data Security',
+                    'content' => '<p>We use strong security measures to keep your data safe:</p>
                     <ul>
-                        <li><strong>Account Data:</strong> Retained while your account remains active. If you request account closure, active profile records are removed or anonymized within 30 days.</li>
-                        <li><strong>Order & Invoicing Records:</strong> Under <strong>Section 36 of the CGST Act 2017</strong> and Income Tax regulations, order tax invoices and transaction ledgers must be retained for a mandatory period of <strong>6 Years</strong> for statutory tax audits, even if a user deletes their account.</li>
+                        <li><strong>256-Bit SSL Encryption:</strong> All connections between your browser and our servers are encrypted.</li>
+                        <li><strong>Password Protection:</strong> Passwords are stored using secure, irreversible one-way hashing.</li>
+                        <li><strong>Restricted Access:</strong> Only authorized server systems have access to order records.</li>
                     </ul>'
                 ],
                 [
-                    'title' => 'Your Rights Under DPDP Act 2023',
-                    'content' => '<p>As a Data Principal under the Digital Personal Data Protection Act, 2023, you hold the following statutory rights regarding your personal data:</p>
+                    'title' => 'Your Privacy Rights',
+                    'content' => '<p>You have full control over your personal account information:</p>
                     <ul>
-                        <li><strong>Right to Access Information:</strong> You can view your stored profile data, saved addresses, wallet balance, and order history at any time from your Account Dashboard.</li>
-                        <li><strong>Right to Correction & Updating:</strong> You can edit or correct incomplete or inaccurate personal information directly from your profile settings.</li>
-                        <li><strong>Right to Withdrawal of Consent:</strong> You may unsubscribe from marketing newsletters or promotional communications at any time.</li>
-                        <li><strong>Right to Erasure / Account Deletion:</strong> You have the right to request the deletion of your account and associated personal data by contacting our Grievance Officer.</li>
+                        <li>View and update your saved addresses and order history anytime from your Account Dashboard.</li>
+                        <li>Manage your communication preferences or opt out of promotional messages.</li>
+                        <li>Request account deletion by reaching out to our customer support team.</li>
                     </ul>'
                 ],
                 [
-                    'title' => 'Data Security Safeguards',
-                    'content' => '<p>We employ robust technical and organizational security measures to protect your digital personal data against unauthorized access, loss, or disclosure:</p>
-                    <ul>
-                        <li><strong>256-Bit SSL Encryption:</strong> All data transmitted between your browser/app and our servers is encrypted using TLS/SSL security protocols.</li>
-                        <li><strong>Password Hashing:</strong> User passwords are encrypted using one-way `Bcrypt` hashing algorithms and are never accessible in plain text to anyone, including store administrators.</li>
-                        <li><strong>Access Control:</strong> Database access is strictly restricted to authorized server processes behind secure firewalls.</li>
-                    </ul>'
-                ],
-                [
-                    'title' => 'Grievance Redressal Officer (E-Commerce Rules 2020)',
-                    'content' => '<p>In compliance with Rule 5(9) of the <strong>Consumer Protection (E-Commerce) Rules, 2020</strong>, the name and contact details of our designated Grievance Officer for privacy and customer concerns are provided below:</p>
-                    <div class="p-3 bg-light rounded border">
-                        <p class="mb-1"><strong>Grievance Redressal Officer:</strong> Nodal Officer - Customer Experience</p>
-                        <p class="mb-1"><strong>Entity:</strong> ' . $companyName . '</p>
+                    'title' => 'Grievance & Privacy Contact',
+                    'content' => '<p>If you have any questions or concerns about your data, contact our support team:</p>
+                    <div class="p-3 bg-light rounded-3 border">
+                        <p class="mb-1"><strong>Support Desk:</strong> ' . $companyName . '</p>
                         <p class="mb-1"><strong>Email:</strong> <a href="mailto:' . $grievanceEmail . '">' . $grievanceEmail . '</a></p>
-                        <p class="mb-1"><strong>Support Helpline:</strong> +91 81973 16916 (Mon - Sat: 9:00 AM - 6:00 PM IST)</p>
-                        <p class="mb-0"><strong>Response Turnaround:</strong> Acknowledgment within 48 hours; resolution within 30 days.</p>
+                        <p class="mb-1"><strong>Helpline:</strong> +91 81973 16916 (Mon - Sat: 9:00 AM - 6:00 PM IST)</p>
+                        <p class="mb-0"><strong>Response Time:</strong> Acknowledged within 48 hours; resolved promptly.</p>
                     </div>'
                 ]
             ]
@@ -99,90 +88,90 @@ class PageSeeder extends Seeder
 
         // 2. TERMS & CONDITIONS
         $termsData = [
-            'desc' => 'Rules, policies, and guidelines for using our store services.',
-            'intro' => '<p class="lead">Welcome to <strong>' . $storeName . '</strong>. These Terms & Conditions constitute a legally binding agreement between you ("Customer", "User") and ' . $companyName . ' regarding your access to and use of ' . $domain . ' and our mobile application. By accessing our platform or making a purchase, you agree to be bound by these Terms and our Privacy Policy.</p>',
+            'desc' => 'Simple rules and guidelines for shopping with us.',
+            'intro' => '<p class="lead">Welcome to <strong>' . $storeName . '</strong>. By browsing our website or placing an order, you agree to these straightforward terms and conditions.</p>',
             'sections' => [
                 [
-                    'title' => 'Account Registration & User Eligibility',
-                    'content' => '<p>To purchase products on ' . $storeName . ', you must be at least 18 years of age or accessing under the supervision of a parent or legal guardian:</p>
+                    'title' => 'Account & Registration',
+                    'content' => '<p>A quick guide to managing your account:</p>
                     <ul>
-                        <li>You agree to provide accurate, current, and complete mobile number and address information during registration and checkout.</li>
-                        <li>You are responsible for maintaining the confidentiality of your account credentials and OTP codes.</li>
-                        <li>' . $storeName . ' reserves the right to suspend or terminate accounts that provide false information or engage in fraudulent activities.</li>
+                        <li>Provide an accurate mobile number and delivery address for smooth order fulfillment.</li>
+                        <li>Keep your login credentials and OTP codes confidential.</li>
+                        <li>Accounts found engaging in fraudulent behavior or false orders may be suspended.</li>
                     </ul>'
                 ],
                 [
-                    'title' => 'Product Information, Pricing & Tax Disclosures',
-                    'content' => '<p>In compliance with the Consumer Protection (E-Commerce) Rules 2020:</p>
+                    'title' => 'Clear & Transparent Pricing',
+                    'content' => '<p>Honest pricing with no surprises at checkout:</p>
                     <ul>
-                        <li><strong>Transparent Pricing:</strong> All product prices displayed on the store are listed in Indian Rupees (₹ INR) and are inclusive of all applicable Goods and Services Tax (GST).</li>
-                        <li><strong>No Hidden Charges:</strong> Total order costs, including delivery fees and applied discount coupons, are clearly broken down prior to order confirmation.</li>
-                        <li><strong>Pricing Errors:</strong> In the rare event of a technical pricing error or typographical mistake, ' . $storeName . ' reserves the right to cancel affected orders and issue a full refund.</li>
+                        <li><strong>All-Inclusive Prices:</strong> All listed prices are in Indian Rupees (₹) and include all applicable GST taxes.</li>
+                        <li><strong>Zero Hidden Fees:</strong> Any delivery fee or discount coupon is clearly shown before you pay.</li>
+                        <li><strong>Pricing Accuracy:</strong> In the rare event of a technical pricing glitch, affected orders may be cancelled and fully refunded.</li>
                     </ul>'
                 ],
                 [
-                    'title' => 'Order Placement & Pre-Dispatch Cancellation',
-                    'content' => '<p>When you place an order on ' . $storeName . ':</p>
+                    'title' => 'Orders & Cancellations',
+                    'content' => '<p>How your orders and cancellations work:</p>
                     <ul>
-                        <li><strong>Order Confirmation:</strong> Order confirmation is sent via SMS, WhatsApp, and email upon successful checkout.</li>
-                        <li><strong>Free Pre-Dispatch Cancellation:</strong> You may cancel your order free of cost anytime before it is marked as "Dispatched" from your account order dashboard.</li>
-                        <li><strong>Prepaid Refund for Cancelled Orders:</strong> Prepaid orders cancelled prior to dispatch will receive an instant 100% refund credited to your ShopCalm Wallet or original payment method within 3 to 5 business days.</li>
+                        <li><strong>Instant Confirmation:</strong> You will receive order confirmation via WhatsApp, SMS, and email.</li>
+                        <li><strong>Free Cancellation:</strong> You can cancel anytime before your package is dispatched with zero cancellation fees.</li>
+                        <li><strong>Fast Refunds:</strong> Prepaid orders cancelled before dispatch receive an instant 100% refund to your Wallet or source account.</li>
                     </ul>'
                 ],
                 [
-                    'title' => 'Strict No Return & No Replacement Policy',
-                    'content' => '<p>In compliance with Consumer Protection (E-Commerce) Rules 2020 disclosures:</p>
+                    'title' => 'Strict No Return Policy',
+                    'content' => '<p>Our return policy is clear and transparent:</p>
                     <ul>
-                        <li><strong>All Sales Are Final:</strong> ' . $storeName . ' maintains a strict <strong>No Return and No Replacement Policy</strong> once an order is dispatched and delivered.</li>
-                        <li><strong>Post-Delivery Non-Returnable:</strong> Once a package has been successfully delivered to the customer address, returns, exchanges, or replacements are not accepted under any circumstances.</li>
-                        <li><strong>Quality Assurance:</strong> All items undergo strict multi-point quality inspection and tamper-proof packaging prior to dispatch.</li>
+                        <li><strong>Final Sale:</strong> Once an order is delivered to your address, products cannot be returned, exchanged, or replaced.</li>
+                        <li><strong>Cancel Before Dispatch:</strong> Changed your mind? Simply cancel before the package leaves our warehouse for a full refund.</li>
+                        <li><strong>Quality Inspected:</strong> Every item is checked for quality and securely packaged before handover to couriers.</li>
                     </ul>'
                 ],
                 [
-                    'title' => 'Delivery & Shipping Terms',
-                    'content' => '<p>We aim to deliver your orders quickly and reliably:</p>
+                    'title' => 'Shipping & Delivery',
+                    'content' => '<p>Fast doorstep delivery across India:</p>
                     <ul>
-                        <li><strong>Serviceability Check:</strong> Delivery is subject to pincode serviceability verified during checkout.</li>
-                        <li><strong>Delivery Timelines:</strong> Standard orders are typically delivered within 2 to 5 business days across India depending on delivery location.</li>
-                        <li><strong>Delivery Verification:</strong> Delivery partners may request OTP verification at the time of handing over high-value packages.</li>
+                        <li><strong>Timelines:</strong> Standard delivery takes 2 to 5 business days depending on your location.</li>
+                        <li><strong>Live Tracking:</strong> Direct tracking links are sent via WhatsApp and SMS right after dispatch.</li>
+                        <li><strong>Secure Handover:</strong> Delivery agents may request an OTP for high-value orders to ensure safe delivery.</li>
                     </ul>'
                 ],
                 [
-                    'title' => 'Governing Law & Jurisdiction',
-                    'content' => '<p>These Terms & Conditions shall be governed by and construed in accordance with the laws of India. Any legal disputes or claims arising out of the use of ' . $storeName . ' shall be subject to the exclusive jurisdiction of the competent courts in Bengaluru, Karnataka, India.</p>'
+                    'title' => 'Governing Law',
+                    'content' => '<p>These terms are governed by the laws of India. Any legal matters or disputes will fall under the exclusive jurisdiction of the courts in Bengaluru, Karnataka.</p>'
                 ]
             ]
         ];
 
         // 3. RETURN & REFUND POLICY (STRICT NO RETURN & NO REPLACEMENT)
         $returnData = [
-            'desc' => 'Strict No Return & No Replacement policy guidelines.',
-            'intro' => '<p class="lead">Thank you for shopping at <strong>' . $storeName . '</strong>. Please read our policy carefully regarding returns, replacements, and refunds before placing an order.</p>',
+            'desc' => 'Our transparent No Return & No Replacement policy guidelines.',
+            'intro' => '<p class="lead">Thank you for shopping at <strong>' . $storeName . '</strong>. Please review our clear policy on returns, cancellations, and refunds before placing an order.</p>',
             'sections' => [
                 [
                     'title' => 'Strict No Return & No Replacement Policy',
-                    'content' => '<p>At <strong>' . $storeName . '</strong>, we follow a strict <strong>No Return & No Replacement Policy</strong> across all product categories:</p>
+                    'content' => '<p>At <strong>' . $storeName . '</strong>, we maintain a strict <strong>No Return & No Replacement Policy</strong> across all categories:</p>
                     <ul>
-                        <li><strong>All Sales Final:</strong> Once an order is successfully dispatched and delivered to your address, products cannot be returned, exchanged, or replaced under any circumstances.</li>
-                        <li><strong>Pre-Dispatch Cancellations Only:</strong> Returns are not accepted post-delivery. If you wish to cancel your purchase, you must cancel the order before it is dispatched from our fulfillment warehouse.</li>
-                        <li><strong>Quality Check Guarantee:</strong> Every item is thoroughly inspected for quality and securely packed with tamper-evident seals before handing over to courier partners.</li>
+                        <li><strong>No Post-Delivery Returns:</strong> Once an order has been delivered to your address, items cannot be returned, exchanged, or replaced.</li>
+                        <li><strong>Free Cancellation Before Dispatch:</strong> You can cancel any order free of cost before it leaves our fulfillment warehouse.</li>
+                        <li><strong>Quality Assurance:</strong> Every product is checked for quality and sealed with tamper-proof packaging before dispatch.</li>
                     </ul>'
                 ],
                 [
                     'title' => 'Damaged or Wrong Product Transit Exceptions',
-                    'content' => '<p>In the rare event that you receive a physically damaged package or wrong product delivered due to transit error:</p>
+                    'content' => '<p>In the rare event that an item is damaged during courier transit or an incorrect product is delivered:</p>
                     <ul>
-                        <li>You must report the issue to our support team within <strong>24 hours</strong> of package delivery by emailing <a href="mailto:' . $supportEmail . '">' . $supportEmail . '</a> or contacting our support helpline.</li>
-                        <li>An <strong>unboxing video</strong> clearly showing the shipping label and package opening must be provided for claim verification.</li>
-                        <li>Upon verification by our audit team, an appropriate resolution or replacement approval will be processed on a case-by-case basis.</li>
+                        <li>Report the issue within <strong>24 hours</strong> of delivery by emailing <a href="mailto:' . $supportEmail . '">' . $supportEmail . '</a> or reaching our support team.</li>
+                        <li>Provide an <strong>unboxing video</strong> clearly showing the shipping label and outer package condition.</li>
+                        <li>Our team will inspect the claim and arrange an appropriate resolution or replacement.</li>
                     </ul>'
                 ],
                 [
-                    'title' => 'Refund Processing for Pre-Dispatch Cancellations',
-                    'content' => '<p>For eligible cancellations initiated <strong>before package dispatch</strong>:</p>
+                    'title' => 'Refund Processing for Cancelled Orders',
+                    'content' => '<p>For eligible orders cancelled <strong>before dispatch</strong>:</p>
                     <ul>
-                        <li><strong>ShopCalm Wallet Refund:</strong> Instant 100% credit to your ShopCalm Wallet balance for immediate store shopping.</li>
-                        <li><strong>Original Payment Method:</strong> Prepaid card, UPI, or netbanking payments will be refunded back to the source account within 3 to 5 business days via Razorpay.</li>
+                        <li><strong>ShopCalm Wallet:</strong> Instant 100% credit for immediate store purchases.</li>
+                        <li><strong>Original Payment Method:</strong> Refunded to your UPI, card, or bank account within 3 to 5 business days via Razorpay.</li>
                     </ul>'
                 ]
             ]
@@ -190,24 +179,24 @@ class PageSeeder extends Seeder
 
         // 4. SHIPPING POLICY
         $shippingData = [
-            'desc' => 'Delivery timelines, courier partners, and tracking info across India.',
-            'intro' => '<p class="lead">We strive to deliver your orders safely and swiftly across India. Below are the terms and conditions governing our shipping and delivery processes at <strong>' . $storeName . '</strong>.</p>',
+            'desc' => 'Delivery timelines, shipping fees, and live courier tracking across India.',
+            'intro' => '<p class="lead">We deliver your favorite products quickly and safely across India. Here is everything you need to know about our shipping process.</p>',
             'sections' => [
                 [
                     'title' => 'Dispatch & Delivery Timelines',
                     'content' => '<ul>
-                        <li><strong>Order Processing:</strong> All orders are verified and processed within 24 hours of placement.</li>
-                        <li><strong>Metro Cities:</strong> Delivery within 2 to 3 business days.</li>
-                        <li><strong>Rest of India:</strong> Delivery within 3 to 5 business days.</li>
-                        <li><strong>Tracking:</strong> Real-time shipment tracking details with direct courier link are sent via SMS and WhatsApp as soon as your order is dispatched.</li>
+                        <li><strong>Quick Dispatch:</strong> Orders are verified and dispatched within 24 hours of placement.</li>
+                        <li><strong>Metro Cities:</strong> Delivered within 2 to 3 business days.</li>
+                        <li><strong>Rest of India:</strong> Delivered within 3 to 5 business days.</li>
+                        <li><strong>Live Tracking:</strong> Real-time tracking link sent via SMS and WhatsApp as soon as your package is dispatched.</li>
                     </ul>'
                 ],
                 [
-                    'title' => 'Shipping Charges & Cash on Delivery (COD)',
+                    'title' => 'Shipping Fees & Cash on Delivery (COD)',
                     'content' => '<ul>
-                        <li><strong>Free Shipping:</strong> Enjoy Free Shipping on orders above ₹499 across all serviceable pincodes.</li>
-                        <li><strong>Standard Shipping Fee:</strong> Nominal ₹49 shipping fee applies to orders below ₹499.</li>
-                        <li><strong>Cash on Delivery (COD):</strong> COD is available across most serviceable pincodes with simple OTP delivery verification.</li>
+                        <li><strong>Free Shipping:</strong> Free delivery on all orders above ₹499 across all serviceable pincodes.</li>
+                        <li><strong>Standard Shipping:</strong> A flat ₹49 fee applies on orders under ₹499.</li>
+                        <li><strong>Cash on Delivery (COD):</strong> Available across most serviceable pincodes with simple OTP verification at delivery.</li>
                     </ul>'
                 ]
             ]
@@ -215,25 +204,25 @@ class PageSeeder extends Seeder
 
         // 5. CANCELLATION POLICY
         $cancellationData = [
-            'desc' => 'Order cancellation terms, turnaround, and instant wallet refunds.',
-            'intro' => '<p class="lead">We understand that plans change. At <strong>' . $storeName . '</strong>, we offer a transparent and hassle-free cancellation process prior to order dispatch.</p>',
+            'desc' => '1-click order cancellations before dispatch and instant refunds.',
+            'intro' => '<p class="lead">Plans change, and we understand. At <strong>' . $storeName . '</strong>, we offer a simple, 1-click cancellation process before your order is dispatched.</p>',
             'sections' => [
                 [
                     'title' => 'Cancellation Before Dispatch',
-                    'content' => '<p>You can cancel your order free of charge at any time before it has been dispatched from our fulfillment center:</p>
+                    'content' => '<p>You can cancel your order free of charge at any time before it leaves our warehouse:</p>
                     <ul>
                         <li>Go to <strong>My Account &rarr; My Orders</strong>.</li>
-                        <li>Click the <strong>Cancel Order</strong> button on the order details page.</li>
-                        <li>Select a reason for cancellation and confirm.</li>
-                        <li>Prepaid orders cancelled before dispatch receive an <strong>instant 100% refund</strong> to your ShopCalm Wallet or original payment method.</li>
+                        <li>Click <strong>Cancel Order</strong> on your order details page.</li>
+                        <li>Select a reason and confirm.</li>
+                        <li>Prepaid orders receive an <strong>instant 100% refund</strong> to your ShopCalm Wallet or original payment method.</li>
                     </ul>'
                 ],
                 [
                     'title' => 'Cancellation After Dispatch',
-                    'content' => '<p>If your order has already been dispatched and is in transit:</p>
+                    'content' => '<p>If your order is already in transit with couriers:</p>
                     <ul>
-                        <li>Cancellations and returns are not permitted once dispatched due to our strict No Return Policy.</li>
-                        <li>If package delivery is refused, the order will be marked as RTO (Returned to Origin) subject to applicable return courier fees.</li>
+                        <li>Cancellations cannot be made once dispatched due to our No Return policy.</li>
+                        <li>If a package is rejected at the doorstep, it will be marked as returned to origin (RTO).</li>
                     </ul>'
                 ]
             ]
@@ -243,7 +232,7 @@ class PageSeeder extends Seeder
         $aboutData = [
             'hero_title' => 'About ' . $storeName,
             'tagline' => 'Simple. Transparent. Trustworthy.',
-            'supporting_text' => 'Your everyday shopping destination built on curated product authenticity, fast doorstep delivery, and 24/7 customer care.',
+            'supporting_text' => 'Verified products, honest pricing, and fast doorstep delivery.',
             'stats' => [
                 ['value' => '50K+', 'label' => 'Happy Customers', 'color' => '#6366f1'],
                 ['value' => '10K+', 'label' => 'Verified Products', 'color' => '#10b981'],
@@ -253,39 +242,38 @@ class PageSeeder extends Seeder
             'our_story' => [
                 'badge' => 'Our Journey',
                 'title' => 'How ' . $storeName . ' Came to Life',
-                'subtitle' => 'Born out of the desire to eliminate shopping anxiety and clutter.',
+                'subtitle' => 'Built to make online shopping simpler and calmer.',
                 'paragraphs' => [
-                    'Online shopping should be an exciting and stress-free experience, yet modern e-commerce is often crowded with confusing pricing, unverified sellers, and difficult return procedures.',
-                    'We founded ' . $storeName . ' to bring peace of mind back to online retail. Every product in our catalog undergoes rigorous authenticity screening, and our operations are designed around customer transparency, fair pricing, and dependable logistics.',
-                    'Today, ' . $storeName . ' proudly serves thousands of happy shoppers nationwide, delivering top electronics, fashion, lifestyle, and home essentials with speed and reliability.'
+                    'Shopping online should be simple and stress-free. We created ' . $storeName . ' to replace clutter and confusing pricing with clear terms, 100% genuine products, and dependable delivery.',
+                    'Every product is verified for quality before dispatch, giving customers across India a smooth and worry-free shopping experience.'
                 ],
                 'quote_title' => 'Built for Peace of Mind',
-                'quote_text' => 'Every decision we make starts with one guiding question: "Does this make shopping simpler and calmer for our customers?"',
+                'quote_text' => 'Making everyday shopping simpler, clearer, and calmer for you.',
                 'guarantee_badge' => 'Customer-First Guarantee'
             ],
-            'mission' => '<p>Our mission is to build a shopping destination where customers can shop comfortably, confidently, and without unnecessary complexity or hidden fees.</p><p class="fw-bold text-primary mb-0">' . $storeName . ' — Shop More. Worry Less.</p>',
+            'mission' => '<p class="mb-2">To deliver an effortless shopping experience with genuine products, fair prices, and zero hidden fees.</p><p class="fw-bold text-primary mb-0">' . $storeName . ' — Shop More. Worry Less.</p>',
             'trust_commitments' => [
                 'badge' => 'Customer Guarantee',
                 'title' => 'Our 4 Core Customer Commitments',
-                'subtitle' => 'Every order placed on ' . $storeName . ' is backed by our strict quality standard.',
+                'subtitle' => 'Quality and trust backed into every single order.',
                 'items' => [
-                    ['title' => '100% Genuine Products', 'desc' => 'Direct from verified brand partners and licensed distributors.', 'icon' => 'bi-patch-check-fill', 'color' => '#10b981'],
-                    ['title' => 'Zero Hidden Fees', 'desc' => 'What you see is what you pay. Transparent pricing at every step.', 'icon' => 'bi-tag-fill', 'color' => '#6366f1'],
-                    ['title' => 'Insured Safe Delivery', 'desc' => 'Every package is insured and tracked with trusted national couriers.', 'icon' => 'bi-shield-fill-check', 'color' => '#06b6d4'],
-                    ['title' => 'Instant Refund Assurance', 'desc' => 'Prompt refund processing directly to your original payment method or ShopCalm Wallet.', 'icon' => 'bi-arrow-clockwise', 'color' => '#8b5cf6']
+                    ['title' => '100% Genuine Products', 'desc' => 'Direct from verified brands and distributors.', 'icon' => 'bi-patch-check-fill', 'color' => '#10b981'],
+                    ['title' => 'Zero Hidden Fees', 'desc' => 'Clear checkout prices with no surprise charges.', 'icon' => 'bi-tag-fill', 'color' => '#6366f1'],
+                    ['title' => 'Insured Safe Delivery', 'desc' => 'Secure packaging with live courier tracking.', 'icon' => 'bi-shield-fill-check', 'color' => '#06b6d4'],
+                    ['title' => 'Instant Refund Assurance', 'desc' => 'Quick refunds directly to your source account.', 'icon' => 'bi-arrow-clockwise', 'color' => '#8b5cf6']
                 ]
             ],
             'focus_areas' => [
-                ['title' => 'Curated Authenticity', 'desc' => 'Carefully verified products with transparent specifications and genuine warranty.'],
-                ['title' => 'Frictionless Checkout', 'desc' => 'Lightning-fast, simple browsing with smart filters, live search, and 1-click ordering.'],
-                ['title' => 'Bank-Grade Security', 'desc' => 'Your payment details and personal data are encrypted with state-of-the-art security.'],
-                ['title' => 'Fast Dispatch & Tracking', 'desc' => 'Reliable courier partners providing live parcel tracking right to your doorstep.'],
-                ['title' => 'Pre-Dispatch Easy Cancellations', 'desc' => 'Simple, transparent pre-dispatch cancellation and instant refund processing.'],
-                ['title' => '24/7 Dedicated Helpdesk', 'desc' => 'Friendly support team ready to assist you anytime via live helpdesk and email.']
+                ['title' => 'Curated Authenticity', 'desc' => 'Verified product specifications and brand authenticity.'],
+                ['title' => 'Frictionless Checkout', 'desc' => 'Fast browsing, smart search, and instant checkout.'],
+                ['title' => 'Bank-Grade Security', 'desc' => '256-bit SSL encryption protecting payments and data.'],
+                ['title' => 'Fast Dispatch & Tracking', 'desc' => 'Prompt dispatch with live SMS and WhatsApp tracking.'],
+                ['title' => 'Easy Cancellations', 'desc' => '1-click cancellation before dispatch with instant refund.'],
+                ['title' => '24/7 Dedicated Helpdesk', 'desc' => 'Prompt support whenever you need help with an order.']
             ],
             'cta' => [
                 'title' => 'Ready to Experience Great Shopping?',
-                'subtitle' => 'Discover thousands of verified products with fast delivery and guaranteed satisfaction.'
+                'subtitle' => 'Discover thousands of verified products with fast doorstep delivery.'
             ]
         ];
 
@@ -300,40 +288,40 @@ class PageSeeder extends Seeder
 
         // 8. COOKIE POLICY DATA
         $cookieData = [
-            'desc' => 'Information on how we use essential and analytics cookies to optimize your experience.',
-            'intro' => '<p class="lead">This Cookie Policy explains how <strong>' . $storeName . '</strong> uses cookies and similar tracking technologies to recognize you when you visit ' . $domain . ' or use our mobile application.</p>',
+            'desc' => 'How we use essential cookies to keep your shopping experience smooth.',
+            'intro' => '<p class="lead">This Cookie Policy explains how <strong>' . $storeName . '</strong> uses simple cookies to make your browsing and checkout experience seamless.</p>',
             'sections' => [
                 [
                     'title' => 'What Are Cookies?',
-                    'content' => '<p>Cookies are small text files stored on your device that enable websites and web applications to remember your preferences, cart items, and login sessions for a seamless browsing experience.</p>'
+                    'content' => '<p>Cookies are small text files stored in your browser to remember your cart items, login sessions, and preferences.</p>'
                 ],
                 [
                     'title' => 'Types of Cookies We Use',
                     'content' => '<ul>
-                        <li><strong>Strictly Necessary Cookies:</strong> Essential for account login, shopping cart persistence, and secure checkout processing.</li>
-                        <li><strong>Preference & Session Cookies:</strong> Remember your pincode selection, filter preferences, and theme choices.</li>
-                        <li><strong>Performance & Security Cookies:</strong> Help identify and prevent potential security risks and analyze site loading speed.</li>
+                        <li><strong>Essential Cookies:</strong> Required to keep you signed in, remember your cart items, and complete secure checkout.</li>
+                        <li><strong>Preference Cookies:</strong> Remember your delivery pincode and store display preferences.</li>
+                        <li><strong>Security Cookies:</strong> Protect against unauthorized access and keep payment processing safe.</li>
                     </ul>'
                 ],
                 [
                     'title' => 'Managing Your Cookie Preferences',
-                    'content' => '<p>You can choose to disable or block non-essential cookies through your browser settings. However, disabling essential cookies may impact your ability to checkout or access account features on ' . $storeName . '.</p>'
+                    'content' => '<p>You can disable non-essential cookies via your browser settings. Please note that disabling essential cookies may prevent you from adding items to your cart or placing an order.</p>'
                 ]
             ]
         ];
 
         // 9. DISCLAIMER DATA
         $disclaimerData = [
-            'desc' => 'General terms regarding product listings, warranties, and platform usage.',
-            'intro' => '<p class="lead">The information provided on <strong>' . $storeName . '</strong> (' . $domain . ') is for general retail purchasing and informational purposes.</p>',
+            'desc' => 'General information regarding product listings, warranties, and platform use.',
+            'intro' => '<p class="lead">General terms regarding product listings and platform usage at <strong>' . $storeName . '</strong>.</p>',
             'sections' => [
                 [
-                    'title' => 'Product Authenticity & Warranties',
-                    'content' => '<p>All brand logos, trademarks, and registered names displayed on ' . $storeName . ' are the property of their respective trademark holders. ' . $storeName . ' operates as an authorized retailer/distributor. Product warranties, where applicable, are fulfilled directly by the original product manufacturer or brand partner under their standard warranty terms.</p>'
+                    'title' => 'Brand Trademarks & Warranties',
+                    'content' => '<p>All brand names and logos belong to their respective trademark holders. ' . $storeName . ' operates as an authorized retailer. Product warranties, where applicable, are serviced directly by original brand partners.</p>'
                 ],
                 [
-                    'title' => 'Accuracy of Listings',
-                    'content' => '<p>We take every reasonable measure to ensure that product images, specifications, and prices are accurate. Minor color variations may occur due to device display calibration. In case of an unintentional typographical or inventory error, ' . $storeName . ' reserves the right to cancel the order and provide a full refund.</p>'
+                    'title' => 'Listing Accuracy',
+                    'content' => '<p>We take every reasonable measure to ensure that product images, specs, and prices are accurate. In the rare case of an unintentional technical or inventory error, we reserve the right to cancel the order and provide a 100% refund.</p>'
                 ]
             ]
         ];
@@ -341,30 +329,30 @@ class PageSeeder extends Seeder
         // 10. FAQ DATA (Categorized to match UI filter chips)
         $faqData = [
             'hero_title' => 'Frequently Asked Questions',
-            'hero_subtitle' => 'Find quick answers to common questions about orders, shipping, returns, and payments.',
+            'hero_subtitle' => 'Quick answers to common questions about orders, shipping, returns, and payments.',
             'faqs' => [
                 // Orders & Tracking
                 [
                     'question' => 'How can I track my order status?',
-                    'answer' => '<p>Once your order is dispatched, real-time tracking updates and courier tracking numbers are sent directly to your registered <strong>WhatsApp number and Email</strong>. You can also view live order progress anytime from your Account Dashboard under <strong>My Account &rarr; My Orders</strong>.</p>',
+                    'answer' => '<p>Once your order is dispatched, a live tracking link is sent directly to your registered <strong>WhatsApp number and SMS</strong>. You can also track your package anytime under <strong>My Account &rarr; My Orders</strong>.</p>',
                     'category' => 'Orders & Tracking',
                     'icon' => 'bi-truck'
                 ],
                 [
                     'question' => 'How do I cancel my order before dispatch?',
-                    'answer' => '<p>You can cancel your order free of cost anytime before it is dispatched by navigating to <strong>My Account &rarr; My Orders</strong> and clicking <em>Cancel Order</em>. Prepaid cancellations are refunded 100% instantly to your ShopCalm Wallet or to your source payment method.</p>',
+                    'answer' => '<p>You can cancel free of charge before your order is dispatched. Go to <strong>My Account &rarr; My Orders</strong> and click <em>Cancel Order</em>. Prepaid orders receive an instant 100% refund.</p>',
                     'category' => 'Orders & Tracking',
                     'icon' => 'bi-x-circle'
                 ],
                 [
                     'question' => 'Can I modify my delivery address after placing an order?',
-                    'answer' => '<p>If your order has not yet been dispatched, our support team can help update your delivery address or contact number. Please contact us immediately at <a href="mailto:' . $supportEmail . '">' . $supportEmail . '</a> or via WhatsApp with your Order ID.</p>',
+                    'answer' => '<p>If your package has not been dispatched, our team can help update your address. Please contact us via WhatsApp or email at <a href="mailto:' . $supportEmail . '">' . $supportEmail . '</a> with your Order ID.</p>',
                     'category' => 'Orders & Tracking',
                     'icon' => 'bi-geo-alt'
                 ],
                 [
                     'question' => 'How do I know if my order has been confirmed?',
-                    'answer' => '<p>As soon as you complete checkout, you will receive an immediate confirmation SMS and WhatsApp message with your unique Order ID and summary. You can also verify your order instantly under <strong>My Orders</strong> in your account.</p>',
+                    'answer' => '<p>You will receive an immediate confirmation SMS and WhatsApp message with your Order ID right after checkout. You can also view it anytime under <strong>My Orders</strong>.</p>',
                     'category' => 'Orders & Tracking',
                     'icon' => 'bi-check-circle'
                 ],
@@ -372,19 +360,19 @@ class PageSeeder extends Seeder
                 // Shipping & Delivery
                 [
                     'question' => 'What are the delivery timelines and shipping charges?',
-                    'answer' => '<p>We offer <strong>Free Shipping on all orders above ₹499</strong> across all serviceable pincodes. Orders below ₹499 incur a nominal standard shipping fee of ₹49. Orders in metro cities deliver within 2 to 3 business days, while rest of India delivers within 3 to 5 business days.</p>',
+                    'answer' => '<p>We offer <strong>Free Shipping on all orders above ₹499</strong> across all serviceable pincodes. Orders below ₹499 incur a flat ₹49 fee. Metro orders deliver within 2 to 3 business days; rest of India delivers within 3 to 5 business days.</p>',
                     'category' => 'Shipping & Delivery',
                     'icon' => 'bi-box-seam'
                 ],
                 [
-                    'question' => 'Which courier partners handle deliveries for ShopCalm?',
-                    'answer' => '<p>We partner with leading, verified logistics carriers including <strong>Delhivery, Shiprocket, BlueDart, and Shadowfax</strong> to ensure fast, insured, and tamper-proof delivery right to your doorstep.</p>',
+                    'question' => 'Which courier partners handle deliveries?',
+                    'answer' => '<p>We partner with leading, verified logistics carriers including <strong>Delhivery, Shiprocket, BlueDart, and Shadowfax</strong> for fast and safe doorstep delivery.</p>',
                     'category' => 'Shipping & Delivery',
                     'icon' => 'bi-send'
                 ],
                 [
                     'question' => 'What should I do if my package delivery is delayed?',
-                    'answer' => '<p>While 99.8% of our orders deliver on time, unexpected weather or regional logistical delays may rarely occur. You can track live courier milestones via the tracking link sent to your WhatsApp. If your package is delayed past the estimated date, reach out to <a href="mailto:' . $supportEmail . '">' . $supportEmail . '</a> for expedited escalation.</p>',
+                    'answer' => '<p>Check your live tracking link on WhatsApp for courier updates. If your package is delayed past the estimated date, email <a href="mailto:' . $supportEmail . '">' . $supportEmail . '</a> for immediate escalation.</p>',
                     'category' => 'Shipping & Delivery',
                     'icon' => 'bi-hourglass-split'
                 ],
@@ -392,19 +380,19 @@ class PageSeeder extends Seeder
                 // Returns & Quality
                 [
                     'question' => 'What is ShopCalm\'s Return and Replacement Policy?',
-                    'answer' => '<p>ShopCalm follows a <strong>Strict No Return & No Replacement Policy</strong> once a package is dispatched and delivered. All items undergo rigorous multi-point quality inspection prior to packing. Free 100% cancellation is permitted anytime before package dispatch.</p>',
+                    'answer' => '<p>ShopCalm maintains a <strong>Strict No Return & No Replacement Policy</strong> once an order is delivered. Free 100% cancellation is available anytime before your package is dispatched.</p>',
                     'category' => 'Returns & Quality',
                     'icon' => 'bi-shield-check'
                 ],
                 [
-                    'question' => 'What if I receive a physically damaged or wrong product in transit?',
-                    'answer' => '<p>In the rare event that you receive a physically damaged package or incorrect item due to transit handling, you must report it within <strong>24 hours of delivery</strong> by emailing <a href="mailto:' . $supportEmail . '">' . $supportEmail . '</a> with an unboxing video clearly displaying the package shipping label. Upon inspection by our verification team, an appropriate resolution or replacement will be arranged.</p>',
+                    'question' => 'What if I receive a damaged or incorrect product?',
+                    'answer' => '<p>In the rare event of transit damage or an incorrect item, report it within <strong>24 hours of delivery</strong> to <a href="mailto:' . $supportEmail . '">' . $supportEmail . '</a> with an unboxing video. Our team will verify and resolve it promptly.</p>',
                     'category' => 'Returns & Quality',
                     'icon' => 'bi-exclamation-triangle'
                 ],
                 [
-                    'question' => 'Are all products sold on ShopCalm original and authentic?',
-                    'answer' => '<p>Yes, 100%. Every single product on ShopCalm is sourced directly from brand manufacturers and authorized distributors. We guarantee genuine quality, tamper-evident packaging, and official brand warranties where applicable.</p>',
+                    'question' => 'Are all products sold on ShopCalm authentic?',
+                    'answer' => '<p>Yes, 100%. All products are sourced directly from authorized brands and distributors with genuine quality and tamper-evident packaging.</p>',
                     'category' => 'Returns & Quality',
                     'icon' => 'bi-patch-check'
                 ],
@@ -412,25 +400,25 @@ class PageSeeder extends Seeder
                 // Payments & COD
                 [
                     'question' => 'What payment methods do you accept?',
-                    'answer' => '<p>We accept all major <strong>UPI apps (Google Pay, PhonePe, Paytm, BHIM), Credit/Debit Cards (Visa, MasterCard, RuPay), NetBanking</strong> via RBI-approved PCI-DSS compliant Razorpay payment gateway, <strong>ShopCalm Wallet balance</strong>, and <strong>Cash on Delivery (COD)</strong>.</p>',
+                    'answer' => '<p>We accept <strong>UPI (Google Pay, PhonePe, Paytm), Credit/Debit Cards, NetBanking</strong> via Razorpay, <strong>ShopCalm Wallet balance</strong>, and <strong>Cash on Delivery (COD)</strong>.</p>',
                     'category' => 'Payments & COD',
                     'icon' => 'bi-credit-card-2-front'
                 ],
                 [
                     'question' => 'How does ShopCalm Wallet balance work?',
-                    'answer' => '<p>Your ShopCalm Wallet receives instant 100% credits for pre-dispatch cancellations and promotional rewards. Wallet balance can be used at checkout with 1-click zero transaction fee checkout.</p>',
+                    'answer' => '<p>Cancelled prepaid orders and promotional credits are deposited instantly to your Wallet. Wallet balance can be used at checkout with 1-click instant confirmation.</p>',
                     'category' => 'Payments & COD',
                     'icon' => 'bi-wallet2'
                 ],
                 [
-                    'question' => 'How long does a refund take if I cancel a prepaid order?',
-                    'answer' => '<p>If you choose refund to your <strong>ShopCalm Wallet</strong>, the refund is credited <strong>instantly</strong>. If you choose refund to the <strong>original payment method</strong> (UPI/Card/Bank), it is initiated immediately via Razorpay and typically reflects in your bank account within 3 to 5 business days.</p>',
+                    'question' => 'How long does a refund take for cancelled orders?',
+                    'answer' => '<p><strong>ShopCalm Wallet refunds are instant.</strong> Refunds to your original payment method (UPI/Card/Bank) reflect within 3 to 5 business days via Razorpay.</p>',
                     'category' => 'Payments & COD',
                     'icon' => 'bi-arrow-clockwise'
                 ],
                 [
                     'question' => 'Is Cash on Delivery (COD) available for my area?',
-                    'answer' => '<p>Yes, COD is available across most serviceable pincodes in India. You can enter your 6-digit delivery pincode on the product page or at checkout to verify COD availability instantly.</p>',
+                    'answer' => '<p>Yes, COD is available across most pincodes in India with simple OTP verification at the time of delivery.</p>',
                     'category' => 'Payments & COD',
                     'icon' => 'bi-cash-coin'
                 ]
@@ -459,15 +447,15 @@ class PageSeeder extends Seeder
                 'slug' => 'terms-and-conditions',
                 'content' => json_encode($termsData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
                 'meta_title' => 'Terms & Conditions - Customer Agreement | ' . $storeName,
-                'meta_description' => 'Terms and conditions for shopping at ' . $storeName . '. Transparent pricing, order terms, and e-commerce consumer compliance.',
+                'meta_description' => 'Clear and simple terms for shopping at ' . $storeName . '. Pricing, order guidelines, and customer policies.',
                 'is_active' => true,
             ],
             [
                 'title' => 'Privacy Policy',
                 'slug' => 'privacy-policy',
                 'content' => json_encode($privacyData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
-                'meta_title' => 'Privacy Policy - DPDP Act 2023 Compliant | ' . $storeName,
-                'meta_description' => 'Read our DPDP Act 2023 compliant Privacy Policy. Learn how ' . $storeName . ' securely collects, stores, and protects your personal data.',
+                'meta_title' => 'Privacy Policy | ' . $storeName,
+                'meta_description' => 'Learn how ' . $storeName . ' protects your personal data and privacy. Safe, secure, and encrypted.',
                 'is_active' => true,
             ],
             [
@@ -475,7 +463,7 @@ class PageSeeder extends Seeder
                 'slug' => 'return-refund-policy',
                 'content' => json_encode($returnData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
                 'meta_title' => 'Strict No Return & No Replacement Policy | ' . $storeName,
-                'meta_description' => 'Read our No Return and No Replacement Policy at ' . $storeName . '. Pre-dispatch cancellation terms and order guidelines.',
+                'meta_description' => 'Read our clear No Return and No Replacement Policy at ' . $storeName . '. Easy pre-dispatch cancellations and instant refunds.',
                 'is_active' => true,
             ],
             [

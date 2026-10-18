@@ -1,4 +1,3 @@
-@if(!request()->routeIs('checkout.*'))
 <!-- ============================================================ -->
 <!-- 📱 APP-LIKE STICKY MOBILE BOTTOM NAVIGATION BAR -->
 <!-- ============================================================ -->
@@ -60,7 +59,6 @@
         </div>
     </div>
 </nav>
-@endif
 
 <style>
 .mobile-nav-item {

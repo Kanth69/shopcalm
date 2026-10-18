@@ -123,8 +123,9 @@ class CheckoutService
             }
 
             $totalAmount = max(0, $payableBeforeWallet - $walletAmountUsed);
-            $finalPaymentMethod = $isFullyPaidByWallet ? 'wallet' : 'cod';
-            $finalPaymentStatus = $isFullyPaidByWallet ? 'paid' : 'pending';
+            $isZeroOrder = $isFullyPaidByWallet || ($totalAmount <= 0);
+            $finalPaymentMethod = $isZeroOrder ? ($walletAmountUsed > 0 ? 'wallet' : 'coupon') : 'cod';
+            $finalPaymentStatus = $isZeroOrder ? 'paid' : 'pending';
 
             if ($finalPaymentMethod === 'cod' && empty($pincodeCheck['is_cod_available'])) {
                 throw new Exception("Cash on Delivery (COD) is not available for PIN code {$shippingZip}. Please choose Online Payment.");

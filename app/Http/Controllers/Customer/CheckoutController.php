@@ -374,9 +374,10 @@ class CheckoutController extends Controller
             $walletBalance = ($userWallet && $userWallet->status === 'active') ? (float) $userWallet->balance : 0.00;
 
             $isFullyPaidByWallet = ($useWallet && $walletBalance >= $payableBeforeWallet);
+            $isZeroAmountOrder = ($payableBeforeWallet <= 0) || $isFullyPaidByWallet;
 
-            // IF 100% COVERED BY WALLET: Bypass payment gateway (no 0.00 gateway error!), debit wallet & confirm order immediately!
-            if ($isFullyPaidByWallet) {
+            // IF 100% COVERED BY WALLET OR OFFERS: Bypass payment gateway (no 0.00 gateway error!), debit wallet & confirm order immediately!
+            if ($isZeroAmountOrder) {
                 $order = $this->checkoutService->placeOrder($data);
                 Session::forget('applied_coupon');
 

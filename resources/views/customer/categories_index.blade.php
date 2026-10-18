@@ -1,42 +1,33 @@
 @extends('layouts.customer')
 
-@section('title', 'Explore All Categories — ' . \App\Models\Setting::get('store_name', 'ShopCalm'))
+@section('title', 'Categories — ' . \App\Models\Setting::get('store_name', 'ShopCalm'))
 
 @section('content')
 
-<div class="container-fluid my-3 my-md-4">
-    {{-- Breadcrumb --}}
-    <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb small mb-0">
-            <li class="breadcrumb-item"><a href="{{ route('home') }}" class="text-decoration-none text-muted">Home</a></li>
-            <li class="breadcrumb-item active text-primary fw-semibold" aria-current="page">Categories</li>
-        </ol>
-    </nav>
+<div class="container-xl py-3 py-md-4 px-3 px-md-4">
 
-    {{-- ── 1. Clean Header (Matching Home Screen) ──────────────── --}}
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 pb-3 mb-4 border-bottom">
-        <div>
-            <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="badge rounded-pill px-3 py-1 fw-bold text-uppercase d-inline-flex align-items-center gap-1 shadow-2xs" 
-                      style="background: rgba(99,102,241,0.12); color: #6366f1; font-size: 0.72rem; letter-spacing: 0.05em;">
-                    <i class="bi bi-grid-fill me-0.5"></i> Department Directory
+    {{-- Clean Header (No duplicate categories text) --}}
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2.5 pb-3 mb-3 border-bottom">
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ route('home') }}" class="btn btn-sm btn-light border rounded-circle d-inline-flex align-items-center justify-content-center text-secondary me-1" style="width: 32px; height: 32px;" title="Back to Home">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h4 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2" style="font-size: clamp(1.2rem, 2.5vw, 1.5rem);">
+                <span>Categories</span>
+                <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-0.5 fw-semibold" style="font-size: 0.75rem;">
+                    {{ $categories->count() }}
                 </span>
-                <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 small fw-semibold" style="font-size: 0.72rem;">
-                    {{ $categories->count() }} Categories
-                </span>
-            </div>
-            <h3 class="fw-extrabold mb-0 text-dark" style="letter-spacing: -0.02em;">Explore All Categories</h3>
-            <p class="text-muted small mb-0 mt-0.5">Browse all curated departments and discover handpicked deals</p>
+            </h4>
         </div>
 
         {{-- Realtime Category Filter Input --}}
-        <div class="position-relative" style="min-width: 260px; max-width: 340px;">
-            <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+        <div class="position-relative w-100" style="max-width: 320px;">
+            <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="font-size: 0.85rem;"></i>
             <input type="text" id="catFilterInput" 
-                   class="form-control rounded-pill ps-5 pe-4 py-2 shadow-xs border" 
-                   placeholder="Search categories (e.g. Mobiles)..." 
+                   class="form-control rounded-pill ps-5 pe-4 py-1.5 shadow-xs border bg-white" 
+                   placeholder="Search categories..." 
                    onkeyup="filterCategories()"
-                   style="border-color: #e2e8f0; font-size: 0.85rem;">
+                   style="border-color: #cbd5e1; font-size: 0.85rem;">
             <button type="button" id="clearSearchBtn" class="btn btn-link text-muted position-absolute top-50 end-0 translate-middle-y me-2 p-0 d-none" 
                     onclick="clearCatFilter()" style="font-size: 0.85rem; text-decoration: none;">
                 <i class="bi bi-x-circle-fill"></i>
@@ -44,68 +35,54 @@
         </div>
     </div>
 
-    {{-- ── 2. Categories Grid ──────────────────────────────────── --}}
+    {{-- Categories Grid --}}
     @php
-        $icons = ['bi-phone', 'bi-laptop', 'bi-handbag', 'bi-house-door', 'bi-controller', 'bi-watch', 'bi-headphones', 'bi-camera', 'bi-gift', 'bi-bicycle', 'bi-tv', 'bi-smartwatch'];
-        $colors = [
-            ['bg' => '#ede9fe', 'text' => '#6366f1'],
-            ['bg' => '#fce7f3', 'text' => '#ec4899'],
-            ['bg' => '#dbeafe', 'text' => '#3b82f6'],
-            ['bg' => '#d1fae5', 'text' => '#10b981'],
-            ['bg' => '#fef3c7', 'text' => '#f59e0b'],
-            ['bg' => '#cffafe', 'text' => '#06b6d4'],
-            ['bg' => '#fee2e2', 'text' => '#ef4444'],
-            ['bg' => '#f3e8ff', 'text' => '#a855f7'],
-            ['bg' => '#e0e7ff', 'text' => '#4f46e5'],
-            ['bg' => '#ccfbf1', 'text' => '#14b8a6'],
+        $palette = [
+            ['bg' => 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)', 'text' => '#ffffff'],
+            ['bg' => 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)', 'text' => '#ffffff'],
+            ['bg' => 'linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)', 'text' => '#ffffff'],
+            ['bg' => 'linear-gradient(135deg, #10b981 0%, #047857 100%)', 'text' => '#ffffff'],
+            ['bg' => 'linear-gradient(135deg, #f59e0b 0%, #b45309 100%)', 'text' => '#ffffff'],
+            ['bg' => 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)', 'text' => '#ffffff'],
+            ['bg' => 'linear-gradient(135deg, #14b8a6 0%, #0f766e 100%)', 'text' => '#ffffff'],
+            ['bg' => 'linear-gradient(135deg, #f97316 0%, #c2410c 100%)', 'text' => '#ffffff'],
+            ['bg' => 'linear-gradient(135deg, #06b6d4 0%, #0e7490 100%)', 'text' => '#ffffff'],
+            ['bg' => 'linear-gradient(135deg, #64748b 0%, #334155 100%)', 'text' => '#ffffff'],
         ];
     @endphp
 
-    <div class="row row-cols-2 row-cols-sm-3 row-cols-md-3 row-cols-lg-5 g-3 g-md-4" id="categoriesGrid">
+    <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-3 g-md-4" id="categoriesGrid">
         @forelse($categories as $index => $category)
             @php
-                $color = $colors[$index % count($colors)];
-                $icon = $icons[$index % count($icons)];
+                $color = $palette[$index % count($palette)];
+                $hasImage = !empty($category->image) && file_exists(public_path('storage/' . $category->image));
+                $initial = strtoupper(mb_substr($category->name, 0, 1));
             @endphp
             <div class="col category-item-col" data-name="{{ strtolower($category->name) }}">
                 <a href="{{ route('category.products', $category->slug) }}" class="text-decoration-none text-dark group category-pill-link h-100 d-block">
-                    <div class="card h-100 border-0 rounded-4 p-3.5 text-center transition-all category-card shadow-xs d-flex flex-column" 
-                         style="background: #f8fafc; border: 1px solid #e2e8f0 !important;">
-                        <div class="card-body p-1 d-flex flex-column align-items-center justify-content-center h-100">
+                    <div class="card h-100 border-0 rounded-4 text-center category-card shadow-xs d-flex flex-column" 
+                         style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
+                        <div class="card-body p-3 p-md-3.5 d-flex flex-column align-items-center justify-content-center">
                             
-                            {{-- Circular Icon Thumbnail --}}
-                            <div class="rounded-circle d-flex align-items-center justify-content-center mb-3 transition-all category-icon-circle shadow-xs overflow-hidden" 
-                                 style="width: 72px; height: 72px; min-width: 72px; background: {{ $color['bg'] }}; color: {{ $color['text'] }};">
-                                @if($category->image)
-                                    <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="w-100 h-100 rounded-circle object-fit-cover">
+                            {{-- Image OR Vibrant Color Circle --}}
+                            <div class="rounded-circle d-flex align-items-center justify-content-center mb-2.5 transition-all category-avatar shadow-xs overflow-hidden" 
+                                 style="width: 64px; height: 64px; min-width: 64px; @if(!$hasImage) background: {{ $color['bg'] }}; color: {{ $color['text'] }}; @endif">
+                                @if($hasImage)
+                                    <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="w-100 h-100 object-fit-cover">
                                 @else
-                                    <i class="bi {{ $icon }} fs-2"></i>
+                                    <span class="fw-bold fs-3 text-white user-select-none">{{ $initial }}</span>
                                 @endif
                             </div>
 
-                            {{-- Name --}}
-                            <h6 class="card-title fw-bolder mb-1 text-dark text-truncate w-100" style="font-size: 0.95rem; letter-spacing: -0.01em;">
+                            {{-- Category Name --}}
+                            <h6 class="card-title fw-bold mb-1 text-dark text-truncate w-100" style="font-size: 0.88rem;" title="{{ $category->name }}">
                                 {{ $category->name }}
                             </h6>
 
-                            {{-- Product count & starting price badges --}}
-                            <div class="d-flex align-items-center justify-content-center gap-1.5 mb-2.5 flex-wrap">
-                                <span class="badge bg-white text-secondary border rounded-pill px-2.5 py-0.5 fw-semibold shadow-2xs" style="font-size: 0.7rem;">
-                                    {{ $category->products_count }} {{ Str::plural('Item', $category->products_count) }}
-                                </span>
-                                @if($category->min_price > 0)
-                                    <span class="badge rounded-pill px-2 py-0.5 fw-bold" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-size: 0.7rem;">
-                                        From ₹{{ number_format($category->min_price) }}
-                                    </span>
-                                @endif
-                            </div>
-
-                            {{-- Explore CTA --}}
-                            <div class="mt-auto pt-2">
-                                <span class="text-primary fw-bold small explore-cta-text" style="font-size: 0.78rem;">
-                                    Explore Collection →
-                                </span>
-                            </div>
+                            {{-- Product Count --}}
+                            <span class="text-muted small" style="font-size: 0.72rem;">
+                                {{ $category->products_count }} {{ Str::plural('item', $category->products_count) }}
+                            </span>
                         </div>
                     </div>
                 </a>
@@ -113,72 +90,60 @@
         @empty
             <div class="col-12 text-center py-5">
                 <i class="bi bi-folder-x fs-1 text-muted"></i>
-                <h4 class="mt-3 fw-bold text-dark">No Categories Found</h4>
-                <p class="text-muted small">Categories will appear here once added in the Admin panel.</p>
+                <h5 class="mt-3 fw-bold text-dark">No Categories Found</h5>
+                <p class="text-muted small">Categories will appear here once added.</p>
             </div>
         @endforelse
     </div>
 
     {{-- Empty Search Results Notice --}}
     <div id="noMatchNotice" class="text-center py-5 d-none">
-        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3" style="width: 56px; height: 56px;">
             <i class="bi bi-search text-muted fs-4"></i>
         </div>
-        <h5 class="fw-bold text-dark mb-1">No Matching Categories</h5>
-        <p class="text-muted small mb-3">Try searching for a different keyword or explore all departments.</p>
-        <button class="btn btn-sm btn-outline-primary rounded-pill px-3.5 py-1.5 fw-semibold" onclick="clearCatFilter()">Reset Search</button>
+        <h6 class="fw-bold text-dark mb-1">No Matching Categories</h6>
+        <p class="text-muted small mb-3">Try searching for a different keyword.</p>
+        <button class="btn btn-sm btn-outline-primary rounded-pill px-3.5 py-1 fw-semibold" onclick="clearCatFilter()">Reset Search</button>
     </div>
 </div>
 
 <style>
 .category-card {
-    transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
-    padding: 1.5rem; /* increase inner spacing for touch targets */
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 .category-pill-link:hover .category-card {
-    transform: translateY(-5px);
-    background: #ffffff !important;
-    border-color: #cbd5e1 !important;
-    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.09) !important;
+    transform: translateY(-4px);
+    border-color: #6366f1 !important;
+    box-shadow: 0 10px 24px rgba(99, 102, 241, 0.12) !important;
 }
-.category-pill-link:hover .category-icon-circle {
-    transform: scale(1.08);
-}
-.category-pill-link:hover .explore-cta-text {
-    color: #4338ca !important;
-    text-decoration: underline;
+.category-pill-link:hover .category-avatar {
+    transform: scale(1.06);
 }
 #catFilterInput::placeholder {
-    color: rgba(255, 255, 255, 0.6);
+    color: #94a3b8;
 }
 #catFilterInput:focus {
-    background: rgba(255, 255, 255, 0.2) !important;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35) !important;
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
 }
-/* Mobile specific adjustments */
-@media (max-width: 576px) {
-    .category-card {
-        padding: 1rem;
-        border: 1px solid #e2e8f0 !important;
+@media (max-width: 575.98px) {
+    #categoriesGrid {
+        --bs-gutter-x: 0.9rem !important;
+        --bs-gutter-y: 0.9rem !important;
     }
-    .category-icon-circle {
+    .category-avatar {
         width: 56px !important;
         height: 56px !important;
         min-width: 56px !important;
-        font-size: 1.5rem !important;
+    }
+    .category-avatar span {
+        font-size: 1.35rem !important;
+    }
+    .category-card {
+        padding: 0.85rem 0.6rem !important;
     }
     .category-card .card-title {
-        font-size: 0.85rem !important;
-    }
-    .category-card .badge {
-        font-size: 0.65rem !important;
-    }
-    .explore-cta-text {
-        font-size: 0.75rem !important;
-    }
-    #catFilterInput {
-        width: 100% !important;
-        max-width: none !important;
+        font-size: 0.82rem !important;
     }
 }
 </style>

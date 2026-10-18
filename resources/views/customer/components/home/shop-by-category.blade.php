@@ -16,29 +16,36 @@
         </div>
 
         @php
-            $icons = ['bi-laptop', 'bi-handbag', 'bi-house-door', 'bi-controller', 'bi-watch', 'bi-headphones', 'bi-camera', 'bi-phone', 'bi-gift', 'bi-bicycle'];
             $colors = [
-                ['bg' => '#ede9fe', 'text' => '#6366f1'],
-                ['bg' => '#fce7f3', 'text' => '#ec4899'],
-                ['bg' => '#dbeafe', 'text' => '#3b82f6'],
-                ['bg' => '#d1fae5', 'text' => '#10b981'],
-                ['bg' => '#fef3c7', 'text' => '#f59e0b'],
-                ['bg' => '#cffafe', 'text' => '#06b6d4'],
-                ['bg' => '#fee2e2', 'text' => '#ef4444'],
-                ['bg' => '#f3e8ff', 'text' => '#a855f7'],
-                ['bg' => '#e0e7ff', 'text' => '#4f46e5'],
-                ['bg' => '#ccfbf1', 'text' => '#14b8a6'],
+                ['bg' => 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)', 'text' => '#ffffff'],
+                ['bg' => 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)', 'text' => '#ffffff'],
+                ['bg' => 'linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)', 'text' => '#ffffff'],
+                ['bg' => 'linear-gradient(135deg, #10b981 0%, #047857 100%)', 'text' => '#ffffff'],
+                ['bg' => 'linear-gradient(135deg, #f59e0b 0%, #b45309 100%)', 'text' => '#ffffff'],
+                ['bg' => 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)', 'text' => '#ffffff'],
+                ['bg' => 'linear-gradient(135deg, #14b8a6 0%, #0f766e 100%)', 'text' => '#ffffff'],
+                ['bg' => 'linear-gradient(135deg, #f97316 0%, #c2410c 100%)', 'text' => '#ffffff'],
+                ['bg' => 'linear-gradient(135deg, #06b6d4 0%, #0e7490 100%)', 'text' => '#ffffff'],
+                ['bg' => 'linear-gradient(135deg, #64748b 0%, #334155 100%)', 'text' => '#ffffff'],
             ];
         @endphp
 
         <!-- Mobile Horizontal Story Scroll Bar (Touch Native) -->
         <div class="d-flex d-md-none overflow-x-auto gap-3 pb-2 no-scrollbar px-1 text-center" style="scroll-snap-type: x mandatory;">
             @foreach($categories as $index => $category)
-                @php $color = $colors[$index % count($colors)]; @endphp
+                @php 
+                    $color = $colors[$index % count($colors)];
+                    $hasImage = !empty($category->image) && file_exists(public_path('storage/' . $category->image));
+                    $initial = strtoupper(mb_substr($category->name, 0, 1));
+                @endphp
                 <a href="{{ route('category.products', $category->slug) }}" class="text-decoration-none text-dark flex-shrink-0 d-flex flex-column align-items-center" style="width: 76px; scroll-snap-align: start;">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center mb-1.5 shadow-xs transition-all" 
-                         style="width: 58px; height: 58px; background: {{ $color['bg'] }}; color: {{ $color['text'] }}; border: 2px solid #ffffff;">
-                        <i class="bi {{ $icons[$index % count($icons)] }} fs-3"></i>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center mb-1.5 shadow-xs transition-all overflow-hidden" 
+                         style="width: 58px; height: 58px; @if(!$hasImage) background: {{ $color['bg'] }}; color: {{ $color['text'] }}; @endif border: 2px solid #ffffff;">
+                        @if($hasImage)
+                            <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="w-100 h-100 object-fit-cover">
+                        @else
+                            <span class="fw-bold fs-4 text-white user-select-none">{{ $initial }}</span>
+                        @endif
                     </div>
                     <span class="fw-bold text-dark text-truncate w-100" style="font-size: 0.74rem; line-height: 1.2;">{{ $category->name }}</span>
                 </a>
@@ -48,18 +55,25 @@
         <!-- Desktop Grid View -->
         <div class="row row-cols-md-3 row-cols-lg-5 g-3 g-md-4 text-center d-none d-md-flex">
             @foreach($categories as $index => $category)
-                @php $color = $colors[$index % count($colors)]; @endphp
+                @php 
+                    $color = $colors[$index % count($colors)];
+                    $hasImage = !empty($category->image) && file_exists(public_path('storage/' . $category->image));
+                    $initial = strtoupper(mb_substr($category->name, 0, 1));
+                @endphp
                 <div class="col">
                     <a href="{{ route('category.products', $category->slug) }}" class="text-decoration-none text-dark group category-pill-link">
                         <div class="card h-100 border-0 rounded-4 p-3 transition-all category-card shadow-xs" 
                              style="background: #f8fafc; border: 1px solid #f1f5f9 !important;">
                             <div class="card-body p-2 d-flex flex-column align-items-center justify-content-center">
-                                <div class="rounded-circle d-flex align-items-center justify-content-center mb-3 transition-all category-icon-circle shadow-xs" 
-                                     style="width: 68px; height: 68px; background: {{ $color['bg'] }}; color: {{ $color['text'] }};">
-                                    <i class="bi {{ $icons[$index % count($icons)] }} fs-2"></i>
+                                <div class="rounded-circle d-flex align-items-center justify-content-center mb-2.5 transition-all category-icon-circle shadow-xs overflow-hidden" 
+                                     style="width: 68px; height: 68px; @if(!$hasImage) background: {{ $color['bg'] }}; color: {{ $color['text'] }}; @endif">
+                                    @if($hasImage)
+                                        <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="w-100 h-100 object-fit-cover">
+                                    @else
+                                        <span class="fw-bold fs-3 text-white user-select-none">{{ $initial }}</span>
+                                    @endif
                                 </div>
-                                <h6 class="card-title fw-bold mb-1 text-dark text-truncate w-100" style="font-size: 0.92rem;">{{ $category->name }}</h6>
-                                <span class="text-muted small" style="font-size: 0.74rem;">Explore Collection →</span>
+                                <h6 class="card-title fw-bold mb-0 text-dark text-truncate w-100" style="font-size: 0.92rem;">{{ $category->name }}</h6>
                             </div>
                         </div>
                     </a>

@@ -13,38 +13,40 @@
     
     $title = $data['hero_title'] ?? 'About ' . $storeName;
     $tagline = $data['tagline'] ?? 'Simple. Transparent. Trustworthy.';
-    $supportingText = $data['supporting_text'] ?? 'Your everyday shopping destination built on curated product authenticity, fast doorstep delivery, and 24/7 customer care.';
-    $missionText = $data['mission'] ?? '<p>Our mission is to build a shopping destination where customers can shop comfortably, confidently, and without unnecessary complexity or hidden fees.</p><p class="fw-bold text-primary mb-0">' . $storeName . ' — Shop More. Worry Less.</p>';
+    $supportingText = $data['supporting_text'] ?? 'Verified products, honest pricing, and fast doorstep delivery.';
+    $missionText = $data['mission'] ?? '<p class="mb-2">To deliver an effortless shopping experience with genuine products, fair prices, and zero hidden fees.</p><p class="fw-bold text-primary mb-0">' . $storeName . ' — Shop More. Worry Less.</p>';
     
     $focusItems = $data['focus_areas'] ?? [
-        ['title' => 'Curated Authenticity', 'desc' => 'Carefully verified products with transparent specifications and genuine warranty.'],
-        ['title' => 'Frictionless Checkout', 'desc' => 'Lightning-fast, simple browsing with smart filters, live search, and 1-click ordering.'],
-        ['title' => 'Bank-Grade Security', 'desc' => 'Your payment details and personal data are encrypted with state-of-the-art security.'],
-        ['title' => 'Fast Dispatch & Tracking', 'desc' => 'Reliable courier partners providing live parcel tracking right to your doorstep.'],
-        ['title' => 'Pre-Dispatch Easy Cancellations', 'desc' => 'Simple, transparent pre-dispatch cancellation and instant refund processing.'],
-        ['title' => '24/7 Dedicated Helpdesk', 'desc' => 'Friendly support team ready to assist you anytime via live helpdesk and email.']
+        ['title' => 'Curated Authenticity', 'desc' => 'Verified product specifications and brand authenticity.'],
+        ['title' => 'Frictionless Checkout', 'desc' => 'Fast browsing, smart search, and instant checkout.'],
+        ['title' => 'Bank-Grade Security', 'desc' => '256-bit SSL encryption protecting payments and data.'],
+        ['title' => 'Fast Dispatch & Tracking', 'desc' => 'Prompt dispatch with live SMS and WhatsApp tracking.'],
+        ['title' => 'Easy Cancellations', 'desc' => '1-click cancellation before dispatch with instant refund.'],
+        ['title' => '24/7 Dedicated Helpdesk', 'desc' => 'Prompt support whenever you need help with an order.']
     ];
 
     $ourStory = $data['our_story'] ?? [
         'badge'     => 'Our Journey',
         'title'     => 'How ' . $storeName . ' Came to Life',
-        'subtitle'  => 'Born out of the desire to eliminate shopping anxiety and clutter.',
+        'subtitle'  => 'Built to make online shopping simpler and calmer.',
         'paragraphs' => [
-            'Online shopping should be an exciting and stress-free experience, yet modern e-commerce is often crowded with confusing pricing, unverified sellers, and difficult return procedures.',
-            'We founded ' . $storeName . ' to bring peace of mind back to online retail. Every product in our catalog undergoes rigorous authenticity screening, and our operations are designed around customer transparency, fair pricing, and dependable logistics.',
-            'Today, ' . $storeName . ' proudly serves thousands of happy shoppers nationwide, delivering top electronics, fashion, lifestyle, and home essentials with speed and reliability.'
-        ]
+            'Shopping online should be simple and stress-free. We created ' . $storeName . ' to replace clutter and confusing pricing with clear terms, 100% genuine products, and dependable delivery.',
+            'Every product is verified for quality before dispatch, giving customers across India a smooth and worry-free shopping experience.'
+        ],
+        'quote_title' => 'Built for Peace of Mind',
+        'quote_text' => 'Making everyday shopping simpler, clearer, and calmer for you.',
+        'guarantee_badge' => 'Customer-First Guarantee'
     ];
 
     $trustCommitments = $data['trust_commitments'] ?? [
         'badge'     => 'Customer Guarantee',
         'title'     => 'Our 4 Core Customer Commitments',
-        'subtitle'  => 'Every order placed on ' . $storeName . ' is backed by our strict quality standard.',
+        'subtitle'  => 'Quality and trust backed into every single order.',
         'items' => [
-            ['title' => '100% Genuine Products', 'desc' => 'Direct from verified brand partners and licensed distributors.', 'icon' => 'bi-patch-check-fill', 'color' => '#10b981'],
-            ['title' => 'Zero Hidden Fees', 'desc' => 'What you see is what you pay. Transparent pricing at every step.', 'icon' => 'bi-tag-fill', 'color' => '#6366f1'],
-            ['title' => 'Insured Safe Delivery', 'desc' => 'Every package is insured and tracked with trusted national couriers.', 'icon' => 'bi-shield-fill-check', 'color' => '#06b6d4'],
-            ['title' => 'Instant Refund Assurance', 'desc' => 'Prompt refund processing directly to your original payment method.', 'icon' => 'bi-arrow-clockwise', 'color' => '#8b5cf6']
+            ['title' => '100% Genuine Products', 'desc' => 'Direct from verified brands and distributors.', 'icon' => 'bi-patch-check-fill', 'color' => '#10b981'],
+            ['title' => 'Zero Hidden Fees', 'desc' => 'Clear checkout prices with no surprise charges.', 'icon' => 'bi-tag-fill', 'color' => '#6366f1'],
+            ['title' => 'Insured Safe Delivery', 'desc' => 'Secure packaging with live courier tracking.', 'icon' => 'bi-shield-fill-check', 'color' => '#06b6d4'],
+            ['title' => 'Instant Refund Assurance', 'desc' => 'Quick refunds directly to your source account.', 'icon' => 'bi-arrow-clockwise', 'color' => '#8b5cf6']
         ]
     ];
 @endphp
@@ -193,15 +195,6 @@
 
 @section('content')
 <div class="container py-3 py-md-4">
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb mb-0" style="font-size: 0.82rem;">
-            <li class="breadcrumb-item"><a href="{{ route('home') }}" class="text-decoration-none text-muted"><i class="bi bi-house-door me-1"></i>Home</a></li>
-            <li class="breadcrumb-item"><span class="text-muted">Company</span></li>
-            <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">About Us</li>
-        </ol>
-    </nav>
-
     <!-- 1. Hero Section (Clean Minimalist Design with Generous Breathing Room) -->
     <div class="about-hero-clean mb-4 mb-md-5 pb-lg-2">
         <div class="mx-auto" style="max-width: 760px;">
@@ -354,7 +347,7 @@
                 <span class="text-uppercase fw-bold small text-primary" style="letter-spacing: 0.08em; font-size: 0.75rem;">The {{ $storeName }} Standard</span>
             </div>
             <h2 class="fw-bolder text-dark mb-1.5" style="letter-spacing: -0.03em; font-size: clamp(1.35rem, 3.5vw, 1.85rem);">What We Focus On</h2>
-            <p class="text-muted small mb-0">Built from the ground up for reliable, premium online retail.</p>
+            <p class="text-muted small mb-0">Built for reliable, hassle-free everyday shopping.</p>
         </div>
 
         <div class="row g-2.5 g-sm-3 g-lg-4">
@@ -381,7 +374,7 @@
     @php
         $cta = $data['cta'] ?? [
             'title' => 'Ready to Experience Great Shopping?',
-            'subtitle' => 'Discover thousands of verified products with fast delivery and guaranteed satisfaction.'
+            'subtitle' => 'Discover thousands of verified products with fast doorstep delivery.'
         ];
     @endphp
     <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 text-center mb-4" style="background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #e0e7ff 100%); border: 1px solid #ddd6fe !important;">

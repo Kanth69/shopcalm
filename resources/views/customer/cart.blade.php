@@ -3,10 +3,10 @@
 @section('title', 'Your Shopping Bag - ' . \App\Models\Setting::get('store_name', 'ShopCalm'))
 
 @section('content')
-<div class="container my-3 my-md-4 px-2 px-md-4">
+<div class="container my-2 my-md-4 px-3 px-md-4 pb-5 pb-md-0">
 
-    {{-- 1. Breadcrumbs --}}
-    <nav aria-label="breadcrumb" class="mb-3">
+    {{-- 1. Breadcrumbs (Desktop Only) --}}
+    <nav aria-label="breadcrumb" class="mb-3 d-none d-md-block">
         <ol class="breadcrumb small mb-0" style="font-size: 0.82rem;">
             <li class="breadcrumb-item"><a href="{{ route('home') }}" class="text-decoration-none text-muted">Home</a></li>
             <li class="breadcrumb-item"><a href="{{ route('shop') }}" class="text-decoration-none text-muted">Shop</a></li>
@@ -27,38 +27,78 @@
         @endphp
 
         {{-- 2. Page Header Bar --}}
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 mb-md-4 pb-1">
-            <div class="d-flex align-items-center gap-2.5">
-                <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
-                     style="width: 42px; height: 42px; background: rgba(99, 102, 241, 0.12); color: #4f46e5;">
-                    <i class="bi bi-bag-check-fill fs-5"></i>
-                </div>
-                <div>
-                    <div class="d-flex align-items-center gap-2">
-                        <h1 class="h4 fw-bold text-dark mb-0" style="font-size: clamp(1.2rem, 2.5vw, 1.5rem); letter-spacing: -0.01em;">
-                            Shopping Bag
-                        </h1>
-                        <span class="badge rounded-pill fw-semibold" id="cart-page-badge" 
-                              style="background: #e0e7ff; color: #4338ca; font-size: 0.76rem; border: 1px solid #c7d2fe;">
-                            {{ $totalCount }} {{ Str::plural('item', $totalCount) }}
-                        </span>
+        <div class="mb-3 mb-md-4">
+            {{-- Desktop Header Layout (>= 768px) --}}
+            <div class="d-none d-md-flex align-items-center justify-content-between flex-wrap gap-2 pb-1">
+                <div class="d-flex align-items-center gap-2.5">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
+                         style="width: 44px; height: 44px; background: rgba(99, 102, 241, 0.12); color: #4f46e5;">
+                        <i class="bi bi-bag-check-fill fs-5"></i>
                     </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <h1 class="h4 fw-bold text-dark mb-0" style="font-size: 1.45rem; letter-spacing: -0.01em;">
+                                Shopping Bag
+                            </h1>
+                            <span class="badge rounded-pill fw-semibold" id="cart-page-badge" 
+                                  style="background: #e0e7ff; color: #4338ca; font-size: 0.76rem; border: 1px solid #c7d2fe;">
+                                {{ $totalCount }} {{ Str::plural('item', $totalCount) }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <div class="form-check mb-0 d-flex align-items-center gap-2 bg-light border rounded-pill px-3 py-1.5 shadow-xs">
+                        <input type="checkbox" id="select-all-checkbox" class="form-check-input border-secondary" style="width: 1.15em; height: 1.15em; cursor: pointer;" {{ $allSelected ? 'checked' : '' }} onchange="toggleSelectAllItems(this.checked)">
+                        <label class="form-check-label text-dark fw-bold small mb-0 text-nowrap" for="select-all-checkbox" style="cursor: pointer; font-size: 0.8rem;">
+                            Select All (<span id="selected-items-label">{{ $selectedCount }}</span>/{{ $activeItems->count() }})
+                        </label>
+                    </div>
+                    <a href="{{ route('shop') }}" class="btn btn-sm btn-light border rounded-pill px-3 py-1.5 fw-semibold text-secondary shadow-xs" style="font-size: 0.8rem;">
+                        <i class="bi bi-arrow-left me-1"></i> Continue Shopping
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1.5 fw-semibold shadow-xs" style="font-size: 0.8rem;" onclick="clearCart()">
+                        <i class="bi bi-trash3 me-1"></i> Clear Bag
+                    </button>
                 </div>
             </div>
 
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <div class="form-check mb-0 d-flex align-items-center gap-2 bg-light border rounded-pill px-3 py-1.5 shadow-xs">
-                    <input type="checkbox" id="select-all-checkbox" class="form-check-input border-secondary" style="width: 1.15em; height: 1.15em; cursor: pointer;" {{ $allSelected ? 'checked' : '' }} onchange="toggleSelectAllItems(this.checked)">
-                    <label class="form-check-label text-dark fw-bold small mb-0 text-nowrap" for="select-all-checkbox" style="cursor: pointer; font-size: 0.8rem;">
-                        Select All (<span id="selected-items-label">{{ $selectedCount }}</span>/{{ $activeItems->count() }})
-                    </label>
+            {{-- 📱 Mobile Clean Compact Header (< 768px) --}}
+            <div class="d-block d-md-none">
+                {{-- Row 1: Title + Count & Clear Button --}}
+                <div class="d-flex align-items-center justify-content-between mb-2.5">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" 
+                             style="width: 36px; height: 36px; background: rgba(99, 102, 241, 0.12); color: #4f46e5;">
+                            <i class="bi bi-bag-check-fill"></i>
+                        </div>
+                        <h1 class="fw-bold text-dark mb-0" style="font-size: 1.25rem; letter-spacing: -0.01em;">
+                            Shopping Bag
+                        </h1>
+                        <span class="badge rounded-pill fw-semibold" id="cart-page-badge-mobile" 
+                              style="background: #e0e7ff; color: #4338ca; font-size: 0.72rem; border: 1px solid #c7d2fe;">
+                            {{ $totalCount }}
+                        </span>
+                    </div>
+
+                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 text-danger shadow-2xs d-inline-flex align-items-center gap-1" style="font-size: 0.74rem;" onclick="clearCart()">
+                        <i class="bi bi-trash3"></i> <span>Clear</span>
+                    </button>
                 </div>
-                <a href="{{ route('shop') }}" class="btn btn-sm btn-light border rounded-pill px-3 py-1.5 fw-semibold text-secondary shadow-xs" style="font-size: 0.8rem;">
-                    <i class="bi bi-arrow-left me-1"></i> Continue Shopping
-                </a>
-                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1.5 fw-semibold shadow-xs" style="font-size: 0.8rem;" onclick="clearCart()">
-                    <i class="bi bi-trash3 me-1"></i> Clear Bag
-                </button>
+
+                {{-- Row 2: Select All Bar + Continue Shopping Link --}}
+                <div class="card border-0 shadow-2xs rounded-3 p-2 px-3 bg-white d-flex flex-row align-items-center justify-content-between" style="border: 1px solid #e2e8f0 !important;">
+                    <div class="form-check mb-0 d-flex align-items-center gap-2">
+                        <input type="checkbox" id="select-all-checkbox-mobile" class="form-check-input border-secondary" style="width: 1.15em; height: 1.15em; cursor: pointer;" {{ $allSelected ? 'checked' : '' }} onchange="toggleSelectAllItems(this.checked)">
+                        <label class="form-check-label text-dark fw-bold small mb-0 text-nowrap" for="select-all-checkbox-mobile" style="cursor: pointer; font-size: 0.8rem;">
+                            Select All (<span id="selected-items-label-mobile">{{ $selectedCount }}</span>/{{ $activeItems->count() }})
+                        </label>
+                    </div>
+                    <a href="{{ route('shop') }}" class="small fw-semibold text-primary text-decoration-none d-inline-flex align-items-center gap-1" style="font-size: 0.76rem;">
+                        <span>+ Add Items</span>
+                    </a>
+                </div>
             </div>
         </div>
 
@@ -71,27 +111,27 @@
                 {{-- Dynamic Free Shipping Progress Banner --}}
                 <div class="card border-0 shadow-xs rounded-4 mb-3 overflow-hidden" id="free-shipping-banner" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
                     <div class="card-body p-3 p-md-3.5">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                            <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1 overflow-hidden">
                                 <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" id="fs-icon-container"
                                      style="width: 34px; height: 34px; background: {{ $amountNeeded <= 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(99, 102, 241, 0.12)' }}; color: {{ $amountNeeded <= 0 ? '#059669' : '#4f46e5' }};">
                                     <i class="bi {{ $amountNeeded <= 0 ? 'bi-truck-flatbed' : 'bi-truck' }} fs-6"></i>
                                 </div>
-                                <div>
-                                    <span class="fw-bold text-dark d-block" id="fs-title-text" style="font-size: 0.88rem;">
+                                <div class="min-w-0 flex-grow-1">
+                                    <span class="fw-bold text-dark d-block text-truncate" id="fs-title-text" style="font-size: 0.85rem;">
                                         @if($amountNeeded <= 0)
-                                            🎉 You've unlocked <span class="text-success fw-bolder">FREE Delivery</span> on this order!
+                                            🎉 You've unlocked <span class="text-success fw-bolder">FREE Delivery</span>!
                                         @else
-                                            Add <span class="text-primary fw-bolder" id="fs-amount-needed">₹{{ number_format($amountNeeded, 2) }}</span> more to unlock <span class="fw-bolder">FREE Delivery!</span>
+                                            Add <span class="text-primary fw-bolder" id="fs-amount-needed">₹{{ number_format($amountNeeded, 2) }}</span> more for <span class="fw-bolder">FREE Delivery!</span>
                                         @endif
                                     </span>
                                 </div>
                             </div>
-                            <span class="badge rounded-pill fw-bold" id="fs-badge" style="background: {{ $amountNeeded <= 0 ? '#d1fae5' : '#e0e7ff' }}; color: {{ $amountNeeded <= 0 ? '#047857' : '#4338ca' }}; font-size: 0.72rem;">
+                            <span class="badge rounded-pill fw-bold flex-shrink-0" id="fs-badge" style="background: {{ $amountNeeded <= 0 ? '#d1fae5' : '#e0e7ff' }}; color: {{ $amountNeeded <= 0 ? '#047857' : '#4338ca' }}; font-size: 0.72rem;">
                                 {{ $amountNeeded <= 0 ? 'UNLOCKED' : round($freeShippingProgress) . '%' }}
                             </span>
                         </div>
-                        <div class="progress rounded-pill bg-light overflow-hidden" style="height: 8px;">
+                        <div class="progress rounded-pill bg-light overflow-hidden" style="height: 7px;">
                             <div class="progress-bar progress-bar-striped progress-bar-animated" id="fs-progress-bar"
                                  role="progressbar" 
                                  style="width: {{ $freeShippingProgress }}%; background: {{ $amountNeeded <= 0 ? 'linear-gradient(90deg, #10b981 0%, #059669 100%)' : 'linear-gradient(90deg, #6366f1 0%, #4f46e5 100%)' }};" 
@@ -130,11 +170,11 @@
                     @endphp
                     <div class="card border-0 shadow-xs rounded-4 overflow-hidden cart-item-card transition-all" id="cart-item-{{ $item->id }}" style="background: #ffffff; border: 1px solid {{ $isOutOfStock ? '#fca5a5' : '#e2e8f0' }} !important; {{ ($isOutOfStock || !$item->is_selected) ? 'opacity: 0.65; filter: grayscale(30%);' : '' }}">
                         <div class="card-body p-3 p-md-3.5">
-                            <div class="row align-items-center g-3">
+                            <div class="row align-items-center g-2.5 g-md-3">
                                 
                                 {{-- 1. Checkbox + Thumbnail + Info --}}
-                                <div class="col-12 col-md-6 d-flex align-items-center gap-2.5 min-w-0">
-                                    <div class="form-check mb-0 flex-shrink-0">
+                                <div class="col-12 col-md-6 d-flex align-items-start align-items-md-center gap-2.5 min-w-0">
+                                    <div class="form-check mb-0 pt-1 pt-md-0 flex-shrink-0">
                                         @if($isOutOfStock)
                                             <input type="checkbox" class="form-check-input item-select-checkbox" 
                                                    id="checkbox-item-{{ $item->id }}" 
@@ -154,59 +194,61 @@
                                     <a href="{{ route('product.show', $item->product->slug) }}" class="flex-shrink-0 position-relative">
                                         @if($item->product->main_image)
                                             <img src="{{ asset('storage/' . $item->product->main_image) }}" 
-                                                 class="rounded-3 border p-1 bg-white shadow-xs" 
-                                                 width="84" height="84" style="object-fit: contain;">
+                                                 class="rounded-3 border p-1 bg-white shadow-2xs" 
+                                                 width="78" height="78" style="object-fit: contain;">
                                         @else
-                                            <div class="rounded-3 border bg-light d-flex align-items-center justify-content-center text-muted" style="width: 84px; height: 84px;">
+                                            <div class="rounded-3 border bg-light d-flex align-items-center justify-content-center text-muted" style="width: 78px; height: 78px;">
                                                 <i class="bi bi-image fs-3 opacity-25"></i>
                                             </div>
                                         @endif
                                     </a>
-                                    <div class="min-w-0 flex-grow-1">
+                                    <div class="min-w-0 flex-grow-1 overflow-hidden">
                                         @if($item->product->brand)
-                                            <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5 mb-1" style="font-size: 0.68rem;">
+                                            <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5 mb-1" style="font-size: 0.65rem;">
                                                 {{ $item->product->brand->name }}
                                             </span>
                                         @endif
-                                        <a href="{{ route('product.show', $item->product->slug) }}" class="text-dark fw-bold text-decoration-none d-block mb-1 text-truncate" style="font-size: 0.94rem; line-height: 1.35;" title="{{ $item->product->name }}">
+                                        <a href="{{ route('product.show', $item->product->slug) }}" class="text-dark fw-bold text-decoration-none d-block mb-1 text-truncate" style="font-size: 0.92rem; line-height: 1.35;" title="{{ $item->product->name }}">
                                             {{ $item->product->name }}
                                         </a>
 
                                         @if(!empty($item->selected_option))
                                             <div class="mb-1">
-                                                <span class="badge bg-light text-dark border rounded-2 px-2 py-0.5 font-monospace fw-normal" style="font-size: 0.72rem; background-color: #f8fafc !important;">
+                                                <span class="badge bg-light text-dark border rounded-2 px-1.5 py-0.5 font-monospace fw-normal" style="font-size: 0.7rem; background-color: #f8fafc !important;">
                                                     <i class="bi bi-sliders me-1 text-primary"></i>Variant: <strong>{{ $item->selected_option }}</strong>
                                                 </span>
                                             </div>
                                         @endif
 
-                                        <div class="d-flex align-items-baseline gap-2 flex-wrap">
-                                            <span class="fw-bolder text-dark" style="font-size: 0.95rem;">₹{{ number_format($item->unit_price, 2) }}</span>
+                                        <div class="d-flex align-items-baseline gap-1.5 flex-wrap">
+                                            <span class="fw-bolder text-dark" style="font-size: 0.98rem;">₹{{ number_format($item->unit_price, 2) }}</span>
                                             @if($hasDiscount)
-                                                <span class="text-muted text-decoration-line-through small" style="font-size: 0.76rem;">₹{{ number_format($item->product->price, 2) }}</span>
+                                                <span class="text-muted text-decoration-line-through small" style="font-size: 0.74rem;">₹{{ number_format($item->product->price, 2) }}</span>
                                                 <span class="badge bg-success bg-opacity-10 text-success fw-bold px-1.5 py-0.5" style="font-size: 0.65rem;">-{{ $discountPct }}%</span>
                                             @endif
                                             @if($isOutOfStock)
                                                 <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.65rem;">
-                                                    <i class="bi bi-x-circle me-1"></i>OUT OF STOCK
+                                                    OUT OF STOCK
                                                 </span>
                                             @endif
                                         </div>
                                     </div>
                                 </div>
 
+                                {{-- Mobile Subtle Divider Line --}}
+                                <div class="col-12 d-block d-md-none py-0">
+                                    <hr class="my-1.5 opacity-25">
+                                </div>
+
                                 {{-- 2. Quantity Stepper --}}
-                                <div class="col-6 col-md-3 d-flex align-items-center justify-content-start justify-content-md-center">
+                                <div class="col-5 col-md-3 d-flex align-items-center justify-content-start justify-content-md-center">
                                     <div>
                                         @if($isOutOfStock)
-                                            <div class="text-center">
-                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.75rem;">
-                                                    <i class="bi bi-slash-circle me-1"></i>Out of Stock
-                                                </span>
-                                                <small class="text-muted d-block mt-1" style="font-size: 0.7rem;">Cannot be ordered</small>
-                                            </div>
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.72rem;">
+                                                <i class="bi bi-slash-circle me-1"></i>Out of Stock
+                                            </span>
                                         @else
-                                            <div class="input-group input-group-sm border rounded-pill overflow-hidden shadow-xs bg-white" style="width: 110px;">
+                                            <div class="input-group input-group-sm border rounded-pill overflow-hidden shadow-2xs bg-white" style="width: 104px;">
                                                 <button type="button" class="btn btn-light border-0 shadow-none px-2.5 py-1 text-muted" onclick="updateQty({{ $item->id }}, -1)">
                                                     <i class="bi bi-dash"></i>
                                                 </button>
@@ -216,25 +258,23 @@
                                                 </button>
                                             </div>
                                             @if($maxStock <= 5 && $maxStock > 0)
-                                                <small class="text-danger d-block text-center mt-1 fw-semibold" style="font-size: 0.7rem;">Only {{ $maxStock }} left</small>
+                                                <small class="text-danger d-block mt-0.5 fw-semibold" style="font-size: 0.68rem;">Only {{ $maxStock }} left</small>
                                             @endif
                                         @endif
                                     </div>
                                 </div>
 
                                 {{-- 3. Line Total & Remove / Wishlist Actions --}}
-                                <div class="col-6 col-md-3 d-flex flex-column align-items-end justify-content-center">
-                                    <div class="text-muted small d-md-none" style="font-size: 0.72rem;">Total:</div>
-                                    <div class="fw-bolder text-dark mb-1" id="item-total-{{ $item->id }}" style="font-size: 1.05rem; letter-spacing: -0.01em;">
+                                <div class="col-7 col-md-3 d-flex flex-column align-items-end justify-content-center">
+                                    <div class="fw-bolder text-dark mb-1 font-monospace" id="item-total-{{ $item->id }}" style="font-size: 1.05rem; letter-spacing: -0.01em;">
                                         ₹{{ number_format($item->quantity * $item->unit_price, 2) }}
                                     </div>
-                                    <div class="d-flex align-items-center justify-content-end gap-1.5 flex-wrap mt-1">
-                                        <button type="button" class="btn btn-sm btn-link text-secondary p-0 text-decoration-none hover-primary small d-inline-flex align-items-center gap-1" onclick="moveToWishlist({{ $item->id }})" title="Move to Wishlist">
-                                            <i class="bi bi-heart"></i> <span class="small d-none d-sm-inline">Wishlist</span>
+                                    <div class="d-flex align-items-center justify-content-end gap-1.5 flex-wrap">
+                                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 text-secondary shadow-2xs d-inline-flex align-items-center gap-1" style="font-size: 0.74rem;" onclick="moveToWishlist({{ $item->id }})" title="Move to Wishlist">
+                                            <i class="bi bi-heart text-danger"></i> <span class="d-none d-sm-inline">Wishlist</span>
                                         </button>
-                                        <span class="text-muted small opacity-50">|</span>
-                                        <button type="button" class="btn btn-sm btn-link text-muted p-0 text-decoration-none hover-danger small d-inline-flex align-items-center gap-1" onclick="removeItem({{ $item->id }})" title="Remove Item">
-                                            <i class="bi bi-trash3"></i> <span class="small">Remove</span>
+                                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 text-danger shadow-2xs d-inline-flex align-items-center gap-1" style="font-size: 0.74rem;" onclick="removeItem({{ $item->id }})" title="Remove Item">
+                                            <i class="bi bi-trash3"></i> <span>Remove</span>
                                         </button>
                                     </div>
                                 </div>
@@ -269,7 +309,7 @@
 
             {{-- Right Column: Order Summary & Checkout Card --}}
             <div class="col-lg-4">
-                <div class="card border-0 shadow-sm rounded-4 sticky-top overflow-hidden" style="top: 90px; z-index: 10; background: #ffffff; border: 1px solid #e2e8f0 !important;">
+                <div class="card border-0 shadow-sm rounded-4 sticky-top overflow-hidden" id="order-summary-card" style="top: 90px; z-index: 10; background: #ffffff; border: 1px solid #e2e8f0 !important;">
                     
                     {{-- Summary Header --}}
                     <div class="card-header bg-white py-3 px-3.5 border-bottom d-flex align-items-center justify-content-between">
@@ -318,7 +358,7 @@
                                 <span class="h6 fw-bold text-dark mb-0 d-block">Total Payable</span>
                                 <small class="text-muted" style="font-size: 0.72rem;">Inclusive of all taxes</small>
                             </div>
-                            <span class="h4 fw-bolder text-primary mb-0" id="summary-total" style="letter-spacing: -0.02em;">
+                            <span class="h4 fw-bolder text-primary mb-0 font-monospace" id="summary-total" style="letter-spacing: -0.02em;">
                                 ₹{{ isset($grandTotal) ? number_format($grandTotal, 2) : number_format($subtotal, 2) }}
                             </span>
                         </div>
@@ -346,21 +386,28 @@
         </div>
 
         {{-- 📱 App-Style Sticky Bottom Checkout Bar for Mobile Devices --}}
-        <div class="d-block d-md-none position-fixed start-0 end-0 bg-white border-top shadow-lg p-2.5 px-3" 
+        <div class="d-block d-md-none position-fixed start-0 end-0 bg-white border-top p-2.5 px-3" 
              id="mobile-checkout-sticky-bar"
-             style="bottom: 60px; z-index: 1035; backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.98) !important;">
+             style="bottom: 60px; z-index: 1035; box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.08); backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.98) !important; border-color: #e2e8f0 !important;">
             <div class="d-flex align-items-center justify-content-between gap-2">
-                <div>
-                    <span class="text-muted d-block" style="font-size: 0.68rem; line-height: 1;">Total Payable</span>
-                    <span class="fw-bolder text-primary fs-5" id="mobile-summary-total" style="letter-spacing: -0.01em;">
-                        ₹{{ isset($grandTotal) ? number_format($grandTotal, 2) : number_format($subtotal, 2) }}
-                    </span>
+                <div class="min-w-0">
+                    <span class="text-muted d-block small" style="font-size: 0.68rem; line-height: 1;">Total Payable</span>
+                    <div class="d-flex align-items-baseline gap-1.5">
+                        <span class="fw-bolder text-dark font-monospace fs-5" id="mobile-summary-total" style="letter-spacing: -0.01em;">
+                            ₹{{ isset($grandTotal) ? number_format($grandTotal, 2) : number_format($subtotal, 2) }}
+                        </span>
+                        <a href="#order-summary-card" class="text-primary fw-semibold text-decoration-none small" style="font-size: 0.7rem;">
+                            View Bill <i class="bi bi-chevron-down" style="font-size: 0.65rem;"></i>
+                        </a>
+                    </div>
                 </div>
                 <button type="button" id="mobile-proceed-checkout-btn" 
-                        class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-1.5 {{ $selectedCount === 0 ? 'disabled' : '' }}" 
+                        class="btn btn-primary rounded-pill px-4 py-2.2 fw-bold shadow-sm d-flex align-items-center gap-1.5 flex-shrink-0 {{ $selectedCount === 0 ? 'disabled' : '' }}" 
                         style="font-size: 0.88rem; background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); border: none; {{ $selectedCount === 0 ? 'opacity: 0.6;' : '' }}" 
                         onclick="handleProceedToCheckout(event)">
-                    <span>Checkout</span> <i class="bi bi-arrow-right"></i>
+                    <i class="bi bi-shield-lock-fill small"></i>
+                    <span>Checkout</span> 
+                    <i class="bi bi-arrow-right"></i>
                 </button>
             </div>
         </div>
@@ -404,7 +451,9 @@
 
         // 1. Update Cart Page Header Badge & Summary Count
         const badge = document.getElementById('cart-page-badge');
+        const badgeMobile = document.getElementById('cart-page-badge-mobile');
         if (badge) badge.textContent = data.cart_count + (data.cart_count === 1 ? ' item' : ' items');
+        if (badgeMobile) badgeMobile.textContent = data.cart_count;
 
         const summaryItemsCount = document.getElementById('summary-items-count');
         if (summaryItemsCount) summaryItemsCount.textContent = data.cart_count;
@@ -700,10 +749,15 @@
         const checkboxes = document.querySelectorAll('.item-select-checkbox');
         const checkedCount = document.querySelectorAll('.item-select-checkbox:checked').length;
         const selectAllCb = document.getElementById('select-all-checkbox');
+        const selectAllCbMobile = document.getElementById('select-all-checkbox-mobile');
         const selectedLabel = document.getElementById('selected-items-label');
+        const selectedLabelMobile = document.getElementById('selected-items-label-mobile');
 
-        if (selectAllCb) selectAllCb.checked = checkboxes.length > 0 && checkedCount === checkboxes.length;
+        const allChecked = checkboxes.length > 0 && checkedCount === checkboxes.length;
+        if (selectAllCb) selectAllCb.checked = allChecked;
+        if (selectAllCbMobile) selectAllCbMobile.checked = allChecked;
         if (selectedLabel) selectedLabel.textContent = checkedCount;
+        if (selectedLabelMobile) selectedLabelMobile.textContent = checkedCount;
 
         const proceedBtn = document.getElementById('proceed-checkout-btn');
         const mobileProceedBtn = document.getElementById('mobile-proceed-checkout-btn');
@@ -800,7 +854,7 @@
     
     @media (max-width: 767.98px) {
         body {
-            padding-bottom: 130px !important;
+            padding-bottom: 145px !important;
         }
         .cart-item-card img {
             width: 72px !important;

@@ -324,52 +324,55 @@
 
     @media (max-width: 575.98px) {
         .policy-card {
-            padding: 1.15rem 1rem !important;
-            border-radius: 14px !important;
-            margin-bottom: 0.85rem !important;
+            padding: 1.25rem 1.15rem !important;
+            border-radius: 16px !important;
+            margin-bottom: 1rem !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03) !important;
         }
         .policy-card-title {
-            font-size: 1.02rem !important;
-            gap: 0.6rem !important;
-            margin-bottom: 0.75rem !important;
+            font-size: 1.05rem !important;
+            gap: 0.65rem !important;
+            margin-bottom: 0.85rem !important;
         }
         .policy-icon-badge {
-            width: 28px !important;
-            height: 28px !important;
-            font-size: 0.8rem !important;
-            border-radius: 8px !important;
+            width: 30px !important;
+            height: 30px !important;
+            font-size: 0.82rem !important;
+            border-radius: 9px !important;
         }
         .policy-card-body {
             font-size: 0.88rem !important;
+            line-height: 1.7 !important;
+        }
+        .policy-card-body .lead {
+            font-size: 0.92rem !important;
             line-height: 1.65 !important;
         }
+        .policy-card-body ul, .policy-card-body ol {
+            padding-left: 1.2rem !important;
+            margin-bottom: 0.65rem !important;
+        }
+        .policy-card-body li {
+            margin-bottom: 0.45rem !important;
+        }
         .policy-nav-pill {
-            font-size: 0.76rem !important;
-            padding: 0.38rem 0.85rem !important;
-            gap: 0.35rem !important;
+            font-size: 0.78rem !important;
+            padding: 0.42rem 0.9rem !important;
+            gap: 0.38rem !important;
         }
         .faq-accordion-button {
-            padding: 0.85rem 0.95rem !important;
-            font-size: 0.9rem !important;
+            padding: 0.95rem 1.05rem !important;
+            font-size: 0.92rem !important;
         }
         .faq-accordion-body {
-            padding: 0.25rem 0.95rem 1rem 0.95rem !important;
-            font-size: 0.85rem !important;
+            padding: 0.25rem 1.05rem 1.1rem 1.05rem !important;
+            font-size: 0.88rem !important;
         }
         .faq-filter-chip {
-            font-size: 0.74rem !important;
-            padding: 0.32rem 0.75rem !important;
+            font-size: 0.78rem !important;
+            padding: 0.35rem 0.85rem !important;
         }
     }
-</style>
-@endpush
-@push('styles')
-<style>
-@media (max-width: 576px) {
-    .policy-card-body { font-size: 0.78rem; line-height: 1.6; }
-    .policy-card { padding: 1rem 0.8rem; }
-    .policy-nav-pill { font-size: 0.7rem; padding: 0.35rem 0.8rem; }
-}
 </style>
 @endpush
 
@@ -379,15 +382,6 @@
 <div class="reading-progress-bar" id="readingProgressBar"></div>
 
 <div class="container py-3 py-md-4">
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb mb-0" style="font-size: 0.82rem;">
-            <li class="breadcrumb-item"><a href="{{ route('home') }}" class="text-decoration-none text-muted"><i class="bi bi-house-door me-1"></i>Home</a></li>
-            <li class="breadcrumb-item"><span class="text-muted">Customer Service</span></li>
-            <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">{{ $page->title }}</li>
-        </ol>
-    </nav>
-
     <!-- 1. Hero Header (Clean Minimalist Design with Color Accent) -->
     <div class="policy-hero-clean mb-3 mb-md-4">
         <div class="mx-auto" style="max-width: 760px;">
