@@ -33,3 +33,148 @@
 .summary-card .display-4 {
     font-size: 2.5rem;
 }
+
+/* ── Gap Utilities (Bootstrap 5 missing fractions) ───────────── */
+.gap-0\.5 { gap: 0.125rem !important; }
+.gap-1\.5 { gap: 0.375rem !important; }
+.gap-2\.5 { gap: 0.625rem !important; }
+
+/* ── Universal Icon Spacing Helpers for Buttons, Badges & Links ─ */
+.btn > i:first-child:not(:only-child),
+.btn > svg:first-child:not(:only-child) {
+    margin-right: 0.35rem;
+}
+
+.btn > i:last-child:not(:only-child),
+.btn > svg:last-child:not(:only-child) {
+    margin-left: 0.35rem;
+}
+
+.badge > i:first-child:not(:only-child),
+.badge > svg:first-child:not(:only-child) {
+    margin-right: 0.3rem;
+}
+
+.badge > i:last-child:not(:only-child),
+.badge > svg:last-child:not(:only-child) {
+    margin-left: 0.3rem;
+}
+
+/* ── Smooth Mobile Horizontal Scrolling & Chip Parity ─────────── */
+.no-scrollbar {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+/* ── Mobile Responsive Optimizations (< 768px) ────────────────── */
+.ticket-card {
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1.5px solid #e2e8f0 !important;
+    border-radius: 1.15rem !important;
+    background: #ffffff;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04) !important;
+}
+
+.ticket-card:hover {
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08) !important;
+    transform: translateY(-2px);
+}
+
+.ticket-hero {
+    margin-bottom: 1.5rem !important;
+}
+
+.ticket-filter-bar {
+    margin-bottom: 1.5rem !important;
+}
+
+.ticket-hero-cta {
+    width: auto;
+}
+
+.ticket-hero-cta .btn {
+    width: auto;
+    white-space: nowrap;
+    padding: 0.55rem 1.25rem !important;
+    font-size: 0.84rem !important;
+}
+
+@media (max-width: 767.98px) {
+    .account-sidebar {
+        margin-bottom: 1rem;
+    }
+    
+    .order-row .card-body,
+    .order-row .p-3.p-md-4 {
+        padding: 0.85rem !important;
+    }
+
+    .ticket-hero {
+        padding: 1.25rem 1rem !important;
+        margin-bottom: 1.25rem !important;
+        border-radius: 1rem !important;
+    }
+
+    .ticket-filter-bar {
+        margin-bottom: 1.25rem !important;
+    }
+
+    .ticket-hero-cta {
+        width: 100%;
+        margin-top: 0.65rem;
+    }
+
+    .ticket-hero-cta .btn {
+        width: 100% !important;
+        padding: 0.65rem 1.25rem !important;
+        font-size: 0.88rem !important;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .container {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+
+    .ticket-hero {
+        padding: 1.15rem 1rem !important;
+        margin-bottom: 1.15rem !important;
+    }
+
+    .ticket-filter-bar {
+        margin-bottom: 1.25rem !important;
+    }
+
+    .ticket-hero-cta {
+        margin-top: 0.75rem !important;
+    }
+
+    .ticket-hero-cta .btn {
+        padding: 0.65rem 1rem !important;
+        font-size: 0.86rem !important;
+    }
+
+    .ticket-grid {
+        --bs-gutter-y: 0.95rem !important;
+        --bs-gutter-x: 0.95rem !important;
+    }
+
+    .ticket-card {
+        border-radius: 0.95rem !important;
+    }
+
+    .ticket-card > div {
+        padding: 1rem !important;
+    }
+}
+
+

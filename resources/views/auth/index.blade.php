@@ -172,6 +172,11 @@
             width: 100%;
         }
 
+        .auth-input::placeholder {
+            color: #94a3b8;
+            opacity: 1;
+        }
+
         .auth-input:focus {
             border-color: #3b82f6;
             background-color: #fff;
@@ -511,6 +516,20 @@
             transition: all 0.2s ease;
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
             margin-top: 6px;
+            width: 100%;
+            text-align: center;
+        }
+
+        #modal_otp {
+            text-align: center;
+            font-weight: 700;
+            letter-spacing: 4px;
+        }
+        #modal_otp::placeholder {
+            letter-spacing: normal !important;
+            font-weight: 500 !important;
+            font-size: 14px;
+            color: #94a3b8;
         }
 
         .auth-submit-btn:hover {

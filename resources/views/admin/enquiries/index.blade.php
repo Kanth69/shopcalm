@@ -101,9 +101,11 @@
                                 <div>
                                     <div class="fw-bold text-dark">{{ $enquiry->name }}</div>
                                     <div class="small text-muted" style="font-size: 0.72rem;">
-                                        <a href="mailto:{{ $enquiry->email }}" class="text-decoration-none text-muted">{{ $enquiry->email }}</a>
+                                        @if($enquiry->email)
+                                            <a href="mailto:{{ $enquiry->email }}" class="text-decoration-none text-muted">{{ $enquiry->email }}</a>
+                                        @endif
                                         @if($enquiry->mobile)
-                                            &middot; <span>{{ $enquiry->mobile }}</span>
+                                            {{ $enquiry->email ? '· ' : '' }}<span class="fw-medium text-dark">{{ $enquiry->mobile }}</span>
                                         @endif
                                     </div>
                                 </div>

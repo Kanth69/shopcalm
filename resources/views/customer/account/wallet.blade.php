@@ -20,8 +20,8 @@
                 </p>
             </div>
         </div>
-        <a href="{{ route('page.contact') }}" class="btn btn-danger btn-sm rounded-pill px-3.5 py-1.5 fw-bold shadow-xs">
-            <i class="bi bi-headset me-1"></i> Contact Support
+        <a href="{{ route('page.contact') }}" class="btn btn-danger btn-sm rounded-pill px-3.5 py-1.5 fw-bold shadow-xs d-inline-flex align-items-center gap-1.5">
+            <i class="bi bi-headset me-1.5"></i> <span>Contact Support</span>
         </a>
     </div>
     @endif
@@ -38,8 +38,8 @@
 
                 <div class="d-flex justify-content-between align-items-start mb-4 position-relative">
                     <div>
-                        <span class="badge rounded-pill px-3 py-1 fw-bold text-uppercase" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-size: 0.72rem; letter-spacing: 0.5px;">
-                            <i class="bi bi-wallet2 me-1"></i> {{ \App\Models\Setting::get('store_name', 'ShopCalm') }} Wallet
+                        <span class="badge rounded-pill px-3 py-1 fw-bold text-uppercase d-inline-flex align-items-center" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-size: 0.72rem; letter-spacing: 0.5px;">
+                            <i class="bi bi-wallet2 me-1.5"></i> <span>{{ \App\Models\Setting::get('store_name', 'ShopCalm') }} Wallet</span>
                         </span>
                         <div class="text-secondary small mt-2" style="font-size: 0.78rem;">Available for 1-Click Checkout</div>
                     </div>
@@ -83,8 +83,8 @@
                         <div class="min-w-0">
                             <div class="d-flex align-items-center gap-2 flex-wrap mb-0.5">
                                 <h6 class="fw-bolder text-dark mb-0" style="font-size: 1rem; letter-spacing: -0.01em;">Refer Friends &amp; Earn ₹{{ number_format($totalPotentialReward, 0) }}!</h6>
-                                <span class="badge rounded-pill px-2 py-0.5 fw-bold" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-size: 0.68rem;">
-                                    <i class="bi bi-stars"></i> UNLIMITED
+                                <span class="badge rounded-pill px-2.5 py-1 fw-bold d-inline-flex align-items-center" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-size: 0.68rem;">
+                                    <i class="bi bi-stars me-1"></i> <span>UNLIMITED</span>
                                 </span>
                             </div>
                             <p class="text-secondary small mb-0" style="font-size: 0.78rem; line-height: 1.4;">
@@ -102,17 +102,17 @@
                             <div class="d-flex align-items-center gap-2">
                                 <span class="h4 fw-extrabold text-dark mb-0 font-monospace px-2.5 py-1 rounded-2" 
                                       style="background: #f1f5f9; color: #0f172a; letter-spacing: 1.5px; font-size: 1.25rem;" id="ref-code-display">{{ $wallet->referral_code }}</span>
-                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 fw-bold" 
-                                        onclick="navigator.clipboard.writeText('{{ $wallet->referral_code }}'); this.innerHTML = '<i class=\'bi bi-check-lg\'></i> Copied!'; setTimeout(() => this.innerHTML = '<i class=\'bi bi-copy\'></i> Copy', 1800);" style="font-size: 0.74rem;">
-                                    <i class="bi bi-copy"></i> Copy
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-1.5" 
+                                        onclick="navigator.clipboard.writeText('{{ $wallet->referral_code }}'); this.innerHTML = '<i class=\'bi bi-check-lg me-1\'></i> Copied!'; setTimeout(() => this.innerHTML = '<i class=\'bi bi-copy me-1\'></i> Copy', 1800);" style="font-size: 0.76rem;">
+                                    <i class="bi bi-copy me-1"></i> <span>Copy</span>
                                 </button>
                             </div>
                         </div>
-                        <div class="col-sm-6 text-sm-end">
+                        <div class="col-sm-6 text-sm-end mt-2 mt-sm-0">
                             <a href="https://api.whatsapp.com/send?text={{ $whatsappShareText }}" target="_blank" 
                                class="btn btn-success btn-sm w-100 w-sm-auto rounded-pill px-3.5 py-2 fw-bold shadow-xs d-inline-flex align-items-center justify-content-center gap-2" 
                                style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); border: none; font-size: 0.82rem;">
-                                <i class="bi bi-whatsapp fs-6"></i> <span>Share on WhatsApp</span>
+                                <i class="bi bi-whatsapp fs-6 me-1"></i> <span>Share on WhatsApp</span>
                             </a>
                         </div>
                     </div>
@@ -125,10 +125,10 @@
                     </span>
                     <input type="text" class="form-control form-control-sm bg-white border-start-0 border-end-0 font-monospace text-dark fw-semibold" 
                            value="{{ $referralUrl }}" readonly id="ref-link-input" style="border-color: #cbd5e1; font-size: 0.78rem;">
-                    <button class="btn btn-primary btn-sm px-3.5 fw-bold shadow-xs flex-shrink-0" type="button" 
+                    <button class="btn btn-primary btn-sm px-3.5 fw-bold shadow-xs flex-shrink-0 d-inline-flex align-items-center gap-1.5" type="button" 
                             style="background: #4f46e5; border: none; border-radius: 0 999px 999px 0; font-size: 0.78rem;"
-                            onclick="navigator.clipboard.writeText('{{ $referralUrl }}'); this.innerHTML = '<i class=\'bi bi-check-lg me-1\'></i>Copied!'; setTimeout(() => this.innerText = 'Copy Link', 1800);">
-                        Copy Link
+                            onclick="navigator.clipboard.writeText('{{ $referralUrl }}'); this.innerHTML = '<i class=\'bi bi-check-lg me-1\'></i> Copied!'; setTimeout(() => this.innerHTML = '<i class=\'bi bi-link-45deg me-1\'></i> Copy Link', 1800);">
+                        <i class="bi bi-link-45deg me-1"></i> <span>Copy Link</span>
                     </button>
                 </div>
             </div>
@@ -153,8 +153,8 @@
                 <div class="row g-2.5">
                     <div class="col-sm-6">
                         <div class="p-3 rounded-3 bg-light border h-100">
-                            <div class="d-flex align-items-center gap-2 mb-1 text-primary">
-                                <i class="bi bi-lightning-charge-fill fs-6"></i>
+                            <div class="d-flex align-items-center gap-2 mb-1.5 text-primary">
+                                <i class="bi bi-lightning-charge-fill fs-6 me-1"></i>
                                 <span class="fw-bold small text-dark">Instant Cancellation Refunds</span>
                             </div>
                             <div class="text-secondary small" style="font-size: 0.74rem; line-height: 1.35;">
@@ -164,8 +164,8 @@
                     </div>
                     <div class="col-sm-6">
                         <div class="p-3 rounded-3 bg-light border h-100">
-                            <div class="d-flex align-items-center gap-2 mb-1 text-success">
-                                <i class="bi bi-cart-check-fill fs-6"></i>
+                            <div class="d-flex align-items-center gap-2 mb-1.5 text-success">
+                                <i class="bi bi-cart-check-fill fs-6 me-1"></i>
                                 <span class="fw-bold small text-dark">1-Click Fast Checkout</span>
                             </div>
                             <div class="text-secondary small" style="font-size: 0.74rem; line-height: 1.35;">
@@ -175,8 +175,8 @@
                     </div>
                     <div class="col-sm-6">
                         <div class="p-3 rounded-3 bg-light border h-100">
-                            <div class="d-flex align-items-center gap-2 mb-1 text-warning">
-                                <i class="bi bi-credit-card-2-front-fill fs-6"></i>
+                            <div class="d-flex align-items-center gap-2 mb-1.5 text-warning">
+                                <i class="bi bi-credit-card-2-front-fill fs-6 me-1"></i>
                                 <span class="fw-bold small text-dark">Prepaid &amp; COD Combination</span>
                             </div>
                             <div class="text-secondary small" style="font-size: 0.74rem; line-height: 1.35;">
@@ -186,8 +186,8 @@
                     </div>
                     <div class="col-sm-6">
                         <div class="p-3 rounded-3 bg-light border h-100">
-                            <div class="d-flex align-items-center gap-2 mb-1 text-info">
-                                <i class="bi bi-shield-lock-fill fs-6"></i>
+                            <div class="d-flex align-items-center gap-2 mb-1.5 text-info">
+                                <i class="bi bi-shield-lock-fill fs-6 me-1"></i>
                                 <span class="fw-bold small text-dark">Zero Expiry Guarantee</span>
                             </div>
                             <div class="text-secondary small" style="font-size: 0.74rem; line-height: 1.35;">
@@ -204,7 +204,10 @@
     @if($isReferralActive)
     {{-- 3-Tier Repeat Rewards Milestone Explainer Banner --}}
     <div class="card border-0 shadow-sm rounded-4 p-4" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
-        <h6 class="fw-bold text-dark mb-3"><i class="bi bi-stars text-warning me-2"></i>How the 3-Tier Referral Reward Program Works:</h6>
+        <h6 class="fw-bold text-dark mb-3 d-flex align-items-center">
+            <i class="bi bi-stars text-warning me-2 fs-5"></i>
+            <span>How the 3-Tier Referral Reward Program Works:</span>
+        </h6>
         <div class="row g-3 text-center text-md-start">
             <div class="col-md-3">
                 <div class="p-3 rounded-3 bg-light border h-100 position-relative">
@@ -244,8 +247,11 @@
     {{-- Friends Joined Tracker --}}
     @if($friendsStats->isNotEmpty())
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-people-fill text-primary me-2"></i>Referred Friends ({{ $totalReferralsCount }})</h6>
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6 class="mb-0 fw-bold text-dark d-flex align-items-center">
+                <i class="bi bi-people-fill text-primary me-2 fs-5"></i>
+                <span>Referred Friends ({{ $totalReferralsCount }})</span>
+            </h6>
             <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-3 py-1 fw-bold font-monospace">
                 Total Earned: ₹{{ number_format($totalReferralEarnings, 2) }}
             </span>
@@ -276,21 +282,27 @@
                         <td class="text-secondary small">{{ $friend->joined_date ? $friend->joined_date->format('d M, Y') : 'N/A' }}</td>
                         <td class="text-center">
                             @if($friend->first_order_done)
-                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1"><i class="bi bi-check-circle-fill me-1"></i> Earned ₹{{ number_format($firstReward, 0) }}</span>
+                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1 d-inline-flex align-items-center">
+                                    <i class="bi bi-check-circle-fill me-1.5"></i> <span>Earned ₹{{ number_format($firstReward, 0) }}</span>
+                                </span>
                             @else
                                 <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1">Pending</span>
                             @endif
                         </td>
                         <td class="text-center">
                             @if($friend->second_order_done)
-                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1"><i class="bi bi-check-circle-fill me-1"></i> Earned ₹{{ number_format($secondReward, 0) }}</span>
+                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1 d-inline-flex align-items-center">
+                                    <i class="bi bi-check-circle-fill me-1.5"></i> <span>Earned ₹{{ number_format($secondReward, 0) }}</span>
+                                </span>
                             @else
                                 <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1">Pending</span>
                             @endif
                         </td>
                         <td class="text-center">
                             @if($friend->third_order_done)
-                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1"><i class="bi bi-check-circle-fill me-1"></i> Earned ₹{{ number_format($thirdReward, 0) }}</span>
+                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1 d-inline-flex align-items-center">
+                                    <i class="bi bi-check-circle-fill me-1.5"></i> <span>Earned ₹{{ number_format($thirdReward, 0) }}</span>
+                                </span>
                             @else
                                 <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1">Pending</span>
                             @endif
@@ -309,8 +321,11 @@
 
     {{-- Passbook / Transaction History --}}
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-clock-history text-secondary me-2"></i>Wallet Passbook History</h6>
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6 class="mb-0 fw-bold text-dark d-flex align-items-center">
+                <i class="bi bi-clock-history text-secondary me-2 fs-5"></i>
+                <span>Wallet Passbook History</span>
+            </h6>
             <span class="text-muted small">Updated in real-time</span>
         </div>
         <div class="card-body p-0">
@@ -326,9 +341,9 @@
                 <div class="list-group list-group-flush">
                     @foreach($transactions as $txn)
                     @php $badge = $txn->source_badge; @endphp
-                    <div class="list-group-item p-3.5 d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div class="list-group-item p-3 p-md-3.5 d-flex align-items-center justify-content-between flex-wrap gap-2.5">
                         <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center {{ $txn->type === 'CREDIT' ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger' }}" style="width: 44px; height: 44px; font-size: 1.2rem;">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 {{ $txn->type === 'CREDIT' ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger' }}" style="width: 44px; height: 44px; font-size: 1.2rem;">
                                 <i class="bi {{ $txn->type === 'CREDIT' ? 'bi-arrow-down-left' : 'bi-arrow-up-right' }}"></i>
                             </div>
                             <div>
@@ -341,7 +356,7 @@
                                 <div class="fw-semibold text-dark" style="font-size: 0.88rem;">{{ $txn->description }}</div>
                             </div>
                         </div>
-                        <div class="text-end">
+                        <div class="text-end ms-auto ms-sm-0">
                             <div class="h6 mb-0 font-monospace fw-bolder {{ $txn->type === 'CREDIT' ? 'text-success' : 'text-danger' }}">
                                 {{ $txn->type === 'CREDIT' ? '+' : '-' }}₹{{ number_format($txn->amount, 2) }}
                             </div>
@@ -368,6 +383,7 @@
     .col-sm-6 .p-3 { padding: 0.75rem; }
     .card-body .text-secondary { font-size: 0.78rem; }
     .card-body .fw-bold { font-size: 0.9rem; }
+    .display-6 { font-size: 2rem !important; }
 }
 </style>
 @endpush

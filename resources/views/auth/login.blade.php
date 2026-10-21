@@ -35,7 +35,7 @@
                     @endif
                 </div>
                 <div class="password-input-wrapper">
-                    <input id="password" class="auth-input" type="password" name="password" required placeholder="••••••••">
+                    <input id="password" class="auth-input" type="password" name="password" required placeholder="Enter your password" autocomplete="current-password">
                     <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password', this)" title="Show password">
                         <i class="bi bi-eye-slash"></i>
                     </button>

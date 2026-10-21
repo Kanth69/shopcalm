@@ -34,7 +34,7 @@
                     </div>
                 </div>
 
-                <button type="submit" id="btn-send-otp" class="auth-submit-btn">
+                <button type="submit" id="btn-send-otp" class="auth-submit-btn w-100 justify-content-center">
                     <span>Send WhatsApp OTP</span>
                     <i class="bi bi-whatsapp ms-1"></i>
                 </button>
@@ -47,7 +47,7 @@
 
                 <div class="form-group">
                     <label for="otp">WhatsApp 6-Digit OTP Code <span class="text-danger">*</span></label>
-                    <input id="otp" class="auth-input form-control" type="tel" inputmode="numeric" name="otp" maxlength="6" required placeholder="123456" style="letter-spacing: 4px; font-weight: bold; text-align: center;">
+                    <input id="otp" class="auth-input form-control" type="tel" inputmode="numeric" name="otp" maxlength="6" required placeholder="Enter 6-digit OTP" autocomplete="one-time-code">
                 </div>
 
                 <div class="form-group">
@@ -70,7 +70,7 @@
                     </div>
                 </div>
 
-                <button type="submit" id="btn-submit-reset" class="auth-submit-btn">
+                <button type="submit" id="btn-submit-reset" class="auth-submit-btn w-100 justify-content-center">
                     <span>Reset Password & Sign In</span>
                     <i class="bi bi-shield-check ms-1"></i>
                 </button>
@@ -214,6 +214,19 @@
             transition: all 0.2s ease;
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
             margin-top: 4px;
+            width: 100%;
+            text-align: center;
+        }
+        #otp {
+            text-align: center;
+            font-weight: 700;
+            letter-spacing: 4px;
+        }
+        #otp::placeholder {
+            letter-spacing: normal !important;
+            font-weight: 500 !important;
+            font-size: 14px;
+            color: #94a3b8;
         }
         .auth-submit-btn:hover {
             transform: translateY(-2px);
@@ -361,6 +374,13 @@
                     document.getElementById('reset_mobile_number').value = mobile;
                     reqOtpForm.style.display = 'none';
                     resetPassForm.style.display = 'flex';
+                    resetPassForm.style.flexDirection = 'column';
+                    const otpEl = document.getElementById('otp');
+                    if (otpEl) otpEl.value = '';
+                    const pwEl = document.getElementById('password');
+                    if (pwEl) pwEl.value = '';
+                    const pwConfEl = document.getElementById('password_confirmation');
+                    if (pwConfEl) pwConfEl.value = '';
                 } else {
                     const msg = data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Mobile number not found.');
                     showError(msg);

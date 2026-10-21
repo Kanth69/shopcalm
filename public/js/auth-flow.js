@@ -104,6 +104,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentIdentifier = identifier;
             }
 
+            if (stateName === 'login') {
+                const pwInput = document.getElementById('password_for_login');
+                if (pwInput) {
+                    pwInput.value = '';
+                }
+            }
+
             const firstInput = nextEl.querySelector('input:not([readonly]):not([type="hidden"])');
             if (firstInput) {
                 firstInput.focus();
@@ -189,6 +196,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const loginIdDisplay = document.getElementById('login_identifier_display');
                 if (loginIdHidden) loginIdHidden.value = identifier;
                 if (loginIdDisplay) loginIdDisplay.value = identifier;
+
+                const loginPw = document.getElementById('password_for_login');
+                if (loginPw) loginPw.value = '';
 
                 resetButtonState();
                 transitionTo('login', identifier);
@@ -358,10 +368,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (res.ok && data.success) {
                     // Pre-fill hidden mobile in step 2 form
-                    document.getElementById('reset_modal_mobile_number').value = mobile;
+                    const mobileHidden = document.getElementById('reset_modal_mobile_number');
+                    if (mobileHidden) mobileHidden.value = mobile;
                     forgotRequestOtpForm.style.display = 'none';
                     const resetForm = document.getElementById('form-forgot-reset-password');
-                    if (resetForm) resetForm.style.display = 'block';
+                    if (resetForm) {
+                        resetForm.style.display = 'flex';
+                        resetForm.style.flexDirection = 'column';
+                    }
+
+                    const modalOtp = document.getElementById('modal_otp');
+                    if (modalOtp) {
+                        modalOtp.value = '';
+                    }
+                    const modalPw = document.getElementById('modal_new_password');
+                    if (modalPw) {
+                        modalPw.value = '';
+                    }
+                    const modalPwConf = document.getElementById('modal_password_confirmation');
+                    if (modalPwConf) {
+                        modalPwConf.value = '';
+                    }
 
                     const subText = document.getElementById('forgot-subtitle-text');
                     if (subText) subText.textContent = 'Enter the 6-digit WhatsApp OTP code and your new password.';
@@ -969,7 +996,10 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             const reqForm = document.getElementById('form-forgot-request-otp');
             const resetForm = document.getElementById('form-forgot-reset-password');
-            if (reqForm) reqForm.style.display = 'block';
+            if (reqForm) {
+                reqForm.style.display = 'flex';
+                reqForm.style.flexDirection = 'column';
+            }
             if (resetForm) resetForm.style.display = 'none';
             const alertEl = document.getElementById('forgot-alert');
             if (alertEl) alertEl.style.display = 'none';

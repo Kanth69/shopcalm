@@ -39,9 +39,11 @@
                         <div>
                             <div class="fs-5 fw-bold text-dark">{{ $enquiry->name }}</div>
                             <div class="d-flex flex-wrap gap-3 small mt-1">
-                                <a href="mailto:{{ $enquiry->email }}" class="text-decoration-none text-primary fw-semibold">
-                                    <i class="bi bi-envelope me-1"></i>{{ $enquiry->email }}
-                                </a>
+                                @if($enquiry->email)
+                                    <a href="mailto:{{ $enquiry->email }}" class="text-decoration-none text-primary fw-semibold">
+                                        <i class="bi bi-envelope me-1"></i>{{ $enquiry->email }}
+                                    </a>
+                                @endif
                                 @if($enquiry->mobile)
                                     <a href="tel:{{ $enquiry->mobile }}" class="text-decoration-none text-secondary">
                                         <i class="bi bi-telephone me-1"></i>{{ $enquiry->mobile }}

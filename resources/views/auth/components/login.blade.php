@@ -30,7 +30,7 @@
             <a href="#" class="forgot-link" id="show-forgot-password">Forgot?</a>
         </div>
         <div class="password-input-wrapper">
-            <input id="password_for_login" class="auth-input" type="password" name="password" required autofocus placeholder="••••••••">
+            <input id="password_for_login" class="auth-input" type="password" name="password" required autofocus placeholder="Enter your password" autocomplete="current-password">
             <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password_for_login', this)" title="Show password">
                 <i class="bi bi-eye-slash"></i>
             </button>

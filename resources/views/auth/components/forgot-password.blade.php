@@ -23,7 +23,7 @@
         </div>
     </div>
 
-    <button type="submit" id="forgot-send-otp-btn" class="auth-submit-btn">
+    <button type="submit" id="forgot-send-otp-btn" class="auth-submit-btn w-100 justify-content-center">
         <span>Send WhatsApp OTP</span>
         <i class="bi bi-whatsapp ms-1"></i>
     </button>
@@ -36,7 +36,7 @@
 
     <div class="form-group mb-2">
         <label for="modal_otp">WhatsApp 6-Digit OTP Code <span class="text-danger">*</span></label>
-        <input id="modal_otp" class="auth-input form-control" type="tel" inputmode="numeric" name="otp" maxlength="6" required placeholder="123456" style="letter-spacing: 4px; font-weight: bold; text-align: center;">
+        <input id="modal_otp" class="auth-input form-control" type="tel" inputmode="numeric" name="otp" maxlength="6" required placeholder="Enter 6-digit OTP" autocomplete="one-time-code">
     </div>
 
     <div class="form-group mb-2">
@@ -59,7 +59,7 @@
         </div>
     </div>
 
-    <button type="submit" id="forgot-reset-btn" class="auth-submit-btn">
+    <button type="submit" id="forgot-reset-btn" class="auth-submit-btn w-100 justify-content-center">
         <span>Reset Password & Sign In</span>
         <i class="bi bi-shield-check ms-1"></i>
     </button>

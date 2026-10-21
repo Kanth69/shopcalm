@@ -117,8 +117,260 @@
         </div>
     </div>
 
+{{-- ========================================================================= --}}
+{{-- 5. BESPOKE MODERN NEWSLETTER CENTER ALERT MODAL (HIGH-END UI)              --}}
+{{-- ========================================================================= --}}
+<div id="newsletter-center-modal" class="nl-modal-overlay" style="display: none;" onclick="handleNlOverlayClick(event)">
+    <div class="nl-modal-box" id="nl-modal-box">
+        {{-- Close Cross Mark --}}
+        <button type="button" class="nl-modal-close-btn" onclick="closeNewsletterAlert()" aria-label="Close" title="Close">
+            <i class="bi bi-x-lg"></i>
+        </button>
+
+        {{-- Glowing Icon Container --}}
+        <div class="nl-modal-icon-wrap" id="nl-modal-icon-wrap">
+            <div class="nl-modal-icon-inner" id="nl-modal-icon-inner">
+                <i class="bi bi-check2 text-white" id="nl-modal-icon"></i>
+            </div>
+        </div>
+
+        {{-- Small Pill Status Tag --}}
+        <div class="mb-2">
+            <span class="nl-modal-badge" id="nl-modal-badge">
+                <i class="bi bi-sparkles me-1" id="nl-modal-badge-icon"></i>
+                <span id="nl-modal-badge-text">Promotions Active</span>
+            </span>
+        </div>
+
+        {{-- Title --}}
+        <h4 class="nl-modal-title" id="nl-modal-title">Subscribed Successfully!</h4>
+
+        {{-- Description --}}
+        <p class="nl-modal-desc" id="nl-modal-desc">
+            You're now subscribed to exclusive sales, discount coupons, and new product announcements.
+        </p>
+
+        {{-- Center Button --}}
+        <div class="d-flex justify-content-center mt-3 pt-1">
+            <button type="button" class="nl-modal-action-btn" id="nl-modal-action-btn" onclick="closeNewsletterAlert()">
+                <i class="bi bi-check-circle-fill me-1.5" id="nl-modal-action-btn-icon"></i>
+                <span id="nl-modal-action-btn-text">Subscribed</span>
+            </button>
+        </div>
+
+        {{-- Smooth Auto-Vanish Progress Line --}}
+        <div class="nl-modal-progress-track">
+            <div class="nl-modal-progress-bar" id="nl-modal-progress-bar"></div>
+        </div>
+    </div>
+</div>
+
 <style>
-/* Modern, Premium SweetAlert2 Popup Styles */
+/* ========================================================================= */
+/* ULTRA-LUXURY CUSTOM CENTER MODAL STYLING                                  */
+/* ========================================================================= */
+.nl-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    opacity: 0;
+    transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nl-modal-overlay.active {
+    opacity: 1;
+}
+
+.nl-modal-box {
+    background: #ffffff;
+    width: 100%;
+    max-width: 430px;
+    border-radius: 28px;
+    padding: 2.25rem 2rem 2rem 2rem;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 25px 65px -12px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(226, 232, 240, 0.9);
+    transform: scale(0.9) translateY(15px);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+}
+
+.nl-modal-overlay.active .nl-modal-box {
+    transform: scale(1) translateY(0);
+}
+
+/* Close Button (Cross Mark) */
+.nl-modal-close-btn {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.nl-modal-close-btn:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    transform: rotate(90deg);
+}
+
+/* Ambient Glowing Icon */
+.nl-modal-icon-wrap {
+    margin: 0 auto 1.25rem auto;
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.nl-modal-icon-inner {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.85rem;
+    transition: all 0.3s ease;
+}
+
+/* 1. GREEN THEME (SUBSCRIBED) */
+.nl-theme-green .nl-modal-icon-wrap {
+    background: rgba(16, 185, 129, 0.16);
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.08);
+}
+.nl-theme-green .nl-modal-icon-inner {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 8px 22px rgba(16, 185, 129, 0.42);
+}
+.nl-theme-green .nl-modal-badge {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+.nl-theme-green .nl-modal-action-btn {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.38);
+}
+.nl-theme-green .nl-modal-action-btn:hover {
+    box-shadow: 0 8px 26px rgba(16, 185, 129, 0.52);
+    transform: translateY(-2px);
+}
+.nl-theme-green .nl-modal-progress-bar {
+    background: linear-gradient(90deg, #10b981, #059669);
+}
+
+/* 2. RED THEME (UNSUBSCRIBED) */
+.nl-theme-red .nl-modal-icon-wrap {
+    background: rgba(239, 68, 68, 0.16);
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.08);
+}
+.nl-theme-red .nl-modal-icon-inner {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 8px 22px rgba(239, 68, 68, 0.38);
+}
+.nl-theme-red .nl-modal-badge {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+.nl-theme-red .nl-modal-action-btn {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #ffffff;
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.38);
+}
+.nl-theme-red .nl-modal-action-btn:hover {
+    box-shadow: 0 8px 26px rgba(239, 68, 68, 0.52);
+    transform: translateY(-2px);
+}
+.nl-theme-red .nl-modal-progress-bar {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+/* Pill, Title & Subtitle */
+.nl-modal-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.95rem;
+    border-radius: 50px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.nl-modal-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.45rem;
+}
+
+.nl-modal-desc {
+    font-size: 0.9rem;
+    color: #64748b;
+    line-height: 1.55;
+    margin: 0 auto;
+    max-width: 350px;
+}
+
+/* Center Action Button */
+.nl-modal-action-btn {
+    border: none;
+    border-radius: 50px;
+    padding: 0.75rem 2.25rem;
+    font-size: 0.92rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+/* Bottom Progress Track & Bar */
+.nl-modal-progress-track {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: #f1f5f9;
+}
+
+.nl-modal-progress-bar {
+    height: 100%;
+    width: 100%;
+    transition: width 3.2s linear;
+}
+
+/* SweetAlert2 Styling for DPDP & Profile Save */
 .swal2-custom-card {
     border-radius: 24px !important;
     padding: 2rem 1.75rem 1.75rem 1.75rem !important;
@@ -157,17 +409,113 @@
     height: 4px !important;
     border-radius: 0 0 24px 24px !important;
 }
-
-.swal2-timer-red {
-    background: linear-gradient(90deg, #ef4444, #dc2626) !important;
-    height: 4px !important;
-    border-radius: 0 0 24px 24px !important;
-}
 </style>
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+let nlAutoVanishTimer = null;
+
+/**
+ * Display the Bespoke Centered Newsletter Modal
+ */
+function showNewsletterCenterModal(isSubscribed, message) {
+    const overlay = document.getElementById('newsletter-center-modal');
+    const box = document.getElementById('nl-modal-box');
+    const badgeText = document.getElementById('nl-modal-badge-text');
+    const badgeIcon = document.getElementById('nl-modal-badge-icon');
+    const title = document.getElementById('nl-modal-title');
+    const desc = document.getElementById('nl-modal-desc');
+    const btnText = document.getElementById('nl-modal-action-btn-text');
+    const btnIcon = document.getElementById('nl-modal-action-btn-icon');
+    const icon = document.getElementById('nl-modal-icon');
+    const progressBar = document.getElementById('nl-modal-progress-bar');
+
+    if (!overlay) return;
+
+    // Reset previous timer
+    clearTimeout(nlAutoVanishTimer);
+
+    // Reset progress bar width
+    if (progressBar) {
+        progressBar.style.transition = 'none';
+        progressBar.style.width = '100%';
+    }
+
+    if (isSubscribed) {
+        // GREEN SUCCESS THEME (Subscribed)
+        box.className = 'nl-modal-box nl-theme-green';
+        if (icon) icon.className = 'bi bi-check2 text-white';
+        if (badgeIcon) badgeIcon.className = 'bi bi-sparkles me-1 text-success';
+        if (badgeText) badgeText.textContent = 'Promotions Active';
+        if (title) title.textContent = 'Subscribed Successfully!';
+        if (desc) desc.textContent = message || 'You have successfully subscribed to receive exclusive offers, promo codes, and product updates.';
+        if (btnIcon) btnIcon.className = 'bi bi-check-circle-fill me-1.5';
+        if (btnText) btnText.textContent = 'Subscribed';
+    } else {
+        // RED DANGER THEME (Unsubscribed)
+        box.className = 'nl-modal-box nl-theme-red';
+        if (icon) icon.className = 'bi bi-bell-slash text-white';
+        if (badgeIcon) badgeIcon.className = 'bi bi-x-circle me-1 text-danger';
+        if (badgeText) badgeText.textContent = 'Promotions Paused';
+        if (title) title.textContent = 'Unsubscribed';
+        if (desc) desc.textContent = message || 'You have unsubscribed from our newsletter. Promotional emails have been turned off.';
+        if (btnIcon) btnIcon.className = 'bi bi-x-circle-fill me-1.5';
+        if (btnText) btnText.textContent = 'Unsubscribed';
+    }
+
+    // Display overlay and trigger CSS scale-in
+    overlay.style.display = 'flex';
+    requestAnimationFrame(() => {
+        overlay.classList.add('active');
+        if (progressBar) {
+            progressBar.style.transition = 'width 3.2s linear';
+            progressBar.style.width = '0%';
+        }
+    });
+
+    // Auto-vanish after 3.2 seconds
+    nlAutoVanishTimer = setTimeout(() => {
+        closeNewsletterAlert();
+    }, 3200);
+}
+
+/**
+ * Dismiss the Newsletter Modal with Fade-out
+ */
+function closeNewsletterAlert() {
+    const overlay = document.getElementById('newsletter-center-modal');
+    if (!overlay) return;
+
+    clearTimeout(nlAutoVanishTimer);
+    overlay.classList.remove('active');
+
+    setTimeout(() => {
+        overlay.style.display = 'none';
+        const progressBar = document.getElementById('nl-modal-progress-bar');
+        if (progressBar) {
+            progressBar.style.transition = 'none';
+            progressBar.style.width = '100%';
+        }
+    }, 260);
+}
+
+/**
+ * Handle backdrop click to close
+ */
+function handleNlOverlayClick(e) {
+    if (e.target && e.target.id === 'newsletter-center-modal') {
+        closeNewsletterAlert();
+    }
+}
+
+// Close on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeNewsletterAlert();
+    }
+});
+
 /**
  * Update UI state of newsletter badge and button on the card
  */
@@ -229,7 +577,7 @@ function toggleNewsletterFromBtn() {
 }
 
 /**
- * Main newsletter toggle function: Sends AJAX request & displays center alert popup
+ * Main newsletter toggle function: Sends AJAX request & displays custom center modal
  */
 function toggleProfileNewsletter(isChecked) {
     const checkbox = document.getElementById('newsletterToggle');
@@ -255,68 +603,8 @@ function toggleProfileNewsletter(isChecked) {
 
         if (data.success) {
             updateNewsletterCardUI(isChecked);
-
-            if (isChecked) {
-                // 1. SUBSCRIBED: Green Success Button at Center with Cross Mark & Auto-Vanish
-                Swal.fire({
-                    position: 'center',
-                    icon: 'success',
-                    iconColor: '#10b981',
-                    title: '<div class="fw-extrabold text-dark mt-1" style="font-size: 1.35rem; letter-spacing: -0.02em;">Subscribed Successfully!</div>',
-                    html: `
-                        <div class="py-2">
-                            <p class="text-secondary mb-3" style="font-size: 0.92rem; line-height: 1.55;">
-                                ${data.message || 'You have successfully subscribed to our newsletter!'}
-                            </p>
-                            <div class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-pill shadow-2xs" style="background: rgba(16, 185, 129, 0.12); color: #047857; font-size: 0.8rem; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.28);">
-                                <i class="bi bi-patch-check-fill text-success"></i> Promotional emails & discount alerts active
-                            </div>
-                        </div>
-                    `,
-                    showCloseButton: true,
-                    showConfirmButton: true,
-                    confirmButtonText: '<i class="bi bi-check-circle-fill me-1.5"></i> Subscribed',
-                    buttonsStyling: false,
-                    customClass: {
-                        popup: 'swal2-custom-card swal2-border-green',
-                        confirmButton: 'btn btn-success rounded-pill px-4 py-2.5 fw-bold shadow-sm',
-                        closeButton: 'swal2-custom-close',
-                        timerProgressBar: 'swal2-timer-green'
-                    },
-                    timer: 3000,
-                    timerProgressBar: true
-                });
-            } else {
-                // 2. UNSUBSCRIBED: Red Button at Center with Cross Mark & Auto-Vanish
-                Swal.fire({
-                    position: 'center',
-                    icon: 'error',
-                    iconColor: '#ef4444',
-                    title: '<div class="fw-extrabold text-dark mt-1" style="font-size: 1.35rem; letter-spacing: -0.02em;">Unsubscribed</div>',
-                    html: `
-                        <div class="py-2">
-                            <p class="text-secondary mb-3" style="font-size: 0.92rem; line-height: 1.55;">
-                                ${data.message || 'You have unsubscribed from our newsletter.'}
-                            </p>
-                            <div class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-pill shadow-2xs" style="background: rgba(239, 68, 68, 0.1); color: #b91c1c; font-size: 0.8rem; font-weight: 700; border: 1px solid rgba(239, 68, 68, 0.28);">
-                                <i class="bi bi-bell-slash-fill text-danger"></i> Promotional emails turned off
-                            </div>
-                        </div>
-                    `,
-                    showCloseButton: true,
-                    showConfirmButton: true,
-                    confirmButtonText: '<i class="bi bi-x-circle-fill me-1.5"></i> Unsubscribed',
-                    buttonsStyling: false,
-                    customClass: {
-                        popup: 'swal2-custom-card swal2-border-red',
-                        confirmButton: 'btn btn-danger rounded-pill px-4 py-2.5 fw-bold shadow-sm',
-                        closeButton: 'swal2-custom-close',
-                        timerProgressBar: 'swal2-timer-red'
-                    },
-                    timer: 3000,
-                    timerProgressBar: true
-                });
-            }
+            // Show custom center modal with green or red button, cross mark, and auto-vanish
+            showNewsletterCenterModal(isChecked, data.message);
         } else {
             // Revert state
             updateNewsletterCardUI(!isChecked);

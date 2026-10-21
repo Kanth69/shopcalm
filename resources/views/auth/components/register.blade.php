@@ -47,23 +47,18 @@
             <input id="name" class="auth-input" type="text" name="name" value="{{ old('name') }}" required placeholder="e.g. Rahul Sharma" autofocus>
         </div>
 
-        <div class="form-row">
-            <div class="form-group flex-1">
-                <label for="register_mobile">Mobile Number <span class="text-danger">*</span></label>
-                <input id="register_mobile" class="auth-input" type="tel" name="mobile_number" value="{{ old('mobile_number') }}" required pattern="[0-9]{10}" maxlength="10" inputmode="numeric" placeholder="10-digit mobile number">
-            </div>
-
-            <div class="form-group flex-1">
-                <label for="register_email">Email Address <small class="text-muted">(Optional)</small></label>
-                <input id="register_email" class="auth-input" type="email" name="email" value="{{ old('email') }}" placeholder="name@example.com (Optional)">
-            </div>
+        <div class="form-group">
+            <label for="register_mobile">Mobile Number <span class="text-danger">*</span></label>
+            <input id="register_mobile" class="auth-input" type="tel" name="mobile_number" value="{{ old('mobile_number') }}" required pattern="[0-9]{10}" maxlength="10" inputmode="numeric" placeholder="Enter 10-digit mobile number">
         </div>
 
         <div class="form-group">
-            <label for="referral_code" class="d-flex justify-content-between">
-                <span>Referral Code <small class="text-muted">(Optional)</small></span>
-                <span class="text-success small fw-bold"><i class="bi bi-gift-fill me-1"></i>₹50 Bonus</span>
-            </label>
+            <label for="register_email">Email Address <small class="text-muted">(Optional)</small></label>
+            <input id="register_email" class="auth-input" type="email" name="email" value="{{ old('email') }}" placeholder="name@example.com (Optional)">
+        </div>
+
+        <div class="form-group">
+            <label for="referral_code">Referral Code <small class="text-muted">(Optional)</small></label>
             <input id="referral_code" class="auth-input font-monospace text-uppercase" type="text" name="referral_code" value="{{ request('ref', old('referral_code', session('referral_code'))) }}" placeholder="e.g. WISE1234">
         </div>
 

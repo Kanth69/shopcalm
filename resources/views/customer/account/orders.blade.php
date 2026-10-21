@@ -41,7 +41,7 @@
 
 {{-- ── Status Filter Chips (Horizontal Swipe on Mobile) ─────── --}}
 <div class="mb-3">
-    <div class="d-flex align-items-center gap-2 overflow-x-auto pb-1.5 text-nowrap no-scrollbar" style="scrollbar-width: none; -ms-overflow-style: none;">
+    <div class="d-flex align-items-center gap-2 overflow-x-auto py-1 px-0.5 text-nowrap no-scrollbar" style="scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch;">
         @php
             $tabs = [
                 ''                 => ['label'=>'All Orders',        'icon'=>'bi-grid-3x3-gap'],
@@ -57,12 +57,12 @@
         @endphp
         @foreach($tabs as $val => $tab)
         <a href="{{ route('account.orders.index', array_merge(request()->only('search'), $val ? ['status'=>$val] : [])) }}"
-           class="btn btn-sm rounded-pill fw-semibold px-3 py-1.5 text-decoration-none d-inline-flex align-items-center gap-1.5 {{ $activeTab === $val ? 'text-white shadow-xs' : 'bg-white border text-dark shadow-xs' }}"
+           class="btn btn-sm rounded-pill fw-semibold px-3 py-1.5 text-decoration-none d-inline-flex align-items-center gap-2 {{ $activeTab === $val ? 'text-white shadow-xs' : 'bg-white border text-dark shadow-xs' }}"
            style="font-size: 0.8rem; transition: all 0.2s;
                   {{ $activeTab === $val
                     ? 'background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none;'
                     : 'border-color: #e2e8f0 !important;' }}">
-            <i class="bi {{ $tab['icon'] }} {{ $activeTab === $val ? 'text-white' : 'text-secondary' }}" style="font-size: 0.82rem;"></i>
+            <i class="bi {{ $tab['icon'] }} me-1 {{ $activeTab === $val ? 'text-white' : 'text-secondary' }}" style="font-size: 0.82rem;"></i>
             <span>{{ $tab['label'] }}</span>
         </a>
         @endforeach
@@ -87,8 +87,8 @@
                        value="{{ request('search') }}"
                        style="border-radius: 0 999px 999px 0; border-color: #e2e8f0; font-size: 0.85rem;">
             </div>
-            <button type="submit" class="btn btn-primary rounded-pill px-3.5 py-1.5 fw-semibold shadow-xs flex-shrink-0" style="font-size: 0.82rem; background: #4f46e5; border: none;">
-                Search
+            <button type="submit" class="btn btn-primary rounded-pill px-3.5 py-1.5 fw-semibold shadow-xs flex-shrink-0 d-inline-flex align-items-center gap-2" style="font-size: 0.82rem; background: #4f46e5; border: none;">
+                <i class="bi bi-search me-1"></i> <span>Search</span>
             </button>
             @if(request('search'))
             <a href="{{ route('account.orders.index', request('status') ? ['status'=>request('status')] : []) }}"
@@ -189,27 +189,27 @@
 
                     {{-- Order meta --}}
                     <div class="min-w-0">
-                        <div class="d-flex align-items-center gap-1.5 mb-1 flex-wrap">
+                        <div class="d-flex align-items-center gap-2 mb-1.5 flex-wrap">
                             <span class="fw-bold text-dark font-monospace" style="font-size: 0.88rem;">#{{ $order->order_number }}</span>
-                            <span class="badge rounded-pill fw-semibold px-2 py-0.5"
-                                  style="background: {{ $st['bg'] }}; color: {{ $st['color'] }}; border: 1px solid {{ $st['border'] }}; font-size: 0.68rem;">
-                                <i class="bi {{ $st['icon'] }} me-0.5"></i> {{ $st['label'] ?? ucfirst($order->status) }}
+                            <span class="badge rounded-pill fw-semibold px-2.5 py-1 d-inline-flex align-items-center"
+                                  style="background: {{ $st['bg'] }}; color: {{ $st['color'] }}; border: 1px solid {{ $st['border'] }}; font-size: 0.7rem;">
+                                <i class="bi {{ $st['icon'] }} me-1.5"></i> <span>{{ $st['label'] ?? ucfirst($order->status) }}</span>
                             </span>
                             @if($order->payment_status === 'failed' || ($order->status === 'pending' && $order->payment_method === 'online'))
-                                <span class="badge rounded-pill px-2 py-0.5 fw-bold font-monospace shadow-xs bg-warning text-dark border border-warning" style="font-size: 0.68rem;">
-                                    <i class="bi bi-exclamation-triangle-fill text-dark me-0.5"></i>Payment Incomplete
+                                <span class="badge rounded-pill px-2.5 py-1 fw-bold font-monospace shadow-xs bg-warning text-dark border border-warning d-inline-flex align-items-center" style="font-size: 0.7rem;">
+                                    <i class="bi bi-exclamation-triangle-fill text-dark me-1.5"></i> <span>Payment Incomplete</span>
                                 </span>
                             @endif
                             @if($order->delivery_otp && $order->status !== 'delivered' && $order->status !== 'cancelled')
-                                <span class="badge rounded-pill px-2 py-0.5 fw-bold font-monospace shadow-xs" style="background: #0f172a; color: #fcd34d; border: 1px solid rgba(245,158,11,0.4); font-size: 0.68rem;">
-                                    <i class="bi bi-shield-lock-fill text-warning me-0.5"></i>OTP: {{ $order->delivery_otp }}
+                                <span class="badge rounded-pill px-2.5 py-1 fw-bold font-monospace shadow-xs d-inline-flex align-items-center" style="background: #0f172a; color: #fcd34d; border: 1px solid rgba(245,158,11,0.4); font-size: 0.7rem;">
+                                    <i class="bi bi-shield-lock-fill text-warning me-1.5"></i> <span>OTP: {{ $order->delivery_otp }}</span>
                                 </span>
                             @endif
                         </div>
                         <div class="d-flex align-items-center gap-2 text-muted small flex-wrap" style="font-size: 0.76rem;">
-                            <span><i class="bi bi-calendar3 me-1 opacity-75"></i>{{ $order->created_at ? $order->created_at->format('d M, Y') : '—' }}</span>
+                            <span class="d-inline-flex align-items-center"><i class="bi bi-calendar3 me-1.5 opacity-75"></i>{{ $order->created_at ? $order->created_at->format('d M, Y') : '—' }}</span>
                             <span>•</span>
-                            <span>{{ $order->items->count() }} item{{ $order->items->count() !== 1 ? 's' : '' }}</span>
+                            <span class="d-inline-flex align-items-center"><i class="bi bi-bag-check me-1.5 opacity-75"></i>{{ $order->items->count() }} item{{ $order->items->count() !== 1 ? 's' : '' }}</span>
                         </div>
                     </div>
                 </div>
@@ -222,22 +222,22 @@
                     </div>
                     @if(in_array($order->status, ['pending', 'failed']) || $order->payment_status === 'failed')
                     <a href="{{ route('checkout.payment_failed', $order) }}"
-                       class="btn btn-sm fw-semibold rounded-pill px-3 py-1.5 d-none d-sm-inline-flex align-items-center gap-1 shadow-xs text-white"
+                       class="btn btn-sm fw-semibold rounded-pill px-3 py-1.5 d-none d-sm-inline-flex align-items-center gap-2 shadow-xs text-white"
                        style="background: #ea580c; border: none; font-size: 0.78rem; white-space: nowrap;">
-                        <i class="bi bi-arrow-repeat"></i> <span>Proceed / Pay</span>
+                        <i class="bi bi-arrow-repeat me-1"></i> <span>Proceed / Pay</span>
                     </a>
                     <form action="{{ route('customer.orders.cancel', $order->id) }}" method="POST" class="d-none d-sm-inline" onsubmit="return confirm('Are you sure you want to cancel this pending order #{{ $order->order_number }}?');">
                         @csrf
                         <input type="hidden" name="cancellation_reason" value="Cancelled pending order from My Orders">
-                        <button type="submit" class="btn btn-sm btn-outline-danger fw-semibold rounded-pill px-2.5 py-1.5 d-inline-flex align-items-center gap-1" style="font-size: 0.76rem; white-space: nowrap;">
-                            <i class="bi bi-x-circle"></i> <span>Cancel</span>
+                        <button type="submit" class="btn btn-sm btn-outline-danger fw-semibold rounded-pill px-2.5 py-1.5 d-inline-flex align-items-center gap-1.5" style="font-size: 0.76rem; white-space: nowrap;">
+                            <i class="bi bi-x-circle me-1"></i> <span>Cancel</span>
                         </button>
                     </form>
                     @endif
                     <a href="{{ route('account.orders.show', $order) }}"
-                       class="btn btn-sm fw-semibold rounded-pill px-3 py-1.5 d-none d-sm-inline-flex align-items-center gap-1 shadow-xs text-white"
+                       class="btn btn-sm fw-semibold rounded-pill px-3 py-1.5 d-none d-sm-inline-flex align-items-center gap-2 shadow-xs text-white"
                        style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none; font-size: 0.78rem; white-space: nowrap;">
-                        <span>Details</span> <i class="bi bi-arrow-right"></i>
+                        <span>Details</span> <i class="bi bi-arrow-right ms-1"></i>
                     </a>
                 </div>
 
@@ -248,21 +248,21 @@
                 @if(in_array($order->status, ['pending', 'failed']) || $order->payment_status === 'failed')
                 <div class="d-flex gap-2 mb-2">
                     <a href="{{ route('checkout.payment_failed', $order) }}"
-                       class="btn btn-warning flex-grow-1 rounded-pill py-2 fw-bold text-dark d-flex align-items-center justify-content-center gap-1.5 shadow-xs" style="font-size: 0.82rem; background: #ea580c; color: #ffffff !important;">
-                        <i class="bi bi-arrow-repeat"></i> <span>Proceed / Pay</span>
+                       class="btn btn-warning flex-grow-1 rounded-pill py-2.5 fw-bold text-dark d-flex align-items-center justify-content-center gap-2 shadow-xs" style="font-size: 0.82rem; background: #ea580c; color: #ffffff !important;">
+                        <i class="bi bi-arrow-repeat me-1"></i> <span>Proceed / Pay</span>
                     </a>
                     <form action="{{ route('customer.orders.cancel', $order->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this pending order #{{ $order->order_number }}?');">
                         @csrf
                         <input type="hidden" name="cancellation_reason" value="Cancelled pending order from My Orders">
-                        <button type="submit" class="btn btn-outline-danger rounded-pill py-2 px-3 fw-bold d-flex align-items-center justify-content-center gap-1" style="font-size: 0.8rem;">
-                            <i class="bi bi-x-circle"></i> <span>Cancel</span>
+                        <button type="submit" class="btn btn-outline-danger rounded-pill py-2.5 px-3 fw-bold d-flex align-items-center justify-content-center gap-1.5" style="font-size: 0.8rem;">
+                            <i class="bi bi-x-circle me-1"></i> <span>Cancel</span>
                         </button>
                     </form>
                 </div>
                 @endif
                 <a href="{{ route('account.orders.show', $order) }}"
-                   class="btn btn-light border w-100 rounded-pill py-2 fw-semibold text-primary d-flex align-items-center justify-content-center gap-1.5 shadow-xs" style="font-size: 0.8rem;">
-                    <span>View Order Details</span> <i class="bi bi-arrow-right"></i>
+                   class="btn btn-light border w-100 rounded-pill py-2.5 fw-semibold text-primary d-flex align-items-center justify-content-center gap-2 shadow-xs" style="font-size: 0.82rem;">
+                    <span>View Order Details</span> <i class="bi bi-arrow-right ms-1.5"></i>
                 </a>
             </div>
 

@@ -269,29 +269,33 @@
                     </div>
                 @endif
 
+                @php
+                    $authUser = Auth::guard('customer')->user() ?? Auth::user();
+                @endphp
+
                 <form action="{{ route('page.contact.submit') }}" method="POST" id="customerContactForm">
                     @csrf
                     <div class="row g-3 g-md-4">
                         <div class="col-md-6">
                             <label for="contact_name" class="form-label fw-bold small" style="color: #0f172a;">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control contact-input @error('name') is-invalid @enderror" id="contact_name" name="name" value="{{ old('name', Auth::guard('customer')->user()->name ?? '') }}" placeholder="e.g. John Doe" required>
+                            <input type="text" class="form-control contact-input @error('name') is-invalid @enderror" id="contact_name" name="name" value="{{ old('name', $authUser->name ?? '') }}" placeholder="e.g. Rahul Sharma" required>
                             @error('name')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="col-md-6">
-                            <label for="contact_email" class="form-label fw-bold small" style="color: #0f172a;">Email Address <span class="text-danger">*</span></label>
-                            <input type="email" class="form-control contact-input @error('email') is-invalid @enderror" id="contact_email" name="email" value="{{ old('email', Auth::guard('customer')->user()->email ?? '') }}" placeholder="john@example.com" required>
-                            @error('email')
+                            <label for="contact_mobile" class="form-label fw-bold small" style="color: #0f172a;">Mobile Number <span class="text-danger">*</span></label>
+                            <input type="tel" class="form-control contact-input @error('mobile') is-invalid @enderror" id="contact_mobile" name="mobile" value="{{ old('mobile', $authUser->mobile_number ?? ($authUser->phone ?? '')) }}" placeholder="10-digit mobile number" pattern="[0-9]{10}" maxlength="10" minlength="10" inputmode="numeric" required>
+                            @error('mobile')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="col-md-6">
-                            <label for="contact_mobile" class="form-label fw-bold small" style="color: #0f172a;">10-Digit Mobile Number</label>
-                            <input type="tel" class="form-control contact-input @error('mobile') is-invalid @enderror" id="contact_mobile" name="mobile" value="{{ old('mobile', Auth::guard('customer')->user()->phone ?? '') }}" placeholder="9876543210" pattern="[0-9]{10}" maxlength="10" minlength="10">
-                            @error('mobile')
+                            <label for="contact_email" class="form-label fw-bold small" style="color: #0f172a;">Email Address <small class="text-muted fw-normal">(Optional)</small></label>
+                            <input type="email" class="form-control contact-input @error('email') is-invalid @enderror" id="contact_email" name="email" value="{{ old('email', $authUser->email ?? '') }}" placeholder="name@example.com (Optional)">
+                            @error('email')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -312,10 +316,19 @@
                         </div>
 
                         <div class="col-12">
-                            <label for="contact_message" class="form-label fw-bold small" style="color: #0f172a;">Detailed Message <span class="text-danger">*</span></label>
-                            <textarea class="form-control contact-input @error('message') is-invalid @enderror" id="contact_message" name="message" rows="5" placeholder="Please describe how our team can help you..." required>{{ old('message') }}</textarea>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label for="contact_message" class="form-label fw-bold small mb-0" style="color: #0f172a;">Detailed Message <span class="text-danger">*</span></label>
+                                <span id="wordCountBadge" class="badge bg-light text-muted border font-monospace" style="font-size: 0.75rem;">
+                                    <span id="wordCount">0</span> / 250 words
+                                </span>
+                            </div>
+                            <textarea class="form-control contact-input @error('message') is-invalid @enderror" id="contact_message" name="message" rows="5" placeholder="Please describe how our team can help you (Maximum 250 words)..." required>{{ old('message') }}</textarea>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <small class="text-muted" style="font-size: 0.76rem;">Brief and clear descriptions help us resolve your issue faster.</small>
+                                <small id="wordCountStatus" class="small" style="font-size: 0.76rem;"></small>
+                            </div>
                             @error('message')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
 
@@ -375,8 +388,72 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitIcon = document.getElementById('submitIcon');
     const submitText = document.getElementById('submitText');
     const successModal = new bootstrap.Modal(document.getElementById('contactSuccessModal'));
+    const messageInput = document.getElementById('contact_message');
+    const wordCountSpan = document.getElementById('wordCount');
+    const wordCountBadge = document.getElementById('wordCountBadge');
+    const wordCountStatus = document.getElementById('wordCountStatus');
+    const maxWords = 250;
 
     if (!form) return;
+
+    // Cache initial prefilled values for logged-in users
+    const initialName = form.querySelector('[name="name"]')?.value || '';
+    const initialMobile = form.querySelector('[name="mobile"]')?.value || '';
+    const initialEmail = form.querySelector('[name="email"]')?.value || '';
+
+    // Word Counting Logic
+    function countWords(str) {
+        if (!str || !str.trim()) return 0;
+        return str.trim().split(/\s+/).filter(Boolean).length;
+    }
+
+    function updateWordCount() {
+        if (!messageInput || !wordCountSpan) return;
+        const text = messageInput.value;
+        const words = text.trim() ? text.trim().split(/\s+/).filter(Boolean) : [];
+        let count = words.length;
+
+        if (count > maxWords) {
+            // Trim words to max allowed
+            const trimmed = words.slice(0, maxWords).join(' ');
+            messageInput.value = trimmed;
+            count = maxWords;
+            if (wordCountStatus) {
+                wordCountStatus.textContent = 'Maximum 250 words limit reached';
+                wordCountStatus.className = 'text-danger small fw-semibold';
+            }
+        } else if (count >= maxWords - 20) {
+            if (wordCountStatus) {
+                wordCountStatus.textContent = `${maxWords - count} words remaining`;
+                wordCountStatus.className = 'text-warning small fw-semibold';
+            }
+        } else {
+            if (wordCountStatus) {
+                wordCountStatus.textContent = '';
+                wordCountStatus.className = 'text-muted small';
+            }
+        }
+
+        wordCountSpan.textContent = count;
+
+        if (count >= maxWords) {
+            wordCountBadge.className = 'badge bg-danger text-white border font-monospace';
+        } else if (count >= maxWords - 20) {
+            wordCountBadge.className = 'badge bg-warning text-dark border font-monospace';
+        } else if (count > 0) {
+            wordCountBadge.className = 'badge bg-primary-subtle text-primary border border-primary-subtle font-monospace';
+        } else {
+            wordCountBadge.className = 'badge bg-light text-muted border font-monospace';
+        }
+    }
+
+    if (messageInput) {
+        messageInput.addEventListener('input', updateWordCount);
+        messageInput.addEventListener('paste', function() {
+            setTimeout(updateWordCount, 20);
+        });
+        updateWordCount();
+    }
 
     form.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -384,6 +461,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clear existing invalid states
         form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
         form.querySelectorAll('.invalid-feedback-ajax').forEach(el => el.remove());
+
+        // Validate word count before submitting
+        if (messageInput && countWords(messageInput.value) > maxWords) {
+            messageInput.classList.add('is-invalid');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'invalid-feedback invalid-feedback-ajax d-block';
+            errorDiv.textContent = `Please shorten your message to ${maxWords} words or less.`;
+            messageInput.parentNode.appendChild(errorDiv);
+            return;
+        }
 
         // Set Loading State
         submitBtn.disabled = true;
@@ -406,6 +493,17 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok && data.success) {
                 // Reset form
                 form.reset();
+                // Preserve logged-in user details
+                if (initialName && form.querySelector('[name="name"]')) {
+                    form.querySelector('[name="name"]').value = initialName;
+                }
+                if (initialMobile && form.querySelector('[name="mobile"]')) {
+                    form.querySelector('[name="mobile"]').value = initialMobile;
+                }
+                if (initialEmail && form.querySelector('[name="email"]')) {
+                    form.querySelector('[name="email"]').value = initialEmail;
+                }
+                updateWordCount();
                 // Show attractive modal popup
                 successModal.show();
             } else if (response.status === 422 && data.errors) {
