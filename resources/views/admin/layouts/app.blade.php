@@ -917,42 +917,6 @@
 
             @include('components.toast')
 
-            @php
-                $flashSuccess = session('success') ?? (session('toast.type') === 'success' ? session('toast.message') : (is_array(session('toast')) && ($sessionToast['type'] ?? '') === 'success' ? ($sessionToast['message'] ?? null) : null));
-                $flashTitle = is_array(session('toast')) ? (session('toast')['title'] ?? 'Action Successful!') : 'Action Successful!';
-                $flashError = session('error') ?? (is_array(session('toast')) && in_array(session('toast')['type'] ?? '', ['error', 'danger']) ? session('toast')['message'] : null);
-                $flashStatus = session('status') ?? session('info') ?? null;
-            @endphp
-
-            @if(session('toast') || session('success') || session('error') || session('status'))
-                @php
-                    $tType = is_array(session('toast')) ? (session('toast')['type'] ?? 'success') : 'success';
-                    if (session('error') || $tType === 'danger' || $tType === 'error') {
-                        $alertBg = '#fef2f2'; $alertColor = '#991b1b'; $alertBorder = '#ef4444'; $alertIcon = 'bi-exclamation-octagon-fill';
-                        $alertTitle = is_array(session('toast')) ? (session('toast')['title'] ?? 'Error Occurred') : 'Error Occurred';
-                        $alertMsg = session('error') ?? (is_array(session('toast')) ? session('toast')['message'] : '');
-                    } elseif (session('status') || $tType === 'info') {
-                        $alertBg = '#eef2ff'; $alertColor = '#3730a3'; $alertBorder = '#6366f1'; $alertIcon = 'bi-info-circle-fill';
-                        $alertTitle = is_array(session('toast')) ? (session('toast')['title'] ?? 'Notice') : 'System Notice';
-                        $alertMsg = session('status') ?? (is_array(session('toast')) ? session('toast')['message'] : '');
-                    } else {
-                        $alertBg = '#ecfdf5'; $alertColor = '#065f46'; $alertBorder = '#10b981'; $alertIcon = 'bi-check-circle-fill';
-                        $alertTitle = is_array(session('toast')) ? (session('toast')['title'] ?? 'Settings & Changes Saved!') : 'Changes Saved Successfully!';
-                        $alertMsg = session('success') ?? (is_array(session('toast')) ? session('toast')['message'] : 'Your action was processed successfully.');
-                    }
-                @endphp
-                <div class="alert alert-dismissible fade show rounded-4 border-0 shadow-sm mb-4 d-flex align-items-center gap-3 p-3.5" role="alert" style="background: {{ $alertBg }}; color: {{ $alertColor }}; border-left: 5px solid {{ $alertBorder }} !important;">
-                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px; background: {{ $alertBorder }}20; color: {{ $alertBorder }};">
-                        <i class="bi {{ $alertIcon }} fs-5"></i>
-                    </div>
-                    <div class="flex-grow-1">
-                        <h6 class="fw-bold mb-0" style="font-size: 0.95rem;">{{ $alertTitle }}</h6>
-                        <div class="small" style="font-size: 0.85rem;">{{ $alertMsg }}</div>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            @endif
-
             @if($errors->any())
                 <div class="alert alert-dismissible fade show rounded-4 border-0 shadow-sm mb-4 d-flex align-items-start gap-3 p-3.5" role="alert" style="background: #fef2f2; color: #991b1b; border-left: 5px solid #ef4444 !important;">
                     <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px; background: #ef444420; color: #ef4444;">

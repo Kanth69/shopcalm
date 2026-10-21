@@ -15,26 +15,7 @@
         </div>
     </div>
 
-    {{-- Alert Messages --}}
-    {{-- Alert Messages --}}
-    @if(session('success'))
-    <div class="alert alert-success border-0 shadow-sm rounded-3 d-flex align-items-center justify-content-between gap-2 mb-4 alert-dismissible fade show" role="alert" id="autoDismissAlert">
-        <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-check-circle-fill fs-5"></i>
-            <div class="fw-semibold">{{ session('success') }}</div>
-        </div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    @endif
-    @if(session('error'))
-    <div class="alert alert-danger border-0 shadow-sm rounded-3 d-flex align-items-center justify-content-between gap-2 mb-4 alert-dismissible fade show" role="alert">
-        <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
-            <div class="fw-semibold">{{ session('error') }}</div>
-        </div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    @endif
+
 
     {{-- Stat Cards --}}
     <div class="row g-3 mb-4">
