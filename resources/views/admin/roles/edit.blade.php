@@ -73,6 +73,28 @@
                         @error('role_id') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                     </div>
 
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">Account Status <span class="text-danger">*</span></label>
+                        @if($admin->id === auth()->id())
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted px-3"><i class="bi bi-shield-check text-success"></i></span>
+                                <input type="text" class="form-control bg-light" value="Active (Current Authenticated User)" readonly>
+                                <input type="hidden" name="status" value="{{ $admin->status }}">
+                            </div>
+                            <div class="form-text small text-muted mt-1">You cannot block or deactivate your own active session.</div>
+                        @else
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted px-3"><i class="bi bi-shield-lock"></i></span>
+                                <select name="status" class="form-select @error('status') is-invalid @enderror" required>
+                                    <option value="Active" {{ old('status', $admin->status) === 'Active' ? 'selected' : '' }}>🟢 Active (Operational & Portal Access Granted)</option>
+                                    <option value="Blocked" {{ old('status', $admin->status) === 'Blocked' ? 'selected' : '' }}>🔴 Blocked (Suspended - Denied Access to All Portals)</option>
+                                </select>
+                            </div>
+                            <div class="form-text small text-muted mt-1">Blocked staff members are immediately signed out and locked out from logging in.</div>
+                        @endif
+                        @error('status') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                    </div>
+
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-dark small">New Password <span class="text-muted fw-normal">(Optional)</span></label>

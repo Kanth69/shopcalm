@@ -47,6 +47,11 @@ class DeliveryDashboardController extends Controller
             $request->session()->regenerate();
             $user = Auth::guard('delivery_partner')->user();
 
+            if (in_array($user->status, ['Blocked', 'Deleted'])) {
+                Auth::guard('delivery_partner')->logout();
+                return back()->withErrors(['email' => 'Your account has been deactivated or blocked. Please contact an administrator.']);
+            }
+
             if (!$user->canAccessDeliveryPortal()) {
                 Auth::guard('delivery_partner')->logout();
                 return back()->withErrors(['email' => 'Unauthorized account. Only registered Delivery Partners can access this portal.']);

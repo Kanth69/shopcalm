@@ -128,4 +128,93 @@ class StaffPortalsTest extends TestCase
         $this->get('https://hub.localhost/support/dashboard')->assertRedirect();
         $this->get('https://hub.localhost/delivery/dashboard')->assertRedirect();
     }
+
+    /** 8. Super Admin Can Block and Unblock Staff */
+    public function test_super_admin_can_block_and_unblock_staff(): void
+    {
+        $superAdmin = User::factory()->create([
+            'role_id' => User::ROLE_SUPER_ADMIN,
+            'status' => 'Active',
+            'email' => 'super@shopcalm.com',
+        ]);
+
+        $staff = User::factory()->create([
+            'role_id' => User::ROLE_ADMIN,
+            'status' => 'Active',
+            'email' => 'staff1@shopcalm.com',
+        ]);
+
+        // Toggle status: Active -> Blocked
+        $response = $this->actingAs($superAdmin, 'admin')
+            ->post("https://hub.localhost/admin/roles/{$staff->id}/toggle-status");
+        $response->assertRedirect(route('admin.roles.index'));
+
+        $this->assertEquals('Blocked', $staff->fresh()->status);
+
+        // Blocked staff cannot access admin dashboard
+        $response = $this->actingAs($staff->fresh(), 'admin')
+            ->get('https://hub.localhost/admin');
+        $response->assertRedirect(route('admin.login'));
+
+        // Toggle status: Blocked -> Active
+        $response = $this->actingAs($superAdmin, 'admin')
+            ->post("https://hub.localhost/admin/roles/{$staff->id}/toggle-status");
+        $response->assertRedirect(route('admin.roles.index'));
+
+        $this->assertEquals('Active', $staff->fresh()->status);
+    }
+
+    /** 9. Super Admin Cannot Block Self or Last Super Admin */
+    public function test_super_admin_cannot_block_self_or_last_super_admin(): void
+    {
+        $superAdmin = User::factory()->create([
+            'role_id' => User::ROLE_SUPER_ADMIN,
+            'status' => 'Active',
+            'email' => 'sole_super@shopcalm.com',
+        ]);
+
+        // Attempt self-block
+        $response = $this->actingAs($superAdmin, 'admin')
+            ->post("https://hub.localhost/admin/roles/{$superAdmin->id}/toggle-status");
+        $this->assertEquals('Active', $superAdmin->fresh()->status);
+    }
+
+    /** 10. Super Admin Can Delete Staff Member */
+    public function test_super_admin_can_delete_staff_member(): void
+    {
+        $superAdmin = User::factory()->create([
+            'role_id' => User::ROLE_SUPER_ADMIN,
+            'status' => 'Active',
+            'email' => 'super2@shopcalm.com',
+        ]);
+
+        $staff = User::factory()->create([
+            'role_id' => User::ROLE_SUPPORT,
+            'status' => 'Active',
+            'email' => 'support_del@shopcalm.com',
+        ]);
+
+        $response = $this->actingAs($superAdmin, 'admin')
+            ->delete("https://hub.localhost/admin/roles/{$staff->id}");
+        $response->assertRedirect(route('admin.roles.index'));
+
+        // Should no longer exist as active in users table
+        $deleted = User::find($staff->id);
+        $this->assertTrue($deleted === null || $deleted->status === 'Deleted');
+    }
+
+    /** 11. Super Admin Cannot Delete Self */
+    public function test_super_admin_cannot_delete_self(): void
+    {
+        $superAdmin = User::factory()->create([
+            'role_id' => User::ROLE_SUPER_ADMIN,
+            'status' => 'Active',
+            'email' => 'super_preserve@shopcalm.com',
+        ]);
+
+        $response = $this->actingAs($superAdmin, 'admin')
+            ->delete("https://hub.localhost/admin/roles/{$superAdmin->id}");
+
+        $this->assertNotNull(User::find($superAdmin->id));
+    }
 }

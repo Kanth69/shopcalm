@@ -47,6 +47,13 @@ class AuthController extends Controller
 
         $user = Auth::guard('product_manager')->user();
 
+        if (in_array($user->status, ['Blocked', 'Deleted'])) {
+            Auth::guard('product_manager')->logout();
+            return back()->withErrors([
+                'email' => 'Your account has been deactivated or blocked. Please contact a Super Administrator.',
+            ])->withInput($request->only('email', 'remember'));
+        }
+
         // Strictly check authorization
         if (!$user->canAccessProductManagerPortal()) {
             Auth::guard('product_manager')->logout();

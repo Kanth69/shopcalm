@@ -63,6 +63,7 @@ $registerStaffRoutes = function () {
         Route::get('enquiries', fn() => redirect()->route('support.enquiries.index'))->name('enquiries.index');
         Route::get('customers', fn() => redirect()->route('support.customers.index'))->name('customers.index');
 
+        Route::post('roles/{role}/toggle-status', [RoleController::class, 'toggleStatus'])->name('roles.toggle-status');
         Route::resource('roles', RoleController::class);
 
         Route::get('/profile', [AdminProfileController::class, 'index'])->name('profile.index');

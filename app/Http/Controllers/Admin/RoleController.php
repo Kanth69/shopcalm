@@ -20,7 +20,7 @@ class RoleController extends Controller
             User::ROLE_ORDER_MANAGER, 
             User::ROLE_SUPPORT,
             User::ROLE_DELIVERY_PARTNER,
-        ])->latest()->get();
+        ])->where('status', '!=', 'Deleted')->latest()->get();
         return view('admin.roles.index', compact('admins'));
     }
 
@@ -85,15 +85,50 @@ class RoleController extends Controller
                 User::ROLE_SUPPORT,
                 User::ROLE_DELIVERY_PARTNER,
             ]),
+            'status' => 'nullable|in:Active,Blocked',
             'password' => ['nullable', 'confirmed', Password::min(6)],
         ]);
 
-        // If demoting from Super Admin to Admin, ensure at least one Super Admin remains
-        if ($admin->isSuperAdmin() && (int) $request->role_id === User::ROLE_ADMIN) {
-            $otherSuperAdmins = User::where('role_id', User::ROLE_SUPER_ADMIN)->where('id', '!=', $admin->id)->count();
-            if ($otherSuperAdmins < 1) {
-                return back()->withInput()->with('toast', ['type' => 'error', 'title' => 'Action Denied', 'message' => 'At least one Super Admin must remain active in the system.']);
+        // If demoting from Super Admin to another role, ensure at least one active Super Admin remains
+        if ($admin->isSuperAdmin() && (int) $request->role_id !== User::ROLE_SUPER_ADMIN) {
+            $otherActiveSuperAdmins = User::where('role_id', User::ROLE_SUPER_ADMIN)
+                ->where('status', 'Active')
+                ->where('id', '!=', $admin->id)
+                ->count();
+            if ($otherActiveSuperAdmins < 1) {
+                return back()->withInput()->with('toast', [
+                    'type' => 'error', 
+                    'title' => 'Action Denied', 
+                    'message' => 'At least one Super Admin must remain active in the system.'
+                ]);
             }
+        }
+
+        // Status change checks
+        if ($request->filled('status')) {
+            if ($request->status === 'Blocked') {
+                if ($admin->id === auth()->id()) {
+                    return back()->withInput()->with('toast', [
+                        'type' => 'error',
+                        'title' => 'Action Denied',
+                        'message' => 'You cannot block your own account.'
+                    ]);
+                }
+                if ($admin->isSuperAdmin()) {
+                    $otherActiveSuperAdmins = User::where('role_id', User::ROLE_SUPER_ADMIN)
+                        ->where('status', 'Active')
+                        ->where('id', '!=', $admin->id)
+                        ->count();
+                    if ($otherActiveSuperAdmins < 1) {
+                        return back()->withInput()->with('toast', [
+                            'type' => 'error',
+                            'title' => 'Action Denied',
+                            'message' => 'At least one Super Admin must remain active in the system.'
+                        ]);
+                    }
+                }
+            }
+            $admin->status = $request->status;
         }
 
         $admin->name = $request->name;
@@ -110,6 +145,48 @@ class RoleController extends Controller
         return redirect()->route('admin.roles.index')->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => 'Admin details updated successfully.']);
     }
 
+    /**
+     * Toggle the status of a staff/admin account between Active and Blocked.
+     */
+    public function toggleStatus($role)
+    {
+        $this->authorize('manage-admins', User::class);
+        $user = $role instanceof User ? $role : User::findOrFail($role);
+
+        if ($user->id === auth()->id()) {
+            return back()->with('toast', [
+                'type' => 'error',
+                'title' => 'Action Denied',
+                'message' => 'You cannot block your own account.'
+            ]);
+        }
+
+        if ($user->isSuperAdmin() && $user->status === 'Active') {
+            $otherActiveSuperAdmins = User::where('role_id', User::ROLE_SUPER_ADMIN)
+                ->where('status', 'Active')
+                ->where('id', '!=', $user->id)
+                ->count();
+            if ($otherActiveSuperAdmins < 1) {
+                return back()->with('toast', [
+                    'type' => 'error',
+                    'title' => 'Action Denied',
+                    'message' => 'At least one Super Admin must remain active in the system.'
+                ]);
+            }
+        }
+
+        $newStatus = ($user->status === 'Active') ? 'Blocked' : 'Active';
+        $user->status = $newStatus;
+        $user->save();
+
+        $actionWord = ($newStatus === 'Blocked') ? 'blocked' : 'unblocked';
+        return redirect()->route('admin.roles.index')->with('toast', [
+            'type' => 'success',
+            'title' => ($newStatus === 'Blocked') ? 'Account Blocked' : 'Account Unblocked',
+            'message' => "Staff member \"{$user->name}\" has been {$actionWord} successfully."
+        ]);
+    }
+
     public function destroy($role)
     {
         $this->authorize('manage-admins', User::class);
@@ -119,12 +196,28 @@ class RoleController extends Controller
             return back()->with('toast', ['type' => 'error', 'title' => 'Action Denied', 'message' => 'You cannot delete your own account.']);
         }
 
-        if ($user->isSuperAdmin() && User::where('role_id', User::ROLE_SUPER_ADMIN)->count() <= 1) {
-            return back()->with('toast', ['type' => 'error', 'title' => 'Action Denied', 'message' => 'At least one Super Admin must remain in the system.']);
+        if ($user->isSuperAdmin()) {
+            $otherSuperAdmins = User::where('role_id', User::ROLE_SUPER_ADMIN)
+                ->where('id', '!=', $user->id)
+                ->where('status', '!=', 'Deleted')
+                ->count();
+            if ($otherSuperAdmins < 1) {
+                return back()->with('toast', ['type' => 'error', 'title' => 'Action Denied', 'message' => 'At least one Super Admin must remain in the system.']);
+            }
         }
 
-        $user->delete();
+        $userName = $user->name;
 
-        return redirect()->route('admin.roles.index')->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => 'Admin access revoked successfully.']);
+        try {
+            $user->delete();
+        } catch (\Throwable $e) {
+            $user->status = 'Deleted';
+            $user->email = 'deleted_' . $user->id . '_' . time() . '@wisekart.internal';
+            $user->mobile_number = null;
+            $user->password = Hash::make(\Illuminate\Support\Str::random(32));
+            $user->save();
+        }
+
+        return redirect()->route('admin.roles.index')->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => "Admin account for \"{$userName}\" has been deleted successfully."]);
     }
 }
