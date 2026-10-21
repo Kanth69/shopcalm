@@ -85,6 +85,15 @@ class OfferController extends Controller
             $this->offerService->applyOfferDiscountsToProducts($products->items());
         }
 
+        if ($request->ajax() || $request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'html'              => view('customer.offers.partials.content', compact('liveMegaSale', 'flashDeals', 'allOffers', 'products', 'selectedOffer'))->render(),
+                'title'             => ($selectedOffer ? $selectedOffer->title . ' - ' : '') . 'Exclusive Mega Sales & Bank Offers - ShopCalm',
+                'selected_offer_id' => $selectedOffer ? $selectedOffer->id : null,
+                'total_products'    => $products->total(),
+            ]);
+        }
+
         return view('customer.offers.index', compact('liveMegaSale', 'flashDeals', 'allOffers', 'products', 'selectedOffer'));
     }
 }
