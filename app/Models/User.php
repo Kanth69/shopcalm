@@ -49,6 +49,16 @@ class User extends Authenticatable
     ];
 
     /**
+     * The model's default values for attributes.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'role_id' => self::ROLE_CUSTOMER,
+        'status'  => 'Active',
+    ];
+
+    /**
      * The attributes that should be hidden for serialization.
      *
      * @var list<string>

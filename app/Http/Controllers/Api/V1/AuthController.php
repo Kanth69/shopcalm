@@ -285,8 +285,8 @@ class AuthController extends BaseApiController
             'mobile_number' => $request->mobile_number,
             'email'         => $request->filled('email') ? strtolower(trim($request->email)) : null,
             'password'      => Hash::make($request->password),
-            'role_id'       => 2, // Customer role
-            'status'        => 'active',
+            'role_id'       => User::ROLE_CUSTOMER,
+            'status'        => 'Active',
         ]);
 
         if ($request->filled('referral_code')) {
