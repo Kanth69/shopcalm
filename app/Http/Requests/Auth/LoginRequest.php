@@ -39,45 +39,62 @@ class LoginRequest extends FormRequest
      *
      * @throws ValidationException
      */
-    public function authenticate(string $guard): void
+    public function authenticate(string $guard = 'customer'): void
     {
         $this->ensureIsNotRateLimited();
 
         $rawIdentifier = trim((string) $this->input('login_identifier'));
-        $isEmail = filter_var($rawIdentifier, FILTER_VALIDATE_EMAIL);
+        $isEmail = (bool) filter_var($rawIdentifier, FILTER_VALIDATE_EMAIL);
 
-        if ($isEmail) {
-            $field = 'email';
-            $identifier = strtolower($rawIdentifier);
-            $user = User::where('email', $identifier)->first();
-        } else {
-            $field = 'mobile_number';
-            $cleanDigits = preg_replace('/\D/', '', $rawIdentifier);
-            $identifier = (strlen($cleanDigits) >= 10) ? substr($cleanDigits, -10) : $cleanDigits;
-            $user = User::where('mobile_number', $identifier)->first();
+        $cleanDigits = preg_replace('/\D/', '', $rawIdentifier);
+        $last10 = (strlen($cleanDigits) >= 10) ? substr($cleanDigits, -10) : $cleanDigits;
 
-            // Fallback: if not found by last 10 digits, try exact match as entered
-            if (!$user) {
-                $user = User::where('mobile_number', $rawIdentifier)->first();
-                if ($user) {
-                    $identifier = $rawIdentifier;
+        // Query candidate users matching the identifier across email and all mobile formats (+91, spaces, 10-digits)
+        $candidates = User::where(function ($query) use ($rawIdentifier, $isEmail, $cleanDigits, $last10) {
+            if ($isEmail) {
+                $query->where('email', strtolower($rawIdentifier));
+            } else {
+                if (!empty($last10)) {
+                    $query->where('mobile_number', 'LIKE', '%' . $last10);
                 }
+                if (!empty($cleanDigits) && $cleanDigits !== $last10) {
+                    $query->orWhere('mobile_number', $cleanDigits);
+                }
+                $query->orWhere('mobile_number', $rawIdentifier)
+                      ->orWhere('email', strtolower($rawIdentifier));
             }
+        })->get();
+
+        // Fallback: if candidates empty, check both email and phone without strict filter
+        if ($candidates->isEmpty()) {
+            $candidates = User::where('email', strtolower($rawIdentifier))
+                ->orWhere('mobile_number', $rawIdentifier)
+                ->when(!empty($last10), fn($q) => $q->orWhere('mobile_number', 'LIKE', '%' . $last10))
+                ->when(!empty($cleanDigits), fn($q) => $q->orWhere('mobile_number', $cleanDigits))
+                ->get();
         }
 
         $password = (string) $this->input('password');
         $genericErrorMessage = 'Invalid credentials. Please check your mobile/email and password.';
 
-        // Check password: also check trim($password) to gracefully handle mobile keyboard trailing space
+        // Check password across candidate accounts, handling mobile auto-space / trailing space gracefully
         $passwordMatches = false;
-        if ($user) {
-            if (\Hash::check($password, $user->password)) {
+        $matchedUser = null;
+
+        foreach ($candidates as $candidate) {
+            if (\Hash::check($password, $candidate->password)) {
                 $passwordMatches = true;
-            } elseif (\Hash::check(trim($password), $user->password)) {
+                $matchedUser = $candidate;
+                break;
+            } elseif (\Hash::check(trim($password), $candidate->password)) {
                 $passwordMatches = true;
+                $matchedUser = $candidate;
                 $password = trim($password);
+                break;
             }
         }
+
+        $user = $matchedUser ?: $candidates->first();
 
         // 1. Pre-validation for credentials and existence
         if (!$user || !$passwordMatches) {
@@ -101,7 +118,7 @@ class LoginRequest extends FormRequest
                     'login_identifier' => $genericErrorMessage,
                 ]);
             }
-        } else {
+        } elseif ($guard === 'customer') {
             if (!$user->isCustomer()) {
                 throw ValidationException::withMessages([
                     'login_identifier' => $genericErrorMessage,
@@ -109,17 +126,16 @@ class LoginRequest extends FormRequest
             }
         }
 
-        // 3. Attempt actual login using the requested guard with normalized credentials
-        $credentials = [$field => $identifier, 'password' => $password];
-
-        if (! Auth::guard($guard)->attempt($credentials, $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
-            throw ValidationException::withMessages([
-                'login_identifier' => $genericErrorMessage,
-            ]);
-        }
+        // 3. Log the user into the session directly (credentials and role fully verified)
+        Auth::guard($guard)->login($user, $this->boolean('remember'));
 
         RateLimiter::clear($this->throttleKey());
+        if ($user->email) {
+            RateLimiter::clear(Str::transliterate(Str::lower($user->email) . '|' . $this->ip()));
+        }
+        if ($user->mobile_number) {
+            RateLimiter::clear(Str::transliterate(Str::lower($user->mobile_number) . '|' . $this->ip()));
+        }
     }
 
     /**

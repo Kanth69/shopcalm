@@ -187,7 +187,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Registered user -> Show Password / Login Screen
                 const loginIdHidden = document.getElementById('login_identifier_for_login');
                 const loginIdDisplay = document.getElementById('login_identifier_display');
-                if (loginIdHidden) loginIdHidden.value = identifier;
+                if (loginIdHidden) {
+                    loginIdHidden.value = (data.data && data.data.mobile_number && !identifier.includes('@')) 
+                        ? data.data.mobile_number 
+                        : identifier;
+                }
                 if (loginIdDisplay) loginIdDisplay.value = identifier;
 
                 resetButtonState();
