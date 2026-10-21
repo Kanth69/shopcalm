@@ -73,7 +73,8 @@ class NewsletterController extends Controller
         }
 
         $email = strtolower(trim($user->email));
-        $subscribe = filter_var($request->input('subscribe'), FILTER_VALIDATE_BOOLEAN);
+        $rawSubscribe = $request->has('subscribe') ? $request->input('subscribe') : $request->input('is_subscribed');
+        $subscribe = filter_var($rawSubscribe, FILTER_VALIDATE_BOOLEAN);
 
         $subscriber = Subscriber::firstOrCreate(
             ['email' => $email],
@@ -86,9 +87,10 @@ class NewsletterController extends Controller
         ]);
 
         return response()->json([
-            'success' => true,
-            'subscribed' => $subscribe,
-            'message' => $subscribe 
+            'success'       => true,
+            'subscribed'    => $subscribe,
+            'is_subscribed' => $subscribe,
+            'message'       => $subscribe 
                 ? 'You have successfully subscribed to our newsletter!' 
                 : 'You have unsubscribed from our newsletter.'
         ]);

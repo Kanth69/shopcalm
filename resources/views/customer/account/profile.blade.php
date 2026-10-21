@@ -46,8 +46,10 @@
                 <h5 class="mb-1 fw-bolder text-dark" style="letter-spacing: -0.02em;"><i class="bi bi-envelope-heart text-primary me-2"></i>Newsletter & Email Preferences</h5>
                 <p class="text-muted small mb-0">Manage your promotional email and newsletter notifications.</p>
             </div>
-            <span id="newsletter-status-badge" class="badge rounded-pill px-3 py-1.5 fw-bold" style="{{ $isSubscribed ? 'background:#d1fae5; color:#065f46; border:1px solid #a7f3d0;' : 'background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;' }}; font-size: 0.78rem;">
-                {{ $isSubscribed ? 'Subscribed' : 'Unsubscribed' }}
+            <span id="newsletter-status-badge" class="badge rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-1.5 shadow-2xs" 
+                  style="{{ $isSubscribed ? 'background:#d1fae5; color:#065f46; border:1px solid #a7f3d0;' : 'background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;' }}; font-size: 0.78rem;">
+                <i class="bi {{ $isSubscribed ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger' }}" id="newsletter-badge-icon"></i>
+                <span id="newsletter-badge-text">{{ $isSubscribed ? 'Subscribed' : 'Unsubscribed' }}</span>
             </span>
         </div>
         <div class="card-body p-4 p-md-5">
@@ -56,8 +58,18 @@
                     <h6 class="fw-bold text-dark mb-1.5 fs-6">Receive Newsletter Deals & Updates</h6>
                     <p class="text-secondary small mb-0" style="line-height: 1.65;">Get exclusive sales, discount coupons, and new product announcements sent directly to <strong>{{ $user->email ?? 'your registered email address' }}</strong>.</p>
                 </div>
-                <div class="form-check form-switch fs-3 mb-0">
-                    <input class="form-check-input cursor-pointer" type="checkbox" role="switch" id="newsletterToggle" {{ $isSubscribed ? 'checked' : '' }} onchange="toggleProfileNewsletter(this)" style="cursor: pointer;">
+                <div class="d-flex align-items-center gap-3">
+                    {{-- Status Action Button (Green if Subscribed, Red if Unsubscribed) --}}
+                    <button type="button" id="newsletter-action-btn" onclick="toggleNewsletterFromBtn()" 
+                            class="btn btn-sm rounded-pill px-3.5 py-2 fw-bold d-inline-flex align-items-center gap-1.5 shadow-xs transition-all"
+                            style="{{ $isSubscribed ? 'background: #10b981; color: #ffffff; border: none;' : 'background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5;' }}; font-size: 0.82rem;">
+                        <i class="bi {{ $isSubscribed ? 'bi-check-circle-fill' : 'bi-x-circle-fill' }}" id="newsletter-btn-icon"></i>
+                        <span id="newsletter-btn-text">{{ $isSubscribed ? 'Subscribed' : 'Unsubscribed' }}</span>
+                    </button>
+
+                    <div class="form-check form-switch fs-3 mb-0 d-flex align-items-center">
+                        <input class="form-check-input cursor-pointer" type="checkbox" role="switch" id="newsletterToggle" {{ $isSubscribed ? 'checked' : '' }} onchange="toggleProfileNewsletter(this.checked)" style="cursor: pointer; width: 2.7em; height: 1.35em;">
+                    </div>
                 </div>
             </div>
         </div>
@@ -105,15 +117,127 @@
         </div>
     </div>
 
+<style>
+/* Modern, Premium SweetAlert2 Popup Styles */
+.swal2-custom-card {
+    border-radius: 24px !important;
+    padding: 2rem 1.75rem 1.75rem 1.75rem !important;
+    box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.28) !important;
+    border: 1px solid #e2e8f0 !important;
+    background: #ffffff !important;
+}
+
+.swal2-border-green {
+    border-top: 5px solid #10b981 !important;
+}
+
+.swal2-border-red {
+    border-top: 5px solid #ef4444 !important;
+}
+
+.swal2-custom-close {
+    color: #94a3b8 !important;
+    font-size: 1.5rem !important;
+    width: 36px !important;
+    height: 36px !important;
+    line-height: 36px !important;
+    transition: all 0.2s ease !important;
+    border-radius: 50% !important;
+    margin: 10px 10px 0 0 !important;
+}
+
+.swal2-custom-close:hover {
+    color: #0f172a !important;
+    background: #f1f5f9 !important;
+    transform: rotate(90deg);
+}
+
+.swal2-timer-green {
+    background: linear-gradient(90deg, #10b981, #059669) !important;
+    height: 4px !important;
+    border-radius: 0 0 24px 24px !important;
+}
+
+.swal2-timer-red {
+    background: linear-gradient(90deg, #ef4444, #dc2626) !important;
+    height: 4px !important;
+    border-radius: 0 0 24px 24px !important;
+}
+</style>
+
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-function toggleProfileNewsletter(checkbox) {
-    const isChecked = checkbox.checked;
+/**
+ * Update UI state of newsletter badge and button on the card
+ */
+function updateNewsletterCardUI(isSubscribed) {
     const statusBadge = document.getElementById('newsletter-status-badge');
+    const badgeText = document.getElementById('newsletter-badge-text');
+    const badgeIcon = document.getElementById('newsletter-badge-icon');
+    const actionBtn = document.getElementById('newsletter-action-btn');
+    const btnText = document.getElementById('newsletter-btn-text');
+    const btnIcon = document.getElementById('newsletter-btn-icon');
+    const checkbox = document.getElementById('newsletterToggle');
+
+    if (checkbox) checkbox.checked = isSubscribed;
+
+    if (isSubscribed) {
+        if (statusBadge) {
+            statusBadge.style.background = '#d1fae5';
+            statusBadge.style.color = '#065f46';
+            statusBadge.style.borderColor = '#a7f3d0';
+        }
+        if (badgeText) badgeText.textContent = 'Subscribed';
+        if (badgeIcon) badgeIcon.className = 'bi bi-check-circle-fill text-success';
+
+        if (actionBtn) {
+            actionBtn.style.background = '#10b981';
+            actionBtn.style.color = '#ffffff';
+            actionBtn.style.borderColor = 'transparent';
+        }
+        if (btnText) btnText.textContent = 'Subscribed';
+        if (btnIcon) btnIcon.className = 'bi bi-check-circle-fill';
+    } else {
+        if (statusBadge) {
+            statusBadge.style.background = '#fee2e2';
+            statusBadge.style.color = '#991b1b';
+            statusBadge.style.borderColor = '#fca5a5';
+        }
+        if (badgeText) badgeText.textContent = 'Unsubscribed';
+        if (badgeIcon) badgeIcon.className = 'bi bi-x-circle-fill text-danger';
+
+        if (actionBtn) {
+            actionBtn.style.background = '#fee2e2';
+            actionBtn.style.color = '#dc2626';
+            actionBtn.style.borderColor = '#fca5a5';
+        }
+        if (btnText) btnText.textContent = 'Unsubscribed';
+        if (btnIcon) btnIcon.className = 'bi bi-x-circle-fill';
+    }
+}
+
+/**
+ * Click handler for the newsletter button
+ */
+function toggleNewsletterFromBtn() {
+    const checkbox = document.getElementById('newsletterToggle');
+    if (!checkbox || checkbox.disabled) return;
+    const newState = !checkbox.checked;
+    checkbox.checked = newState;
+    toggleProfileNewsletter(newState);
+}
+
+/**
+ * Main newsletter toggle function: Sends AJAX request & displays center alert popup
+ */
+function toggleProfileNewsletter(isChecked) {
+    const checkbox = document.getElementById('newsletterToggle');
+    const actionBtn = document.getElementById('newsletter-action-btn');
     
-    // Disable switch while processing
-    checkbox.disabled = true;
+    // Disable controls while processing
+    if (checkbox) checkbox.disabled = true;
+    if (actionBtn) actionBtn.disabled = true;
 
     fetch("{{ route('newsletter.toggle') }}", {
         method: "POST",
@@ -122,66 +246,157 @@ function toggleProfileNewsletter(checkbox) {
             "X-CSRF-TOKEN": "{{ csrf_token() }}",
             "Accept": "application/json"
         },
-        body: JSON.stringify({ is_subscribed: isChecked })
+        body: JSON.stringify({ subscribe: isChecked, is_subscribed: isChecked })
     })
     .then(response => response.json())
     .then(data => {
-        checkbox.disabled = false;
-        if (data.success) {
-            if (isChecked) {
-                statusBadge.textContent = 'Subscribed';
-                statusBadge.style.background = '#d1fae5';
-                statusBadge.style.color = '#065f46';
-                statusBadge.style.borderColor = '#a7f3d0';
-            } else {
-                statusBadge.textContent = 'Unsubscribed';
-                statusBadge.style.background = '#fee2e2';
-                statusBadge.style.color = '#991b1b';
-                statusBadge.style.borderColor = '#fca5a5';
-            }
+        if (checkbox) checkbox.disabled = false;
+        if (actionBtn) actionBtn.disabled = false;
 
-            Swal.fire({
-                icon: 'success',
-                title: isChecked ? 'Subscribed!' : 'Unsubscribed!',
-                text: data.message,
-                timer: 2000,
-                showConfirmButton: false,
-                toast: true,
-                position: 'top-end'
-            });
+        if (data.success) {
+            updateNewsletterCardUI(isChecked);
+
+            if (isChecked) {
+                // 1. SUBSCRIBED: Green Success Button at Center with Cross Mark & Auto-Vanish
+                Swal.fire({
+                    position: 'center',
+                    icon: 'success',
+                    iconColor: '#10b981',
+                    title: '<div class="fw-extrabold text-dark mt-1" style="font-size: 1.35rem; letter-spacing: -0.02em;">Subscribed Successfully!</div>',
+                    html: `
+                        <div class="py-2">
+                            <p class="text-secondary mb-3" style="font-size: 0.92rem; line-height: 1.55;">
+                                ${data.message || 'You have successfully subscribed to our newsletter!'}
+                            </p>
+                            <div class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-pill shadow-2xs" style="background: rgba(16, 185, 129, 0.12); color: #047857; font-size: 0.8rem; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.28);">
+                                <i class="bi bi-patch-check-fill text-success"></i> Promotional emails & discount alerts active
+                            </div>
+                        </div>
+                    `,
+                    showCloseButton: true,
+                    showConfirmButton: true,
+                    confirmButtonText: '<i class="bi bi-check-circle-fill me-1.5"></i> Subscribed',
+                    buttonsStyling: false,
+                    customClass: {
+                        popup: 'swal2-custom-card swal2-border-green',
+                        confirmButton: 'btn btn-success rounded-pill px-4 py-2.5 fw-bold shadow-sm',
+                        closeButton: 'swal2-custom-close',
+                        timerProgressBar: 'swal2-timer-green'
+                    },
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            } else {
+                // 2. UNSUBSCRIBED: Red Button at Center with Cross Mark & Auto-Vanish
+                Swal.fire({
+                    position: 'center',
+                    icon: 'error',
+                    iconColor: '#ef4444',
+                    title: '<div class="fw-extrabold text-dark mt-1" style="font-size: 1.35rem; letter-spacing: -0.02em;">Unsubscribed</div>',
+                    html: `
+                        <div class="py-2">
+                            <p class="text-secondary mb-3" style="font-size: 0.92rem; line-height: 1.55;">
+                                ${data.message || 'You have unsubscribed from our newsletter.'}
+                            </p>
+                            <div class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-pill shadow-2xs" style="background: rgba(239, 68, 68, 0.1); color: #b91c1c; font-size: 0.8rem; font-weight: 700; border: 1px solid rgba(239, 68, 68, 0.28);">
+                                <i class="bi bi-bell-slash-fill text-danger"></i> Promotional emails turned off
+                            </div>
+                        </div>
+                    `,
+                    showCloseButton: true,
+                    showConfirmButton: true,
+                    confirmButtonText: '<i class="bi bi-x-circle-fill me-1.5"></i> Unsubscribed',
+                    buttonsStyling: false,
+                    customClass: {
+                        popup: 'swal2-custom-card swal2-border-red',
+                        confirmButton: 'btn btn-danger rounded-pill px-4 py-2.5 fw-bold shadow-sm',
+                        closeButton: 'swal2-custom-close',
+                        timerProgressBar: 'swal2-timer-red'
+                    },
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            }
         } else {
-            checkbox.checked = !isChecked; // Revert
+            // Revert state
+            updateNewsletterCardUI(!isChecked);
             Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: data.message || 'Failed to update preferences.'
+                position: 'center',
+                icon: 'warning',
+                iconColor: '#f59e0b',
+                title: '<div class="fw-extrabold text-dark mt-1" style="font-size: 1.3rem;">Notice</div>',
+                html: `<p class="text-secondary mb-0" style="font-size: 0.92rem;">${data.message || 'Failed to update preferences.'}</p>`,
+                showCloseButton: true,
+                showConfirmButton: true,
+                confirmButtonText: 'Got It',
+                buttonsStyling: false,
+                customClass: {
+                    popup: 'swal2-custom-card',
+                    confirmButton: 'btn btn-secondary rounded-pill px-4 py-2 fw-bold',
+                    closeButton: 'swal2-custom-close'
+                },
+                timer: 3500,
+                timerProgressBar: true
             });
         }
     })
     .catch(error => {
-        checkbox.disabled = false;
-        checkbox.checked = !isChecked; // Revert
+        if (checkbox) checkbox.disabled = false;
+        if (actionBtn) actionBtn.disabled = false;
+        updateNewsletterCardUI(!isChecked);
         Swal.fire({
+            position: 'center',
             icon: 'error',
-            title: 'Error',
-            text: 'An error occurred while updating newsletter preferences.'
+            iconColor: '#ef4444',
+            title: '<div class="fw-extrabold text-dark mt-1" style="font-size: 1.3rem;">Error</div>',
+            html: '<p class="text-secondary mb-0" style="font-size: 0.92rem;">An error occurred while updating newsletter preferences. Please try again.</p>',
+            showCloseButton: true,
+            showConfirmButton: true,
+            confirmButtonText: 'Close',
+            buttonsStyling: false,
+            customClass: {
+                popup: 'swal2-custom-card swal2-border-red',
+                confirmButton: 'btn btn-danger rounded-pill px-4 py-2 fw-bold',
+                closeButton: 'swal2-custom-close'
+            },
+            timer: 3500,
+            timerProgressBar: true
         });
     });
 }
 
+/**
+ * DPDP Account Deletion Confirmation Modal
+ */
 function confirmAccountDeletion() {
     Swal.fire({
-        title: 'Delete Account & Erase Personal Data?',
-        html: `<p style="font-size: 0.9rem; color: #475569;" class="mb-3">This action will immediately erase your profile, saved addresses, and active login sessions. Past order invoices will be archived securely for tax compliance.</p>
-               <p style="font-size: 0.85rem; font-weight: 600;" class="text-danger mb-2">Type <strong>DELETE</strong> to confirm:</p>`,
+        position: 'center',
+        title: '<div class="fw-extrabold text-dark mt-1" style="font-size: 1.35rem;">Delete Account & Erase Personal Data?</div>',
+        html: `
+            <div class="text-start py-2">
+                <p style="font-size: 0.9rem; color: #475569; line-height: 1.55;" class="mb-3">
+                    This action will immediately erase your profile, saved addresses, and active login sessions. Past order invoices will be archived securely for GST tax compliance.
+                </p>
+                <p style="font-size: 0.85rem; font-weight: 700;" class="text-danger mb-2">
+                    Type <strong>DELETE</strong> below to confirm:
+                </p>
+            </div>
+        `,
         input: 'text',
         inputPlaceholder: 'DELETE',
         icon: 'warning',
+        iconColor: '#f59e0b',
+        showCloseButton: true,
         showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#64748b',
-        confirmButtonText: 'Yes, Erase My Data',
+        confirmButtonText: '<i class="bi bi-trash3-fill me-1"></i> Yes, Erase My Data',
         cancelButtonText: 'Cancel',
+        buttonsStyling: false,
+        customClass: {
+            popup: 'swal2-custom-card',
+            confirmButton: 'btn btn-danger rounded-pill px-4 py-2.5 fw-bold shadow-sm me-2',
+            cancelButton: 'btn btn-outline-secondary rounded-pill px-4 py-2.5 fw-bold shadow-2xs',
+            closeButton: 'swal2-custom-close'
+        },
         inputValidator: (value) => {
             if (value !== 'DELETE') {
                 return 'You must type DELETE in capital letters to confirm!';
@@ -190,9 +405,14 @@ function confirmAccountDeletion() {
     }).then((result) => {
         if (result.isConfirmed) {
             Swal.fire({
-                title: 'Erasing Data...',
-                text: 'Processing DPDP account deletion request...',
+                position: 'center',
+                title: '<div class="fw-extrabold text-dark" style="font-size: 1.3rem;">Erasing Data...</div>',
+                html: '<p class="text-secondary small mb-0">Processing DPDP account deletion request securely...</p>',
                 allowOutsideClick: false,
+                showConfirmButton: false,
+                customClass: {
+                    popup: 'swal2-custom-card'
+                },
                 didOpen: () => Swal.showLoading()
             });
 
@@ -208,33 +428,85 @@ function confirmAccountDeletion() {
             .then(data => {
                 if (data.success) {
                     Swal.fire({
+                        position: 'center',
                         icon: 'success',
-                        title: 'Account Deleted',
+                        iconColor: '#10b981',
+                        title: '<div class="fw-extrabold text-dark" style="font-size: 1.35rem;">Account Deleted</div>',
                         text: data.message,
-                        confirmButtonColor: '#6366f1'
+                        showCloseButton: true,
+                        confirmButtonText: 'OK',
+                        buttonsStyling: false,
+                        customClass: {
+                            popup: 'swal2-custom-card swal2-border-green',
+                            confirmButton: 'btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm',
+                            closeButton: 'swal2-custom-close'
+                        }
                     }).then(() => {
                         window.location.href = data.redirect || "{{ route('home') }}";
                     });
                 } else {
                     Swal.fire({
+                        position: 'center',
                         icon: 'error',
-                        title: 'Deletion Failed',
+                        iconColor: '#ef4444',
+                        title: '<div class="fw-extrabold text-dark" style="font-size: 1.35rem;">Deletion Failed</div>',
                         text: data.message || 'Could not complete account deletion.',
-                        confirmButtonColor: '#6366f1'
+                        showCloseButton: true,
+                        confirmButtonText: 'Close',
+                        buttonsStyling: false,
+                        customClass: {
+                            popup: 'swal2-custom-card swal2-border-red',
+                            confirmButton: 'btn btn-secondary rounded-pill px-4 py-2 fw-bold',
+                            closeButton: 'swal2-custom-close'
+                        }
                     });
                 }
             })
             .catch(err => {
                 Swal.fire({
+                    position: 'center',
                     icon: 'error',
-                    title: 'Error',
+                    iconColor: '#ef4444',
+                    title: '<div class="fw-extrabold text-dark" style="font-size: 1.35rem;">Error</div>',
                     text: 'An error occurred during account deletion.',
-                    confirmButtonColor: '#6366f1'
+                    showCloseButton: true,
+                    confirmButtonText: 'Close',
+                    buttonsStyling: false,
+                    customClass: {
+                        popup: 'swal2-custom-card swal2-border-red',
+                        confirmButton: 'btn btn-secondary rounded-pill px-4 py-2 fw-bold',
+                        closeButton: 'swal2-custom-close'
+                    }
                 });
             });
         }
     });
 }
+
+// Show sleek center modal if profile was updated via form submit
+@if (session('status') === 'profile-updated')
+document.addEventListener('DOMContentLoaded', function() {
+    Swal.fire({
+        position: 'center',
+        icon: 'success',
+        iconColor: '#10b981',
+        title: '<div class="fw-extrabold text-dark mt-1" style="font-size: 1.35rem; letter-spacing: -0.02em;">Profile Updated!</div>',
+        html: '<p class="text-secondary mb-0" style="font-size: 0.92rem;">Your account details and preferences have been updated successfully.</p>',
+        showCloseButton: true,
+        showConfirmButton: true,
+        confirmButtonText: '<i class="bi bi-check-lg me-1"></i> Great!',
+        buttonsStyling: false,
+        customClass: {
+            popup: 'swal2-custom-card swal2-border-green',
+            confirmButton: 'btn btn-success rounded-pill px-4 py-2 fw-bold shadow-sm',
+            closeButton: 'swal2-custom-close',
+            timerProgressBar: 'swal2-timer-green'
+        },
+        timer: 3000,
+        timerProgressBar: true
+    });
+});
+@endif
 </script>
 @endpush
 

@@ -107,18 +107,45 @@ function handleNewsletterSubmit(e, form) {
         if (typeof Swal !== 'undefined') {
             if (data.already_subscribed) {
                 Swal.fire({
+                    position: 'center',
                     icon: 'info',
-                    title: 'Already Subscribed!',
-                    text: data.message,
-                    confirmButtonColor: '#4f46e5'
+                    iconColor: '#6366f1',
+                    title: '<div class="fw-extrabold text-dark mt-1" style="font-size: 1.35rem;">Already Subscribed!</div>',
+                    html: `<p class="text-secondary mb-0" style="font-size: 0.92rem;">${data.message}</p>`,
+                    showCloseButton: true,
+                    confirmButtonText: 'Got It',
+                    customClass: {
+                        popup: 'rounded-4 shadow-lg p-4 border',
+                        confirmButton: 'btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm'
+                    },
+                    buttonsStyling: false,
+                    timer: 3500,
+                    timerProgressBar: true
                 });
             } else {
                 Swal.fire({
+                    position: 'center',
                     icon: 'success',
-                    title: 'Congratulations! 🎉',
-                    text: data.message,
-                    confirmButtonColor: '#4f46e5',
-                    confirmButtonText: 'Great!'
+                    iconColor: '#10b981',
+                    title: '<div class="fw-extrabold text-dark mt-1" style="font-size: 1.35rem;">Congratulations! 🎉</div>',
+                    html: `
+                        <div class="py-1">
+                            <p class="text-secondary mb-2" style="font-size: 0.92rem;">${data.message}</p>
+                            <div class="d-inline-flex align-items-center gap-1.5 px-3 py-1 rounded-pill" style="background: rgba(16, 185, 129, 0.12); color: #047857; font-size: 0.8rem; font-weight: 700;">
+                                <i class="bi bi-patch-check-fill text-success"></i> Welcome to the community!
+                            </div>
+                        </div>
+                    `,
+                    showCloseButton: true,
+                    showConfirmButton: true,
+                    confirmButtonText: '<i class="bi bi-check-lg me-1"></i> Great!',
+                    customClass: {
+                        popup: 'rounded-4 shadow-lg p-4 border border-top-5 border-success',
+                        confirmButton: 'btn btn-success rounded-pill px-4 py-2 fw-bold shadow-sm'
+                    },
+                    buttonsStyling: false,
+                    timer: 3500,
+                    timerProgressBar: true
                 });
             }
         } else {
@@ -132,10 +159,20 @@ function handleNewsletterSubmit(e, form) {
         }
         if (typeof Swal !== 'undefined') {
             Swal.fire({
+                position: 'center',
                 icon: 'error',
-                title: 'Subscription Failed',
-                text: err.message || 'Something went wrong. Please try again.',
-                confirmButtonColor: '#ef4444'
+                iconColor: '#ef4444',
+                title: '<div class="fw-extrabold text-dark mt-1" style="font-size: 1.35rem;">Subscription Failed</div>',
+                html: `<p class="text-secondary mb-0" style="font-size: 0.92rem;">${err.message || 'Something went wrong. Please try again.'}</p>`,
+                showCloseButton: true,
+                confirmButtonText: 'Try Again',
+                customClass: {
+                    popup: 'rounded-4 shadow-lg p-4 border border-top-5 border-danger',
+                    confirmButton: 'btn btn-danger rounded-pill px-4 py-2 fw-bold shadow-sm'
+                },
+                buttonsStyling: false,
+                timer: 4000,
+                timerProgressBar: true
             });
         } else if (errorMsg) {
             errorMsg.textContent = err.message || 'Something went wrong.';
