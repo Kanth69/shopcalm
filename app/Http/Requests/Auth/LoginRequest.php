@@ -43,17 +43,44 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        $identifier = $this->input('login_identifier');
-        $field = filter_var($identifier, FILTER_VALIDATE_EMAIL) ? 'email' : 'mobile_number';
-        $credentials = [$field => $identifier, 'password' => $this->input('password')];
+        $rawIdentifier = trim((string) $this->input('login_identifier'));
+        $isEmail = filter_var($rawIdentifier, FILTER_VALIDATE_EMAIL);
 
-        $genericErrorMessage = 'Invalid password.';
+        if ($isEmail) {
+            $field = 'email';
+            $identifier = strtolower($rawIdentifier);
+            $user = User::where('email', $identifier)->first();
+        } else {
+            $field = 'mobile_number';
+            $cleanDigits = preg_replace('/\D/', '', $rawIdentifier);
+            $identifier = (strlen($cleanDigits) >= 10) ? substr($cleanDigits, -10) : $cleanDigits;
+            $user = User::where('mobile_number', $identifier)->first();
 
-        // 1. Pre-validation for role and status
-        $user = User::where($field, $identifier)->first();
+            // Fallback: if not found by last 10 digits, try exact match as entered
+            if (!$user) {
+                $user = User::where('mobile_number', $rawIdentifier)->first();
+                if ($user) {
+                    $identifier = $rawIdentifier;
+                }
+            }
+        }
 
-        // Standardize failure messages to be generic (Security standard)
-        if (!$user || !\Hash::check($this->input('password'), $user->password)) {
+        $password = (string) $this->input('password');
+        $genericErrorMessage = 'Invalid credentials. Please check your mobile/email and password.';
+
+        // Check password: also check trim($password) to gracefully handle mobile keyboard trailing space
+        $passwordMatches = false;
+        if ($user) {
+            if (\Hash::check($password, $user->password)) {
+                $passwordMatches = true;
+            } elseif (\Hash::check(trim($password), $user->password)) {
+                $passwordMatches = true;
+                $password = trim($password);
+            }
+        }
+
+        // 1. Pre-validation for credentials and existence
+        if (!$user || !$passwordMatches) {
              RateLimiter::hit($this->throttleKey());
              throw ValidationException::withMessages([
                  'login_identifier' => $genericErrorMessage,
@@ -67,7 +94,7 @@ class LoginRequest extends FormRequest
             ]);
         }
 
-        // 2. Enforce guard-specific role access using generic message
+        // 2. Enforce guard-specific role access
         if ($guard === 'admin') {
             if (!$user->isAdmin()) {
                 throw ValidationException::withMessages([
@@ -82,7 +109,9 @@ class LoginRequest extends FormRequest
             }
         }
 
-        // 3. Attempt actual login using the requested guard
+        // 3. Attempt actual login using the requested guard with normalized credentials
+        $credentials = [$field => $identifier, 'password' => $password];
+
         if (! Auth::guard($guard)->attempt($credentials, $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
             throw ValidationException::withMessages([
