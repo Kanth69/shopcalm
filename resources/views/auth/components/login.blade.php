@@ -14,21 +14,14 @@
 
 <form id="form-login" method="POST" action="{{ route('login') }}" class="auth-form">
     @csrf
+    <input type="hidden" name="login_identifier" id="login_identifier_for_login">
+
     <div class="form-group">
         <div class="label-row">
             <label for="login_identifier_display">Account</label>
             <button type="button" class="change-identifier-btn" id="change-identifier-from-login">Change</button>
         </div>
-        <input 
-            id="login_identifier_display" 
-            name="login_identifier" 
-            class="auth-input readonly-input" 
-            type="text" 
-            readonly 
-            autocomplete="username" 
-            tabindex="-1"
-        >
-        <input type="hidden" id="login_identifier_for_login" name="login_identifier_hidden">
+        <input id="login_identifier_display" class="auth-input readonly-input" type="text" readonly tabindex="-1">
     </div>
 
     <div class="form-group">
@@ -37,16 +30,7 @@
             <a href="#" class="forgot-link" id="show-forgot-password">Forgot?</a>
         </div>
         <div class="password-input-wrapper">
-            <input 
-                id="password_for_login" 
-                class="auth-input" 
-                type="password" 
-                name="password" 
-                required 
-                autofocus 
-                autocomplete="current-password" 
-                placeholder="Enter your password"
-            >
+            <input id="password_for_login" class="auth-input" type="password" name="password" required autofocus placeholder="••••••••">
             <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password_for_login', this)" title="Show password">
                 <i class="bi bi-eye-slash"></i>
             </button>

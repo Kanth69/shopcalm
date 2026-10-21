@@ -32,17 +32,17 @@
 <!-- Step 2: Reset Password Form (Initially Hidden) -->
 <form id="form-forgot-reset-password" class="auth-form mt-2" style="display: none;">
     @csrf
-    <input type="text" id="reset_modal_mobile_number" name="mobile_number" autocomplete="username" readonly style="position: absolute; left: -9999px; opacity: 0; width: 1px; height: 1px;" aria-hidden="true">
+    <input type="hidden" id="reset_modal_mobile_number" name="mobile_number">
 
     <div class="form-group mb-2">
         <label for="modal_otp">WhatsApp 6-Digit OTP Code <span class="text-danger">*</span></label>
-        <input id="modal_otp" class="auth-input form-control" type="tel" inputmode="numeric" name="otp" maxlength="6" required autocomplete="one-time-code" placeholder="123456" style="letter-spacing: 4px; font-weight: bold; text-align: center;">
+        <input id="modal_otp" class="auth-input form-control" type="tel" inputmode="numeric" name="otp" maxlength="6" required placeholder="123456" style="letter-spacing: 4px; font-weight: bold; text-align: center;">
     </div>
 
     <div class="form-group mb-2">
         <label for="modal_new_password">New Password <span class="text-danger">*</span></label>
         <div class="password-input-wrapper">
-            <input id="modal_new_password" class="auth-input form-control" type="password" name="password" required autocomplete="new-password" placeholder="Minimum 8 characters">
+            <input id="modal_new_password" class="auth-input form-control" type="password" name="password" required placeholder="Minimum 8 characters">
             <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('modal_new_password', this)" title="Show password">
                 <i class="bi bi-eye-slash"></i>
             </button>
@@ -52,7 +52,7 @@
     <div class="form-group mb-2">
         <label for="modal_password_confirmation">Confirm Password <span class="text-danger">*</span></label>
         <div class="password-input-wrapper">
-            <input id="modal_password_confirmation" class="auth-input form-control" type="password" name="password_confirmation" required autocomplete="new-password" placeholder="Re-enter new password">
+            <input id="modal_password_confirmation" class="auth-input form-control" type="password" name="password_confirmation" required placeholder="Re-enter new password">
             <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('modal_password_confirmation', this)" title="Show password">
                 <i class="bi bi-eye-slash"></i>
             </button>

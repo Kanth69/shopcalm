@@ -187,21 +187,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Registered user -> Show Password / Login Screen
                 const loginIdHidden = document.getElementById('login_identifier_for_login');
                 const loginIdDisplay = document.getElementById('login_identifier_display');
-                const resolvedId = (data.data && data.data.mobile_number && !identifier.includes('@')) 
-                    ? data.data.mobile_number 
-                    : identifier;
-
-                if (loginIdHidden) loginIdHidden.value = resolvedId;
-                if (loginIdDisplay) loginIdDisplay.value = resolvedId;
-
-                const passInput = document.getElementById('password_for_login');
-                if (passInput) {
-                    passInput.value = '';
-                    passInput.classList.remove('is-invalid');
-                }
+                if (loginIdHidden) loginIdHidden.value = identifier;
+                if (loginIdDisplay) loginIdDisplay.value = identifier;
 
                 resetButtonState();
-                transitionTo('login', resolvedId);
+                transitionTo('login', identifier);
             } else {
                 // New user -> Show Registration Form & Auto-fill entered value
                 const isEmailType = identifier.includes('@');
