@@ -434,7 +434,7 @@
                             <div class="p-3 bg-light rounded-3 border h-100 d-flex align-items-center">
                                 <div class="small text-muted" style="font-size: 0.78rem; line-height: 1.45;">
                                     <i class="bi bi-info-circle-fill text-primary me-1"></i>
-                                    <strong>Fee Hierarchy:</strong> Orders $\ge$ ₹{{ $settings['free_shipping_min'] ?? '499' }} get <strong>FREE delivery</strong>. For smaller orders, any specific pincode fee is charged first; if not configured, the store <strong>Default Delivery Fee</strong> applies.
+                                    <strong>Fee Hierarchy:</strong> Orders of <strong>₹{{ $settings['free_shipping_min'] ?? '499' }} and above</strong> get <strong>FREE Delivery</strong>. For smaller orders, any custom pincode fee is charged first; if none is set, the store <strong>Default Delivery Fee</strong> applies.
                                 </div>
                             </div>
                         </div>
