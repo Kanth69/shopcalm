@@ -97,7 +97,9 @@ class CheckoutService
 
             // Handle Shipping Fee & COD Handling Fee
             $freeShippingMin = (float) \App\Models\Setting::get('free_shipping_min', 499);
-            $shippingFee = ($subtotalAmount >= $freeShippingMin) ? 0.00 : (float) ($pincodeCheck['delivery_charge'] ?? 0.00);
+            $defaultShippingFee = (float) \App\Models\Setting::get('default_shipping_fee', 40.00);
+            $baseDeliveryCharge = isset($pincodeCheck['delivery_charge']) ? (float) $pincodeCheck['delivery_charge'] : $defaultShippingFee;
+            $shippingFee = ($subtotalAmount >= $freeShippingMin) ? 0.00 : $baseDeliveryCharge;
             $rawCodFee = (float) ($pincodeCheck['cod_fee'] ?? 40.00);
 
             // Handle Offer Discount
@@ -321,7 +323,9 @@ class CheckoutService
 
             // Handle Shipping Fee
             $freeShippingMin = (float) \App\Models\Setting::get('free_shipping_min', 499);
-            $shippingFee = ($subtotalAmount >= $freeShippingMin) ? 0.00 : (float) ($pincodeCheck['delivery_charge'] ?? 0.00);
+            $defaultShippingFee = (float) \App\Models\Setting::get('default_shipping_fee', 40.00);
+            $baseDeliveryCharge = isset($pincodeCheck['delivery_charge']) ? (float) $pincodeCheck['delivery_charge'] : $defaultShippingFee;
+            $shippingFee = ($subtotalAmount >= $freeShippingMin) ? 0.00 : $baseDeliveryCharge;
 
             // Handle Offer Discount
             $offerDiscount = app(\App\Services\OfferService::class)->calculateCheckoutOfferDiscount($cart);

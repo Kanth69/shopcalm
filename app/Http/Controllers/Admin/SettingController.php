@@ -58,6 +58,7 @@ class SettingController extends Controller
             'enable_trust_badges'         => 'nullable|string',
             'enable_cod'                  => 'nullable|string',
             'free_shipping_min'           => 'nullable|numeric',
+            'default_shipping_fee'        => 'nullable|numeric|min:0',
             'cod_flat_fee'                => 'nullable|numeric|min:0',
             'enable_flash_sale'           => 'nullable|string',
             'flash_sale_end_time'         => 'nullable|string',

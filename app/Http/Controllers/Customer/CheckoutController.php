@@ -57,15 +57,17 @@ class CheckoutController extends Controller
 
         // Active Address Shipping Fee & COD Handling Fee
         $deliveryService = app(\App\Services\DeliveryService::class);
-        $shippingFee = 0.00;
-        $resolvedCodFee = 40.00;
+        $freeShippingMin = (float) \App\Models\Setting::get('free_shipping_min', 499);
+        $defaultShippingFee = (float) \App\Models\Setting::get('default_shipping_fee', 40.00);
+        $shippingFee = ($subtotal >= $freeShippingMin) ? 0.00 : $defaultShippingFee;
+        $resolvedCodFee = (float) \App\Models\Setting::get('cod_flat_fee', 40.00);
 
         if ($shippingZip) {
             $pincodeCheck = $deliveryService->checkServiceability($shippingZip);
             if ($pincodeCheck['is_serviceable']) {
-                $freeMin = (float) ($pincodeCheck['free_shipping_min'] ?? 499);
-                $shippingFee = ($subtotal >= $freeMin) ? 0.00 : (float) ($pincodeCheck['delivery_charge'] ?? 0.00);
-                $resolvedCodFee = (float) ($pincodeCheck['cod_fee'] ?? 40.00);
+                $freeMin = (float) ($pincodeCheck['free_shipping_min'] ?? $freeShippingMin);
+                $shippingFee = ($subtotal >= $freeMin) ? 0.00 : (float) ($pincodeCheck['delivery_charge'] ?? $defaultShippingFee);
+                $resolvedCodFee = (float) ($pincodeCheck['cod_fee'] ?? $resolvedCodFee);
             }
         }
 
@@ -366,7 +368,9 @@ class CheckoutController extends Controller
             $deliveryService = app(\App\Services\DeliveryService::class);
             $pincodeCheck = $deliveryService->checkServiceability($data['shipping_zip'] ?? '');
             $freeShippingMin = (float) \App\Models\Setting::get('free_shipping_min', 499);
-            $shippingFee = ($subtotalAmount >= $freeShippingMin) ? 0.00 : (float) ($pincodeCheck['delivery_charge'] ?? 0.00);
+            $defaultShippingFee = (float) \App\Models\Setting::get('default_shipping_fee', 40.00);
+            $baseDeliveryCharge = isset($pincodeCheck['delivery_charge']) ? (float) $pincodeCheck['delivery_charge'] : $defaultShippingFee;
+            $shippingFee = ($subtotalAmount >= $freeShippingMin) ? 0.00 : $baseDeliveryCharge;
 
             $payableBeforeWallet = max(0, $subtotalAmount - $discountAmount - $offerDiscount + $shippingFee);
             $useWallet = !empty($data['use_wallet']) || Session::get('use_wallet', false);

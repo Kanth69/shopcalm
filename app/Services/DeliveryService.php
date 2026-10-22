@@ -62,7 +62,13 @@ class DeliveryService
         $isGlobalCodEnabled = (Setting::get('enable_cod', '1') === '1');
         $isCodAvailable = $isGlobalCodEnabled && (bool) $record->is_cod_available;
 
-        $deliveryCharge = (float) $record->delivery_charge;
+        // Delivery Charge Hierarchy:
+        // Priority 1: Specific Pincode Delivery Charge (if configured > 0 in pincodes table)
+        // Priority 2: Store Default Delivery Fee (from store settings, e.g. ₹40.00)
+        $pincodeCharge = ($record->delivery_charge !== null) ? (float) $record->delivery_charge : 0.00;
+        $defaultShippingFee = (float) Setting::get('default_shipping_fee', 40.00);
+        $deliveryCharge = ($pincodeCharge > 0) ? $pincodeCharge : $defaultShippingFee;
+
         $codFee = 0.00;
         if ($isCodAvailable) {
             // Priority 1: Specific Pincode COD Fee (if configured in pincodes table)

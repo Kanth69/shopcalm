@@ -1461,6 +1461,7 @@ let currentSelectedAddress = userAddresses.length > 0 ? userAddresses[0] : null;
 window.isCurrentAddressServiceable = true;
 window.isCurrentAddressCodAvailable = true;
 window.activeShippingCharge = parseFloat("{{ $shippingFee ?? 0 }}");
+window.activeCodFee = parseFloat("{{ $resolvedCodFee ?? 40 }}");
 window.currentCheckoutStep = 1;
 
 @if(isset($pendingOrder) && $pendingOrder)
@@ -2199,7 +2200,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         let isFullyCoveredByWallet = (isWalletChecked && walletDiscount >= payableBeforeWallet && payableBeforeWallet > 0);
-        let codFee = (isCod && !isFullyCoveredByWallet) ? parseFloat("{{ \App\Models\Setting::get('cod_extra_charge', 40) }}") : 0;
+        let codFee = (isCod && !isFullyCoveredByWallet) ? (typeof window.activeCodFee !== 'undefined' ? window.activeCodFee : parseFloat("{{ \App\Models\Setting::get('cod_flat_fee', 40) }}")) : 0;
 
         const shippingEl = document.getElementById('summary-shipping-fee');
         if (shippingEl) {
@@ -2868,6 +2869,7 @@ function checkPincodeServiceability(pincode) {
         if (data.is_serviceable) {
             window.isCurrentAddressServiceable = true;
             window.isCurrentAddressCodAvailable = (data.is_cod_available === true || data.is_cod_available === 1);
+            window.activeCodFee = (data.cod_fee !== undefined) ? parseFloat(data.cod_fee) : parseFloat("{{ \App\Models\Setting::get('cod_flat_fee', 40) }}");
             updateCodAvailabilityUI(window.isCurrentAddressCodAvailable, pincode);
             if (errorBanner) errorBanner.style.display = 'none';
 

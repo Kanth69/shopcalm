@@ -401,8 +401,8 @@
                         </div>
                     </div>
 
-                    <!-- Shipping Threshold & COD Fee -->
-                    <div class="row g-4">
+                    <!-- Shipping Threshold & Fees -->
+                    <div class="row g-4 mb-4">
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-dark small mb-2"><i class="bi bi-truck text-primary me-1"></i>Free Shipping Minimum Spend (₹)</label>
                             <div class="input-group">
@@ -412,12 +412,31 @@
                             <div class="form-text text-muted mt-1.5" style="font-size: 0.75rem;">Orders equal to or above this subtotal qualify for complimentary standard shipping.</div>
                         </div>
                         <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark small mb-2"><i class="bi bi-box-seam text-primary me-1"></i>Default Delivery Fee (₹)</label>
+                            <div class="input-group">
+                                <span class="input-group-text fw-bold">₹</span>
+                                <input type="number" step="0.01" name="default_shipping_fee" class="form-control fw-bold" value="{{ $settings['default_shipping_fee'] ?? '40.00' }}" placeholder="40.00">
+                            </div>
+                            <div class="form-text text-muted mt-1.5" style="font-size: 0.75rem;">Charged when order is below Free Shipping spend and no custom pincode fee is set. Enter 0 for free delivery.</div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
                             <label class="form-label fw-bold text-dark small mb-2"><i class="bi bi-cash-stack text-success me-1"></i>Default COD Handling Fee (₹)</label>
                             <div class="input-group">
                                 <span class="input-group-text fw-bold">₹</span>
                                 <input type="number" step="0.01" name="cod_flat_fee" class="form-control fw-bold" value="{{ $settings['cod_flat_fee'] ?? '40.00' }}" placeholder="40.00">
                             </div>
                             <div class="form-text text-muted mt-1.5" style="font-size: 0.75rem;">Applied to COD orders when no custom pincode fee is configured. Enter 0 for free COD.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded-3 border h-100 d-flex align-items-center">
+                                <div class="small text-muted" style="font-size: 0.78rem; line-height: 1.45;">
+                                    <i class="bi bi-info-circle-fill text-primary me-1"></i>
+                                    <strong>Fee Hierarchy:</strong> Orders $\ge$ ₹{{ $settings['free_shipping_min'] ?? '499' }} get <strong>FREE delivery</strong>. For smaller orders, any specific pincode fee is charged first; if not configured, the store <strong>Default Delivery Fee</strong> applies.
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
