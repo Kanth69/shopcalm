@@ -131,13 +131,30 @@ document.addEventListener('DOMContentLoaded', function () {
             fetchProducts(url);
         }
 
+        // Load More button click handler
+        const loadMoreBtn = e.target.closest('#shopLoadMoreBtn');
+        if (loadMoreBtn) {
+            e.preventDefault();
+            const nextPage = loadMoreBtn.getAttribute('data-next-page');
+            if (!nextPage) return;
+
+            const urlObj = new URL(window.location.href);
+            urlObj.searchParams.set('page', nextPage);
+
+            loadMoreBtn.disabled = true;
+            loadMoreBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span> Loading products...`;
+
+            fetchProducts(urlObj.toString(), true);
+            return;
+        }
+
         // Pagination links
         if (e.target.closest('.pagination a')) {
             e.preventDefault();
             const url = e.target.closest('.pagination a').href;
             if (url) {
                 window.history.pushState({ path: url }, '', url);
-                fetchProducts(url);
+                fetchProducts(url, false);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
@@ -248,16 +265,76 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    async function fetchProducts(url) {
-        setButtonsLoading(true);
-        productContainer.classList.add('is-loading');
+    async function fetchProducts(url, isAppend = false) {
+        if (!isAppend) {
+            setButtonsLoading(true);
+            productContainer.classList.add('is-loading');
+        }
 
         try {
             const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
             const data = await response.json();
 
-            productGrid.innerHTML = data.product_grid_html;
-            paginationContainer.innerHTML = data.pagination_html;
+            const loadMoreWrap = document.getElementById('shop-load-more-wrap');
+
+            if (isAppend) {
+                // Parse new cards and append smoothly
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = data.product_grid_html;
+                const newCols = Array.from(tempDiv.children);
+
+                newCols.forEach(col => {
+                    col.style.opacity = '0';
+                    col.style.transform = 'translateY(12px)';
+                    col.style.transition = 'all 0.35s ease';
+                    productGrid.appendChild(col);
+                    requestAnimationFrame(() => {
+                        col.style.opacity = '1';
+                        col.style.transform = 'translateY(0)';
+                    });
+                });
+
+                window.history.replaceState({ path: url }, '', url);
+            } else {
+                productGrid.innerHTML = data.product_grid_html;
+                if (window.scrollY > productContainer.offsetTop) {
+                    window.scrollTo({ top: productContainer.offsetTop - 80, behavior: 'smooth' });
+                }
+            }
+
+            // Update Load More controls
+            if (loadMoreWrap) {
+                if (data.has_more) {
+                    loadMoreWrap.innerHTML = `
+                        <div class="d-flex flex-column align-items-center gap-2">
+                            <button type="button" id="shopLoadMoreBtn" 
+                                    class="btn btn-outline-dark rounded-pill px-4 py-2.5 fw-bold shadow-xs hover-elevate d-inline-flex align-items-center gap-2 transition-all"
+                                    data-next-page="${data.next_page}"
+                                    style="font-size: 0.88rem; border-color: #cbd5e1; background: #ffffff;">
+                                <span class="btn-text">Load More Products</span>
+                                <i class="bi bi-chevron-down" style="font-size: 0.8rem;"></i>
+                            </button>
+                            <span class="text-muted small" id="shop-progress-text" style="font-size: 0.76rem;">
+                                Showing <span id="shop-showing-count">${data.loaded_count}</span> of <span id="shop-total-count">${data.total_count}</span> products
+                            </span>
+                        </div>
+                    `;
+                } else if (data.total_count > 0) {
+                    loadMoreWrap.innerHTML = `
+                        <div class="text-muted small py-2" id="shop-all-loaded-text" style="font-size: 0.78rem;">
+                            <span class="badge bg-light text-secondary border px-3 py-1.5 rounded-pill">
+                                <i class="bi bi-check2-all text-success me-1"></i> You've viewed all ${data.total_count} products
+                            </span>
+                        </div>
+                    `;
+                } else {
+                    loadMoreWrap.innerHTML = '';
+                }
+            }
+
+            if (paginationContainer && data.pagination_html) {
+                paginationContainer.innerHTML = data.pagination_html;
+            }
             if (productCountText) {
                 productCountText.innerText = data.product_count;
             }
@@ -269,8 +346,10 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (error) {
             console.error('Error fetching products:', error);
         } finally {
-            setButtonsLoading(false);
-            productContainer.classList.remove('is-loading');
+            if (!isAppend) {
+                setButtonsLoading(false);
+                productContainer.classList.remove('is-loading');
+            }
         }
     }
 });

@@ -11,7 +11,7 @@
         <div class="position-absolute w-100 h-100"
              style="background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 24px 24px; top: 0; left: 0; pointer-events: none;"></div>
         
-        <div class="card-body p-3 p-md-4.5 position-relative">
+        <div class="card-body p-3 p-md-4 position-relative">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2.5 gap-md-3">
                 <div class="d-flex align-items-center gap-2.5 gap-md-3">
                     <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
@@ -50,7 +50,7 @@
     </div>
 
     {{-- 2. Controls Bar (Filter Offcanvas Drawer Trigger & Sort) --}}
-    <div class="card border-0 shadow-sm rounded-4 mb-3 mb-md-4 p-2.5 p-md-3" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+    <div class="card border-0 shadow-sm rounded-4 mb-3 mb-md-4 p-3" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
         <div class="row g-2 align-items-center">
             
             {{-- Left: Filter Drawer Trigger Button --}}
@@ -149,7 +149,7 @@
     @endif
 
     @if(request()->filled('q'))
-        <div class="card border-0 shadow-sm rounded-4 p-3.5 p-md-4 mb-4" 
+        <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 mb-4" 
              style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border: 1px solid #e2e8f0 !important;">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div class="d-flex align-items-center" style="gap: 1rem !important;">
@@ -199,7 +199,34 @@
             @include('customer.components.shop.product-grid', ['products' => $products])
         </div>
 
-        <div id="pagination-container" class="mt-5 d-flex justify-content-center">
+        {{-- Modern Load More Products Section --}}
+        <div id="shop-load-more-wrap" class="mt-4 mb-3 text-center">
+            @if($products->hasMorePages())
+                <div class="d-flex flex-column align-items-center gap-2">
+                    <button type="button" id="shopLoadMoreBtn" 
+                            class="btn btn-outline-dark rounded-pill px-4 py-2.5 fw-bold shadow-xs hover-elevate d-inline-flex align-items-center gap-2 transition-all"
+                            data-next-page="{{ $products->currentPage() + 1 }}"
+                            style="font-size: 0.88rem; border-color: #cbd5e1; background: #ffffff;">
+                        <span class="btn-text">Load More Products</span>
+                        <i class="bi bi-chevron-down" style="font-size: 0.8rem;"></i>
+                    </button>
+                    <span class="text-muted small" id="shop-progress-text" style="font-size: 0.76rem;">
+                        Showing <span id="shop-showing-count">{{ min($products->total(), $products->perPage()) }}</span> of <span id="shop-total-count">{{ $products->total() }}</span> products
+                    </span>
+                </div>
+            @else
+                @if($products->total() > 0)
+                    <div class="text-muted small py-2" id="shop-all-loaded-text" style="font-size: 0.78rem;">
+                        <span class="badge bg-light text-secondary border px-3 py-1.5 rounded-pill">
+                            <i class="bi bi-check2-all text-success me-1"></i> You've viewed all {{ $products->total() }} products
+                        </span>
+                    </div>
+                @endif
+            @endif
+        </div>
+
+        {{-- Hidden fallback pagination container for SEO --}}
+        <div id="pagination-container" class="d-none">
             {{ $products->links('pagination::bootstrap-5') }}
         </div>
     </div>
@@ -208,7 +235,7 @@
 
 {{-- 6. Slide-in Offcanvas Filters Drawer (Opens smoothly on Desktop & Mobile) --}}
 <div class="offcanvas offcanvas-start border-0 shadow-lg" tabindex="-1" id="offcanvasFilters" aria-labelledby="offcanvasFiltersLabel" style="width: 380px; max-width: 90vw; z-index: 1060;">
-    <div class="offcanvas-header bg-white py-3.5 px-4 border-bottom d-flex align-items-center justify-content-between">
+    <div class="offcanvas-header bg-white py-3 px-3 px-sm-4 border-bottom d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center" style="gap: 1rem !important;">
             <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
                  style="width: 44px; height: 44px; background: #ede9fe; color: #6366f1; font-size: 1.25rem;">

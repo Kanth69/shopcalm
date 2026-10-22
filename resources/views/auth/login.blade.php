@@ -324,30 +324,6 @@
             z-index: 2;
         }
 
-        .google-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            padding: 12px;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            text-decoration: none;
-            color: #475569;
-            font-size: 14px;
-            font-weight: 700;
-            transition: all 0.2s;
-            background: white;
-        }
-
-        .google-btn:hover {
-            background-color: #f8fafc;
-            border-color: #cbd5e1;
-        }
-
-        .google-btn img {
-            width: 20px;
-        }
 
         .auth-footer {
             text-align: center;

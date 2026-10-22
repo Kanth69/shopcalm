@@ -9,31 +9,67 @@
      style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%); color: #ffffff;">
     <div class="position-absolute w-100 h-100"
          style="background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px); background-size: 20px 20px; top: 0; left: 0; pointer-events: none;"></div>
-    <div class="position-relative p-3 p-md-4 d-flex align-items-center justify-content-between gap-2.5 flex-wrap">
-        <div class="d-flex align-items-center gap-2.5 min-w-0">
+    
+    {{-- Desktop Layout (>= 768px): Spacious Banner with icon + title on left, stats on right --}}
+    <div class="position-relative p-4 d-none d-md-flex align-items-center justify-content-between gap-4">
+        <div class="d-flex align-items-center gap-3 min-w-0">
             <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
-                 style="width: 42px; height: 42px; background: rgba(99,102,241,0.25); border: 1.5px solid rgba(99,102,241,0.5);">
-                <i class="bi bi-box-seam-fill text-white fs-5"></i>
+                 style="width: 50px; height: 50px; background: rgba(99,102,241,0.25); border: 1.5px solid rgba(99,102,241,0.5);">
+                <i class="bi bi-box-seam-fill text-white fs-4"></i>
             </div>
             <div class="min-w-0">
                 <h5 class="fw-bold text-white mb-0.5 text-truncate" style="font-size: clamp(1.05rem, 3vw, 1.25rem);">My Orders</h5>
-                <p class="text-white-50 small mb-0 text-truncate" style="font-size: 0.76rem;">Track your shipments, receipts & delivery status</p>
+                <p class="text-white-50 small mb-0 text-truncate" style="font-size: 0.76rem;">Track your shipments, receipts &amp; delivery status</p>
             </div>
         </div>
         
         {{-- Stats Badges --}}
-        <div class="d-flex gap-1.5 flex-wrap ms-auto">
-            <div class="text-center px-2.5 py-1 rounded-3" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); min-width: 50px;">
+        <div class="d-flex gap-2 flex-wrap ms-auto">
+            <div class="text-center px-3 py-1.5 rounded-3" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); min-width: 56px;">
                 <div class="fw-bold text-white font-monospace" style="font-size: 0.95rem;">{{ $totalCount }}</div>
-                <div class="text-white-50" style="font-size: 0.62rem; margin-top: 1px;">Total</div>
+                <div class="text-white-50" style="font-size: 0.65rem; margin-top: 1px;">Total</div>
             </div>
-            <div class="text-center px-2.5 py-1 rounded-3" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); min-width: 50px;">
+            <div class="text-center px-3 py-1.5 rounded-3" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); min-width: 56px;">
                 <div class="fw-bold font-monospace" style="color: #6ee7b7; font-size: 0.95rem;">{{ $deliveredCount }}</div>
-                <div style="font-size: 0.62rem; color: #6ee7b7; margin-top: 1px;">Delivered</div>
+                <div style="font-size: 0.65rem; color: #6ee7b7; margin-top: 1px;">Delivered</div>
             </div>
-            <div class="text-center px-2.5 py-1 rounded-3" style="background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3); min-width: 50px;">
+            <div class="text-center px-3 py-1.5 rounded-3" style="background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3); min-width: 56px;">
                 <div class="fw-bold font-monospace" style="color: #fcd34d; font-size: 0.95rem;">{{ $activeCount }}</div>
-                <div style="font-size: 0.62rem; color: #fcd34d; margin-top: 1px;">Active</div>
+                <div style="font-size: 0.65rem; color: #fcd34d; margin-top: 1px;">Active</div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Mobile Layout (< 768px): Stats grid on left, "My Orders" heading in the right space --}}
+    <div class="position-relative p-3 d-flex d-md-none align-items-center justify-content-between gap-2 w-100">
+        {{-- Stats Grid on Left --}}
+        <div class="d-flex align-items-center gap-1.5 flex-shrink-0">
+            <div class="text-center px-2 py-1.5 rounded-3"
+                 style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); min-width:48px;">
+                <div class="fw-bold text-white fs-6 lh-1 font-monospace">{{ $totalCount }}</div>
+                <div class="text-white-50" style="font-size:0.62rem; margin-top:2px;">Total</div>
+            </div>
+            <div class="text-center px-2 py-1.5 rounded-3"
+                 style="background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); min-width:50px;">
+                <div class="fw-bold lh-1 font-monospace" style="color:#6ee7b7; font-size:1rem;">{{ $deliveredCount }}</div>
+                <div style="font-size:0.62rem; color:#6ee7b7; margin-top:2px; opacity:0.9;">Delivered</div>
+            </div>
+            <div class="text-center px-2 py-1.5 rounded-3"
+                 style="background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.3); min-width:48px;">
+                <div class="fw-bold lh-1 font-monospace" style="color:#fcd34d; font-size:1rem;">{{ $activeCount }}</div>
+                <div style="font-size:0.62rem; color:#fcd34d; margin-top:2px; opacity:0.9;">Active</div>
+            </div>
+        </div>
+
+        {{-- "My Orders" Heading in Empty Right Space --}}
+        <div class="d-flex align-items-center gap-2 text-end ms-auto min-w-0">
+            <div class="min-w-0">
+                <h5 class="fw-bold text-white mb-0 text-truncate" style="font-size: 1rem; letter-spacing: -0.01em;">My Orders</h5>
+                <div class="text-white-50 text-truncate" style="font-size: 0.65rem;">Track purchases</div>
+            </div>
+            <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                 style="width:36px; height:36px; background:rgba(99,102,241,0.28); border:1.5px solid rgba(99,102,241,0.55);">
+                <i class="bi bi-box-seam-fill text-white fs-6"></i>
             </div>
         </div>
     </div>
@@ -214,56 +250,27 @@
                     </div>
                 </div>
 
-                {{-- Amount + Desktop CTA --}}
-                <div class="d-flex align-items-center gap-2 ms-auto ms-sm-0 flex-wrap justify-content-end">
-                    <div class="text-end me-1">
-                        <div class="fw-bolder text-dark font-monospace" style="font-size: 0.98rem;">₹{{ number_format($order->total_amount, 2) }}</div>
-                        <div class="text-muted small" style="font-size: 0.68rem;">Total Amount</div>
+                {{-- Amount + CTA --}}
+                <div class="d-flex align-items-center justify-content-between justify-content-sm-end gap-3 ms-auto w-100 w-sm-auto mt-2 mt-sm-0 pt-2 pt-sm-0 border-top border-top-sm-0 flex-wrap">
+                    <div class="text-start text-sm-end">
+                        <div class="fw-bold text-dark font-monospace" style="font-size:1.05rem;">₹{{ number_format($order->total_amount, 2) }}</div>
+                        <div class="text-muted" style="font-size:0.72rem;">
+                            @if($order->payment_status === 'paid')
+                                Total paid
+                            @elseif($order->payment_method === 'cod')
+                                Payable on Delivery
+                            @else
+                                Amount Unpaid
+                            @endif
+                        </div>
                     </div>
-                    @if(in_array($order->status, ['pending', 'failed']) || $order->payment_status === 'failed')
-                    <a href="{{ route('checkout.payment_failed', $order) }}"
-                       class="btn btn-sm fw-semibold rounded-pill px-3 py-1.5 d-none d-sm-inline-flex align-items-center gap-2 shadow-xs text-white"
-                       style="background: #ea580c; border: none; font-size: 0.78rem; white-space: nowrap;">
-                        <i class="bi bi-arrow-repeat me-1"></i> <span>Proceed / Pay</span>
-                    </a>
-                    <form action="{{ route('customer.orders.cancel', $order->id) }}" method="POST" class="d-none d-sm-inline" onsubmit="return confirm('Are you sure you want to cancel this pending order #{{ $order->order_number }}?');">
-                        @csrf
-                        <input type="hidden" name="cancellation_reason" value="Cancelled pending order from My Orders">
-                        <button type="submit" class="btn btn-sm btn-outline-danger fw-semibold rounded-pill px-2.5 py-1.5 d-inline-flex align-items-center gap-1.5" style="font-size: 0.76rem; white-space: nowrap;">
-                            <i class="bi bi-x-circle me-1"></i> <span>Cancel</span>
-                        </button>
-                    </form>
-                    @endif
                     <a href="{{ route('account.orders.show', $order) }}"
-                       class="btn btn-sm fw-semibold rounded-pill px-3 py-1.5 d-none d-sm-inline-flex align-items-center gap-2 shadow-xs text-white"
-                       style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none; font-size: 0.78rem; white-space: nowrap;">
-                        <span>Details</span> <i class="bi bi-arrow-right ms-1"></i>
+                       class="btn btn-sm fw-semibold rounded-pill px-3.5 py-2 text-decoration-none d-inline-flex align-items-center gap-1.5 text-white shadow-xs"
+                       style="background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%); border:none; font-size:0.82rem; white-space:nowrap; box-shadow:0 2px 8px rgba(99,102,241,0.25);">
+                        <span>Check Details</span> <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
 
-            </div>
-
-            {{-- Mobile Full-Width Action Button --}}
-            <div class="d-block d-sm-none mt-3 pt-2.5 border-top">
-                @if(in_array($order->status, ['pending', 'failed']) || $order->payment_status === 'failed')
-                <div class="d-flex gap-2 mb-2">
-                    <a href="{{ route('checkout.payment_failed', $order) }}"
-                       class="btn btn-warning flex-grow-1 rounded-pill py-2.5 fw-bold text-dark d-flex align-items-center justify-content-center gap-2 shadow-xs" style="font-size: 0.82rem; background: #ea580c; color: #ffffff !important;">
-                        <i class="bi bi-arrow-repeat me-1"></i> <span>Proceed / Pay</span>
-                    </a>
-                    <form action="{{ route('customer.orders.cancel', $order->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this pending order #{{ $order->order_number }}?');">
-                        @csrf
-                        <input type="hidden" name="cancellation_reason" value="Cancelled pending order from My Orders">
-                        <button type="submit" class="btn btn-outline-danger rounded-pill py-2.5 px-3 fw-bold d-flex align-items-center justify-content-center gap-1.5" style="font-size: 0.8rem;">
-                            <i class="bi bi-x-circle me-1"></i> <span>Cancel</span>
-                        </button>
-                    </form>
-                </div>
-                @endif
-                <a href="{{ route('account.orders.show', $order) }}"
-                   class="btn btn-light border w-100 rounded-pill py-2.5 fw-semibold text-primary d-flex align-items-center justify-content-center gap-2 shadow-xs" style="font-size: 0.82rem;">
-                    <span>View Order Details</span> <i class="bi bi-arrow-right ms-1.5"></i>
-                </a>
             </div>
 
         </div>

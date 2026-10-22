@@ -9,6 +9,16 @@ document.addEventListener('DOMContentLoaded', function () {
     // 1. Handle "Add to Cart" Form Submissions (Zero Reloads)
     document.body.addEventListener('submit', function (e) {
         if (e.target.classList.contains('ajax-cart-form')) {
+            if (e.defaultPrevented) {
+                return;
+            }
+
+            if (typeof validateOptionSelected === 'function' && !validateOptionSelected(e.target)) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                return;
+            }
+
             e.preventDefault();
             handleAddToCartSubmit(e.target);
         }
@@ -65,12 +75,25 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function handleAddToCartSubmit(form) {
+        if (typeof validateOptionSelected === 'function' && !validateOptionSelected(form)) {
+            return;
+        }
+
         const submitBtn = form.querySelector('button[type="submit"]');
-        const originalBtnContent = submitBtn.innerHTML;
+        const originalBtnContent = submitBtn ? submitBtn.innerHTML : '';
         const productId = form.querySelector('input[name="product_id"]')?.value;
 
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Adding...`;
+        if (typeof currentSelectedOption !== 'undefined' && currentSelectedOption) {
+            const optInput = form.querySelector('input[name="selected_option"]');
+            if (optInput) {
+                optInput.value = currentSelectedOption;
+            }
+        }
+
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Adding...`;
+        }
 
         const formData = new FormData(form);
 
@@ -83,46 +106,60 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             body: formData
         })
-        .then(res => res.json())
+        .then(async res => {
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.success) {
+                const errorMsg = data.message || (data.errors ? Object.values(data.errors).flat()[0] : 'Could not add product.');
+                throw new Error(errorMsg);
+            }
+            return data;
+        })
         .then(data => {
-            if (data.success) {
-                updateCartBadge(data.cart_count);
+            updateCartBadge(data.cart_count);
 
-                if (typeof showToast === 'function') {
-                    showToast(data.message || 'Added to bag!', 'success');
-                }
+            if (typeof showToast === 'function') {
+                showToast(data.message || 'Added to bag!', 'success');
+            }
 
-                // Swap Add to Cart button with Quantity Controller Pill if on a product card
-                if (productId && data.item_id) {
-                    const actionWraps = document.querySelectorAll(`#card-action-wrap-${productId}`);
-                    if (actionWraps.length > 0) {
-                        actionWraps.forEach(wrap => {
-                            wrap.innerHTML = renderQtyControllerHtml(productId, data.item_id, data.quantity);
-                        });
-                    } else {
-                        // On product details page or other pages, just reset the button
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = '<i class="bi bi-check2 me-2"></i> Added!';
-                        setTimeout(() => {
-                            submitBtn.innerHTML = originalBtnContent;
-                        }, 2000);
-                    }
-                } else {
+            // Swap Add to Cart button with Quantity Controller Pill if on a product card
+            if (productId && data.item_id) {
+                const actionWraps = document.querySelectorAll(`#card-action-wrap-${productId}`);
+                if (actionWraps.length > 0) {
+                    actionWraps.forEach(wrap => {
+                        wrap.innerHTML = renderQtyControllerHtml(productId, data.item_id, data.quantity);
+                    });
+                } else if (submitBtn) {
+                    // On product details page or other pages, just reset the button
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalBtnContent;
+                    submitBtn.innerHTML = '<i class="bi bi-check2 me-2"></i> Added!';
+                    setTimeout(() => {
+                        submitBtn.innerHTML = originalBtnContent;
+                    }, 2000);
                 }
-            } else {
-                if (typeof showToast === 'function') {
-                    showToast(data.message || 'Could not add product.', 'error');
-                }
+            } else if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalBtnContent;
             }
         })
         .catch(err => {
             console.error('Cart Add Error:', err);
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnContent;
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Variant Notice',
+                    text: err.message || 'Could not add product.',
+                    confirmButtonColor: '#ff9f00',
+                    customClass: { popup: 'rounded-4 shadow-lg border-0' }
+                });
+            } else if (typeof showToast === 'function') {
+                showToast(err.message || 'Could not add product.', 'error');
+            } else {
+                alert(err.message || 'Could not add product.');
+            }
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnContent;
+            }
         });
     }
 

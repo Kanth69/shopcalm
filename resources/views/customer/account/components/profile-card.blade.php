@@ -1,4 +1,4 @@
-<div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-3.5" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+<div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-3 mb-md-4" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
     <div class="card-header bg-white py-3 px-3.5 px-md-4 border-bottom d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center gap-2">
             <div class="rounded-3 d-flex align-items-center justify-content-center text-success" style="width: 30px; height: 30px; background: #d1fae5;">

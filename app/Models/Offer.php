@@ -41,6 +41,19 @@ class Offer extends Model
         'max_discount_amount' => 'decimal:2',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            \Illuminate\Support\Facades\Cache::forget('home_active_offers');
+            \Illuminate\Support\Facades\Cache::forget('home_upcoming_deal');
+        });
+
+        static::deleted(function () {
+            \Illuminate\Support\Facades\Cache::forget('home_active_offers');
+            \Illuminate\Support\Facades\Cache::forget('home_upcoming_deal');
+        });
+    }
+
     public function banners(): HasMany
     {
         return $this->hasMany(Banner::class);

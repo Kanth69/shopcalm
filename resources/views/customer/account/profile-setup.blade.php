@@ -1,3 +1,5 @@
+@extends('layouts.customer')
+
 @php
     $storeName = \App\Models\Setting::get('store_name', 'ShopCalm');
 @endphp
@@ -5,13 +7,13 @@
 @section('title', 'Complete Your Profile - ' . $storeName)
 
 @section('content')
-<div class="container my-5">
+<div class="container my-3 my-md-4 px-3 px-md-4">
     <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm overflow-hidden">
-                <div class="card-header bg-primary text-white py-4 text-center">
-                    <h2 class="h4 mb-1 fw-bold">Welcome to {{ $storeName }}!</h2>
-                    <p class="mb-0 opacity-75">Let's personalize your shopping experience. All fields are optional.</p>
+        <div class="col-12 col-md-10 col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
+                <div class="card-header text-white py-4 px-3 px-md-4 text-center" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%);">
+                    <h2 class="h5 mb-1 fw-bold text-white">Welcome to {{ $storeName }}! 👋</h2>
+                    <p class="mb-0 text-white-50 small">Let's personalize your shopping experience. All fields are optional.</p>
                 </div>
                 <div class="card-body p-4 p-md-5">
                     <div class="row g-4">
@@ -68,13 +70,13 @@
                         </form>
                     </div>
 
-                    <div class="mt-5 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
-                        <button type="submit" form="profile-setup-form" class="btn btn-primary btn-lg px-5">Save & Continue</button>
-
-                        <form action="{{ route('profile.setup.skip') }}" method="POST" class="m-0">
+                    <div class="mt-4 pt-3 border-top d-flex flex-column-reverse flex-md-row justify-content-between align-items-center gap-3">
+                        <form action="{{ route('profile.setup.skip') }}" method="POST" class="m-0 w-100 w-md-auto text-center text-md-start">
                             @csrf
-                            <button type="submit" class="btn btn-link text-muted text-decoration-none">Skip for Now</button>
+                            <button type="submit" class="btn btn-link text-secondary text-decoration-none small fw-semibold">Skip for Now</button>
                         </form>
+
+                        <button type="submit" form="profile-setup-form" class="btn btn-primary rounded-pill px-4 py-2.5 fw-bold shadow-xs w-100 w-md-auto" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none;">Save & Continue</button>
                     </div>
                 </div>
             </div>

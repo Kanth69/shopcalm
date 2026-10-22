@@ -5,29 +5,31 @@
 @section('account_content')
 
 {{-- Hero Banner --}}
-<div class="rounded-4 mb-4 p-4 d-flex align-items-center justify-content-between flex-wrap gap-3"
-     style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); min-height: 100px;">
-    <div class="d-flex align-items-center gap-3">
-        <div class="rounded-3 d-flex align-items-center justify-content-center"
-             style="width:52px; height:52px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
-            <i class="bi bi-star-fill text-white fs-4"></i>
+<div class="card border-0 shadow-sm rounded-4 mb-3 mb-md-4 overflow-hidden"
+     style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff;">
+    <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                 style="width: 48px; height: 48px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                <i class="bi bi-star-fill text-white fs-4"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold text-white mb-0.5" style="font-size: clamp(1.1rem, 3vw, 1.3rem);">My Reviews</h5>
+                <p class="text-white-50 small mb-0" style="font-size: 0.8rem;">Your product feedback &amp; ratings</p>
+            </div>
         </div>
-        <div>
-            <h5 class="fw-bold text-white mb-0">My Reviews</h5>
-            <p class="text-white-50 small mb-0">Your product feedback & ratings</p>
-        </div>
+        <a href="{{ route('shop') }}" class="btn btn-outline-light rounded-pill px-3.5 py-2 fw-semibold btn-sm d-inline-flex align-items-center justify-content-center gap-1.5 w-100 w-sm-auto" style="font-size: 0.8rem;">
+            <i class="bi bi-bag"></i> <span>Shop &amp; Review</span>
+        </a>
     </div>
-    <a href="{{ route('shop') }}" class="btn btn-outline-light rounded-pill px-4 py-2 fw-semibold btn-sm">
-        <i class="bi bi-bag me-1"></i> Shop & Review More
-    </a>
 </div>
 
 @if($reviews->isNotEmpty())
-    <div class="d-flex flex-column gap-3" id="reviews-list">
+    <div class="d-flex flex-column gap-3 gap-md-4 mb-4" id="reviews-list">
         @foreach($reviews as $review)
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden" id="account-review-row-{{ $review->id }}"
-             style="transition: all 0.3s ease;">
-            <div class="card-body p-4">
+             style="background: #ffffff; border: 1.5px solid #e2e8f0 !important; transition: all 0.3s ease;">
+            <div class="card-body p-3 p-md-4">
                 <div class="d-flex align-items-start gap-3 flex-wrap">
 
                     {{-- Rating Circle --}}

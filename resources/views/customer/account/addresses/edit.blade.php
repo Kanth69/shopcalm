@@ -5,11 +5,11 @@
 @section('account_content')
 
 {{-- Hero Banner --}}
-<div class="rounded-4 mb-4 p-4 d-flex align-items-center justify-content-between flex-wrap gap-3"
-     style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); min-height: 100px;">
+<div class="rounded-4 mb-4 p-3 p-sm-4 d-flex align-items-center justify-content-between flex-wrap gap-3"
+     style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); min-height: 90px;">
     <div class="d-flex align-items-center gap-3">
-        <div class="rounded-3 d-flex align-items-center justify-content-center"
-             style="width:52px; height:52px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);">
+        <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+             style="width:48px; height:48px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);">
             <i class="bi bi-pencil-fill text-white fs-4"></i>
         </div>
         <div>
@@ -17,14 +17,14 @@
             <p class="text-white-50 small mb-0">Update your saved delivery details</p>
         </div>
     </div>
-    <a href="{{ route('account.addresses.index') }}" class="btn btn-outline-light rounded-pill px-4 py-2 fw-semibold btn-sm">
+    <a href="{{ route('account.addresses.index') }}" class="btn btn-outline-light rounded-pill px-3.5 py-2 fw-semibold btn-sm w-100 w-sm-auto text-center">
         <i class="bi bi-arrow-left me-1"></i> Back to Addresses
     </a>
 </div>
 
 {{-- Form Card --}}
-<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-    <div class="card-body p-4 p-md-5">
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="border: 1.5px solid #e2e8f0 !important;">
+    <div class="card-body p-3 p-sm-4 p-md-5">
         <form action="{{ route('account.addresses.update', $address) }}" method="POST">
             @csrf
             @method('PUT')
@@ -53,7 +53,9 @@
                 <input type="tel" id="phone" name="phone"
                        value="{{ old('phone', $address->phone) }}"
                        class="form-control rounded-3 @error('phone') is-invalid @enderror"
-                       placeholder="e.g. 9876543210"
+                       placeholder="10-digit mobile number"
+                       maxlength="10" inputmode="numeric" pattern="[0-9]{10}"
+                       oninput="this.value = this.value.replace(/\D/g, '').slice(0, 10)"
                        style="height:46px;"
                        required>
                 @error('phone')
@@ -138,16 +140,16 @@
             </div>
 
             {{-- Actions --}}
-            <div class="d-flex gap-3 flex-wrap">
-                <button type="submit" class="btn fw-bold rounded-pill px-5 py-2"
-                        style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color:#fff; border:none; font-size:0.9rem; min-width:180px;">
-                    <i class="bi bi-check2-circle me-2"></i>Update Address
-                </button>
+            <div class="d-flex gap-2.5 gap-sm-3 flex-column-reverse flex-sm-row">
                 <a href="{{ route('account.addresses.index') }}"
-                   class="btn btn-outline-secondary rounded-pill px-5 py-2 fw-semibold"
-                   style="font-size:0.9rem;">
+                   class="btn btn-outline-secondary rounded-pill px-4 py-2.5 fw-semibold w-100 w-sm-auto text-center"
+                   style="font-size:0.88rem;">
                     Cancel
                 </a>
+                <button type="submit" class="btn fw-bold rounded-pill px-4 py-2.5 shadow-xs w-100 w-sm-auto text-center"
+                        style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color:#fff; border:none; font-size:0.88rem;">
+                    <i class="bi bi-check2-circle me-1.5"></i>Update Address
+                </button>
             </div>
 
         </form>

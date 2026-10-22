@@ -5,21 +5,21 @@
 @section('account_content')
 
 {{-- Hero Banner --}}
-<div class="rounded-4 mb-4 p-4 d-flex align-items-center gap-3"
-     style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); min-height: 100px;">
+<div class="rounded-4 mb-3 mb-md-4 p-3 p-sm-4 d-flex align-items-center gap-3"
+     style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); min-height: 90px;">
     <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
-         style="width:52px; height:52px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+         style="width:48px; height:48px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
         <i class="bi bi-shield-lock-fill text-white fs-4"></i>
     </div>
     <div>
-        <h5 class="fw-bold text-white mb-0">Change Password</h5>
+        <h5 class="fw-bold text-white mb-1 mb-sm-0">Change Password</h5>
         <p class="text-white-50 small mb-0">Keep your account safe with a strong password</p>
     </div>
 </div>
 
 {{-- Password Form Card --}}
 <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-    <div class="card-body p-4 p-md-5" style="max-width: 540px;">
+    <div class="card-body p-3 p-sm-4 p-md-5" style="max-width: 540px;">
 
         {{-- Security tip --}}
         <div class="rounded-3 p-3 mb-4 d-flex align-items-start gap-3" style="background:#f0f9ff; border:1px solid #bae6fd;">
@@ -113,7 +113,7 @@
                 @enderror
             </div>
 
-            <button type="submit" class="btn fw-bold rounded-pill px-5 py-2"
+            <button type="submit" class="btn fw-bold rounded-pill w-100 w-sm-auto px-5 py-2.5"
                     style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #fff; border: none; font-size:0.9rem; min-width:180px;">
                 <i class="bi bi-shield-check me-2"></i>Update Password
             </button>

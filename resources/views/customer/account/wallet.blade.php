@@ -3,34 +3,34 @@
 @section('account_title', 'My Wallet & Referral Rewards')
 
 @section('account_content')
-<div class="d-flex flex-column gap-4">
+<div class="d-flex flex-column gap-3 gap-md-4 mb-3 mb-md-4">
 
     @if($wallet->status === 'frozen')
     {{-- Frozen Wallet Alert Banner --}}
-    <div class="alert alert-danger border-0 rounded-4 shadow-sm p-3.5 mb-0 d-flex align-items-center justify-content-between flex-wrap gap-3" 
+    <div class="alert alert-danger border-0 rounded-4 shadow-sm p-3 p-md-4 mb-0 d-flex align-items-center justify-content-between flex-wrap gap-3" 
          style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 1.5px solid #f87171 !important;">
         <div class="d-flex align-items-center gap-3">
             <div class="rounded-circle d-flex align-items-center justify-content-center bg-danger text-white flex-shrink-0 shadow-xs" style="width: 44px; height: 44px;">
                 <i class="bi bi-shield-lock-fill fs-5"></i>
             </div>
             <div>
-                <h6 class="fw-bold text-danger mb-0.5">Wallet Account Temporarily Frozen</h6>
+                <h6 class="fw-bold text-danger mb-1">Wallet Account Temporarily Frozen</h6>
                 <p class="text-secondary small mb-0" style="font-size: 0.82rem;">
                     Your wallet balance has been temporarily locked by administration for security verification. You cannot redeem credits at checkout until resolved.
                 </p>
             </div>
         </div>
-        <a href="{{ route('page.contact') }}" class="btn btn-danger btn-sm rounded-pill px-3.5 py-1.5 fw-bold shadow-xs d-inline-flex align-items-center gap-1.5">
-            <i class="bi bi-headset me-1.5"></i> <span>Contact Support</span>
+        <a href="{{ route('page.contact') }}" class="btn btn-danger btn-sm rounded-pill px-3.5 py-2 fw-bold shadow-xs d-inline-flex align-items-center gap-1.5" style="font-size: 0.8rem;">
+            <i class="bi bi-headset me-1"></i> <span>Contact Support</span>
         </a>
     </div>
     @endif
 
     {{-- Top Hero Row: Golden Wallet Card & Referral Promo --}}
-    <div class="row g-4">
+    <div class="row g-3 g-md-4">
         {{-- Golden Wallet Balance Card --}}
         <div class="col-lg-5">
-            <div class="card border-0 shadow-sm rounded-4 text-white position-relative overflow-hidden h-100 p-4"
+            <div class="card border-0 shadow-sm rounded-4 text-white position-relative overflow-hidden h-100 p-3.5 p-sm-4"
                  style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1.5px solid #334155 !important;">
                 
                 {{-- Decorative Ambient Glow --}}
@@ -67,7 +67,7 @@
         @if($isReferralActive)
         {{-- Share & Earn Viral Referral Card (Voucher & Reward Flagship Layout) --}}
         <div class="col-lg-7">
-            <div class="card border-0 shadow-xs rounded-4 h-100 p-3.5 p-md-4 position-relative overflow-hidden" 
+            <div class="card border-0 shadow-xs rounded-4 h-100 p-3 p-md-4 position-relative overflow-hidden" 
                  style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%); border: 1.5px solid #a7f3d0 !important;">
                 
                 {{-- Decorative background glow --}}
@@ -75,7 +75,7 @@
 
                 {{-- Header Strip --}}
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-                    <div class="d-flex align-items-center gap-2.5 min-w-0">
+                    <div class="d-flex align-items-center gap-2 min-w-0">
                         <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0 shadow-xs" 
                              style="width: 44px; height: 44px; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
                             <i class="bi bi-gift-fill fs-5"></i>
@@ -95,12 +95,12 @@
                 </div>
 
                 {{-- Interactive Referral Code Voucher Ticket --}}
-                <div class="p-3 rounded-3 bg-white border mb-3 shadow-xs position-relative" style="border: 1.5px dashed #10b981 !important;">
-                    <div class="row g-2.5 align-items-center">
+                <div class="p-3 rounded-4 bg-white border mb-3 shadow-xs position-relative" style="border: 1.5px dashed #10b981 !important;">
+                    <div class="row g-3 align-items-center">
                         <div class="col-sm-6">
                             <label class="text-muted small fw-bold text-uppercase d-block mb-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">Your Unique Referral Code</label>
                             <div class="d-flex align-items-center gap-2">
-                                <span class="h4 fw-extrabold text-dark mb-0 font-monospace px-2.5 py-1 rounded-2" 
+                                <span class="h4 fw-extrabold text-dark mb-0 font-monospace px-3 py-1 rounded-2" 
                                       style="background: #f1f5f9; color: #0f172a; letter-spacing: 1.5px; font-size: 1.25rem;" id="ref-code-display">{{ $wallet->referral_code }}</span>
                                 <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-1.5" 
                                         onclick="navigator.clipboard.writeText('{{ $wallet->referral_code }}'); this.innerHTML = '<i class=\'bi bi-check-lg me-1\'></i> Copied!'; setTimeout(() => this.innerHTML = '<i class=\'bi bi-copy me-1\'></i> Copy', 1800);" style="font-size: 0.76rem;">
@@ -136,10 +136,10 @@
         @else
         {{-- Referral Program Disabled: Wallet Benefits & Usage Overview Card --}}
         <div class="col-lg-7">
-            <div class="card border-0 shadow-xs rounded-4 h-100 p-3.5 p-md-4 position-relative overflow-hidden" 
+            <div class="card border-0 shadow-xs rounded-4 h-100 p-3 p-md-4 position-relative overflow-hidden" 
                  style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
                 
-                <div class="d-flex align-items-center gap-2.5 mb-3">
+                <div class="d-flex align-items-center gap-2 mb-3">
                     <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0 shadow-xs" 
                          style="width: 44px; height: 44px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
                         <i class="bi bi-shield-check fs-5"></i>
@@ -150,7 +150,7 @@
                     </div>
                 </div>
 
-                <div class="row g-2.5">
+                <div class="row g-3">
                     <div class="col-sm-6">
                         <div class="p-3 rounded-3 bg-light border h-100">
                             <div class="d-flex align-items-center gap-2 mb-1.5 text-primary">
@@ -203,7 +203,7 @@
 
     @if($isReferralActive)
     {{-- 3-Tier Repeat Rewards Milestone Explainer Banner --}}
-    <div class="card border-0 shadow-sm rounded-4 p-4" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+    <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 mb-3 mb-md-4" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
         <h6 class="fw-bold text-dark mb-3 d-flex align-items-center">
             <i class="bi bi-stars text-warning me-2 fs-5"></i>
             <span>How the 3-Tier Referral Reward Program Works:</span>
@@ -246,8 +246,8 @@
 
     {{-- Friends Joined Tracker --}}
     @if($friendsStats->isNotEmpty())
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3 mb-md-4" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
+        <div class="card-header bg-white py-3 px-3 px-md-4 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h6 class="mb-0 fw-bold text-dark d-flex align-items-center">
                 <i class="bi bi-people-fill text-primary me-2 fs-5"></i>
                 <span>Referred Friends ({{ $totalReferralsCount }})</span>
@@ -320,8 +320,8 @@
     @endif
 
     {{-- Passbook / Transaction History --}}
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3 mb-md-4" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
+        <div class="card-header bg-white py-3 px-3 px-md-4 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h6 class="mb-0 fw-bold text-dark d-flex align-items-center">
                 <i class="bi bi-clock-history text-secondary me-2 fs-5"></i>
                 <span>Wallet Passbook History</span>
@@ -341,7 +341,7 @@
                 <div class="list-group list-group-flush">
                     @foreach($transactions as $txn)
                     @php $badge = $txn->source_badge; @endphp
-                    <div class="list-group-item p-3 p-md-3.5 d-flex align-items-center justify-content-between flex-wrap gap-2.5">
+                    <div class="list-group-item p-3 p-md-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-3">
                             <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 {{ $txn->type === 'CREDIT' ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger' }}" style="width: 44px; height: 44px; font-size: 1.2rem;">
                                 <i class="bi {{ $txn->type === 'CREDIT' ? 'bi-arrow-down-left' : 'bi-arrow-up-right' }}"></i>

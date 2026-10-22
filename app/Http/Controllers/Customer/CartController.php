@@ -58,8 +58,9 @@ class CartController extends Controller
 
             return response()->json([
                 'success' => $success,
-                'cart_count' => $this->cartService->totalItems(),
+                'cart_count' => $this->cartService->allItemsCount(),
                 'all_cart_count' => $this->cartService->allItemsCount(),
+                'selected_count' => $this->cartService->totalItems(),
                 'item_id' => (int) $itemId,
                 'subtotal' => $subtotal,
                 'total_mrp' => $totalMrp,
@@ -92,8 +93,9 @@ class CartController extends Controller
 
             return response()->json([
                 'success' => true,
-                'cart_count' => $this->cartService->totalItems(),
+                'cart_count' => $this->cartService->allItemsCount(),
                 'all_cart_count' => $this->cartService->allItemsCount(),
+                'selected_count' => $this->cartService->totalItems(),
                 'subtotal' => $subtotal,
                 'total_mrp' => $totalMrp,
                 'total_discount' => $totalDiscount,
@@ -185,7 +187,9 @@ class CartController extends Controller
             return response()->json([
                 'success' => $result['success'],
                 'message' => $result['message'],
-                'cart_count' => $this->cartService->totalItems(),
+                'cart_count' => $this->cartService->allItemsCount(),
+                'all_cart_count' => $this->cartService->allItemsCount(),
+                'selected_count' => $this->cartService->totalItems(),
                 'item_id' => (int) $itemId,
                 'product_id' => $cartItem ? (int) $cartItem->product_id : null,
                 'quantity' => $cartItem ? (int) $cartItem->quantity : 0,
@@ -230,7 +234,9 @@ class CartController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Item removed from cart.',
-                'cart_count' => $this->cartService->totalItems(),
+                'cart_count' => $this->cartService->allItemsCount(),
+                'all_cart_count' => $this->cartService->allItemsCount(),
+                'selected_count' => $this->cartService->totalItems(),
                 'item_id' => (int) $itemId,
                 'quantity' => 0,
                 'subtotal' => $subtotal,
@@ -297,7 +303,9 @@ class CartController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Item moved to your wishlist.',
-                'cart_count' => $this->cartService->totalItems(),
+                'cart_count' => $this->cartService->allItemsCount(),
+                'all_cart_count' => $this->cartService->allItemsCount(),
+                'selected_count' => $this->cartService->totalItems(),
                 'item_id' => (int) $itemId,
                 'subtotal' => $subtotal,
                 'total_mrp' => $totalMrp,

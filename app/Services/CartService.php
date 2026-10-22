@@ -9,22 +9,36 @@ use Illuminate\Support\Facades\Session;
 
 class CartService
 {
+    protected ?Cart $cart = null;
+    protected ?Cart $selectedCart = null;
+
+    public function resetMemoizedCart(): void
+    {
+        $this->cart = null;
+        $this->selectedCart = null;
+    }
+
     public function getCart()
     {
+        if ($this->cart !== null) {
+            return $this->cart;
+        }
+
         $userId = Auth::id() ?? (Auth::guard('sanctum')->id() ?? request()->user('sanctum')?->id);
 
         if ($userId) {
             if (request()->header('X-Device-Id')) {
                 $this->mergeSessionCart(request()->header('X-Device-Id'));
             }
-            $cart = Cart::with('items.product.brand')->firstOrCreate(['user_id' => $userId]);
+            $cart = Cart::with(['items.product.category', 'items.product.brand'])->firstOrCreate(['user_id' => $userId]);
         } else {
             $sessionId = request()->header('X-Device-Id') ?: Session::getId();
-            $cart = Cart::with('items.product.brand')->firstOrCreate(['session_id' => $sessionId]);
+            $cart = Cart::with(['items.product.category', 'items.product.brand'])->firstOrCreate(['session_id' => $sessionId]);
         }
 
         $this->sanitizeCartQuantities($cart);
-        return $cart;
+        $this->cart = $cart;
+        return $this->cart;
     }
 
     public function sanitizeCartQuantities(Cart $cart): void
@@ -65,6 +79,15 @@ class CartService
 
         if ($product->status !== 'Active') {
             return ['success' => false, 'type' => 'error', 'title' => 'Unavailable', 'message' => 'Product is currently inactive.'];
+        }
+
+        if ($product->has_options && !empty($product->option_stocks) && empty($selectedOption)) {
+            return [
+                'success' => false,
+                'type'    => 'error',
+                'title'   => 'Variant Required',
+                'message' => 'Please select an available variant (size / color) before proceeding to checkout.'
+            ];
         }
 
         $maxStock = $product->getOptionStock($selectedOption);
@@ -113,20 +136,40 @@ class CartService
             Session::forget('buy_now_data');
         }
 
+        if ($this->selectedCart !== null) {
+            return $this->selectedCart;
+        }
+
         $cart = $this->getCart();
-        $cart->load(['items' => function ($query) {
-            $query->where('is_selected', true)->with(['product.category', 'product.brand']);
-        }]);
-        return $cart;
+
+        // Create an isolated selectedCart instance so we NEVER mutate the main $this->cart
+        $selectedCart = clone $cart;
+        $selectedItems = $cart->items->filter(function ($item) {
+            return (bool) $item->is_selected;
+        })->values();
+        $selectedCart->setRelation('items', $selectedItems);
+
+        $this->selectedCart = $selectedCart;
+        return $this->selectedCart;
     }
 
     public function addProduct(int $productId, int $quantity = 1, ?string $selectedOption = null, bool $isBuyNow = false)
     {
+        $this->resetMemoizedCart();
         $cart = $this->getCart();
         $product = Product::findOrFail($productId);
 
         if ($product->status !== 'Active') {
             return ['success' => false, 'type' => 'error', 'title' => 'Unavailable', 'message' => 'Product is currently inactive.'];
+        }
+
+        if ($product->has_options && !empty($product->option_stocks) && empty($selectedOption)) {
+            return [
+                'success' => false,
+                'type'    => 'error',
+                'title'   => 'Variant Required',
+                'message' => 'Please select an available variant (size / color) before adding to your bag.'
+            ];
         }
 
         $maxStock = $product->getOptionStock($selectedOption);
@@ -153,6 +196,7 @@ class CartService
             if ($newQuantity > $maxStock) {
                 if ($cartItem->quantity >= $maxStock) {
                     $cartItem->update(['is_selected' => true]);
+                    $this->resetMemoizedCart();
                     return [
                         'success' => true,
                         'type'    => 'warning',
@@ -161,6 +205,7 @@ class CartService
                     ];
                 }
                 $cartItem->update(['quantity' => $maxStock, 'is_selected' => true]);
+                $this->resetMemoizedCart();
                 return [
                     'success' => true,
                     'type'    => 'warning',
@@ -184,12 +229,14 @@ class CartService
             ]);
         }
 
+        $this->resetMemoizedCart();
         $optionLabel = $selectedOption ? " ({$selectedOption})" : "";
         return ['success' => true, 'type' => 'success', 'title' => 'Added to Bag', 'message' => "{$product->name}{$optionLabel} added to your cart."];
     }
 
     public function updateQuantity(int $itemId, int $quantity)
     {
+        $this->resetMemoizedCart();
         $cart = $this->getCart();
         $cartItem = $cart->items()->findOrFail($itemId);
         $product = $cartItem->product;
@@ -206,34 +253,50 @@ class CartService
         }
 
         $cartItem->update(['quantity' => $quantity]);
+        $this->resetMemoizedCart();
         return ['success' => true, 'type' => 'success', 'title' => 'Updated', 'message' => 'Cart updated.'];
     }
 
     public function removeItem(int $itemId)
     {
+        $this->resetMemoizedCart();
         $cart = $this->getCart();
-        return $cart->items()->where('id', $itemId)->delete() > 0;
+        $result = $cart->items()->where('id', $itemId)->delete() > 0;
+        $this->resetMemoizedCart();
+        return $result;
     }
 
     public function clearCart()
     {
+        $this->resetMemoizedCart();
         $cart = $this->getCart();
-        return $cart->items()->delete() > 0;
+        $result = $cart->items()->delete() > 0;
+        $this->resetMemoizedCart();
+        return $result;
     }
 
     public function clearSelectedItems()
     {
+        $this->resetMemoizedCart();
         if (Session::has('buy_now_data')) {
             Session::forget('buy_now_data');
             return true;
         }
 
         $cart = $this->getCart();
-        return $cart->items()->where('is_selected', true)->delete() > 0;
+        $result = $cart->items()->where('is_selected', true)->delete() > 0;
+
+        // Ensure any remaining unselected items in the cart are reset to is_selected = true
+        // so they are ready and active for the customer's next checkout!
+        $cart->items()->where('is_selected', false)->update(['is_selected' => true]);
+
+        $this->resetMemoizedCart();
+        return $result;
     }
 
     public function toggleSelect(int $itemId, ?bool $isSelected = null)
     {
+        $this->resetMemoizedCart();
         $cart = $this->getCart();
         $cartItem = $cart->items()->find($itemId);
         if (!$cartItem) {
@@ -247,21 +310,25 @@ class CartService
             $product = $cartItem->product;
             if (!$product || $product->status !== 'Active') {
                 $cartItem->update(['is_selected' => false]);
+                $this->resetMemoizedCart();
                 return false;
             }
             $maxStock = $product->getOptionStock($cartItem->selected_option);
             if ($maxStock <= 0) {
                 $cartItem->update(['is_selected' => false]);
+                $this->resetMemoizedCart();
                 return false;
             }
         }
 
         $cartItem->update(['is_selected' => $newVal]);
+        $this->resetMemoizedCart();
         return true;
     }
 
     public function toggleSelectAll(bool $isSelected)
     {
+        $this->resetMemoizedCart();
         $cart = $this->getCart();
         if ($isSelected) {
             // Only select items that are active and strictly in stock
@@ -274,6 +341,7 @@ class CartService
         } else {
             $cart->items()->update(['is_selected' => false]);
         }
+        $this->resetMemoizedCart();
         return true;
     }
 
@@ -350,7 +418,7 @@ class CartService
 
     public function totalItems()
     {
-        return $this->getCart()->items->where('is_selected', true)->sum('quantity');
+        return $this->getSelectedCart()->items->sum('quantity');
     }
 
     public function allItemsCount()
@@ -382,6 +450,7 @@ class CartService
                 }
                 $sessionCart->items()->delete();
                 $sessionCart->delete();
+                $this->resetMemoizedCart();
             }
         }
     }

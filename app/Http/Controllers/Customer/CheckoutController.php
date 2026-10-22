@@ -457,6 +457,10 @@ class CheckoutController extends Controller
             }
 
             // 2. CASH ON DELIVERY (COD) FLOW
+            if (\App\Models\Setting::get('enable_cod', '1') !== '1') {
+                throw new \Exception("Cash on Delivery (COD) is currently disabled by store management. Please select Online Payment.");
+            }
+
             // Verify serviceability and COD availability for the shipping address
             if (!$pincodeCheck['is_serviceable']) {
                 throw new \Exception("Delivery is currently unavailable to PIN code " . ($data['shipping_zip'] ?? '') . ".");
@@ -483,20 +487,29 @@ class CheckoutController extends Controller
             return redirect()->route('checkout.success', $order);
         } catch (\InvalidArgumentException $e) {
             if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+                return response()->json([
+                    'success'    => false,
+                    'message'    => $e->getMessage(),
+                    'failed_url' => isset($order) ? route('checkout.payment_failed', $order) : null,
+                ], 400);
             }
             return back()->with('toast', ['type' => 'error', 'title' => 'Error', 'message' => $e->getMessage()]);
         } catch (\RuntimeException $e) {
             $status = in_array($e->getCode(), [400, 401, 500], true) ? $e->getCode() : 500;
             if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['success' => false, 'message' => $e->getMessage()], $status);
+                return response()->json([
+                    'success'    => false,
+                    'message'    => $e->getMessage(),
+                    'failed_url' => isset($order) ? route('checkout.payment_failed', $order) : null,
+                ], $status);
             }
             return back()->with('toast', ['type' => 'error', 'title' => 'Error', 'message' => $e->getMessage()]);
         } catch (\Exception $e) {
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
-                    'success' => false,
-                    'message' => $e->getMessage(),
+                    'success'    => false,
+                    'message'    => $e->getMessage(),
+                    'failed_url' => isset($order) ? route('checkout.payment_failed', $order) : null,
                 ], 422);
             }
             return back()->with('toast', ['type' => 'error', 'title' => 'Error', 'message' => $e->getMessage()]);

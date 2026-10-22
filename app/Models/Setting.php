@@ -25,6 +25,31 @@ class Setting extends Model
     ];
 
     /**
+     * Runtime request-level in-memory cache.
+     */
+    protected static ?array $runtimeCache = null;
+
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            self::clearCache();
+        });
+
+        static::deleted(function () {
+            self::clearCache();
+        });
+    }
+
+    /**
+     * Clear all settings caches (both runtime and store).
+     */
+    public static function clearCache(): void
+    {
+        self::$runtimeCache = null;
+        \Illuminate\Support\Facades\Cache::forget('app_settings');
+    }
+
+    /**
      * Accessor: Auto-decrypt sensitive credentials so they are returned as original plain text.
      * In the database, they remain safely encrypted.
      *
@@ -46,7 +71,7 @@ class Setting extends Model
     }
 
     /**
-     * Get a setting value by key (auto-decrypts sensitive API secrets).
+     * Get a setting value by key (cached for high production speed).
      *
      * @param string $key
      * @param mixed $default
@@ -54,20 +79,12 @@ class Setting extends Model
      */
     public static function get(string $key, $default = null)
     {
-        $setting = self::where('key', $key)->first();
-        if (!$setting || $setting->value === null || $setting->value === '') {
-            return $default;
+        $all = self::getAll();
+        if (array_key_exists($key, $all) && $all[$key] !== null && $all[$key] !== '') {
+            return $all[$key];
         }
 
-        if (in_array($key, self::$encryptedKeys)) {
-            try {
-                return Crypt::decryptString($setting->getRawOriginal('value'));
-            } catch (\Throwable $e) {
-                return $setting->value;
-            }
-        }
-
-        return $setting->value;
+        return $default;
     }
 
     /**
@@ -105,6 +122,8 @@ class Setting extends Model
             'value' => $value,
         ]));
         $record->save();
+
+        self::clearCache();
     }
 
     /**
@@ -114,6 +133,14 @@ class Setting extends Model
      */
     public static function getAll(): array
     {
-        return self::all()->pluck('value', 'key')->toArray();
+        if (self::$runtimeCache !== null) {
+            return self::$runtimeCache;
+        }
+
+        self::$runtimeCache = \Illuminate\Support\Facades\Cache::remember('app_settings', 86400, function () {
+            return self::all()->pluck('value', 'key')->toArray();
+        });
+
+        return self::$runtimeCache;
     }
 }

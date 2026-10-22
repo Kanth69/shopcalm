@@ -5,34 +5,72 @@
 @section('account_content')
 
 {{-- ── Hero ──────────────────────────────────────────────── --}}
-<div class="rounded-4 mb-4 overflow-hidden position-relative"
-     style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%); min-height:120px;">
+<div class="rounded-4 mb-3 mb-md-4 overflow-hidden position-relative shadow-xs"
+     style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%);">
     <div class="position-absolute w-100 h-100"
-         style="background-image:radial-gradient(circle,rgba(255,255,255,0.04) 1px,transparent 1px); background-size:24px 24px; top:0; left:0;"></div>
-    <div class="position-relative p-4 d-flex align-items-center gap-4 flex-wrap">
-        <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
-             style="width:60px; height:60px; background:rgba(99,102,241,0.25); border:1.5px solid rgba(99,102,241,0.5);">
-            <i class="bi bi-box-seam-fill text-white fs-3"></i>
+         style="background-image:radial-gradient(circle,rgba(255,255,255,0.06) 1px,transparent 1px); background-size:20px 20px; top:0; left:0; pointer-events: none;"></div>
+    
+    {{-- Desktop Layout (>= 768px): Spacious Banner with icon + title on left, stats on right --}}
+    <div class="position-relative p-4 d-none d-md-flex align-items-center justify-content-between gap-4">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                 style="width:54px; height:54px; background:rgba(99,102,241,0.25); border:1.5px solid rgba(99,102,241,0.5);">
+                <i class="bi bi-box-seam-fill text-white fs-4"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold text-white mb-1">My Orders</h5>
+                <p class="text-white-50 small mb-0">Track shipments, view receipts &amp; manage your purchases</p>
+            </div>
         </div>
-        <div class="flex-grow-1">
-            <h5 class="fw-bold text-white mb-1">My Orders</h5>
-            <p class="text-white-50 small mb-0">Track shipments, view receipts &amp; manage your purchases</p>
-        </div>
-        <div class="d-flex gap-3 flex-wrap">
+        <div class="d-flex gap-2.5 flex-wrap ms-auto">
             <div class="text-center px-3 py-2 rounded-3"
-                 style="background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.1);">
-                <div class="fw-bold text-white fs-5 lh-1">{{ $totalCount }}</div>
+                 style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); min-width:60px;">
+                <div class="fw-bold text-white fs-5 lh-1 font-monospace">{{ $totalCount }}</div>
                 <div class="text-white-50" style="font-size:0.7rem; margin-top:2px;">Total</div>
             </div>
             <div class="text-center px-3 py-2 rounded-3"
-                 style="background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3);">
-                <div class="fw-bold lh-1" style="color:#6ee7b7; font-size:1.2rem;">{{ $deliveredCount }}</div>
-                <div style="font-size:0.7rem; color:#6ee7b7; margin-top:2px; opacity:0.8;">Delivered</div>
+                 style="background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); min-width:60px;">
+                <div class="fw-bold lh-1 font-monospace" style="color:#6ee7b7; font-size:1.15rem;">{{ $deliveredCount }}</div>
+                <div style="font-size:0.7rem; color:#6ee7b7; margin-top:2px; opacity:0.9;">Delivered</div>
             </div>
             <div class="text-center px-3 py-2 rounded-3"
-                 style="background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.3);">
-                <div class="fw-bold lh-1" style="color:#fcd34d; font-size:1.2rem;">{{ $activeCount }}</div>
-                <div style="font-size:0.7rem; color:#fcd34d; margin-top:2px; opacity:0.8;">Active</div>
+                 style="background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.3); min-width:60px;">
+                <div class="fw-bold lh-1 font-monospace" style="color:#fcd34d; font-size:1.15rem;">{{ $activeCount }}</div>
+                <div style="font-size:0.7rem; color:#fcd34d; margin-top:2px; opacity:0.9;">Active</div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Mobile Layout (< 768px): Stats grid on left, "My Orders" heading in the right space --}}
+    <div class="position-relative p-3 d-flex d-md-none align-items-center justify-content-between gap-2 w-100">
+        {{-- Stats Grid on Left --}}
+        <div class="d-flex align-items-center gap-1.5 flex-shrink-0">
+            <div class="text-center px-2 py-1.5 rounded-3"
+                 style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); min-width:48px;">
+                <div class="fw-bold text-white fs-6 lh-1 font-monospace">{{ $totalCount }}</div>
+                <div class="text-white-50" style="font-size:0.62rem; margin-top:2px;">Total</div>
+            </div>
+            <div class="text-center px-2 py-1.5 rounded-3"
+                 style="background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); min-width:50px;">
+                <div class="fw-bold lh-1 font-monospace" style="color:#6ee7b7; font-size:1rem;">{{ $deliveredCount }}</div>
+                <div style="font-size:0.62rem; color:#6ee7b7; margin-top:2px; opacity:0.9;">Delivered</div>
+            </div>
+            <div class="text-center px-2 py-1.5 rounded-3"
+                 style="background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.3); min-width:48px;">
+                <div class="fw-bold lh-1 font-monospace" style="color:#fcd34d; font-size:1rem;">{{ $activeCount }}</div>
+                <div style="font-size:0.62rem; color:#fcd34d; margin-top:2px; opacity:0.9;">Active</div>
+            </div>
+        </div>
+
+        {{-- "My Orders" Heading in Empty Right Space --}}
+        <div class="d-flex align-items-center gap-2 text-end ms-auto min-w-0">
+            <div class="min-w-0">
+                <h5 class="fw-bold text-white mb-0 text-truncate" style="font-size: 1rem; letter-spacing: -0.01em;">My Orders</h5>
+                <div class="text-white-50 text-truncate" style="font-size: 0.65rem;">Track purchases</div>
+            </div>
+            <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                 style="width:36px; height:36px; background:rgba(99,102,241,0.28); border:1.5px solid rgba(99,102,241,0.55);">
+                <i class="bi bi-box-seam-fill text-white fs-6"></i>
             </div>
         </div>
     </div>
@@ -154,7 +192,7 @@
         {{-- Colored left accent --}}
         <div class="flex-shrink-0" style="width:5px; background:{{ $st['stripe'] }}; border-radius:16px 0 0 16px;"></div>
 
-        <div class="flex-grow-1 p-4">
+        <div class="flex-grow-1 p-3 p-md-4">
             {{-- Top row --}}
             <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
 
@@ -204,9 +242,9 @@
                 </div>
 
                 {{-- Amount + CTA --}}
-                <div class="d-flex align-items-center gap-3 ms-auto flex-wrap">
-                    <div class="text-end">
-                        <div class="fw-bold text-dark" style="font-size:1.05rem;">₹{{ number_format($order->total_amount, 2) }}</div>
+                <div class="d-flex align-items-center justify-content-between justify-content-sm-end gap-3 ms-auto w-100 w-sm-auto mt-2 mt-sm-0 pt-2 pt-sm-0 border-top border-top-sm-0 flex-wrap">
+                    <div class="text-start text-sm-end">
+                        <div class="fw-bold text-dark font-monospace" style="font-size:1.05rem;">₹{{ number_format($order->total_amount, 2) }}</div>
                         <div class="text-muted" style="font-size:0.72rem;">
                             @if($order->payment_status === 'paid')
                                 Total paid
@@ -217,28 +255,10 @@
                             @endif
                         </div>
                     </div>
-                    @if(in_array($order->status, ['pending', 'failed']) && $order->payment_method === 'online' && $order->payment_status !== 'paid')
-                        <a href="{{ route('checkout.payment_failed', $order) }}"
-                           class="btn btn-sm btn-warning text-dark rounded-pill px-3 py-2 fw-bold shadow-xs"
-                           style="font-size:0.8rem; white-space:nowrap;">
-                            <i class="bi bi-credit-card-2-front me-1"></i> Proceed / Pay
-                        </a>
-                    @endif
-                    @php
-                        $isPendingUnpaid = in_array($order->status, ['pending', 'failed']) || $order->payment_status === 'failed';
-                        $canShowCancelBtn = $isPendingUnpaid || ((\App\Models\Setting::get('allow_customer_cancellation', '1') == '1') && $order->status === 'confirmed');
-                    @endphp
-                    @if($canShowCancelBtn && !in_array($order->status, ['cancelled', 'delivered']))
-                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-2 fw-semibold" 
-                                style="font-size:0.8rem;"
-                                onclick="openCancellationModal({{ $order->id }}, '{{ $order->order_number }}')">
-                            <i class="bi bi-x-circle me-1"></i> Cancel Order
-                        </button>
-                    @endif
                     <a href="{{ route('account.orders.show', $order) }}"
-                       class="btn btn-sm fw-semibold rounded-pill px-4 py-2"
-                       style="background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; border:none; font-size:0.8rem; white-space:nowrap; box-shadow:0 2px 8px rgba(99,102,241,0.3);">
-                        View Details <i class="bi bi-arrow-right ms-1"></i>
+                       class="btn btn-sm fw-semibold rounded-pill px-3.5 py-2 text-decoration-none d-inline-flex align-items-center gap-1.5 text-white shadow-xs"
+                       style="background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%); border:none; font-size:0.82rem; white-space:nowrap; box-shadow:0 2px 8px rgba(99,102,241,0.25);">
+                        <span>Check Details</span> <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
 

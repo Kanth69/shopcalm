@@ -62,7 +62,7 @@
                 <a href="{{ route('category.products', $category->slug) }}" class="text-decoration-none text-dark group category-pill-link h-100 d-block">
                     <div class="card h-100 border-0 rounded-4 text-center category-card shadow-xs d-flex flex-column" 
                          style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
-                        <div class="card-body p-3 p-md-3.5 d-flex flex-column align-items-center justify-content-center">
+                        <div class="card-body p-3 p-md-4 d-flex flex-column align-items-center justify-content-center">
                             
                             {{-- Image OR Vibrant Color Circle --}}
                             <div class="rounded-circle d-flex align-items-center justify-content-center mb-2.5 transition-all category-avatar shadow-xs overflow-hidden" 

@@ -10,7 +10,7 @@
     <div class="position-absolute w-100 h-100"
          style="background-image: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px); background-size: 24px 24px; top: 0; left: 0; pointer-events: none;"></div>
 
-    <div class="card-body p-3.5 p-sm-4 p-md-5 position-relative z-1">
+    <div class="card-body p-3 p-sm-4 p-md-5 position-relative z-1">
         <div class="row align-items-center g-3 g-md-4">
             <div class="col-lg-8">
                 {{-- Badge --}}
@@ -33,7 +33,7 @@
                 </h1>
                 
                 {{-- Description --}}
-                <p class="text-white text-opacity-85 mb-3.5 mb-md-4" style="max-width: 620px; font-size: clamp(0.86rem, 2vw, 1rem); line-height: 1.55;">
+                <p class="text-white text-opacity-85 mb-3 mb-md-4" style="max-width: 620px; font-size: clamp(0.86rem, 2vw, 1rem); line-height: 1.55;">
                     {{ $heroOffer->description ?? 'Unbeatable discounts and instant offers on selected products! Grab your favorites before the offer ends.' }}
                 </p>
 
@@ -150,7 +150,7 @@
 @endif
 
 <!-- 3. DEAL PRODUCTS GRID -->
-<div id="offers-products-heading" class="d-flex justify-content-between align-items-center mb-3 mb-md-3.5 flex-wrap gap-2">
+<div id="offers-products-heading" class="d-flex justify-content-between align-items-center mb-3 mb-md-4 flex-wrap gap-2">
     <div>
         <h4 class="fw-bolder mb-0 text-dark" style="letter-spacing: -0.02em; font-size: clamp(1.15rem, 3vw, 1.45rem);">
             @if($selectedOffer)

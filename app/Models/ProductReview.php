@@ -20,6 +20,23 @@ class ProductReview extends Model
         'is_verified_purchase',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            \Illuminate\Support\Facades\Cache::forget('home_testimonials');
+            \Illuminate\Support\Facades\Cache::forget('featured_products');
+            \Illuminate\Support\Facades\Cache::forget('trending_products');
+            \Illuminate\Support\Facades\Cache::forget('latest_products');
+        });
+
+        static::deleted(function () {
+            \Illuminate\Support\Facades\Cache::forget('home_testimonials');
+            \Illuminate\Support\Facades\Cache::forget('featured_products');
+            \Illuminate\Support\Facades\Cache::forget('trending_products');
+            \Illuminate\Support\Facades\Cache::forget('latest_products');
+        });
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class)->withTrashed();

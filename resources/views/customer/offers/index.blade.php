@@ -3,7 +3,7 @@
 @section('title', ($selectedOffer ? $selectedOffer->title . ' - ' : '') . 'Exclusive Mega Sales & Bank Offers - ShopCalm')
 
 @section('content')
-<div class="container my-3.5 my-md-4 px-3 px-md-4 pb-5 position-relative">
+<div class="container my-3 my-md-4 px-3 px-md-4 pb-5 position-relative">
 
     {{-- Seamless Dynamic Offers Container --}}
     <div id="offers-dynamic-container" class="position-relative" style="transition: opacity 0.2s ease, filter 0.2s ease;">

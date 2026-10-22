@@ -75,12 +75,18 @@ class Product extends Model
             \Illuminate\Support\Facades\Cache::forget('featured_products');
             \Illuminate\Support\Facades\Cache::forget('trending_products');
             \Illuminate\Support\Facades\Cache::forget('latest_products');
+            \Illuminate\Support\Facades\Cache::forget('home_explore_products_p1');
+            \Illuminate\Support\Facades\Cache::forget('home_total_active_products');
+            \Illuminate\Support\Facades\Cache::forget('search_product_words');
         });
 
         static::deleted(function () {
             \Illuminate\Support\Facades\Cache::forget('featured_products');
             \Illuminate\Support\Facades\Cache::forget('trending_products');
             \Illuminate\Support\Facades\Cache::forget('latest_products');
+            \Illuminate\Support\Facades\Cache::forget('home_explore_products_p1');
+            \Illuminate\Support\Facades\Cache::forget('home_total_active_products');
+            \Illuminate\Support\Facades\Cache::forget('search_product_words');
         });
     }
 
@@ -147,11 +153,24 @@ class Product extends Model
         if (isset($this->reviews_avg_rating)) {
             return (float) $this->reviews_avg_rating;
         }
+        if ($this->relationLoaded('approvedReviews')) {
+            $approved = $this->approvedReviews;
+            return $approved->isEmpty() ? 0.0 : (float) round($approved->avg('rating'), 1);
+        }
         return (float) ($this->reviews()->where('status', 'Approved')->avg('rating') ?? 0);
     }
 
     public function ratingPercentage(int $rating): float
     {
+        if ($this->relationLoaded('approvedReviews')) {
+            $total = $this->approvedReviews->count();
+            if ($total === 0) {
+                return 0;
+            }
+            $count = $this->approvedReviews->where('rating', $rating)->count();
+            return ($count / $total) * 100;
+        }
+
         $total = $this->reviews()->where('status', 'Approved')->count();
         if ($total === 0) {
             return 0;
@@ -194,8 +213,12 @@ class Product extends Model
 
     public function getOptionStock(?string $optionKey): int
     {
-        if (!$this->has_options || empty($optionKey) || empty($this->option_stocks)) {
+        if (!$this->has_options || empty($this->option_stocks)) {
             return (int) $this->stock;
+        }
+
+        if (empty($optionKey)) {
+            return 0;
         }
 
         $stocks = is_array($this->option_stocks) ? $this->option_stocks : json_decode($this->option_stocks, true);

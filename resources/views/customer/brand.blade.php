@@ -7,7 +7,6 @@
     <div class="row">
         <div class="col-12">
             <div class="p-4 bg-white rounded shadow-sm mb-4">
-                @include('customer.components.breadcrumb', ['currentPage' => $brand->name])
                 <h1 class="display-5">{{ $brand->name }}</h1>
                 <p class="lead text-muted">{{ $brand->description }}</p>
             </div>

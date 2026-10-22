@@ -83,10 +83,10 @@
         <div class="position-absolute w-100 h-100"
              style="background-image: radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px); background-size: 16px 16px; top: 0; left: 0; pointer-events: none;"></div>
         
-        <div class="card-body position-relative p-3 p-sm-3.5">
+        <div class="card-body position-relative p-3 p-sm-4">
             {{-- Top Row: Avatar + Name + Edit Button (Clean, Strictly Fitted - Zero Overflow) --}}
-            <div class="d-flex align-items-center justify-content-between gap-2.5 w-100 mb-2.5">
-                <div class="d-flex align-items-center gap-2.5 min-w-0 flex-grow-1 overflow-hidden">
+            <div class="d-flex align-items-center justify-content-between gap-2 w-100 mb-3">
+                <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1 overflow-hidden">
                     <div class="rounded-circle d-flex align-items-center justify-content-center fw-bolder shadow-sm flex-shrink-0"
                          style="width: 44px; height: 44px; min-width: 44px; background: #ffffff; color: #4338ca; font-size: 1.25rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                         {{ strtoupper(substr($user->name ?? 'C', 0, 1)) }}
@@ -103,7 +103,7 @@
                 
                 {{-- Edit Button: Guaranteed Visibility, No-wrap, Flex-shrink-0 --}}
                 <a href="{{ route('profile.edit') }}" 
-                   class="btn btn-sm rounded-pill px-2.5 py-1 fw-semibold text-white flex-shrink-0 text-nowrap d-inline-flex align-items-center gap-1 shadow-2xs" 
+                   class="btn btn-sm rounded-pill px-3 py-1 fw-semibold text-white flex-shrink-0 text-nowrap d-inline-flex align-items-center gap-1 shadow-2xs" 
                    style="background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.4); backdrop-filter: blur(8px); font-size: 0.75rem;">
                     <i class="bi bi-pencil-square"></i>
                     <span>Edit</span>
@@ -292,15 +292,15 @@
     @endif
 
     {{-- Clean Simple Account Menu (Single-line list - No over-texting) --}}
-    <div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-4 bg-white w-100" style="border: 1px solid #e2e8f0 !important;">
+    <div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-4 bg-white w-100" style="border: 1.5px solid #e2e8f0 !important;">
         <div class="list-group list-group-flush">
             {{-- Wallet --}}
             @php $walletBal = $user->wallet?->balance ?? 0; @endphp
-            <a href="{{ route('account.wallet') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3.5 border-bottom text-decoration-none" style="border-color: #f1f5f9 !important;">
+            <a href="{{ route('account.wallet') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 border-bottom text-decoration-none" style="border-color: #f1f5f9 !important;">
                 <div class="d-flex align-items-center gap-3">
                     <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
                          style="width: 36px; height: 36px; background: #d1fae5; color: #059669; font-size: 1.05rem;">
-                        <i class="bi bi-wallet2"></i>
+                         <i class="bi bi-wallet2"></i>
                     </div>
                     <span class="fw-semibold text-dark" style="font-size: 0.9rem;">ShopCalm Wallet</span>
                 </div>
@@ -313,7 +313,7 @@
             </a>
 
             {{-- Delivery Addresses --}}
-            <a href="{{ route('account.addresses.index') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3.5 border-bottom text-decoration-none" style="border-color: #f1f5f9 !important;">
+            <a href="{{ route('account.addresses.index') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 border-bottom text-decoration-none" style="border-color: #f1f5f9 !important;">
                 <div class="d-flex align-items-center gap-3">
                     <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
                          style="width: 36px; height: 36px; background: #cffafe; color: #0891b2; font-size: 1.05rem;">
@@ -325,7 +325,7 @@
             </a>
 
             {{-- Reviews --}}
-            <a href="{{ route('account.reviews') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3.5 border-bottom text-decoration-none" style="border-color: #f1f5f9 !important;">
+            <a href="{{ route('account.reviews') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 border-bottom text-decoration-none" style="border-color: #f1f5f9 !important;">
                 <div class="d-flex align-items-center gap-3">
                     <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
                          style="width: 36px; height: 36px; background: #fef3c7; color: #d97706; font-size: 1.05rem;">
@@ -337,7 +337,7 @@
             </a>
 
             {{-- Profile Settings --}}
-            <a href="{{ route('profile.edit') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3.5 border-bottom text-decoration-none" style="border-color: #f1f5f9 !important;">
+            <a href="{{ route('profile.edit') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 border-bottom text-decoration-none" style="border-color: #f1f5f9 !important;">
                 <div class="d-flex align-items-center gap-3">
                     <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
                          style="width: 36px; height: 36px; background: #ede9fe; color: #7c3aed; font-size: 1.05rem;">
@@ -349,7 +349,7 @@
             </a>
 
             {{-- Change Password --}}
-            <a href="{{ route('account.change-password') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3.5 border-bottom text-decoration-none" style="border-color: #f1f5f9 !important;">
+            <a href="{{ route('account.change-password') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 border-bottom text-decoration-none" style="border-color: #f1f5f9 !important;">
                 <div class="d-flex align-items-center gap-3">
                     <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
                          style="width: 36px; height: 36px; background: #f1f5f9; color: #475569; font-size: 1.05rem;">
@@ -361,7 +361,7 @@
             </a>
 
             {{-- Customer Support --}}
-            <a href="{{ route('page.contact') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3.5 border-bottom text-decoration-none" style="border-color: #f1f5f9 !important;">
+            <a href="{{ route('page.contact') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 border-bottom text-decoration-none" style="border-color: #f1f5f9 !important;">
                 <div class="d-flex align-items-center gap-3">
                     <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
                          style="width: 36px; height: 36px; background: #e0f2fe; color: #0284c7; font-size: 1.05rem;">
@@ -374,7 +374,7 @@
 
             {{-- Logout --}}
             <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form-mobile').submit();" 
-               class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3.5 text-decoration-none text-danger">
+               class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 text-decoration-none text-danger">
                 <div class="d-flex align-items-center gap-3">
                     <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
                          style="width: 36px; height: 36px; background: #fee2e2; color: #dc2626; font-size: 1.05rem;">

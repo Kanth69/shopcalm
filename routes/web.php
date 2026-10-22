@@ -34,7 +34,6 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Admin\ContactEnquiryController;
-use App\Http\Controllers\Auth\GoogleController;
 use Illuminate\Support\Facades\Route;
 
 // ─── 1. STAFF HUB ROUTES ───────────────────────────────────────────────────
@@ -301,10 +300,12 @@ $registerStaffRoutes = function () {
 // ─── 2. STOREFRONT CUSTOMER ROUTES ───────────────────────────────────────────
 $registerCustomerRoutes = function () {
     Route::get('/', [ShopController::class, 'home'])->name('home');
+    Route::get('/home/explore-more', [ShopController::class, 'exploreMoreHomeProducts'])->name('home.explore-more');
     Route::get('/shop', [ShopController::class, 'shop'])->name('shop');
     Route::get('/offers', [CustomerOfferController::class, 'index'])->name('offers.index');
     Route::get('/shop/brands-by-category', [ShopController::class, 'getBrandsByCategory'])->name('shop.brands-by-category');
     Route::get('/product/{product:slug}', [ShopController::class, 'productDetails'])->name('product.show');
+    Route::get('/product/{product:slug}/reviews', [ShopController::class, 'loadMoreReviews'])->name('product.reviews.load-more');
     Route::get('/categories', [ShopController::class, 'categories'])->name('categories.index');
     Route::get('/brands', [ShopController::class, 'brands'])->name('brands.index');
     Route::get('/category/{category:slug}', [ShopController::class, 'categoryProducts'])->name('category.products');
@@ -344,6 +345,9 @@ $registerCustomerRoutes = function () {
     // Newsletter Routes
     Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])->name('newsletter.subscribe');
     Route::middleware(['auth:customer'])->post('/newsletter/toggle', [NewsletterController::class, 'toggle'])->name('newsletter.toggle');
+
+    // Wishlist Toggle (Zero reload AJAX toggle for both auth and guest handling)
+    Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
 
     // Profile Setup
     Route::middleware(['auth:customer'])->prefix('account/setup')->name('profile.setup')->group(function () {

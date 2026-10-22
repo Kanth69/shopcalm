@@ -44,11 +44,15 @@ class Brand extends Model
         static::saved(function () {
             \Illuminate\Support\Facades\Cache::forget('home_brands');
             \Illuminate\Support\Facades\Cache::forget('all_brands');
+            \Illuminate\Support\Facades\Cache::forget('menu_brands');
+            \Illuminate\Support\Facades\Cache::forget('all_brands_index');
         });
 
         static::deleted(function () {
             \Illuminate\Support\Facades\Cache::forget('home_brands');
             \Illuminate\Support\Facades\Cache::forget('all_brands');
+            \Illuminate\Support\Facades\Cache::forget('menu_brands');
+            \Illuminate\Support\Facades\Cache::forget('all_brands_index');
         });
     }
 

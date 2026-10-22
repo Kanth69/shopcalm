@@ -44,64 +44,81 @@
 @endphp
 
 {{-- Header Banner Card --}}
-<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3.5" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff;">
-    <div class="card-body p-3 p-md-4">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2.5">
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff;">
+    <div class="card-body p-3 p-sm-4">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
             <div>
-                <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                    <h4 class="fw-bold mb-0 text-white" style="font-size: clamp(1.1rem, 2.8vw, 1.4rem); letter-spacing: -0.01em;">
+                <div class="d-flex align-items-center gap-2 mb-1.5 flex-wrap">
+                    <h4 class="fw-bold mb-0 text-white" style="font-size: clamp(1.15rem, 3.2vw, 1.4rem); letter-spacing: -0.01em;">
                         Order #{{ $order->order_number }}
                     </h4>
-                    <span class="badge rounded-pill px-2.5 py-1 fw-bold shadow-xs d-inline-flex align-items-center gap-1" style="{{ $statusStyle }}; font-size: 0.74rem;">
+                    <span class="badge rounded-pill px-3 py-1.5 fw-bold shadow-xs d-inline-flex align-items-center gap-1" style="{{ $statusStyle }}; font-size: 0.74rem;">
                         <i class="bi {{ $st['icon'] }}"></i> {{ $st['label'] ?? ucfirst($order->status) }}
                     </span>
                 </div>
-                <p class="text-white-50 small mb-0" style="font-size: 0.78rem;">
+                <p class="text-white-50 small mb-0" style="font-size: 0.8rem;">
                     <i class="bi bi-calendar3 me-1 opacity-75"></i>Placed on {{ $order->created_at ? $order->created_at->format('d M, Y h:i A') : 'N/A' }}
                 </p>
             </div>
-            <div class="d-flex gap-2 align-items-center ms-auto ms-sm-0">
-                <a href="{{ route('account.orders.index') }}" class="btn btn-outline-light rounded-pill px-3 py-1.5 fw-semibold btn-sm d-inline-flex align-items-center gap-1" style="font-size: 0.78rem;">
-                    <i class="bi bi-arrow-left"></i> <span class="d-none d-sm-inline">Back to Orders</span><span class="d-inline d-sm-none">Orders</span>
+            <div class="d-flex gap-2 align-items-center w-100 w-sm-auto justify-content-between justify-content-sm-end pt-3 pt-sm-0 border-top border-white border-opacity-10 border-top-sm-0">
+                <a href="{{ route('account.orders.index') }}" class="btn btn-outline-light rounded-pill px-3 py-2 fw-semibold btn-sm d-inline-flex align-items-center justify-content-center gap-1.5 flex-grow-1 flex-sm-grow-0" style="font-size: 0.78rem;">
+                    <i class="bi bi-arrow-left"></i> <span>Orders</span>
                 </a>
-                <a href="{{ route('account.orders.invoice', $order) }}" target="_blank" class="btn btn-light rounded-pill px-3 py-1.5 fw-bold btn-sm shadow-sm d-inline-flex align-items-center gap-1 text-dark" style="background: #ffffff; color: #0f172a; border: 1px solid rgba(255, 255, 255, 0.4); font-size: 0.78rem;">
-                    <i class="bi bi-file-earmark-pdf-fill text-danger"></i> <span class="d-none d-sm-inline">Invoice (PDF)</span><span class="d-inline d-sm-none">Invoice</span>
+                <a href="{{ route('account.orders.invoice', $order) }}" target="_blank" class="btn btn-light rounded-pill px-3 py-2 fw-bold btn-sm shadow-sm d-inline-flex align-items-center justify-content-center gap-1.5 text-dark flex-grow-1 flex-sm-grow-0" style="background: #ffffff; color: #0f172a; border: 1px solid rgba(255, 255, 255, 0.4); font-size: 0.78rem;">
+                    <i class="bi bi-file-earmark-pdf-fill text-danger"></i> <span>Invoice</span>
                 </a>
             </div>
         </div>
     </div>
 </div>
 
-{{-- ── Payment Incomplete Recovery Banner (If Online Payment was Failed/Pending and Order is NOT Cancelled) ── --}}
-@if($order->status !== 'cancelled' && $order->status !== 'delivered' && ($order->payment_status === 'failed' || ($order->status === 'pending' && $order->payment_method === 'online')))
-<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3.5" style="background: #ffffff; border: 1.5px solid #fdba74 !important;">
-    <div class="card-body p-3 p-md-4">
-        <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
-            <div class="d-flex align-items-center gap-3">
-                <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px; background: #ffedd5; color: #ea580c; font-size: 1.3rem;">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
+@php
+    $isPendingUnpaid = in_array($order->status, ['pending', 'failed']) || $order->payment_status === 'failed';
+    $canCancel = ($isPendingUnpaid || ((\App\Models\Setting::get('allow_customer_cancellation', '1') == '1') && $order->status === 'confirmed')) && $order->status !== 'cancelled' && $order->status !== 'delivered';
+    $canProceedToPay = $isPendingUnpaid && $order->payment_method === 'online' && $order->payment_status !== 'paid' && $order->status !== 'cancelled';
+@endphp
+
+{{-- ── Order Action & Payment Recovery Card ── --}}
+@if($canProceedToPay || $canCancel)
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 1.5px solid {{ $canProceedToPay ? '#fdba74' : '#e2e8f0' }} !important;">
+    <div class="card-body p-3 p-sm-4">
+        <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+            <div class="d-flex align-items-center gap-3 min-w-0">
+                <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                     style="width: 48px; height: 48px; background: {{ $canProceedToPay ? '#ffedd5' : '#ede9fe' }}; color: {{ $canProceedToPay ? '#ea580c' : '#6366f1' }}; font-size: 1.35rem;">
+                    <i class="bi {{ $canProceedToPay ? 'bi-exclamation-triangle-fill' : 'bi-shield-check' }}"></i>
                 </div>
-                <div>
-                    <h6 class="fw-bold text-dark mb-0.5" style="font-size: 0.95rem;">Payment Incomplete for this Order</h6>
-                    <p class="text-muted small mb-0" style="font-size: 0.8rem;">
-                        Online payment of <strong class="text-dark font-monospace">₹{{ number_format($order->total_amount, 2) }}</strong> was not completed. You cannot place a new order until you retry payment, switch to COD, or cancel this order.
+                <div class="min-w-0">
+                    <h6 class="fw-bold text-dark mb-1 text-truncate" style="font-size: 0.96rem;">
+                        {{ $canProceedToPay ? 'Payment Incomplete for this Order' : 'Order Actions' }}
+                    </h6>
+                    <p class="text-muted small mb-0" style="font-size: 0.82rem; line-height: 1.4;">
+                        @if($canProceedToPay)
+                            Online payment of <strong class="text-dark font-monospace">₹{{ number_format($order->total_amount, 2) }}</strong> was not completed. You can proceed to pay or cancel this order.
+                        @else
+                            This order is confirmed and scheduled for dispatch. You can cancel free before it is shipped.
+                        @endif
                     </p>
                 </div>
             </div>
-            <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
-                <button type="button" id="btn-order-retry-payment" class="btn btn-primary rounded-pill px-3.5 py-1.5 fw-semibold btn-sm shadow-xs"
-                        style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none; font-size: 0.8rem;">
-                    <i class="bi bi-arrow-repeat me-1"></i> Retry Payment
-                </button>
-                <form action="{{ route('checkout.switch_to_cod', $order) }}" method="POST" class="d-inline">
-                    @csrf
-                    <button type="submit" class="btn btn-outline-dark rounded-pill px-3 py-1.5 fw-semibold btn-sm" style="font-size: 0.8rem; border-color: #cbd5e1;">
-                        <i class="bi bi-cash me-1 text-success"></i> Switch to COD
+
+            {{-- Action Buttons --}}
+            <div class="d-flex align-items-center gap-2 flex-wrap w-100 w-sm-auto justify-content-end ms-auto pt-2 pt-sm-0">
+                @if($canProceedToPay)
+                    <a href="{{ route('checkout.payment_failed', $order) }}"
+                       class="btn btn-warning text-white fw-bold rounded-pill px-4 py-2.5 shadow-xs d-inline-flex align-items-center justify-content-center gap-1.5 flex-grow-1 flex-sm-grow-0"
+                       style="background: #ea580c; border: none; font-size: 0.85rem;">
+                        <i class="bi bi-arrow-repeat me-0.5"></i> <span>Proceed to Pay</span>
+                    </a>
+                @endif
+
+                @if($canCancel)
+                    <button type="button" id="btn-order-cancel-pending" onclick="cancelPendingOrderFromDetails()"
+                            class="btn btn-outline-danger rounded-pill px-4 py-2.5 fw-semibold d-inline-flex align-items-center justify-content-center gap-1.5 flex-grow-1 flex-sm-grow-0"
+                            style="font-size: 0.85rem;">
+                        <i class="bi bi-x-circle me-0.5"></i> <span>Cancel Order</span>
                     </button>
-                </form>
-                <button type="button" id="btn-order-cancel-pending" onclick="cancelPendingOrderFromDetails()" class="btn btn-outline-danger rounded-pill px-3 py-1.5 fw-semibold btn-sm" style="font-size: 0.8rem;">
-                    <i class="bi bi-x-circle me-1"></i> Cancel Order
-                </button>
+                @endif
             </div>
         </div>
     </div>
@@ -156,7 +173,7 @@
     <div class="card-body p-3 p-md-4">
         {{-- Prominent Customer Notification Alert --}}
         @if($isAdminCancelled)
-            <div class="alert alert-danger rounded-3 py-2.5 px-3.5 small mb-3 border-0 d-flex align-items-center gap-2.5" style="background: #fef2f2; color: #991b1b; border-left: 4px solid #ef4444 !important;">
+            <div class="alert alert-danger rounded-3 py-2 px-3 small mb-3 border-0 d-flex align-items-center gap-2" style="background: #fef2f2; color: #991b1b; border-left: 4px solid #ef4444 !important;">
                 <i class="bi bi-info-circle-fill fs-5 flex-shrink-0"></i>
                 <div>
                     <strong class="d-block" style="font-size: 0.85rem;">Notice from Store Management:</strong>
@@ -166,7 +183,7 @@
         @endif
 
         {{-- Top Reason & Refund Destination Grid --}}
-        <div class="row g-3 mb-3.5">
+        <div class="row g-3 mb-4">
             {{-- Reason Box --}}
             <div class="col-12 col-md-6">
                 <div class="p-3 rounded-4 bg-light-subtle border h-100 d-flex flex-column justify-content-center" style="background: #f8fafc; border-color: #e2e8f0 !important;">
@@ -299,8 +316,8 @@
         </div>
 
         {{-- Financial Refund Breakdown Card --}}
-        <div class="p-3 p-md-3.5 rounded-4 bg-white border shadow-2xs" style="border-color: #e2e8f0 !important;">
-            <div class="text-uppercase text-muted fw-bold mb-2.5 pb-1 border-bottom" style="font-size: 0.67rem; letter-spacing: 0.06em;">
+        <div class="p-3 p-md-4 rounded-4 bg-white border shadow-2xs" style="border-color: #e2e8f0 !important;">
+            <div class="text-uppercase text-muted fw-bold mb-2 pb-1 border-bottom" style="font-size: 0.67rem; letter-spacing: 0.06em;">
                 <i class="bi bi-calculator me-1"></i> Financial Refund Calculation Breakdown
             </div>
             
@@ -336,12 +353,12 @@
 
 {{-- ── Progress Tracker Card (Live Tracking) ── --}}
 @if($s !== 'cancelled' && $stepIdx !== false)
-<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3.5 p-3 p-md-4" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
-    <div class="d-flex align-items-center justify-content-between mb-2.5 pb-2 border-bottom">
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 p-3 p-sm-4" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
+    <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
         <span class="fw-bold text-dark small text-uppercase d-flex align-items-center gap-1.5" style="letter-spacing: 0.05em; font-size: 0.76rem;">
             <i class="bi bi-truck text-primary fs-6"></i> Live Delivery Progress
         </span>
-        <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="{{ $statusStyle }}; font-size: 0.72rem;">
+        <span class="badge rounded-pill px-3 py-1.5 fw-bold" style="{{ $statusStyle }}; font-size: 0.72rem;">
             {{ $st['label'] ?? ucfirst($order->status) }}
         </span>
     </div>
@@ -386,10 +403,10 @@
 {{-- ── Context-Aware Logistics & Live Handover Card ── --}}
 @if($order->isLocalBengaluruDelivery() && $s !== 'cancelled')
     {{-- Bengaluru Local Fleet & Handover Card --}}
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3.5 p-3 p-md-4" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 p-3 p-sm-4" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
         {{-- Top Row: Rider & Status info --}}
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2.5 {{ ($order->delivery_otp && $order->status === 'out for delivery') ? 'pb-3 border-bottom' : '' }}">
-            <div class="d-flex align-items-center gap-2.5">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 {{ ($order->delivery_otp && $order->status === 'out for delivery') ? 'pb-3 border-bottom' : '' }}">
+            <div class="d-flex align-items-center gap-2">
                 @if($order->status === 'delivered')
                     <div style="width: 44px; height: 44px; border-radius: 12px; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">
                         <i class="bi bi-bag-check-fill"></i>
@@ -503,9 +520,9 @@
     </div>
 @elseif(($order->courier_partner || $order->tracking_number || in_array($order->status, ['shipped', 'out for delivery', 'delivered'])) && $s !== 'cancelled')
     {{-- Pan-India National Courier Logistics Card --}}
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3.5 p-3 p-md-4" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2.5">
-            <div class="d-flex align-items-center gap-2.5">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 p-3 p-sm-4" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
                 <div style="width: 44px; height: 44px; border-radius: 12px; background: {{ $order->status === 'delivered' ? '#ecfdf5' : '#f0f9ff' }}; color: {{ $order->status === 'delivered' ? '#059669' : '#0284c7' }}; border: 1px solid {{ $order->status === 'delivered' ? '#a7f3d0' : '#bae6fd' }}; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">
                     <i class="bi {{ $order->status === 'delivered' ? 'bi-bag-check-fill' : 'bi-box-seam-fill' }}"></i>
                 </div>
@@ -552,27 +569,27 @@
 @endif
 
 {{-- Order Details Grid (Order Summary & Shipping Address) --}}
-<div class="row g-3 g-md-4 mb-3.5">
+<div class="row g-3 g-md-4 mb-4">
     {{-- Order Summary Card --}}
     <div class="col-12 col-md-6">
-        <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+        <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
             <div class="card-header bg-white py-3 px-3 px-md-4 border-bottom">
                 <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.92rem;">
                     <i class="bi bi-info-circle-fill text-primary"></i> Order Overview
                 </h6>
             </div>
             <div class="card-body p-3 p-md-4">
-                <div class="d-flex justify-content-between border-bottom pb-2 mb-2" style="font-size: 0.84rem;">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2" style="font-size: 0.86rem;">
                     <span class="text-muted">Order Reference:</span>
-                    <span class="fw-bold text-dark font-monospace">#{{ $order->order_number }}</span>
+                    <span class="fw-bold text-dark font-monospace text-end ps-2">#{{ $order->order_number }}</span>
                 </div>
-                <div class="d-flex justify-content-between border-bottom pb-2 mb-2" style="font-size: 0.84rem;">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2" style="font-size: 0.86rem;">
                     <span class="text-muted">Order Date:</span>
-                    <span class="fw-semibold text-dark">{{ $order->created_at ? $order->created_at->format('d M, Y') : 'N/A' }}</span>
+                    <span class="fw-semibold text-dark text-end ps-2">{{ $order->created_at ? $order->created_at->format('d M, Y') : 'N/A' }}</span>
                 </div>
-                <div class="d-flex justify-content-between border-bottom pb-2 mb-2" style="font-size: 0.84rem;">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2" style="font-size: 0.86rem;">
                     <span class="text-muted">Payment Mode:</span>
-                    <span class="fw-bold text-dark">
+                    <span class="fw-bold text-dark text-end ps-2">
                         @if($order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0))
                             <span class="text-success"><i class="bi bi-wallet2 me-1"></i>ShopCalm Wallet (100% Paid)</span>
                         @elseif($order->wallet_amount_used > 0)
@@ -585,18 +602,18 @@
                     </span>
                 </div>
                 @if($order->primaryPayment?->bank_reference)
-                <div class="d-flex justify-content-between border-bottom pb-2 mb-2" style="font-size: 0.84rem;">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2" style="font-size: 0.86rem;">
                     <span class="text-muted">Bank Ref (UTR):</span>
-                    <span class="font-monospace fw-bold text-primary">{{ $order->primaryPayment->bank_reference }}</span>
+                    <span class="font-monospace fw-bold text-primary text-end ps-2">{{ $order->primaryPayment->bank_reference }}</span>
                 </div>
                 @endif
-                <div class="d-flex justify-content-between border-bottom pb-2 mb-2" style="font-size: 0.84rem;">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2" style="font-size: 0.86rem;">
                     <span class="text-muted">Status:</span>
-                    <span class="badge rounded-pill px-2.5 py-0.5 fw-bold" style="{{ $statusStyle }}; font-size: 0.72rem;">{{ ucfirst($order->status) }}</span>
+                    <span class="badge rounded-pill px-3 py-1 fw-bold text-end ms-2" style="{{ $statusStyle }}; font-size: 0.72rem;">{{ ucfirst($order->status) }}</span>
                 </div>
-                <div class="d-flex justify-content-between pt-1" style="font-size: 0.88rem;">
+                <div class="d-flex justify-content-between align-items-center pt-1" style="font-size: 0.88rem;">
                     <span class="text-muted fw-semibold">Total Amount:</span>
-                    <span class="fw-bolder text-primary fs-6 font-monospace">₹{{ number_format($order->total_amount, 2) }}</span>
+                    <span class="fw-bolder text-primary fs-6 font-monospace text-end ps-2">₹{{ number_format($order->total_amount, 2) }}</span>
                 </div>
             </div>
         </div>
@@ -604,7 +621,7 @@
 
     {{-- Shipping Address Card --}}
     <div class="col-12 col-md-6">
-        <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+        <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
             <div class="card-header bg-white py-3 px-3 px-md-4 border-bottom">
                 <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.92rem;">
                     <i class="bi bi-geo-alt-fill text-danger"></i> Shipping Address
@@ -613,16 +630,16 @@
             <div class="card-body p-3 p-md-4">
                 <div class="d-flex align-items-center gap-2 mb-2">
                     <i class="bi bi-person-circle text-primary fs-5"></i>
-                    <h6 class="fw-bold text-dark mb-0" style="font-size: 0.92rem;">{{ $order->shipping_name }}</h6>
+                    <h6 class="fw-bold text-dark mb-0" style="font-size: 0.94rem;">{{ $order->shipping_name }}</h6>
                 </div>
-                <p class="text-secondary small mb-2.5 ps-4" style="line-height: 1.45; font-size: 0.82rem;">
+                <p class="text-secondary small mb-3 ps-4" style="line-height: 1.5; font-size: 0.84rem;">
                     {{ $order->shipping_address }}<br>
                     {{ $order->shipping_city }}, {{ $order->shipping_state }} - {{ $order->shipping_zip }}<br>
                     {{ $order->shipping_country }}
                 </p>
-                <div class="ps-4 text-muted small d-flex flex-column gap-1" style="font-size: 0.78rem;">
-                    <div><i class="bi bi-envelope me-1.5 text-info"></i>{{ $order->shipping_email }}</div>
-                    <div><i class="bi bi-telephone-fill me-1.5 text-success"></i>{{ $order->shipping_phone }}</div>
+                <div class="ps-4 text-muted small d-flex flex-column gap-1.5" style="font-size: 0.8rem;">
+                    <div><i class="bi bi-envelope me-2 text-info"></i>{{ $order->shipping_email }}</div>
+                    <div><i class="bi bi-telephone-fill me-2 text-success"></i>{{ $order->shipping_phone }}</div>
                 </div>
             </div>
         </div>
@@ -630,7 +647,7 @@
 </div>
 
 {{-- Order Items Card (Perfect Alignment for Mobile & Desktop) --}}
-<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3.5" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
     <div class="card-header bg-white py-3 px-3 px-md-4 border-bottom d-flex align-items-center justify-content-between">
         <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.92rem;">
             <i class="bi bi-bag-check-fill text-primary"></i> Purchased Items ({{ $order->items->count() }})
@@ -648,7 +665,15 @@
     <div class="card-body p-0">
         <div class="d-flex flex-column">
             @foreach($order->items as $index => $item)
-            @php $product = $item->product; @endphp
+            @php 
+                $product = $item->product;
+                $origPrice = (float) ($item->original_price ?: ($item->unit_price ?: $item->price));
+                $unitPrice = (float) ($item->unit_price ?: $item->price);
+                $hasDiscount = $origPrice > $unitPrice;
+                $discountPct = $hasDiscount && $origPrice > 0 ? round((($origPrice - $unitPrice) / $origPrice) * 100) : 0;
+                $savedPerUnit = $hasDiscount ? ($origPrice - $unitPrice) : 0;
+                $totalSaved = $savedPerUnit * $item->quantity;
+            @endphp
             <div class="p-3 p-md-4 {{ $index < $order->items->count()-1 ? 'border-bottom' : '' }}" style="border-color: #f1f5f9 !important;">
                 
                 {{-- 💻 Desktop Layout (Aligned to Header Bar) --}}
@@ -672,19 +697,24 @@
                         </div>
 
                         <div class="min-w-0 flex-grow-1 pe-3">
+                            <div class="d-flex align-items-center gap-1.5 flex-wrap mb-1">
+                                @if($product && $product->brand)
+                                    <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
+                                        {{ $product->brand->name }}
+                                    </span>
+                                @endif
+                                @if($product && $product->category)
+                                    <span class="badge bg-light text-muted border rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
+                                        {{ $product->category->name }}
+                                    </span>
+                                @endif
+                                @if($item->selected_option)
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
+                                        {{ $item->selected_option }}
+                                    </span>
+                                @endif
+                            </div>
                             @if($product)
-                                <div class="d-flex align-items-center gap-1.5 flex-wrap mb-1">
-                                    @if($product->brand)
-                                        <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
-                                            {{ $product->brand->name }}
-                                        </span>
-                                    @endif
-                                    @if($product->category)
-                                        <span class="badge bg-light text-muted border rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
-                                            {{ $product->category->name }}
-                                        </span>
-                                    @endif
-                                </div>
                                 <a href="{{ route('product.show', $product->slug) }}"
                                    class="fw-bold text-dark text-decoration-none d-block text-truncate"
                                    style="font-size: 0.9rem; line-height: 1.35;"
@@ -700,15 +730,18 @@
 
                     {{-- 2. Unit Price (16%) --}}
                     <div style="flex: 0 0 16%;" class="text-center">
-                        <div class="fw-bold text-dark" style="font-size: 0.88rem;">₹{{ number_format($item->unit_price, 2) }}</div>
-                        @if($item->original_price > $item->unit_price)
-                            <div class="text-muted text-decoration-line-through small" style="font-size: 0.72rem;">₹{{ number_format($item->original_price, 2) }}</div>
+                        <div class="fw-bold text-dark font-monospace" style="font-size: 0.92rem;">₹{{ number_format($unitPrice, 2) }}</div>
+                        @if($hasDiscount)
+                            <div class="d-flex align-items-center justify-content-center gap-1.5 mt-0.5">
+                                <span class="text-muted text-decoration-line-through small" style="font-size: 0.74rem;">₹{{ number_format($origPrice, 2) }}</span>
+                                <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-1.5 py-0.5 fw-bold" style="font-size: 0.65rem;">{{ $discountPct }}% OFF</span>
+                            </div>
                         @endif
                     </div>
 
                     {{-- 3. Quantity (16%) --}}
                     <div style="flex: 0 0 16%;" class="text-center">
-                        <span class="badge bg-light text-dark border px-3 py-1 rounded-pill fw-bold" style="font-size: 0.8rem;">
+                        <span class="badge bg-light text-dark border px-3 py-1 rounded-pill fw-bold font-monospace" style="font-size: 0.8rem;">
                             ×{{ $item->quantity }}
                         </span>
                     </div>
@@ -721,63 +754,74 @@
                     </div>
                 </div>
 
-                {{-- 📱 Mobile Layout (Clean Vertical Stack with Clear Price Hierarchy) --}}
+                {{-- 📱 Mobile Layout (Spacious Vertical Stack with Clear Price Hierarchy) --}}
                 <div class="d-block d-md-none">
-                    <div class="d-flex align-items-start gap-3 mb-2.5">
+                    <div class="d-flex align-items-start gap-3 mb-3">
                         <div class="flex-shrink-0">
                             @if($product && $product->main_image)
                                 <a href="{{ route('product.show', $product->slug) }}">
                                     <img src="{{ asset('storage/' . $product->main_image) }}"
                                          alt="{{ $item->product_name }}"
                                          class="rounded-3 border p-1 bg-white shadow-2xs"
-                                         width="56" height="56" style="object-fit: contain;">
+                                         width="68" height="68" style="object-fit: contain;">
                                 </a>
                             @else
                                 <div class="rounded-3 bg-light border d-flex align-items-center justify-content-center text-muted"
-                                     style="width: 56px; height: 56px;">
+                                     style="width: 68px; height: 68px;">
                                     <i class="bi bi-image fs-4 opacity-25"></i>
                                 </div>
                             @endif
                         </div>
 
                         <div class="flex-grow-1 min-w-0">
+                            <div class="d-flex align-items-center gap-1.5 flex-wrap mb-1.5">
+                                @if($product && $product->brand)
+                                    <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
+                                        {{ $product->brand->name }}
+                                    </span>
+                                @endif
+                                @if($product && $product->category)
+                                    <span class="badge bg-light text-muted border rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
+                                        {{ $product->category->name }}
+                                    </span>
+                                @endif
+                                @if($item->selected_option)
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
+                                        {{ $item->selected_option }}
+                                    </span>
+                                @endif
+                            </div>
                             @if($product)
-                                <div class="d-flex align-items-center gap-1.5 flex-wrap mb-1">
-                                    @if($product->brand)
-                                        <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
-                                            {{ $product->brand->name }}
-                                        </span>
-                                    @endif
-                                    @if($product->category)
-                                        <span class="badge bg-light text-muted border rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
-                                            {{ $product->category->name }}
-                                        </span>
-                                    @endif
-                                </div>
                                 <a href="{{ route('product.show', $product->slug) }}"
-                                   class="fw-bold text-dark text-decoration-none d-block mb-1 text-truncate"
-                                   style="font-size: 0.88rem; line-height: 1.3;"
+                                   class="fw-bold text-dark text-decoration-none d-block mb-1.5 text-truncate"
+                                   style="font-size: 0.92rem; line-height: 1.35;"
                                    title="{{ $item->product_name }}">
                                     {{ $item->product_name }}
                                 </a>
                             @else
-                                <div class="fw-bold text-dark mb-1 text-truncate" style="font-size: 0.88rem;">{{ $item->product_name }}</div>
+                                <div class="fw-bold text-dark mb-1.5 text-truncate" style="font-size: 0.92rem;">{{ $item->product_name }}</div>
                             @endif
-                            <div class="text-muted small" style="font-size: 0.74rem;">
-                                Unit Price: <strong class="text-dark">₹{{ number_format($item->unit_price, 2) }}</strong>
+
+                            {{-- Price Row (Clear deal price, real price, % off) --}}
+                            <div class="d-flex align-items-center gap-2 flex-wrap pt-0.5">
+                                <span class="fw-bold text-dark font-monospace" style="font-size: 1rem;">₹{{ number_format($unitPrice, 2) }}</span>
+                                @if($hasDiscount)
+                                    <span class="text-muted text-decoration-line-through small" style="font-size: 0.78rem;">₹{{ number_format($origPrice, 2) }}</span>
+                                    <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-0.5 fw-bold" style="font-size: 0.68rem;">{{ $discountPct }}% OFF</span>
+                                @endif
                             </div>
                         </div>
                     </div>
 
                     {{-- Mobile Bottom Bar: Qty Badge on Left + Subtotal on Right --}}
-                    <div class="d-flex align-items-center justify-content-between p-2 rounded-3 bg-light border" style="font-size: 0.8rem;">
-                        <div class="d-flex align-items-center gap-1.5">
+                    <div class="d-flex align-items-center justify-content-between px-3 py-2 rounded-3 border" style="background: #f8fafc; border-color: #e2e8f0 !important; font-size: 0.84rem;">
+                        <div class="d-flex align-items-center gap-2">
                             <span class="text-muted small">Qty:</span>
-                            <span class="badge bg-white text-dark border px-2 py-0.5 fw-bold">{{ $item->quantity }}</span>
+                            <span class="badge bg-white text-dark border px-2.5 py-1 fw-bold font-monospace shadow-2xs" style="padding-left: 0.65rem; padding-right: 0.65rem;">×{{ $item->quantity }}</span>
                         </div>
-                        <div class="d-flex align-items-baseline gap-1">
-                            <span class="text-muted small">Total:</span>
-                            <span class="fw-bold text-dark font-monospace" style="font-size: 0.92rem;">₹{{ number_format($item->total_price, 2) }}</span>
+                        <div class="d-flex align-items-baseline gap-1.5">
+                            <span class="text-muted small">Subtotal:</span>
+                            <span class="fw-bolder text-dark font-monospace" style="font-size: 1rem;">₹{{ number_format($item->total_price, 2) }}</span>
                         </div>
                     </div>
                 </div>
@@ -789,54 +833,152 @@
 </div>
 
 {{-- Payment & Total Receipt Summary Box --}}
-<div class="row justify-content-end mb-3.5">
-    <div class="col-12 col-md-6 col-lg-5">
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background:#f8fafc; border: 1px solid #e2e8f0 !important;">
-            <div class="card-body p-4">
-                <h6 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="bi bi-receipt text-primary me-2"></i>Payment Summary</h6>
-                
-                <div class="d-flex justify-content-between text-muted small mb-2">
-                    <span>Items Subtotal:</span>
-                    <span class="fw-semibold text-dark">₹{{ number_format($order->subtotal_amount, 2) }}</span>
+@php
+    $totalMrp = (float) $order->items->sum(function($it) {
+        $orig = (float) ($it->original_price > 0 ? $it->original_price : ($it->product?->price ?? ($it->unit_price ?: $it->price)));
+        return $orig * $it->quantity;
+    });
+    $orderSubtotal = (float) ($order->subtotal_amount > 0 ? $order->subtotal_amount : $order->items->sum('total_price'));
+    $mrpDiscount = max(0, $totalMrp - $orderSubtotal);
+    $couponDiscount = (float) ($order->coupon_discount_amount ?? 0);
+    $walletUsed = (float) ($order->wallet_amount_used ?? 0);
+    $shippingCharge = (float) ($order->shipping_charge ?? 0);
+    $codFee = (float) ($order->cod_fee ?? 0);
+    $grandTotal = (float) $order->total_amount;
+    $totalSavings = $mrpDiscount + $couponDiscount + $walletUsed;
+    $savingsPct = ($totalMrp > 0 && $totalSavings > 0) ? round(($totalSavings / $totalMrp) * 100) : 0;
+    $totalItemsCount = (int) $order->items->sum('quantity');
+@endphp
+
+<div class="row justify-content-end mb-4">
+    <div class="col-12 col-md-7 col-lg-6 col-xl-5">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background:#ffffff; border: 1.5px solid #e2e8f0 !important;">
+            <div class="card-header bg-white py-3 px-3 px-sm-4 border-bottom d-flex align-items-center justify-content-between">
+                <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.92rem;">
+                    <i class="bi bi-receipt text-primary"></i> Price Details
+                </h6>
+                <span class="badge bg-light text-muted border rounded-pill px-3 py-1 font-monospace" style="font-size: 0.72rem;">
+                    {{ $totalItemsCount }} {{ Str::plural('Item', $totalItemsCount) }}
+                </span>
+            </div>
+
+            <div class="card-body p-3 p-sm-4">
+                {{-- 1. Total MRP (if discounted) --}}
+                @if($mrpDiscount > 0)
+                <div class="d-flex justify-content-between align-items-center text-muted small mb-2" style="font-size: 0.86rem;">
+                    <span>Total MRP:</span>
+                    <span class="text-muted text-decoration-line-through font-monospace">₹{{ number_format($totalMrp, 2) }}</span>
                 </div>
 
-                <div class="d-flex justify-content-between text-muted small mb-2">
+                {{-- 2. Discount on MRP / Offer Discount --}}
+                <div class="d-flex justify-content-between align-items-center small mb-2" style="color: #16a34a; font-size: 0.86rem;">
+                    <span class="d-inline-flex align-items-center gap-1.5">
+                        <i class="bi bi-tag-fill text-success"></i>
+                        <span>Discount on MRP:</span>
+                        @if($totalMrp > 0)
+                            <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-0.5 fw-bold" style="font-size: 0.68rem;">
+                                {{ round(($mrpDiscount / $totalMrp) * 100) }}% OFF
+                            </span>
+                        @endif
+                    </span>
+                    <span class="fw-bold font-monospace text-success">-₹{{ number_format($mrpDiscount, 2) }}</span>
+                </div>
+                @endif
+
+                {{-- 3. Items Cart Subtotal --}}
+                <div class="d-flex justify-content-between align-items-center text-muted small mb-2" style="font-size: 0.86rem;">
+                    <span>Cart Subtotal:</span>
+                    <span class="fw-semibold text-dark font-monospace">₹{{ number_format($orderSubtotal, 2) }}</span>
+                </div>
+
+                {{-- 4. Delivery Charge --}}
+                <div class="d-flex justify-content-between align-items-center text-muted small mb-2" style="font-size: 0.86rem;">
                     <span>Delivery Fee:</span>
-                    @if($order->shipping_charge > 0)
-                        <span class="fw-bold text-dark">+₹{{ number_format($order->shipping_charge, 2) }}</span>
+                    @if($shippingCharge > 0)
+                        <span class="fw-bold text-dark font-monospace">+₹{{ number_format($shippingCharge, 2) }}</span>
                     @else
-                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-0.5 fw-bold">FREE</span>
+                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2.5 py-0.5 fw-bold" style="font-size: 0.72rem; padding: 0.25rem 0.6rem;">FREE</span>
                     @endif
                 </div>
 
-                @if($order->cod_fee > 0)
-                <div class="d-flex justify-content-between text-muted small mb-2">
-                    <span>COD Handling Fee:</span>
-                    <span class="fw-bold text-dark">+₹{{ number_format($order->cod_fee, 2) }}</span>
+                {{-- 5. COD Handling Fee (if used) --}}
+                @if($codFee > 0)
+                <div class="d-flex justify-content-between align-items-center text-muted small mb-2" style="font-size: 0.86rem;">
+                    <span class="d-inline-flex align-items-center gap-1.5"><i class="bi bi-cash text-success"></i> COD Handling Fee:</span>
+                    <span class="fw-bold text-dark font-monospace">+₹{{ number_format($codFee, 2) }}</span>
                 </div>
                 @endif
 
-                @if($order->coupon_discount_amount > 0)
-                <div class="d-flex justify-content-between text-success small mb-2">
-                    <span>Coupon Discount @if($order->coupon)({{ $order->coupon->code }})@endif:</span>
-                    <span class="fw-bold">-₹{{ number_format($order->coupon_discount_amount, 2) }}</span>
+                {{-- 6. Coupon Discount (if used) --}}
+                @if($couponDiscount > 0)
+                <div class="d-flex justify-content-between align-items-center text-success small mb-2" style="font-size: 0.86rem;">
+                    <span class="d-inline-flex align-items-center gap-1.5">
+                        <i class="bi bi-ticket-perforated-fill text-success"></i>
+                        <span>Coupon Discount @if($order->coupon)({{ $order->coupon->code }})@endif:</span>
+                    </span>
+                    <span class="fw-bold font-monospace">-₹{{ number_format($couponDiscount, 2) }}</span>
                 </div>
                 @endif
 
-                @if($order->wallet_amount_used > 0)
-                <div class="d-flex justify-content-between text-primary small mb-2">
-                    <span><i class="bi bi-wallet2 me-1"></i>{{ \App\Models\Setting::get('store_name', 'ShopCalm') }} Wallet Applied:</span>
-                    <span class="fw-bold">-₹{{ number_format($order->wallet_amount_used, 2) }}</span>
+                {{-- 7. Wallet Balance Applied (if used) --}}
+                @if($walletUsed > 0)
+                <div class="d-flex justify-content-between align-items-center small mb-2" style="color: #6366f1; font-size: 0.86rem;">
+                    <span class="d-inline-flex align-items-center gap-1.5">
+                        <i class="bi bi-wallet2"></i>
+                        <span>ShopCalm Wallet Applied:</span>
+                    </span>
+                    <span class="fw-bold font-monospace" style="color: #6366f1;">-₹{{ number_format($walletUsed, 2) }}</span>
                 </div>
                 @endif
 
-                <div class="border-top pt-3 mt-3 d-flex justify-content-between align-items-center">
-                    <div>
+                {{-- 8. Grand Total --}}
+                <div class="border-top pt-3 mt-3 d-flex justify-content-between align-items-center" style="border-top: 1.5px dashed #cbd5e1 !important;">
+                    <div class="pe-2">
                         <span class="fw-bold text-dark fs-6 d-block">Grand Total:</span>
-                        <small class="text-muted" style="font-size: 0.72rem;"><i class="bi bi-shield-check text-success me-1"></i>Inclusive of 18% GST</small>
+                        <small class="text-muted d-inline-flex align-items-center gap-1" style="font-size: 0.72rem;">
+                            <i class="bi bi-shield-check text-success"></i> Inclusive of all taxes
+                        </small>
                     </div>
-                    <span class="fw-bolder text-primary fs-5">₹{{ number_format($order->total_amount, 2) }}</span>
+                    <div class="text-end ps-2">
+                        <span class="fw-bolder text-primary fs-5 font-monospace text-nowrap">₹{{ number_format($grandTotal, 2) }}</span>
+                    </div>
                 </div>
+
+                {{-- 9. Total Order Savings Callout --}}
+                @if($totalSavings > 0)
+                <div class="mt-3 p-3 rounded-3 d-flex align-items-center gap-2" style="background: #f0fdf4; border: 1px dashed #86efac; color: #15803d;">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px; background: #dcfce7; color: #16a34a;">
+                        <i class="bi bi-piggy-bank-fill" style="font-size: 0.95rem;"></i>
+                    </div>
+                    <div class="small fw-semibold min-w-0" style="font-size: 0.82rem; line-height: 1.4;">
+                        You saved <span class="fw-bold font-monospace text-success">₹{{ number_format($totalSavings, 2) }}</span>@if($savingsPct > 0) ({{ $savingsPct }}%)@endif on this order!
+                    </div>
+                </div>
+                @endif
+
+                {{-- 10. Payment Method & Status Badge Bar --}}
+                <div class="mt-3 pt-3 border-top d-flex align-items-center justify-content-between flex-wrap gap-2" style="font-size: 0.8rem; border-color: #f1f5f9 !important;">
+                    <div class="d-flex align-items-center gap-1.5 text-muted">
+                        <span>Payment Method:</span>
+                        <strong class="text-dark font-monospace">{{ strtoupper($order->payment_method ?: 'N/A') }}</strong>
+                    </div>
+                    <div>
+                        @if($order->payment_status === 'paid')
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-1 fw-bold d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-check-circle-fill"></i> Paid
+                            </span>
+                        @elseif($order->payment_method === 'cod')
+                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill px-3 py-1 fw-bold text-dark d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-cash"></i> Pay on Delivery
+                            </span>
+                        @else
+                            <span class="badge bg-warning bg-opacity-15 text-dark border border-warning border-opacity-50 rounded-pill px-3 py-1 fw-bold d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-clock-history text-warning"></i> Payment Pending
+                            </span>
+                        @endif
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -945,7 +1087,7 @@
                     </div>
 
                     <div class="modal-footer border-0 px-4 pb-4 pt-1 d-flex justify-content-end gap-2">
-                        <button type="button" class="btn btn-light rounded-pill px-3.5 py-2 fw-semibold" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-light rounded-pill px-3 py-2 fw-semibold" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" id="btnSubmitFeedback" class="btn btn-primary rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center gap-1.5 shadow-sm">
                             <i class="bi bi-check-circle-fill"></i> <span>{{ $order->feedback ? 'Update Feedback' : 'Submit Feedback' }}</span>
                         </button>
@@ -1103,23 +1245,33 @@ function toggleFeedbackTag(btn, tag) {
 </script>
 @endif
 
-@if($order->payment_status === 'failed' || ($order->status === 'pending' && $order->payment_method === 'online'))
+@if($canCancel)
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
 function cancelPendingOrderFromDetails() {
     Swal.fire({
         title: 'Cancel Order #{{ $order->order_number }}?',
-        text: 'Cancelling this unpaid pending order is 100% free and will allow you to place a new order immediately.',
+        text: 'Please select a reason for cancelling this order:',
+        input: 'select',
+        inputOptions: {
+            'Order placed by mistake': 'Order placed by mistake',
+            'Found better price elsewhere': 'Found better price elsewhere',
+            'Need to change payment method': 'Need to change payment method',
+            'Need to change delivery address': 'Need to change delivery address',
+            'Changed my mind': 'Changed my mind',
+            'Other reason': 'Other reason'
+        },
+        inputValue: 'Order placed by mistake',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
         cancelButtonColor: '#64748b',
         confirmButtonText: 'Yes, Cancel Order',
-        cancelButtonText: 'Back'
+        cancelButtonText: 'Keep Order'
     }).then((result) => {
         if (!result.isConfirmed) return;
 
+        const chosenReason = result.value || 'Customer cancelled from order details';
         const btnCancel = document.getElementById('btn-order-cancel-pending');
         if (btnCancel) {
             btnCancel.disabled = true;
@@ -1134,7 +1286,7 @@ function cancelPendingOrderFromDetails() {
                 "Accept": "application/json"
             },
             body: JSON.stringify({
-                cancellation_reason: "Customer cancelled pending online order",
+                cancellation_reason: chosenReason,
                 refund_method: "wallet"
             })
         })
@@ -1144,7 +1296,7 @@ function cancelPendingOrderFromDetails() {
                 Swal.fire({
                     icon: 'success',
                     title: 'Order Cancelled!',
-                    text: data.message || 'Your pending order has been cancelled.',
+                    text: data.message || 'Your order has been cancelled successfully.',
                     confirmButtonColor: '#10b981'
                 }).then(() => {
                     window.location.reload();
@@ -1167,103 +1319,6 @@ function cancelPendingOrderFromDetails() {
         });
     });
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-    const btnRetry = document.getElementById('btn-order-retry-payment');
-    if (!btnRetry) return;
-
-    btnRetry.addEventListener('click', async function() {
-        btnRetry.disabled = true;
-        btnRetry.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Loading...';
-
-        try {
-            const response = await fetch("{{ route('checkout.retry_payment', $order) }}", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": "{{ csrf_token() }}",
-                    "Accept": "application/json"
-                }
-            });
-
-            const data = await response.json();
-
-            if (data.success && data.razorpay_order_id) {
-                const options = {
-                    key: data.key_id,
-                    amount: data.amount,
-                    currency: data.currency || "INR",
-                    name: data.name || "ShopCalm",
-                    description: data.description || "Order #" + (data.order_number || ""),
-                    order_id: data.razorpay_order_id,
-                    prefill: data.prefill || {},
-                    theme: { color: "#4f46e5" },
-                    handler: function (res) {
-                        btnRetry.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Verifying...';
-                        fetch("{{ route('checkout.razorpay.verify') }}", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "X-CSRF-TOKEN": "{{ csrf_token() }}",
-                                "Accept": "application/json"
-                            },
-                            body: JSON.stringify({
-                                order_id: {{ $order->id }},
-                                razorpay_order_id: res.razorpay_order_id,
-                                razorpay_payment_id: res.razorpay_payment_id,
-                                razorpay_signature: res.razorpay_signature
-                            })
-                        })
-                        .then(r => r.json())
-                        .then(verifyData => {
-                            if (verifyData.success && verifyData.redirect_url) {
-                                window.location.href = verifyData.redirect_url;
-                            } else {
-                                btnRetry.disabled = false;
-                                btnRetry.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Retry Payment';
-                                Swal.fire('Verification Failed', verifyData.message || 'Payment verification failed.', 'error');
-                            }
-                        })
-                        .catch(err => {
-                            console.error("Verify retry error:", err);
-                            btnRetry.disabled = false;
-                            btnRetry.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Retry Payment';
-                            Swal.fire('Error', 'Payment verification error.', 'error');
-                        });
-                    },
-                    modal: {
-                        ondismiss: function () {
-                            btnRetry.disabled = false;
-                            btnRetry.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Retry Payment';
-                        }
-                    }
-                };
-                try {
-                    const rzp = new Razorpay(options);
-                    rzp.on('payment.failed', function(resp) {
-                        btnRetry.disabled = false;
-                        btnRetry.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Retry Payment';
-                    });
-                    rzp.open();
-                } catch (rzpErr) {
-                    console.error("Razorpay retry open error:", rzpErr);
-                    btnRetry.disabled = false;
-                    btnRetry.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Retry Payment';
-                    Swal.fire('Error', rzpErr.message || "Could not open Razorpay modal.", 'error');
-                }
-            } else {
-                Swal.fire('Error', data.message || "Failed to initialize payment retry.", 'error');
-                btnRetry.disabled = false;
-                btnRetry.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Retry Payment';
-            }
-        } catch (err) {
-            console.error("Retry error:", err);
-            Swal.fire('Error', "Error communicating with payment gateway.", 'error');
-            btnRetry.disabled = false;
-            btnRetry.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Retry Payment';
-        }
-    });
-});
 </script>
 @endif
 

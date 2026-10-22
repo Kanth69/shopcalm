@@ -20,28 +20,86 @@ class WishlistController extends Controller
         return view('customer.wishlist.index', compact('wishlistItems'));
     }
 
-    public function add(Request $request)
+    public function toggle(Request $request)
     {
+        if (!Auth::check()) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'authenticated' => false,
+                    'redirect' => route('login'),
+                    'message' => 'Please sign in to save items to your wishlist.',
+                ], 401);
+            }
+            return redirect()->route('login')->with('info', 'Please sign in to save items to your wishlist.');
+        }
+
         $request->validate(['product_id' => 'required|exists:products,id']);
 
-        $wishlist = Auth::user()->wishlist()->firstOrCreate();
+        $user = Auth::user();
+        $wishlist = $user->wishlist()->firstOrCreate(['user_id' => $user->id]);
 
-        WishlistItem::firstOrCreate([
-            'wishlist_id' => $wishlist->id,
-            'product_id' => $request->product_id,
-        ]);
+        $item = WishlistItem::where('wishlist_id', $wishlist->id)
+            ->where('product_id', $request->product_id)
+            ->first();
 
-        return back()->with('success', 'Product added to wishlist.');
+        if ($item) {
+            $item->delete();
+            $isWishlisted = false;
+            $message = 'Removed from wishlist.';
+        } else {
+            WishlistItem::create([
+                'wishlist_id' => $wishlist->id,
+                'product_id' => $request->product_id,
+            ]);
+            $isWishlisted = true;
+            $message = 'Added to wishlist!';
+        }
+
+        $count = WishlistItem::where('wishlist_id', $wishlist->id)->count();
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'action' => $isWishlisted ? 'added' : 'removed',
+                'is_in_wishlist' => $isWishlisted,
+                'wishlist_count' => $count,
+                'product_id' => (int) $request->product_id,
+                'message' => $message,
+            ]);
+        }
+
+        return back()->with('success', $message);
     }
 
-    public function remove(WishlistItem $wishlistItem)
+    public function add(Request $request)
+    {
+        return $this->toggle($request);
+    }
+
+    public function remove(WishlistItem $wishlistItem, Request $request)
     {
         // Ensure the item belongs to the authenticated user's wishlist
         if ($wishlistItem->wishlist->user_id !== Auth::id()) {
             abort(403);
         }
 
+        $wishlistId = $wishlistItem->wishlist_id;
+        $productId = $wishlistItem->product_id;
         $wishlistItem->delete();
+
+        $count = WishlistItem::where('wishlist_id', $wishlistId)->count();
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'action' => 'removed',
+                'is_in_wishlist' => false,
+                'product_id' => $productId,
+                'wishlist_count' => $count,
+                'message' => 'Product removed from wishlist.',
+            ]);
+        }
 
         return back()->with('success', 'Product removed from wishlist.');
     }

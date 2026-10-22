@@ -62,39 +62,50 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: var(--card-shadow-hover);
 }
 
-/* Product Card Redesign */
+/* Product Card Redesign (App-style Compact & 1:1 Aspect Ratio) */
 .card-product-grid {
     overflow: hidden;
     height: 100%;
-    background: #fff;
+    background: #ffffff;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-product-grid:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08) !important;
 }
 
 .card-product-grid .img-wrap {
     position: relative;
-    height: 240px;
+    width: 100%;
+    aspect-ratio: 1 / 1;
     background: #ffffff;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 12px;
+    padding: 8px;
 }
 
-.card-product-grid .img-wrap img.product-img-contain {
+.card-product-grid .img-wrap img.product-img-contain,
+.card-product-grid .img-wrap img {
     max-width: 100%;
     max-height: 100%;
-    width: auto;
-    height: auto;
+    width: 100%;
+    height: 100%;
     object-fit: contain;
-    transition: transform 0.4s ease;
+    object-position: center;
+    transition: transform 0.3s ease;
 }
 
-.card-product-grid:hover .img-wrap img.product-img-contain {
-    transform: scale(1.06);
+.card-product-grid:hover .img-wrap img {
+    transform: scale(1.04);
 }
 
 .card-product-grid .card-body {
-    padding: 1.15rem;
+    padding: 0.6rem 0.7rem 0.7rem !important;
 }
 
 /* Offcanvas Menu Drawer Stacking Fix */
@@ -322,28 +333,34 @@ h1, h2, h3, h4, h5, h6 {
     }
     
     /* Product Card Mobile Tweaks */
+    .card-product-grid {
+        border-radius: 10px !important;
+    }
     .card-product-grid .img-wrap {
-        height: 160px !important;
+        aspect-ratio: 1 / 1 !important;
+        height: auto !important;
+        padding: 5px !important;
     }
     .card-product-grid .card-body {
-        padding: 0.75rem !important;
+        padding: 0.5rem 0.55rem 0.6rem !important;
     }
     .card-product-grid .title {
-        font-size: 0.84rem !important;
-        line-height: 1.35 !important;
-        margin-bottom: 0.35rem !important;
+        font-size: 0.78rem !important;
+        line-height: 1.25 !important;
+        margin-bottom: 0.25rem !important;
+        min-height: 1.95em !important;
     }
     .card-product-grid .price {
-        font-size: 0.98rem !important;
+        font-size: 0.88rem !important;
     }
     .wishlist-btn .btn {
-        width: 30px !important;
-        height: 30px !important;
-        font-size: 0.8rem !important;
+        width: 26px !important;
+        height: 26px !important;
+        font-size: 0.75rem !important;
     }
     .wishlist-btn {
-        top: 8px !important;
-        right: 8px !important;
+        top: 6px !important;
+        right: 6px !important;
     }
     
     /* Hero Carousel Mobile Tweaks */
@@ -363,3 +380,137 @@ h1, h2, h3, h4, h5, h6 {
         padding-bottom: 1.75rem !important;
     }
 }
+
+/* PDP Collapsible Overview & Specs Accordion */
+.pdp-details-accordion .accordion-item {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.pdp-details-accordion .accordion-button {
+    background-color: #ffffff;
+    color: #1e293b;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+.pdp-details-accordion .accordion-button:not(.collapsed) {
+    background-color: #f8fafc;
+    color: #0f172a;
+    box-shadow: none;
+}
+
+.pdp-details-accordion .accordion-button:focus {
+    box-shadow: none;
+    border-color: #cbd5e1;
+}
+
+/* Wishlist Toggle Button Styles & Heart Animations */
+.wishlist-toggle-btn {
+    cursor: pointer;
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.15s ease, box-shadow 0.15s ease;
+    user-select: none;
+}
+.wishlist-toggle-btn:hover {
+    transform: scale(1.12);
+}
+.wishlist-toggle-btn:active {
+    transform: scale(0.9);
+}
+.wishlist-toggle-btn:disabled {
+    opacity: 0.65;
+    pointer-events: none;
+}
+@keyframes heartPulse {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.4); }
+    70% { transform: scale(0.92); }
+    100% { transform: scale(1); }
+}
+@keyframes badgePop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.35); }
+    100% { transform: scale(1); }
+}
+.badge-pop-animate {
+    animation: badgePop 0.28s ease-in-out;
+}
+
+/* ========================================================================= */
+/* BOOTSTRAP 5 FRACTIONAL UTILITY POLYFILLS (CRITICAL FOR MOBILE RESPONSIVENESS) */
+/* ========================================================================= */
+.p-0\.5 { padding: 0.125rem !important; }
+.p-1\.5 { padding: 0.375rem !important; }
+.p-2\.5 { padding: 0.625rem !important; }
+.p-3\.5 { padding: 1.25rem !important; }
+.p-4\.5 { padding: 1.75rem !important; }
+
+.px-0\.5 { padding-left: 0.125rem !important; padding-right: 0.125rem !important; }
+.px-1\.5 { padding-left: 0.375rem !important; padding-right: 0.375rem !important; }
+.px-2\.5 { padding-left: 0.625rem !important; padding-right: 0.625rem !important; }
+.px-3\.5 { padding-left: 1.25rem !important; padding-right: 1.25rem !important; }
+
+.py-0\.5 { padding-top: 0.125rem !important; padding-bottom: 0.125rem !important; }
+.py-1\.5 { padding-top: 0.375rem !important; padding-bottom: 0.375rem !important; }
+.py-2\.5 { padding-top: 0.625rem !important; padding-bottom: 0.625rem !important; }
+.py-3\.5 { padding-top: 1.25rem !important; padding-bottom: 1.25rem !important; }
+
+.pt-0\.5 { padding-top: 0.125rem !important; }
+.pt-1\.5 { padding-top: 0.375rem !important; }
+.pt-2\.5 { padding-top: 0.625rem !important; }
+.pt-3\.5 { padding-top: 1.25rem !important; }
+
+.pb-0\.5 { padding-bottom: 0.125rem !important; }
+.pb-1\.5 { padding-bottom: 0.375rem !important; }
+.pb-2\.5 { padding-bottom: 0.625rem !important; }
+.pb-3\.5 { padding-bottom: 1.25rem !important; }
+
+.ps-0\.5 { padding-left: 0.125rem !important; }
+.ps-1\.5 { padding-left: 0.375rem !important; }
+.ps-2\.5 { padding-left: 0.625rem !important; }
+.pe-0\.5 { padding-right: 0.125rem !important; }
+.pe-1\.5 { padding-right: 0.375rem !important; }
+.pe-2\.5 { padding-right: 0.625rem !important; }
+
+.m-0\.5 { margin: 0.125rem !important; }
+.m-1\.5 { margin: 0.375rem !important; }
+.m-2\.5 { margin: 0.625rem !important; }
+.m-3\.5 { margin: 1.25rem !important; }
+
+.mb-0\.5 { margin-bottom: 0.125rem !important; }
+.mb-1\.5 { margin-bottom: 0.375rem !important; }
+.mb-2\.5 { margin-bottom: 0.625rem !important; }
+.mb-3\.5 { margin-bottom: 1.25rem !important; }
+
+.mt-0\.5 { margin-top: 0.125rem !important; }
+.mt-1\.5 { margin-top: 0.375rem !important; }
+.mt-2\.5 { margin-top: 0.625rem !important; }
+.mt-3\.5 { margin-top: 1.25rem !important; }
+
+.my-0\.5 { margin-top: 0.125rem !important; margin-bottom: 0.125rem !important; }
+.my-1\.5 { margin-top: 0.375rem !important; margin-bottom: 0.375rem !important; }
+.my-2\.5 { margin-top: 0.625rem !important; margin-bottom: 0.625rem !important; }
+.my-3\.5 { margin-top: 1.25rem !important; margin-bottom: 1.25rem !important; }
+
+.gap-0\.5 { gap: 0.125rem !important; }
+.gap-1\.5 { gap: 0.375rem !important; }
+.gap-2\.5 { gap: 0.625rem !important; }
+.gap-3\.5 { gap: 1.25rem !important; }
+
+.g-0\.5 { --bs-gutter-x: 0.125rem; --bs-gutter-y: 0.125rem; }
+.g-1\.5 { --bs-gutter-x: 0.375rem; --bs-gutter-y: 0.375rem; }
+.g-2\.5 { --bs-gutter-x: 0.625rem; --bs-gutter-y: 0.625rem; }
+
+/* Mobile Viewport Safeguards & Safe-Area Inset Handling */
+@media (max-width: 767.98px) {
+    .container {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+    .safe-area-bottom {
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)) !important;
+    }
+}
+

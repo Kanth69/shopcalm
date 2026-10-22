@@ -37,12 +37,23 @@
 
             <!-- Mobile -->
             <div class="col-md-6">
-                <label for="mobile_number" class="form-label fw-bold text-dark small mb-2">{{ __('Mobile Number') }} <span class="text-danger">*</span></label>
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <label for="mobile_number" class="form-label fw-bold text-dark small mb-0">{{ __('Mobile Number') }}</label>
+                    <span class="badge rounded-pill bg-light text-secondary border px-2 py-0.5" style="font-size: 0.72rem; font-weight: 500;">
+                        <i class="bi bi-lock-fill me-1 text-muted"></i>{{ __('Primary • Locked') }}
+                    </span>
+                </div>
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0 text-muted px-3" style="border-radius: 12px 0 0 12px; border-color: #cbd5e1;">
                         <i class="bi bi-telephone fs-6"></i>
                     </span>
-                    <input id="mobile_number" name="mobile_number" type="text" class="form-control border-start-0 py-2.5 ps-1" value="{{ old('mobile_number', $user->mobile_number) }}" required placeholder="10-digit mobile number" style="border-radius: 0 12px 12px 0; border-color: #cbd5e1; font-size: 0.92rem; color: #0f172a;">
+                    <input id="mobile_number" name="mobile_number" type="text" class="form-control border-start-0 border-end-0 py-2.5 ps-1" value="{{ $user->mobile_number }}" readonly tabindex="-1" aria-readonly="true" placeholder="10-digit mobile number" style="border-color: #cbd5e1; font-size: 0.92rem; color: #475569; background-color: #f8fafc; cursor: not-allowed; font-weight: 600;">
+                    <span class="input-group-text bg-light border-start-0 text-muted px-3" style="border-radius: 0 12px 12px 0; border-color: #cbd5e1;" title="Registered mobile number cannot be changed">
+                        <i class="bi bi-lock-fill text-muted"></i>
+                    </span>
+                </div>
+                <div class="form-text text-muted small mt-1.5" style="font-size: 0.76rem;">
+                    <i class="bi bi-shield-lock-fill text-success me-1"></i>{{ __('Your registered mobile number is verified and cannot be changed.') }}
                 </div>
                 @error('mobile_number') <div class="text-danger small mt-1.5">{{ $message }}</div> @enderror
             </div>
@@ -103,8 +114,8 @@
             </div>
         </div>
 
-        <div class="d-flex align-items-center gap-3 mt-4 pt-3 border-top">
-            <button type="submit" class="btn btn-primary rounded-pill px-4 py-2.5 fw-bold shadow-sm d-inline-flex align-items-center gap-2" style="font-size: 0.92rem;">
+        <div class="d-flex align-items-center gap-3 mt-4 pt-3 border-top flex-wrap">
+            <button type="submit" class="btn btn-primary rounded-pill px-4 py-2.5 fw-bold shadow-sm d-inline-flex align-items-center justify-content-center gap-2 w-100 w-sm-auto" style="font-size: 0.92rem;">
                 <i class="bi bi-check-lg"></i> {{ __('Save Profile Changes') }}
             </button>
             @if (session('status') === 'profile-updated')

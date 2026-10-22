@@ -20,7 +20,7 @@
     @include('customer.components.home.top-brands', ['brands' => $brands])
     @include('customer.components.home.new-arrivals', ['latestProducts' => $latestProducts])
 
-    @include('customer.components.home.testimonials', ['testimonials' => $testimonials ?? collect()])
+    @include('customer.components.home.explore-more', ['exploreProducts' => $exploreProducts, 'totalExploreCount' => $totalExploreCount])
 
     @include('customer.components.home.newsletter')
 @endsection

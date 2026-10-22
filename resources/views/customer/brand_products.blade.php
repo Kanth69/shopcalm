@@ -6,19 +6,10 @@
 @section('content')
 <div class="container my-2 my-md-4 px-2 px-md-3">
     
-    {{-- 1. Breadcrumbs --}}
-    <nav aria-label="breadcrumb" class="mb-2 mb-md-3">
-        <ol class="breadcrumb small mb-0" style="font-size: 0.82rem;">
-            <li class="breadcrumb-item"><a href="{{ route('home') }}" class="text-decoration-none text-muted">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('brands.index') }}" class="text-decoration-none text-muted">Brands</a></li>
-            <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">{{ $brand->name }}</li>
-        </ol>
-    </nav>
-
-    {{-- 2. Brand Top Header (Clean Vibrant Gradient Banner) --}}
-    <div class="card border-0 shadow-sm rounded-4 mb-4 mb-md-5 overflow-hidden" 
+    {{-- Brand Top Header (Clean Vibrant Gradient Banner) --}}
+    <div class="card border-0 shadow-sm rounded-4 mb-3 mb-md-4 overflow-hidden" 
          style="background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #7c3aed 100%); box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25) !important;">
-        <div class="card-body p-3 p-md-3.5">
+        <div class="card-body p-3 p-md-4">
             <div class="d-flex align-items-center justify-content-between gap-2">
                 {{-- Left: Back Arrow + Logo/Icon + Title + Count --}}
                 <div class="d-flex align-items-center min-w-0">

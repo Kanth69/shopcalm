@@ -1,10 +1,10 @@
 @if(isset($activeEngagement) && $activeEngagement)
-    <div id="engagement-card" class="card border-0 shadow-sm mb-4 overflow-hidden"
+    <div id="engagement-card" class="card border-0 shadow-sm mb-3 mb-md-4 rounded-4 overflow-hidden"
          style="border-left: 5px solid {{ $activeEngagement['template']['theme_color'] ?? '#3b82f6' }} !important;">
-        <div class="card-body p-4">
+        <div class="card-body p-3 p-sm-4">
             <div class="d-flex align-items-start">
-                <div class="flex-shrink-0 bg-light rounded-circle p-3 me-3 text-primary">
-                    <i class="bi {{ $activeEngagement['template']['icon'] ?? 'bi-megaphone' }} fs-3"></i>
+                <div class="flex-shrink-0 bg-light rounded-circle p-2.5 p-sm-3 me-2.5 me-sm-3 text-primary">
+                    <i class="bi {{ $activeEngagement['template']['icon'] ?? 'bi-megaphone' }} fs-4 fs-sm-3"></i>
                 </div>
                 <div class="flex-grow-1">
                     <div class="d-flex justify-content-between align-items-center mb-1">

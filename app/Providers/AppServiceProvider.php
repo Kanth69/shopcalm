@@ -21,6 +21,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(SearchService::class, function ($app) {
             return new SearchService();
         });
+        $this->app->singleton(CartService::class);
+        $this->app->singleton(\App\Services\OfferService::class);
     }
 
     /**
@@ -66,46 +68,52 @@ class AppServiceProvider extends ServiceProvider
         // Register User Policy
         Gate::policy(User::class, UserPolicy::class);
 
-        // Share dynamic Store Name globally across all views
+        // Share dynamic Store Name globally across all views (cached)
         View::composer('*', function ($view) {
             $view->with('storeName', \App\Models\Setting::get('store_name', config('app.name', 'ShopCalm')));
         });
 
-        View::composer('customer.*', function ($view) {
-            $cartService = app(CartService::class);
-            $cart = $cartService->getCart();
-            $cartItemMap = []; // product_id => [item_id, quantity]
+        static $customerViewShared = null;
 
-            if ($cart) {
-                foreach ($cart->items as $item) {
-                    $cartItemMap[$item->product_id] = [
-                        'id' => $item->id,
-                        'qty' => $item->quantity
-                    ];
+        View::composer(['customer.*', 'layouts.customer'], function ($view) use (&$customerViewShared) {
+            if ($customerViewShared === null) {
+                $cartService = app(CartService::class);
+                $cart = $cartService->getCart();
+                $cartItemMap = []; // product_id => [item_id, quantity]
+
+                if ($cart && $cart->relationLoaded('items')) {
+                    foreach ($cart->items as $item) {
+                        $cartItemMap[$item->product_id] = [
+                            'id' => $item->id,
+                            'qty' => $item->quantity
+                        ];
+                    }
                 }
+
+                $wishlistedProductIds = [];
+                if (Auth::check() && Auth::user()->wishlist) {
+                    $wishlistedProductIds = Auth::user()->wishlist->items->pluck('product_id')->toArray();
+                }
+
+                $menuCategories = \Illuminate\Support\Facades\Cache::remember('menu_categories', 3600, function() {
+                    return \App\Models\Category::where('status', 'Active')->orderBy('name')->take(8)->get();
+                });
+
+                $menuBrands = \Illuminate\Support\Facades\Cache::remember('menu_brands', 3600, function() {
+                    return \App\Models\Brand::where('status', 'Active')->orderBy('name')->take(8)->get();
+                });
+
+                $customerViewShared = [
+                    'cartItemCount'        => $cartService->allItemsCount(),
+                    'cartSubtotal'         => $cartService->subtotal(),
+                    'cartItemMap'          => $cartItemMap,
+                    'wishlistedProductIds' => $wishlistedProductIds,
+                    'menuCategories'       => $menuCategories,
+                    'menuBrands'           => $menuBrands,
+                ];
             }
 
-            $wishlistedProductIds = [];
-            if (Auth::check() && Auth::user()->wishlist) {
-                $wishlistedProductIds = Auth::user()->wishlist->items->pluck('product_id')->toArray();
-            }
-
-            $menuCategories = \Illuminate\Support\Facades\Cache::remember('menu_categories', 3600, function() {
-                return \App\Models\Category::where('status', 'Active')->orderBy('name')->take(8)->get();
-            });
-
-            $menuBrands = \Illuminate\Support\Facades\Cache::remember('menu_brands', 3600, function() {
-                return \App\Models\Brand::where('status', 'Active')->orderBy('name')->take(8)->get();
-            });
-
-            $view->with([
-                'cartItemCount' => $cartService->totalItems(),
-                'cartSubtotal' => $cartService->subtotal(),
-                'cartItemMap' => $cartItemMap,
-                'wishlistedProductIds' => $wishlistedProductIds,
-                'menuCategories' => $menuCategories,
-                'menuBrands' => $menuBrands,
-            ]);
+            $view->with($customerViewShared);
         });
 
         // View composer for Product Manager portal alerts & badges

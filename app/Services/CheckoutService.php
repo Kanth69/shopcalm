@@ -127,8 +127,13 @@ class CheckoutService
             $finalPaymentMethod = $isZeroOrder ? ($walletAmountUsed > 0 ? 'wallet' : 'coupon') : 'cod';
             $finalPaymentStatus = $isZeroOrder ? 'paid' : 'pending';
 
-            if ($finalPaymentMethod === 'cod' && empty($pincodeCheck['is_cod_available'])) {
-                throw new Exception("Cash on Delivery (COD) is not available for PIN code {$shippingZip}. Please choose Online Payment.");
+            if ($finalPaymentMethod === 'cod') {
+                if (Setting::get('enable_cod', '1') !== '1') {
+                    throw new Exception("Cash on Delivery (COD) is currently disabled by store management. Please choose Online Payment.");
+                }
+                if (empty($pincodeCheck['is_cod_available'])) {
+                    throw new Exception("Cash on Delivery (COD) is not available for PIN code {$shippingZip}. Please choose Online Payment.");
+                }
             }
 
             // Save address to user's address book if new
@@ -168,7 +173,7 @@ class CheckoutService
                 'payment_status' => $finalPaymentStatus,
                 'status' => 'confirmed',
                 'shipping_name' => $data['shipping_name'],
-                'shipping_email' => $data['shipping_email'],
+                'shipping_email' => !empty($data['shipping_email']) ? $data['shipping_email'] : ($user->email ?? null),
                 'shipping_phone' => $data['shipping_phone'],
                 'shipping_address' => $data['shipping_address'],
                 'shipping_city' => $data['shipping_city'],
@@ -618,6 +623,9 @@ class CheckoutService
             }
 
             // 1. Check PIN code serviceability & COD availability
+            if (Setting::get('enable_cod', '1') !== '1') {
+                throw new Exception("Cash on Delivery (COD) is currently disabled by store management. Please complete payment online.");
+            }
             $deliveryService = app(\App\Services\DeliveryService::class);
             $pincodeCheck = $deliveryService->checkServiceability($order->shipping_zip ?? '');
             if (!$pincodeCheck['is_serviceable']) {

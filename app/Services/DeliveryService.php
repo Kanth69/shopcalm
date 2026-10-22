@@ -51,20 +51,23 @@ class DeliveryService
         }
 
         $freeShippingMin = (float) Setting::get('free_shipping_min', 499);
-        $isCodFeeEnabled = Setting::get('cod_fee_enabled', '1');
-        $isCodFeeActive = ($isCodFeeEnabled === '1' || $isCodFeeEnabled === 'true' || $isCodFeeEnabled === true || $isCodFeeEnabled === 1);
-
         $deliveryDays = (int) ($record->delivery_days ?? 3);
         $deliveryDate = $record->getEstimatedDeliveryDate();
         $deliveryText = $record->getEstimatedDeliveryText();
         $city = $record->city;
         $state = $record->state;
         $locationText = "{$record->city}, {$record->pincode}";
-        $isCodAvailable = (bool) $record->is_cod_available;
+
+        // Master COD Switch check (Level 1) & Pincode availability check (Level 2)
+        $isGlobalCodEnabled = (Setting::get('enable_cod', '1') === '1');
+        $isCodAvailable = $isGlobalCodEnabled && (bool) $record->is_cod_available;
+
         $deliveryCharge = (float) $record->delivery_charge;
         $codFee = 0.00;
-        if ($isCodFeeActive && $isCodAvailable) {
-            $codFee = ($record->cod_fee !== null && (float) $record->cod_fee > 0)
+        if ($isCodAvailable) {
+            // Priority 1: Specific Pincode COD Fee (if configured in pincodes table)
+            // Priority 2: Store Default COD Flat Fee (from store settings, e.g. ₹40)
+            $codFee = ($record->cod_fee !== null)
                 ? (float) $record->cod_fee
                 : (float) Setting::get('cod_flat_fee', 40.00);
         }
@@ -79,6 +82,7 @@ class DeliveryService
             'delivery_days' => $deliveryDays,
             'estimated_delivery' => $deliveryText,
             'estimated_date_iso' => $deliveryDate->toISOString(),
+            'is_global_cod_enabled' => $isGlobalCodEnabled,
             'is_cod_available' => $isCodAvailable,
             'delivery_charge' => $deliveryCharge,
             'cod_fee' => $codFee,
@@ -103,7 +107,7 @@ class DeliveryService
     }
 
     /**
-     * Retrieve active delivery location from session or fallback cookie/user default (always verified against DB)
+     * Retrieve active delivery location from session or fallback cookie (always verified against DB)
      */
     public function getSessionLocation(): ?array
     {
@@ -119,19 +123,6 @@ class DeliveryService
                 return $check;
             }
             Session::forget(['delivery_location', 'delivery_pincode']);
-        }
-
-        // If customer is logged in, check their primary address zip
-        if (auth('customer')->check()) {
-            $user = auth('customer')->user();
-            $address = $user->addresses()->latest()->first();
-            if ($address && $address->zip) {
-                $check = $this->checkServiceability($address->zip);
-                if ($check['is_serviceable']) {
-                    Session::put('delivery_location', $check);
-                    return $check;
-                }
-            }
         }
 
         return null;

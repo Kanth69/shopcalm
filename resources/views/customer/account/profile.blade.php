@@ -5,27 +5,27 @@
 @section('account_content')
 
     {{-- 1. Top Profile Header Summary Card (Spacious & Clean) --}}
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff;">
-        <div class="card-body p-4 p-md-5">
-            <div class="d-flex align-items-center flex-wrap flex-sm-nowrap" style="gap: 1.75rem !important;">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3 mb-md-4" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff;">
+        <div class="card-body p-3 p-sm-4 p-md-5">
+            <div class="d-flex align-items-center flex-wrap flex-sm-nowrap" style="gap: 1.5rem !important;">
                 <!-- Avatar with Glowing Gradient Ring -->
-                <div class="rounded-circle d-flex align-items-center justify-content-center fw-bolder shadow flex-shrink-0 me-2" 
-                    style="width: 70px; height: 70px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); font-size: 1.7rem; color: #fff; border: 3px solid rgba(255,255,255,0.25); box-shadow: 0 8px 22px rgba(99,102,241,0.4);">
+                <div class="rounded-circle d-flex align-items-center justify-content-center fw-bolder shadow flex-shrink-0" 
+                    style="width: 64px; height: 64px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); font-size: 1.6rem; color: #fff; border: 3px solid rgba(255,255,255,0.25); box-shadow: 0 8px 22px rgba(99,102,241,0.4);">
                     {{ strtoupper(substr($user->name ?? 'C', 0, 1)) }}
                 </div>
 
                 <div class="overflow-hidden flex-grow-1">
-                    <div class="d-flex align-items-center gap-3 flex-wrap mb-2">
-                        <h4 class="fw-bolder mb-0 text-white text-truncate" style="letter-spacing: -0.02em;">{{ $user->name }}</h4>
-                        <span class="badge rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-1.5 shadow-xs" 
-                              style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4); font-size: 0.76rem; letter-spacing: 0.03em;">
+                    <div class="d-flex align-items-center gap-2 gap-sm-3 flex-wrap mb-2">
+                        <h4 class="fw-bolder mb-0 text-white text-truncate" style="letter-spacing: -0.02em; font-size: clamp(1.1rem, 3vw, 1.4rem);">{{ $user->name }}</h4>
+                        <span class="badge rounded-pill px-3 py-1 fw-bold d-inline-flex align-items-center gap-1.5 shadow-xs" 
+                              style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4); font-size: 0.74rem; letter-spacing: 0.03em;">
                             <i class="bi bi-patch-check-fill" style="color: #34d399; font-size: 0.85rem;"></i> Verified Member
                         </span>
                     </div>
 
-                    <div class="d-flex align-items-center gap-4 flex-wrap pt-0.5" style="font-size: 0.88rem; color: rgba(255, 255, 255, 0.85) !important;">
-                        <span class="d-inline-flex align-items-center"><i class="bi bi-envelope-fill me-2" style="color: #38bdf8; font-size: 0.95rem;"></i>{{ $user->email ?? 'No email provided' }}</span>
-                        <span class="d-inline-flex align-items-center"><i class="bi bi-telephone-fill me-2" style="color: #4ade80; font-size: 0.95rem;"></i>{{ $user->mobile_number ?? 'No mobile provided' }}</span>
+                    <div class="d-flex align-items-center gap-3 gap-sm-4 flex-wrap pt-0.5" style="font-size: 0.84rem; color: rgba(255, 255, 255, 0.85) !important;">
+                        <span class="d-inline-flex align-items-center text-truncate"><i class="bi bi-envelope-fill me-2" style="color: #38bdf8; font-size: 0.9rem;"></i>{{ $user->email ?? 'No email provided' }}</span>
+                        <span class="d-inline-flex align-items-center text-truncate"><i class="bi bi-telephone-fill me-2" style="color: #4ade80; font-size: 0.9rem;"></i>{{ $user->mobile_number ?? 'No mobile provided' }}</span>
                     </div>
                 </div>
             </div>
@@ -33,17 +33,17 @@
     </div>
 
     {{-- 2. Personal Details Form Card --}}
-    <div class="card mb-4 border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
-        <div class="card-body p-4 p-md-5">
+    <div class="card mb-3 mb-md-4 border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+        <div class="card-body p-3 p-sm-4 p-md-5">
             @include('profile.partials.update-profile-information-form')
         </div>
     </div>
 
     {{-- 3. Newsletter Subscription Preferences Card --}}
-    <div class="card mb-4 border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
-        <div class="card-header bg-white py-4 px-4 px-md-5 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div class="card mb-3 mb-md-4 border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+        <div class="card-header bg-white py-3 py-md-4 px-3 px-sm-4 px-md-5 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-3">
             <div>
-                <h5 class="mb-1 fw-bolder text-dark" style="letter-spacing: -0.02em;"><i class="bi bi-envelope-heart text-primary me-2"></i>Newsletter & Email Preferences</h5>
+                <h5 class="mb-1 fw-bolder text-dark" style="letter-spacing: -0.02em; font-size: clamp(1rem, 2.5vw, 1.25rem);"><i class="bi bi-envelope-heart text-primary me-2"></i>Newsletter & Email Preferences</h5>
                 <p class="text-muted small mb-0">Manage your promotional email and newsletter notifications.</p>
             </div>
             <span id="newsletter-status-badge" class="badge rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-1.5 shadow-2xs" 
@@ -52,7 +52,7 @@
                 <span id="newsletter-badge-text">{{ $isSubscribed ? 'Subscribed' : 'Unsubscribed' }}</span>
             </span>
         </div>
-        <div class="card-body p-4 p-md-5">
+        <div class="card-body p-3 p-sm-4 p-md-5">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-4">
                 <div style="max-width: 580px;">
                     <h6 class="fw-bold text-dark mb-1.5 fs-6">Receive Newsletter Deals & Updates</h6>
@@ -76,17 +76,17 @@
     </div>
 
     {{-- 4. DPDP Act 2023 Personal Data & Account Erasure Card --}}
-    <div class="card mb-4 border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
-        <div class="card-header bg-white py-4 px-4 px-md-5 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div class="card mb-3 mb-md-4 border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+        <div class="card-header bg-white py-3 py-md-4 px-3 px-sm-4 px-md-5 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-3">
             <div>
-                <h5 class="mb-1 fw-bolder text-dark" style="letter-spacing: -0.02em;"><i class="bi bi-shield-check text-success me-2"></i>Data Privacy & Account Erasure (DPDP Act 2023)</h5>
+                <h5 class="mb-1 fw-bolder text-dark" style="letter-spacing: -0.02em; font-size: clamp(1rem, 2.5vw, 1.25rem);"><i class="bi bi-shield-check text-success me-2"></i>Data Privacy & Account Erasure (DPDP Act 2023)</h5>
                 <p class="text-muted small mb-0">Under Indian Data Privacy Laws, you have full control over your personal data.</p>
             </div>
             <span class="badge rounded-pill px-3 py-1.5 fw-bold" style="background:#e0e7ff; color:#3730a3; border:1px solid #c7d2fe; font-size: 0.78rem;">
                 DPDP Protected
             </span>
         </div>
-        <div class="card-body p-4 p-md-5">
+        <div class="card-body p-3 p-sm-4 p-md-5">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-4 mb-4 pb-4 border-bottom">
                 <div style="max-width: 600px;">
                     <h6 class="fw-bold text-dark mb-1.5 fs-6">Download Personal Data Archive (DPDP Act Sec 11)</h6>
@@ -94,8 +94,8 @@
                         Obtain a structured copy of your stored personal profile, saved addresses, wallet balance, and order history as a `.json` file.
                     </p>
                 </div>
-                <div>
-                    <a href="{{ route('profile.export') }}" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold text-decoration-none shadow-2xs d-inline-flex align-items-center" style="font-size: 0.85rem; gap: 0.4rem;">
+                <div class="w-100 w-sm-auto">
+                    <a href="{{ route('profile.export') }}" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold text-decoration-none shadow-2xs d-inline-flex align-items-center justify-content-center w-100 w-sm-auto" style="font-size: 0.85rem; gap: 0.4rem;">
                         <i class="bi bi-download"></i> <span>Download My Data</span>
                     </a>
                 </div>
@@ -108,8 +108,8 @@
                         You have the right to request deletion of your profile data. In accordance with DPDP Act 2023 rules and GST Tax Regulations, personal profile data will be erased while order invoices are archived securely for tax compliance.
                     </p>
                 </div>
-                <div>
-                    <button type="button" onclick="confirmAccountDeletion()" class="btn btn-outline-danger rounded-pill px-4 py-2 fw-bold shadow-2xs d-inline-flex align-items-center" style="font-size: 0.85rem; gap: 0.4rem;">
+                <div class="w-100 w-sm-auto">
+                    <button type="button" onclick="confirmAccountDeletion()" class="btn btn-outline-danger rounded-pill px-4 py-2 fw-bold shadow-2xs d-inline-flex align-items-center justify-content-center w-100 w-sm-auto" style="font-size: 0.85rem; gap: 0.4rem;">
                         <i class="bi bi-trash3"></i> <span>Delete Account & Data</span>
                     </button>
                 </div>

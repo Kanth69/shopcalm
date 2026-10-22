@@ -16,7 +16,7 @@ class PlaceOrderRequest extends FormRequest
         return [
             'address_id' => 'nullable|exists:addresses,id',
             'shipping_name' => 'required|string|max:255',
-            'shipping_email' => 'required|email|max:255',
+            'shipping_email' => 'nullable|email|max:255',
             'shipping_phone' => 'required|string|max:20',
             'shipping_address' => 'required|string|max:500',
             'shipping_city' => 'required|string|max:100',
@@ -26,7 +26,7 @@ class PlaceOrderRequest extends FormRequest
             'payment_method' => 'nullable|string|in:cod,online,online_razorpay,wallet',
             'use_wallet' => 'nullable|boolean',
             'terms_consent' => 'nullable|string',
-            'notes' => 'nullable|string',
+            'notes' => 'nullable|string|max:150',
             'save_address' => 'nullable|boolean',
         ];
     }

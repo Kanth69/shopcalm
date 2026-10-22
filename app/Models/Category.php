@@ -38,11 +38,15 @@ class Category extends Model
         static::saved(function () {
             \Illuminate\Support\Facades\Cache::forget('home_categories');
             \Illuminate\Support\Facades\Cache::forget('all_categories');
+            \Illuminate\Support\Facades\Cache::forget('menu_categories');
+            \Illuminate\Support\Facades\Cache::forget('all_categories_index');
         });
 
         static::deleted(function () {
             \Illuminate\Support\Facades\Cache::forget('home_categories');
             \Illuminate\Support\Facades\Cache::forget('all_categories');
+            \Illuminate\Support\Facades\Cache::forget('menu_categories');
+            \Illuminate\Support\Facades\Cache::forget('all_categories_index');
         });
     }
 

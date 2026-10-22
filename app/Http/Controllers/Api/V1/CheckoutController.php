@@ -103,10 +103,11 @@ class CheckoutController extends BaseApiController
         $freeShippingMin = (float) Setting::get('free_shipping_min', 499);
         $pincode = $request->input('shipping_pincode') ?: $request->input('shipping_zip');
 
+        $isGlobalCodEnabled = (Setting::get('enable_cod', '1') === '1');
         $deliveryCharge = 0.00;
         $codFee = 0.00;
         $isServiceable = false;
-        $isCodAllowed = true;
+        $isCodAllowed = $isGlobalCodEnabled;
         $estimatedDelivery = null;
         $deliveryDays = null;
         $pincodeCity = null;
@@ -125,7 +126,7 @@ class CheckoutController extends BaseApiController
                 $freeShippingMin = (float) ($pinCheck['free_shipping_min'] ?? $freeShippingMin);
                 $rawDeliveryCharge = (float) ($pinCheck['delivery_charge'] ?? 0.00);
                 $deliveryCharge = ($subtotal >= $freeShippingMin) ? 0.00 : $rawDeliveryCharge;
-                $isCodAllowed = (bool) ($pinCheck['is_cod_available'] ?? true);
+                $isCodAllowed = $isGlobalCodEnabled && (bool) ($pinCheck['is_cod_available'] ?? true);
                 $codFee = $isCodAllowed ? (float) ($pinCheck['cod_fee'] ?? 0.00) : 0.00;
                 $estimatedDelivery = $pinCheck['estimated_delivery'] ?? null;
                 $deliveryDays = isset($pinCheck['delivery_days']) ? (int) $pinCheck['delivery_days'] : null;
@@ -292,6 +293,9 @@ class CheckoutController extends BaseApiController
             }
 
             if ($validated['payment_method'] === 'cod') {
+                if (Setting::get('enable_cod', '1') !== '1') {
+                    return $this->sendError("Cash on Delivery (COD) is currently disabled by store management. Please select Online Payment.", [], 422);
+                }
                 $pincodeCheck = app(\App\Services\DeliveryService::class)->checkServiceability($validated['shipping_zip']);
                 if (!$pincodeCheck['is_serviceable']) {
                     return $this->sendError($pincodeCheck['message'] ?? "Delivery is currently unavailable to PIN code {$validated['shipping_zip']}.", [], 422);
@@ -557,6 +561,10 @@ class CheckoutController extends BaseApiController
 
         if (!in_array($order->payment_status, ['failed', 'pending'])) {
             return $this->sendError('This order cannot be switched to COD.', [], 400);
+        }
+
+        if (Setting::get('enable_cod', '1') !== '1') {
+            return $this->sendError("Cash on Delivery (COD) is currently disabled by store management. Please select Online Payment.", [], 422);
         }
 
         $shippingZip = $order->shipping_zip ?? $order->shipping_pincode;

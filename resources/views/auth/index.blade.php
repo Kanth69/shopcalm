@@ -570,30 +570,6 @@
             z-index: 2;
         }
 
-        .google-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            padding: 12px;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            text-decoration: none;
-            color: #475569;
-            font-size: 14px;
-            font-weight: 700;
-            transition: all 0.2s;
-            background: white;
-        }
-
-        .google-btn:hover {
-            background-color: #f8fafc;
-            border-color: #cbd5e1;
-        }
-
-        .google-btn img {
-            width: 20px;
-        }
 
         /* Toast Popup */
         .auth-toast {
@@ -718,16 +694,7 @@
                 font-size: 11px;
                 padding: 0 10px;
             }
-            .google-btn {
-                padding: 10px 14px;
-                font-size: 13.5px;
-                border-radius: 11px;
-                min-height: 42px;
-                gap: 8px;
-            }
-            .google-btn img {
-                width: 18px;
-            }
+
             .auth-alert {
                 padding: 10px 12px;
                 font-size: 12.5px;

@@ -28,12 +28,27 @@ class OfferService
             ->get();
     }
 
+    protected ?Collection $cachedLiveOffers = null;
+
+    /**
+     * Get all active live offers with targets memoized per request.
+     */
+    public function getLiveOffers(): Collection
+    {
+        if ($this->cachedLiveOffers !== null) {
+            return $this->cachedLiveOffers;
+        }
+
+        $this->cachedLiveOffers = Offer::live()->with('targets')->orderBy('priority', 'desc')->get();
+        return $this->cachedLiveOffers;
+    }
+
     /**
      * Attach active sale prices and badges to a collection of products.
      */
     public function applyOfferDiscountsToProducts($products)
     {
-        $liveOffers = Offer::live()->with('targets')->orderBy('priority', 'desc')->get();
+        $liveOffers = $this->getLiveOffers();
 
         if ($liveOffers->isEmpty()) {
             return $products;
@@ -60,7 +75,7 @@ class OfferService
      */
     public function applyOfferDiscountToProduct(Product $product): Product
     {
-        $liveOffers = Offer::live()->with('targets')->orderBy('priority', 'desc')->get();
+        $liveOffers = $this->getLiveOffers();
 
         if ($liveOffers->isEmpty()) {
             return $product;

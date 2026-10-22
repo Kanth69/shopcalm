@@ -34,6 +34,7 @@ class AddressController extends Controller
 
         $data = $request->validated();
         $data['country'] = $data['country'] ?? 'India';
+        unset($data['is_default']);
 
         $address = $user->addresses()->create($data);
 
@@ -70,6 +71,7 @@ class AddressController extends Controller
 
         $data = $request->validated();
         $data['country'] = $data['country'] ?? 'India';
+        unset($data['is_default']);
         $address->update($data);
 
         if ($request->ajax() || $request->wantsJson() || $request->expectsJson()) {

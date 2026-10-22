@@ -1,7 +1,8 @@
+@if(!request()->routeIs('product.show'))
 <!-- ============================================================ -->
 <!-- 📱 APP-LIKE STICKY MOBILE BOTTOM NAVIGATION BAR -->
 <!-- ============================================================ -->
-<nav class="mobile-bottom-nav d-block d-md-none position-fixed bottom-0 start-0 end-0 bg-white border-top shadow-lg" style="z-index: 1040; height: 60px; backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.96) !important;">
+<nav class="mobile-bottom-nav d-block d-md-none position-fixed bottom-0 start-0 end-0 bg-white border-top shadow-lg" style="z-index: 1040; height: calc(60px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.96) !important;">
     <div class="container-fluid h-100 px-2">
         <div class="row h-100 g-0 align-items-center text-center">
             {{-- 1. Home --}}
@@ -72,7 +73,9 @@
 }
 @media (max-width: 767.98px) {
     body {
-        padding-bottom: 68px !important;
+        padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)) !important;
     }
 }
 </style>
+@endif
+

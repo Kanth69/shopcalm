@@ -7,7 +7,7 @@
             <div class="position-absolute w-100 h-100"
                  style="background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px); background-size: 24px 24px; top: 0; left: 0; pointer-events: none;"></div>
 
-            <div class="card-body p-3.5 p-md-5 text-center position-relative z-1">
+            <div class="card-body p-3 p-sm-4 p-md-5 text-center position-relative z-1">
                 <div class="d-inline-flex align-items-center justify-content-center mb-2.5 rounded-circle shadow-xs" 
                      style="width: 48px; height: 48px; background: rgba(99, 102, 241, 0.25); border: 2px solid rgba(99,102,241,0.5);">
                     <i class="bi bi-envelope-open-heart-fill fs-4 text-white"></i>

@@ -9,35 +9,49 @@ class SearchService
 {
     public function search(string $searchTerm): array
     {
+        $searchTerm = trim($searchTerm);
+        if ($searchTerm === '') {
+            return ['query' => Product::query()->where('status', 'Active'), 'did_you_mean' => null, 'original_term' => ''];
+        }
+
         $query = Product::query()->where('status', 'Active');
         $originalQuery = clone $query;
 
-        // 1. Exact and Partial Match
+        // 1. Exact and Partial Match (Full Phrase)
         $this->applySearchConditions($query, $searchTerm);
-        $products = $query->get();
 
-        if ($products->isNotEmpty()) {
+        if ((clone $query)->exists()) {
             return ['query' => $query, 'did_you_mean' => null, 'original_term' => $searchTerm];
         }
 
-        // 2. Fuzzy Search Fallback
-        $allProductNames = Product::pluck('name', 'id');
+        // 2. Multi-word Token Match (Handles combinations like "Samsung mobile", "Nike shoe", "Apple phone", "5G phone")
+        $tokens = array_filter(preg_split('/\s+/', $searchTerm));
+        if (count($tokens) > 1) {
+            $tokenQuery = Product::query()->where('status', 'Active');
+            foreach ($tokens as $token) {
+                $this->applySearchConditions($tokenQuery, $token);
+            }
+            if ((clone $tokenQuery)->exists()) {
+                return ['query' => $tokenQuery, 'did_you_mean' => null, 'original_term' => $searchTerm];
+            }
+        }
+
+        // 3. Fuzzy Search Fallback for Typos (Checks word-level distance with cached active product catalog)
+        $allProductNames = \Illuminate\Support\Facades\Cache::remember('search_product_words', 600, function () {
+            return Product::where('status', 'Active')->pluck('name')->toArray();
+        });
         $suggestions = $this->findSimilarWords($searchTerm, $allProductNames);
 
         if (!empty($suggestions)) {
             $bestMatch = array_key_first($suggestions);
-
-            // If only one good suggestion, show results for it
-            if (count($suggestions) == 1) {
-                $this->applySearchConditions($originalQuery, $bestMatch);
-                return ['query' => $originalQuery, 'did_you_mean' => $bestMatch, 'original_term' => $searchTerm];
+            $fuzzyQuery = Product::query()->where('status', 'Active');
+            $this->applySearchConditions($fuzzyQuery, $bestMatch);
+            if ((clone $fuzzyQuery)->exists()) {
+                return ['query' => $fuzzyQuery, 'did_you_mean' => $bestMatch, 'original_term' => $searchTerm];
             }
-
-            // If multiple suggestions, show them
-            return ['query' => $originalQuery->whereRaw('1 = 0'), 'suggestions' => $suggestions, 'original_term' => $searchTerm];
         }
 
-        // 3. No results
+        // 4. No results
         return ['query' => $originalQuery->whereRaw('1 = 0'), 'did_you_mean' => null, 'original_term' => $searchTerm];
     }
 
@@ -56,13 +70,17 @@ class SearchService
         });
     }
 
-    private function findSimilarWords(string $searchTerm, $words, int $threshold = 3): array
+    private function findSimilarWords(string $searchTerm, $words, int $threshold = 2): array
     {
         $suggestions = [];
         foreach ($words as $word) {
-            $distance = levenshtein(strtolower($searchTerm), strtolower($word));
-            if ($distance <= $threshold) {
-                $suggestions[$word] = $distance;
+            $wordsInName = preg_split('/\s+/', (string) $word);
+            foreach ($wordsInName as $single) {
+                if (strlen($single) < 3) continue;
+                $distance = levenshtein(strtolower($searchTerm), strtolower($single));
+                if ($distance <= $threshold) {
+                    $suggestions[$single] = $distance;
+                }
             }
         }
         asort($suggestions);

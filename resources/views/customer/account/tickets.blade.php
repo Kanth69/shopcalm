@@ -22,7 +22,7 @@
 @endif
 
 {{-- Hero Banner --}}
-<div class="rounded-4 mb-3.5 mb-md-4 p-3.5 p-sm-4 p-md-4 shadow-sm position-relative overflow-hidden ticket-hero"
+<div class="rounded-4 mb-4 p-3 p-sm-4 shadow-sm position-relative overflow-hidden ticket-hero"
      style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%);">
     <div class="position-absolute w-100 h-100"
          style="background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px); background-size: 20px 20px; top: 0; left: 0; pointer-events: none;"></div>
@@ -35,14 +35,14 @@
                 <i class="bi bi-ticket-perforated-fill fs-5"></i>
             </div>
             <div>
-                <h5 class="fw-bolder text-white mb-0.5" style="letter-spacing: -0.02em; font-size: clamp(1rem, 3.5vw, 1.2rem);">Support & Help Tickets</h5>
-                <p class="text-white-50 small mb-0" style="font-size: 0.78rem; line-height: 1.35;">Track inquiries, replies & resolution status</p>
+                <h5 class="fw-bolder text-white mb-0.5" style="letter-spacing: -0.02em; font-size: clamp(1rem, 3.5vw, 1.2rem);">Support &amp; Help Tickets</h5>
+                <p class="text-white-50 small mb-0" style="font-size: 0.78rem; line-height: 1.35;">Track inquiries, replies &amp; resolution status</p>
             </div>
         </div>
 
         {{-- Raise New Ticket Button (Compact on laptop, full-width touch friendly on mobile) --}}
         <div class="ticket-hero-cta flex-shrink-0">
-            <button type="button" class="btn btn-warning rounded-pill px-3.5 py-2 fw-bold shadow-sm text-dark d-inline-flex align-items-center gap-2 text-nowrap"
+            <button type="button" class="btn btn-warning rounded-pill px-3 py-2 fw-bold shadow-sm text-dark d-inline-flex align-items-center gap-2 text-nowrap"
                     data-bs-toggle="modal" data-bs-target="#newTicketModal" 
                     style="background: #fbbf24; border: none; font-size: 0.84rem; transition: transform 0.2s ease, box-shadow 0.2s ease;">
                 <i class="bi bi-plus-circle-fill text-dark"></i>
@@ -132,7 +132,7 @@
             <div class="col-12 col-lg-6 d-flex">
                 <div class="card border-0 shadow-xs rounded-4 ticket-card w-100 d-flex flex-column" 
                      style="background: #ffffff; border: 1.5px solid #e2e8f0 !important; border-radius: 16px !important;">
-                    <div class="p-3.5 p-sm-4 d-flex flex-column h-100">
+                    <div class="p-3 p-sm-4 d-flex flex-column h-100">
                         
                         {{-- Top Meta: ID + Status Badge + Date --}}
                         <div class="d-flex align-items-center justify-content-between gap-2 pb-2.5 border-bottom mb-3" style="border-color: #f1f5f9 !important;">
@@ -239,7 +239,7 @@
             <i class="bi bi-ticket-perforated fs-2"></i>
         </div>
         <h5 class="fw-bold text-dark mb-1">No Support Tickets Found</h5>
-        <p class="text-muted small mb-3.5 mx-auto" style="max-width: 420px; font-size: 0.84rem; line-height: 1.5;">
+        <p class="text-muted small mb-4 mx-auto" style="max-width: 420px; font-size: 0.84rem; line-height: 1.5;">
             @if(!empty($filter))
                 You don't have any tickets under the "{{ ucfirst($filter) }}" status.
             @else
@@ -248,7 +248,7 @@
         </p>
         <div class="d-flex align-items-center justify-content-center gap-2">
             @if(!empty($filter))
-                <a href="{{ route('account.tickets') }}" class="btn btn-outline-secondary rounded-pill px-3.5 py-2 fw-semibold btn-sm">
+                <a href="{{ route('account.tickets') }}" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-semibold btn-sm">
                     View All Tickets
                 </a>
             @endif
@@ -264,7 +264,7 @@
 <div class="modal fade" id="newTicketModal" tabindex="-1" aria-labelledby="newTicketModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
-            <div class="modal-header py-3 px-3.5 px-md-4 border-bottom" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff;">
+            <div class="modal-header py-3 px-3 px-md-4 border-bottom" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff;">
                 <div class="d-flex align-items-center gap-2">
                     <div class="rounded-3 d-flex align-items-center justify-content-center text-white" style="width: 32px; height: 32px; background: #f59e0b;">
                         <i class="bi bi-headset"></i>
@@ -279,8 +279,8 @@
 
             <form action="{{ route('page.contact.submit') }}" method="POST">
                 @csrf
-                <div class="modal-body p-3.5 p-md-4">
-                    <div class="row g-2.5">
+                <div class="modal-body p-3 p-md-4">
+                    <div class="row g-2">
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-bold text-dark mb-1" style="font-size: 0.78rem;">Your Name <span class="text-danger">*</span></label>
                             <input type="text" name="name" class="form-control rounded-3" value="{{ old('name', $user->name) }}" required style="font-size: 0.85rem;">
@@ -312,9 +312,9 @@
                     </div>
                 </div>
 
-                <div class="modal-footer bg-light py-2.5 px-3.5 px-md-4 border-top d-flex justify-content-between align-items-center">
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold shadow-xs d-inline-flex align-items-center gap-2"
+                <div class="modal-footer bg-light py-2 px-3 px-md-4 border-top d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 fw-semibold" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 py-1.5 fw-bold shadow-xs d-inline-flex align-items-center gap-2"
                             style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border: none;">
                         <i class="bi bi-send-fill me-1"></i> <span>Submit Ticket</span>
                     </button>

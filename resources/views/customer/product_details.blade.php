@@ -36,21 +36,9 @@
 @endsection
 
 @section('content')
-<div class="container my-3 my-md-4 px-3 px-md-4">
+<div class="container my-3 my-md-4 px-3 px-md-4 pb-5 mb-4 pb-md-0 mb-md-0">
     
-    {{-- 1. Breadcrumbs --}}
-    <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb small mb-0" style="font-size: 0.82rem;">
-            <li class="breadcrumb-item"><a href="{{ route('home') }}" class="text-decoration-none text-muted">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('shop') }}" class="text-decoration-none text-muted">Shop</a></li>
-            @if($product->category)
-                <li class="breadcrumb-item"><a href="{{ route('category.products', $product->category->slug) }}" class="text-decoration-none text-muted">{{ $product->category->name }}</a></li>
-            @endif
-            <li class="breadcrumb-item active text-dark fw-medium text-truncate" aria-current="page" style="max-width: 320px;">{{ $product->name }}</li>
-        </ol>
-    </nav>
-
-    {{-- 2. Main Product Details Row --}}
+    {{-- Main Product Details Row --}}
     <div class="row g-4 g-lg-5">
         
         {{-- Left Column: Sticky Image Gallery --}}
@@ -61,35 +49,24 @@
                 <div class="card border-0 rounded-4 overflow-hidden shadow-xs position-relative mb-2.5" 
                      style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
                     
-                    {{-- Prominent Discount Badge (Top Left) --}}
+                    {{-- Calculation of Discount --}}
                     @php
                         $hasDiscount = (isset($product->sale_price) && (float) $product->sale_price < (float) $product->price) || !empty($product->offer_discount_percentage);
                         $discountPct = $product->offer_discount_percentage ?? ($hasDiscount && (float) $product->price > 0 ? round((((float) $product->price - (float) $product->sale_price) / (float) $product->price) * 100) : 0);
                     @endphp
-                    @if($hasDiscount && $discountPct > 0)
-                        <div class="position-absolute top-0 start-0 m-3 z-2">
-                            <span class="badge bg-danger text-white px-2.5 py-1.5 fw-bold shadow-xs rounded-3" style="font-size: 0.8rem; letter-spacing: 0.3px;">
-                                {{ $discountPct }}% OFF
-                            </span>
-                        </div>
-                    @elseif(isset($product->offer_badge))
-                        <div class="position-absolute top-0 start-0 m-3 z-2">
-                            <span class="badge bg-primary text-white px-2.5 py-1.5 fw-bold shadow-xs rounded-3" style="font-size: 0.8rem;">
-                                {{ $product->offer_badge }}
-                            </span>
-                        </div>
-                    @endif
 
                     {{-- Wishlist Button (Top Right) --}}
+                    @php
+                        $isWishlisted = in_array($product->id, $wishlistedProductIds ?? []);
+                    @endphp
                     <div class="position-absolute top-0 end-0 m-3 z-2">
-                        <form action="{{ route('wishlist.add') }}" method="POST">
-                            @csrf
-                            <input type="hidden" name="product_id" value="{{ $product->id }}">
-                            <button type="submit" class="btn btn-light shadow-xs rounded-circle p-0 d-flex align-items-center justify-content-center" 
-                                    title="Add to Wishlist" style="width: 38px; height: 38px; background: rgba(255,255,255,0.95); border: 1px solid #e2e8f0;">
-                                <i class="bi {{ in_array($product->id, $wishlistedProductIds ?? []) ? 'bi-heart-fill text-danger' : 'bi-heart' }}" style="font-size: 1rem;"></i>
-                            </button>
-                        </form>
+                        <button type="button" 
+                                class="btn btn-light shadow-xs rounded-circle p-0 d-flex align-items-center justify-content-center wishlist-toggle-btn pdp-wishlist-btn" 
+                                data-product-id="{{ $product->id }}"
+                                title="{{ $isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist' }}" 
+                                style="width: 38px; height: 38px; background: rgba(255,255,255,0.95); border: 1px solid #e2e8f0;">
+                            <i class="bi {{ $isWishlisted ? 'bi-heart-fill text-danger' : 'bi-heart' }}" style="font-size: 1rem;"></i>
+                        </button>
                     </div>
 
                     @php
@@ -191,7 +168,7 @@
             <div class="d-flex align-items-center gap-2 flex-wrap mb-3">
                 @php
                     $avgRating = $product->averageRating() ?? 0;
-                    $reviewCount = $product->approvedReviews->count();
+                    $reviewCount = $totalReviewsCount ?? $product->approvedReviews->count();
                 @endphp
                 <div class="badge bg-success text-white px-2 py-1 rounded-pill d-inline-flex align-items-center gap-1 fw-bold" style="font-size: 0.82rem;">
                     <span>{{ number_format($avgRating, 1) }}</span>
@@ -441,37 +418,37 @@
 
             {{-- 8. 4 Buyer Guarantees Strip (Amazon Trust Bar) --}}
             <div class="p-3 rounded-4 mb-4" style="background: #f8fafc; border: 1px solid #e2e8f0;">
-                <div class="row g-2 text-center align-items-center">
-                    <div class="col-3 border-end border-light-subtle">
+                <div class="row g-2 g-sm-3 text-center align-items-center">
+                    <div class="col-6 col-sm-3 border-end border-light-subtle pb-2 pb-sm-0">
                         <div class="d-flex flex-column align-items-center">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center mb-1 shadow-xs" style="width: 40px; height: 40px; background: #ffffff; color: #4f46e5;">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center mb-1 shadow-xs" style="width: 38px; height: 38px; background: #ffffff; color: #4f46e5;">
                                 <i class="bi bi-lightning-charge-fill fs-5"></i>
                             </div>
-                            <span class="fw-bold text-dark" style="font-size: 0.76rem; line-height: 1.2;">Fast Express<br>Dispatch</span>
+                            <span class="fw-bold text-dark" style="font-size: 0.74rem; line-height: 1.25;">Fast Express<br class="d-none d-sm-inline"> Dispatch</span>
                         </div>
                     </div>
-                    <div class="col-3 border-end border-light-subtle">
+                    <div class="col-6 col-sm-3 border-end-0 border-sm-end border-light-subtle pb-2 pb-sm-0">
                         <div class="d-flex flex-column align-items-center">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center mb-1 shadow-xs" style="width: 40px; height: 40px; background: #ffffff; color: #10b981;">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center mb-1 shadow-xs" style="width: 38px; height: 38px; background: #ffffff; color: #10b981;">
                                 <i class="bi bi-truck fs-5"></i>
                             </div>
-                            <span class="fw-bold text-dark" style="font-size: 0.76rem; line-height: 1.2;">Free Delivery<br>Orders ₹499+</span>
+                            <span class="fw-bold text-dark" style="font-size: 0.74rem; line-height: 1.25;">Free Delivery<br class="d-none d-sm-inline"> Orders ₹499+</span>
                         </div>
                     </div>
-                    <div class="col-3 border-end border-light-subtle">
+                    <div class="col-6 col-sm-3 border-end border-light-subtle pt-2 pt-sm-0">
                         <div class="d-flex flex-column align-items-center">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center mb-1 shadow-xs" style="width: 40px; height: 40px; background: #ffffff; color: #f59e0b;">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center mb-1 shadow-xs" style="width: 38px; height: 38px; background: #ffffff; color: #f59e0b;">
                                 <i class="bi bi-patch-check-fill fs-5"></i>
                             </div>
-                            <span class="fw-bold text-dark" style="font-size: 0.76rem; line-height: 1.2;">100% Genuine<br>Direct Brands</span>
+                            <span class="fw-bold text-dark" style="font-size: 0.74rem; line-height: 1.25;">100% Genuine<br class="d-none d-sm-inline"> Direct Brands</span>
                         </div>
                     </div>
-                    <div class="col-3">
+                    <div class="col-6 col-sm-3 pt-2 pt-sm-0">
                         <div class="d-flex flex-column align-items-center">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center mb-1 shadow-xs" style="width: 40px; height: 40px; background: #ffffff; color: #06b6d4;">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center mb-1 shadow-xs" style="width: 38px; height: 38px; background: #ffffff; color: #06b6d4;">
                                 <i class="bi bi-cash-stack fs-5"></i>
                             </div>
-                            <span class="fw-bold text-dark" style="font-size: 0.76rem; line-height: 1.2;">Pay on<br>Delivery</span>
+                            <span class="fw-bold text-dark" style="font-size: 0.74rem; line-height: 1.25;">Pay on<br class="d-none d-sm-inline"> Delivery</span>
                         </div>
                     </div>
                 </div>
@@ -481,20 +458,20 @@
             @php
                 $activeLocation = app(\App\Services\DeliveryService::class)->getSessionLocation();
             @endphp
-            <div class="mb-4 pt-1">
-                <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="mb-4 pt-2">
+                <div class="d-flex align-items-center gap-2 mb-2.5">
                     <i class="bi bi-geo-alt-fill text-primary"></i>
-                    <span class="fw-bold text-dark" style="font-size: 0.92rem;">Delivery Options</span>
+                    <span class="fw-bold text-dark" style="font-size: 0.94rem;">Delivery Options</span>
                 </div>
 
                 {{-- Clean Inline Pincode Check Form --}}
-                <div class="d-flex align-items-center gap-2 mb-2" style="max-width: 380px;">
+                <div class="d-flex align-items-center gap-2 mb-3" style="max-width: 400px;">
                     <div class="input-group rounded-3 border p-1" style="background: #ffffff; border-color: #cbd5e1 !important;">
                         <input type="text" id="pdpPincodeInput" maxlength="6" 
-                               class="form-control border-0 font-monospace fw-bold ps-2 text-dark shadow-none" 
+                               class="form-control border-0 font-monospace fw-bold ps-3 text-dark shadow-none" 
                                placeholder="Enter 6-digit Pincode" value="{{ $activeLocation['pincode'] ?? '' }}"
-                               style="font-size: 0.92rem; letter-spacing: 0.05em;">
-                        <button class="btn btn-link text-primary fw-bold text-decoration-none px-3" 
+                               style="font-size: 0.95rem; letter-spacing: 0.05em;">
+                        <button class="btn btn-primary rounded-2 px-3.5 py-1.5 fw-semibold shadow-2xs" 
                                 style="font-size: 0.86rem;" type="button" id="pdpCheckPincodeBtn">
                             Check
                         </button>
@@ -504,17 +481,17 @@
                 {{-- Live Delivery Checklist Results --}}
                 <div id="pdpDeliveryResults" class="{{ $activeLocation ? '' : 'd-none' }}">
                     @if($activeLocation && $activeLocation['is_serviceable'])
-                        <div class="d-flex flex-column gap-1.5 mt-2" style="font-size: 0.84rem;">
+                        <div class="d-flex flex-column gap-2 mt-3 p-3 rounded-3 bg-light border border-slate-200" style="font-size: 0.85rem;">
                             <div class="d-flex align-items-center gap-2">
-                                <i class="bi bi-truck text-success fs-6"></i>
+                                <i class="bi bi-truck text-success fs-6 flex-shrink-0"></i>
                                 <span class="text-dark">Delivery to <strong>{{ $activeLocation['location_text'] }}</strong> by <strong class="text-primary">{{ $activeLocation['estimated_delivery'] }}</strong> <span class="text-success fw-semibold">| {{ ($activeLocation['delivery_charge'] ?? 0) == 0 ? 'FREE Delivery' : '₹' . number_format($activeLocation['delivery_charge'], 0) . ' (FREE ₹' . number_format($activeLocation['free_shipping_min'] ?? 499, 0) . '+)' }}</span></span>
                             </div>
                             <div class="d-flex align-items-center gap-2">
-                                <i class="bi bi-cash-stack text-success fs-6"></i>
+                                <i class="bi bi-cash-stack text-success fs-6 flex-shrink-0"></i>
                                 <span class="text-muted">{{ $activeLocation['is_cod_available'] ? 'Cash on Delivery available' : 'Prepaid payments only' }}</span>
                             </div>
                             <div class="d-flex align-items-center gap-2">
-                                <i class="bi bi-shield-check text-success fs-6"></i>
+                                <i class="bi bi-shield-check text-success fs-6 flex-shrink-0"></i>
                                 <span class="text-muted">100% Verified Quality & Direct Brand Warranty</span>
                             </div>
                         </div>
@@ -525,165 +502,70 @@
         </div>
     </div>
 
-    {{-- 10. Specifications & Description Section (Amazon / Flipkart Spec Table Style) --}}
-    <div class="card border-0 shadow-xs rounded-4 mt-4 mt-md-5 overflow-hidden" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+    {{-- 10. Specifications & Description Accordion (Collapsed / Closed by Default) --}}
+    <div class="accordion pdp-details-accordion mt-4 mt-md-5 d-flex flex-column gap-3" id="pdpAccordion">
         
-        {{-- Section Nav Tabs --}}
-        <div class="border-bottom bg-light px-2 px-md-4 pt-2 pt-md-3">
-            <ul class="nav nav-tabs border-0 flex-nowrap overflow-x-auto gap-1 gap-md-2 no-scrollbar" id="productDetailTabs" role="tablist" style="-webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;">
-                <li class="nav-item flex-shrink-0" role="presentation">
-                    <button class="nav-link active fw-bold px-3 py-2.5 border-0 bg-transparent text-dark position-relative pdp-tab-btn" 
-                            id="tab-desc-btn" data-bs-toggle="tab" data-bs-target="#tab-desc" type="button" role="tab">
-                        <i class="bi bi-file-text me-1 text-primary"></i> Product Overview
-                    </button>
-                </li>
-                @if($product->specifications)
-                <li class="nav-item flex-shrink-0" role="presentation">
-                    <button class="nav-link fw-bold px-3 py-2.5 border-0 bg-transparent text-secondary position-relative pdp-tab-btn" 
-                            id="tab-spec-btn" data-bs-toggle="tab" data-bs-target="#tab-spec" type="button" role="tab">
-                        <i class="bi bi-list-check me-1 text-info"></i> Technical Specifications
-                    </button>
-                </li>
-                @endif
-                <li class="nav-item flex-shrink-0" role="presentation">
-                    <button class="nav-link fw-bold px-3 py-2.5 border-0 bg-transparent text-secondary position-relative pdp-tab-btn" 
-                            id="tab-rev-btn" data-bs-toggle="tab" data-bs-target="#tab-rev" type="button" role="tab">
-                        <i class="bi bi-chat-heart me-1 text-warning"></i> Customer Reviews ({{ $product->approvedReviews->count() }})
-                    </button>
-                </li>
-            </ul>
+        {{-- Item 1: Product Overview (Closed by default) --}}
+        <div class="accordion-item border rounded-3 overflow-hidden shadow-xs" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+            <h2 class="accordion-header" id="headingOverview">
+                <button class="accordion-button collapsed fw-bold text-dark py-3 px-3 px-md-4 shadow-none" 
+                        type="button" data-bs-toggle="collapse" data-bs-target="#collapseOverview" 
+                        aria-expanded="false" aria-controls="collapseOverview" 
+                        style="font-size: 0.95rem; background: #ffffff;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-file-text text-primary fs-5"></i>
+                        <span>Product Overview</span>
+                    </div>
+                </button>
+            </h2>
+            <div id="collapseOverview" class="accordion-collapse collapse" aria-labelledby="headingOverview">
+                <div class="accordion-body p-3 p-md-4 border-top" style="border-color: #f1f5f9 !important; font-size: 0.9rem; line-height: 1.8; color: #334155;">
+                    <div class="prose">
+                        {!! $product->description !!}
+                    </div>
+                </div>
+            </div>
         </div>
 
-        {{-- Tab Content Panes --}}
-        <div class="tab-content p-3 p-md-4.5" id="productDetailTabsContent">
-            
-            {{-- Tab 1: Description --}}
-            <div class="tab-pane fade show active" id="tab-desc" role="tabpanel">
-                <div class="prose" style="font-size: 0.9rem; line-height: 1.8; color: #334155;">
-                    {!! $product->description !!}
-                </div>
-            </div>
-
-            {{-- Tab 2: Specifications Table (Clean 2-Column Responsive Table) --}}
-            @if($product->specifications)
-            <div class="tab-pane fade" id="tab-spec" role="tabpanel">
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover mb-0 rounded-3 overflow-hidden border pdp-specs-table" style="font-size: 0.86rem; border-color: #e2e8f0 !important;">
-                        <tbody>
-                            @foreach(explode("\n", $product->specifications) as $spec)
-                                @php $parts = explode(":", $spec, 2); @endphp
-                                @if(count($parts) == 2)
-                                <tr>
-                                    <th class="text-secondary fw-semibold py-2.5 px-3 bg-light" style="width: 35%; border-color: #f1f5f9;">
-                                        {{ trim($parts[0]) }}
-                                    </th>
-                                    <td class="text-dark fw-medium py-2.5 px-3" style="border-color: #f1f5f9;">
-                                        {{ trim($parts[1]) }}
-                                    </td>
-                                </tr>
-                                @endif
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            @endif
-
-            {{-- Tab 3: Customer Reviews (Flipkart Exact Ratings & Reviews Layout) --}}
-            <div class="tab-pane fade" id="tab-rev" role="tabpanel">
-                <div id="rev-section">
-                    {{-- 1. Flipkart Header & Breakdown Banner --}}
-                    <div class="p-3 p-md-4 rounded-3 border mb-4" style="background: #ffffff; border-color: #e2e8f0 !important;">
-                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-3 mb-3 border-bottom border-light-subtle">
-                            <h5 class="fw-bold text-dark mb-0" style="font-size: 1.1rem; letter-spacing: -0.01em;">
-                                Ratings & Reviews
-                            </h5>
-                            @auth('customer')
-                                <button class="btn btn-outline-secondary rounded-2 px-3 py-1.5 fw-semibold shadow-xs" 
-                                        data-bs-toggle="collapse" data-bs-target="#reviewForm" style="font-size: 0.85rem;">
-                                    <i class="bi bi-star-fill text-warning me-1"></i> Rate Product
-                                </button>
-                            @else
-                                <a href="{{ route('login') }}" class="btn btn-outline-secondary rounded-2 px-3 py-1.5 fw-semibold shadow-xs" style="font-size: 0.85rem;">
-                                    <i class="bi bi-box-arrow-in-right me-1"></i> Sign In to Rate
-                                </a>
-                            @endauth
-                        </div>
-
-                        {{-- Breakdown Row (Score on Left + Bars on Right) --}}
-                        <div class="row g-4 align-items-center">
-                            {{-- Overall Score --}}
-                            <div class="col-md-4 text-center text-md-start border-end-md border-light-subtle">
-                                <div class="d-flex align-items-baseline justify-content-center justify-content-md-start gap-2 mb-1">
-                                    <span class="fw-bolder text-dark" style="font-size: 2.8rem; line-height: 1;">
-                                        {{ number_format($avgRating, 1) }}
-                                    </span>
-                                    <i class="bi bi-star-fill text-success fs-3"></i>
-                                </div>
-                                <div class="text-muted small" style="font-size: 0.82rem;">
-                                    {{ number_format($product->approvedReviews->count()) }} Ratings & {{ number_format($product->approvedReviews->count()) }} Reviews
-                                </div>
-                            </div>
-
-                            {{-- Star Distribution Progress Bars (Flipkart Green/Amber/Red) --}}
-                            <div class="col-md-8">
-                                <div class="d-flex flex-column gap-1.5" style="max-width: 480px;">
-                                    @php
-                                        $barColors = [
-                                            5 => '#388e3c',
-                                            4 => '#388e3c',
-                                            3 => '#388e3c',
-                                            2 => '#ff9f00',
-                                            1 => '#ff6161'
-                                        ];
-                                    @endphp
-                                    @for($i = 5; $i >= 1; $i--)
-                                        @php $pct = (int) round($product->ratingPercentage($i)); @endphp
-                                        <div class="d-flex align-items-center gap-2" style="font-size: 0.78rem;">
-                                            <span class="text-secondary fw-semibold text-nowrap" style="width: 32px;">{{ $i }} ★</span>
-                                            <div class="progress flex-grow-1 rounded-pill" style="height: 6px; background: #e2e8f0;">
-                                                <div class="progress-bar rounded-pill" role="progressbar" 
-                                                     style="width: {{ $pct }}%; background-color: {{ $barColors[$i] }};"></div>
-                                            </div>
-                                            <span class="text-muted fw-semibold text-end text-nowrap" style="width: 38px;">{{ $pct }}%</span>
-                                        </div>
-                                    @endfor
-                                </div>
-                            </div>
-                        </div>
+        {{-- Item 2: Technical Specifications (Closed by default) --}}
+        @if($product->specifications)
+        <div class="accordion-item border rounded-3 overflow-hidden shadow-xs" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+            <h2 class="accordion-header" id="headingSpecs">
+                <button class="accordion-button collapsed fw-bold text-dark py-3 px-3 px-md-4 shadow-none" 
+                        type="button" data-bs-toggle="collapse" data-bs-target="#collapseSpecs" 
+                        aria-expanded="false" aria-controls="collapseSpecs" 
+                        style="font-size: 0.95rem; background: #ffffff;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-list-check text-info fs-5"></i>
+                        <span>Technical Specifications</span>
                     </div>
-
-                    {{-- 2. Write Review Form Collapse --}}
-                    @auth('customer')
-                    <div class="collapse mb-4" id="reviewForm">
-                        <div class="p-3.5 rounded-3 border mb-3" style="background: #f8fafc; border-color: #e2e8f0 !important;">
-                            @include('customer.components.reviews.write-review-form', ['product' => $product])
-                        </div>
-                    </div>
-                    @endauth
-
-                    {{-- 3. Verified Customer Reviews Stream (Flipkart Style List / Mobile Horizontal Carousel) --}}
-                    @if($product->approvedReviews->count() > 1)
-                        <div class="d-flex d-md-none align-items-center justify-content-between text-muted small mb-2 px-1">
-                            <span style="font-size: 0.76rem;"><i class="bi bi-arrow-left-right me-1 text-primary"></i> Swipe horizontally for all reviews</span>
-                            <span class="badge bg-light text-secondary border rounded-pill" style="font-size: 0.72rem;">{{ $product->approvedReviews->count() }} Reviews</span>
-                        </div>
-                    @endif
-                    <div class="review-list bg-white rounded-3 border p-3 p-md-4" style="border-color: #e2e8f0 !important;">
-                        @forelse($product->approvedReviews as $review)
-                            @include('customer.components.reviews.review-card', ['review' => $review])
-                        @empty
-                            <div class="text-center py-5 w-100 bg-white rounded-3 border p-4">
-                                <i class="bi bi-chat-square-heart display-4 text-muted opacity-25"></i>
-                                <h6 class="mt-3 fw-bold text-dark">No Reviews Yet</h6>
-                                <p class="text-muted small mb-0">Be the first verified customer to rate and review this product!</p>
-                            </div>
-                        @endforelse
+                </button>
+            </h2>
+            <div id="collapseSpecs" class="accordion-collapse collapse" aria-labelledby="headingSpecs">
+                <div class="accordion-body p-3 p-md-4 border-top" style="border-color: #f1f5f9 !important;">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0 rounded-3 overflow-hidden border pdp-specs-table" style="font-size: 0.86rem; border-color: #e2e8f0 !important;">
+                            <tbody>
+                                @foreach(explode("\n", $product->specifications) as $spec)
+                                    @php $parts = explode(":", $spec, 2); @endphp
+                                    @if(count($parts) == 2)
+                                    <tr>
+                                        <th class="text-secondary fw-semibold py-2.5 px-3 bg-light" style="width: 35%; border-color: #f1f5f9;">
+                                            {{ trim($parts[0]) }}
+                                        </th>
+                                        <td class="text-dark fw-medium py-2.5 px-3" style="border-color: #f1f5f9;">
+                                            {{ trim($parts[1]) }}
+                                        </td>
+                                    </tr>
+                                    @endif
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
-
         </div>
+        @endif
     </div>
 
     {{-- 11. Similar / Related Products Section (Amazon Style Recommendations) --}}
@@ -713,12 +595,131 @@
     </div>
     @endif
 
+    {{-- 12. Customer Reviews Section (At End of Page, After Recommendations) --}}
+    <div class="card border-0 shadow-xs rounded-4 mt-5 overflow-hidden mb-4" id="rev-section" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+        {{-- Section Header --}}
+        <div class="border-bottom bg-light px-3 px-md-4 py-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-chat-heart text-warning fs-5"></i>
+                <h5 class="fw-bold text-dark mb-0" style="font-size: 1.1rem; letter-spacing: -0.01em;">
+                    Ratings & Reviews
+                </h5>
+                <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2.5 py-1" style="font-size: 0.76rem;">
+                    {{ $totalReviewsCount ?? $product->approvedReviews->count() }}
+                </span>
+            </div>
+            @auth('customer')
+                <button class="btn btn-outline-secondary rounded-2 px-3 py-1.5 fw-semibold shadow-xs" 
+                        data-bs-toggle="collapse" data-bs-target="#reviewForm" style="font-size: 0.85rem;">
+                    <i class="bi bi-star-fill text-warning me-1"></i> Rate Product
+                </button>
+            @else
+                <a href="{{ route('login') }}" class="btn btn-outline-secondary rounded-2 px-3 py-1.5 fw-semibold shadow-xs" style="font-size: 0.85rem;">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Sign In to Rate
+                </a>
+            @endauth
+        </div>
+
+        <div class="p-3 p-md-4.5">
+            {{-- 1. Flipkart Header & Breakdown Banner --}}
+            <div class="p-3 p-md-4 rounded-3 border mb-4" style="background: #ffffff; border-color: #e2e8f0 !important;">
+                {{-- Breakdown Row (Score on Left + Bars on Right) --}}
+                <div class="row g-4 align-items-center">
+                    {{-- Overall Score --}}
+                    <div class="col-md-4 text-center text-md-start border-end-md border-light-subtle">
+                        <div class="d-flex align-items-baseline justify-content-center justify-content-md-start gap-2 mb-1">
+                            <span class="fw-bolder text-dark" style="font-size: 2.8rem; line-height: 1;">
+                                {{ number_format($avgRating, 1) }}
+                            </span>
+                            <i class="bi bi-star-fill text-success fs-3"></i>
+                        </div>
+                        <div class="text-muted small" style="font-size: 0.82rem;">
+                            {{ number_format($totalReviewsCount ?? $product->approvedReviews->count()) }} Ratings & {{ number_format($totalReviewsCount ?? $product->approvedReviews->count()) }} Reviews
+                        </div>
+                    </div>
+
+                    {{-- Star Distribution Progress Bars (Flipkart Green/Amber/Red) --}}
+                    <div class="col-md-8">
+                        <div class="d-flex flex-column gap-1.5" style="max-width: 480px;">
+                            @php
+                                $barColors = [
+                                    5 => '#388e3c',
+                                    4 => '#388e3c',
+                                    3 => '#388e3c',
+                                    2 => '#ff9f00',
+                                    1 => '#ff6161'
+                                ];
+                            @endphp
+                            @for($i = 5; $i >= 1; $i--)
+                                @php $pct = isset($ratingPercentages[$i]) ? (int) $ratingPercentages[$i] : (int) round($product->ratingPercentage($i)); @endphp
+                                <div class="d-flex align-items-center gap-2" style="font-size: 0.78rem;">
+                                    <span class="text-secondary fw-semibold text-nowrap" style="width: 32px;">{{ $i }} ★</span>
+                                    <div class="progress flex-grow-1 rounded-pill" style="height: 6px; background: #e2e8f0;">
+                                        <div class="progress-bar rounded-pill" role="progressbar" 
+                                             style="width: {{ $pct }}%; background-color: {{ $barColors[$i] }};"></div>
+                                    </div>
+                                    <span class="text-muted fw-semibold text-end text-nowrap" style="width: 38px;">{{ $pct }}%</span>
+                                </div>
+                            @endfor
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- 2. Write Review Form Collapse --}}
+            @auth('customer')
+            <div class="collapse mb-4" id="reviewForm">
+                <div class="p-3 p-sm-4 rounded-4 border mb-3 shadow-xs" style="background: #f8fafc; border-color: #e2e8f0 !important;">
+                    @include('customer.components.reviews.write-review-form', ['product' => $product])
+                </div>
+            </div>
+            @endauth
+
+            {{-- 3. Verified Customer Reviews Stream (Flipkart Style List / Mobile Horizontal Carousel) --}}
+            @php
+                $revCount = $totalReviewsCount ?? $product->approvedReviews->count();
+                $reviewsList = $initialReviews ?? $product->approvedReviews;
+            @endphp
+            @if($revCount > 1)
+                <div class="d-flex d-md-none align-items-center justify-content-between text-muted small mb-2 px-1">
+                    <span style="font-size: 0.76rem;"><i class="bi bi-arrow-left-right me-1 text-primary"></i> Swipe horizontally for all reviews</span>
+                    <span class="badge bg-light text-secondary border rounded-pill" style="font-size: 0.72rem;">{{ $revCount }} Reviews</span>
+                </div>
+            @endif
+            <div class="review-list bg-white rounded-3 border p-3 p-md-4" style="border-color: #e2e8f0 !important;">
+                <div id="pdp-reviews-container">
+                    @forelse($reviewsList as $review)
+                        @include('customer.components.reviews.review-card', ['review' => $review])
+                    @empty
+                        <div class="text-center py-5 w-100 bg-white rounded-3 border p-4">
+                            <i class="bi bi-chat-square-heart display-4 text-muted opacity-25"></i>
+                            <h6 class="mt-3 fw-bold text-dark">No Reviews Yet</h6>
+                            <p class="text-muted small mb-0">Be the first verified customer to rate and review this product!</p>
+                        </div>
+                    @endforelse
+                </div>
+
+                @if($revCount > $reviewsList->count())
+                    <div class="text-center pt-3 mt-2 border-top" id="loadMoreReviewsWrap" style="border-color: #f1f5f9 !important;">
+                        <button type="button" id="loadMoreReviewsBtn" data-page="2" 
+                                data-url="{{ route('product.reviews.load-more', $product->slug) }}"
+                                class="btn btn-outline-dark rounded-pill px-4 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-xs transition-all hover-elevate"
+                                style="font-size: 0.84rem; border-color: #cbd5e1; background: #ffffff;">
+                            <span class="btn-text">Load More Reviews (<span id="reviewsRemainingCount">{{ $revCount - $reviewsList->count() }}</span> remaining)</span>
+                            <i class="bi bi-chevron-down" style="font-size: 0.75rem;"></i>
+                        </button>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
 </div>
 
 {{-- 📱 12. App-Like Sticky Bottom Bar on Mobile (Flipkart/Amazon Mobile Experience) --}}
 @if($product->stock > 0)
-<div class="d-block d-md-none position-fixed bottom-0 start-0 end-0 bg-white border-top shadow-lg p-2.5 z-3 pdp-mobile-sticky-bar" 
-     style="backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.98) !important; z-index: 1045;">
+<div class="d-block d-md-none position-fixed bottom-0 start-0 end-0 bg-white border-top shadow-lg p-2.5 p-sm-3 z-3 pdp-mobile-sticky-bar" 
+     style="backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.98) !important; z-index: 1045; padding-bottom: calc(0.6rem + env(safe-area-inset-bottom, 0px)) !important;">
     <div class="container-fluid px-2">
         <div class="row g-2 align-items-center">
             {{-- Price Summary on Left --}}
@@ -735,10 +736,11 @@
             <div class="col-8">
                 <div class="d-flex gap-1.5">
                     {{-- Mobile Add to Cart --}}
-                    <form action="{{ route('cart.add') }}" method="POST" class="flex-fill ajax-cart-form no-loader">
+                    <form action="{{ route('cart.add') }}" method="POST" class="flex-fill ajax-cart-form no-loader" onsubmit="return validateOptionSelected(this)">
                         @csrf
                         <input type="hidden" name="product_id" value="{{ $product->id }}">
                         <input type="hidden" name="quantity" class="hidden-qty-input" value="1">
+                        <input type="hidden" name="selected_option" class="hidden-selected-option" value="">
                         <button type="submit" class="btn text-white w-100 rounded-3 py-2 fw-bold text-nowrap add-to-cart-btn no-loader shadow-xs" 
                                 style="font-size: 0.8rem; background: #ff9f00; border: none;">
                             <i class="bi bi-cart-plus-fill me-1"></i> Cart
@@ -746,10 +748,11 @@
                     </form>
 
                     {{-- Mobile Instant Buy Now --}}
-                    <form action="{{ route('cart.add') }}" method="POST" class="flex-fill" id="mobile-buy-now-form">
+                    <form action="{{ route('cart.add') }}" method="POST" class="flex-fill" id="mobile-buy-now-form" onsubmit="return validateOptionSelected(this)">
                         @csrf
                         <input type="hidden" name="product_id" value="{{ $product->id }}">
                         <input type="hidden" name="quantity" class="hidden-qty-input" value="1">
+                        <input type="hidden" name="selected_option" class="hidden-selected-option" value="">
                         <input type="hidden" name="buy_now" value="1">
                         <button type="submit" id="mobile-buy-now-btn" class="btn text-white w-100 rounded-3 py-2 fw-bold text-nowrap shadow-xs" 
                                 style="font-size: 0.8rem; background: #fb641b; border: none;">
@@ -766,21 +769,25 @@
 <style>
     .pdp-main-image-stage {
         width: 100%;
-        height: 420px;
-        min-height: 420px;
-        max-height: 420px;
+        max-width: 480px;
+        aspect-ratio: 1 / 1;
         background: #ffffff;
         overflow: hidden;
+        margin: 0 auto;
     }
     .pdp-uniform-image-box {
-        width: 360px;
-        height: 360px;
+        width: 100%;
+        height: 100%;
         max-width: 100%;
         max-height: 100%;
         aspect-ratio: 1 / 1;
         overflow: hidden;
-        border-radius: 10px;
+        border-radius: 12px;
         background: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px;
     }
     .main-pdp-image {
         width: 100% !important;
@@ -834,13 +841,17 @@
             position: static !important;
         }
         .pdp-main-image-stage {
-            height: 310px;
-            min-height: 310px;
-            max-height: 310px;
+            width: 100%;
+            aspect-ratio: 1 / 1 !important;
+            height: auto !important;
+            min-height: auto !important;
+            max-height: none !important;
         }
         .pdp-uniform-image-box {
-            width: 260px;
-            height: 260px;
+            width: 100% !important;
+            height: 100% !important;
+            aspect-ratio: 1 / 1 !important;
+            padding: 6px !important;
         }
         body {
             padding-bottom: 60px;
@@ -1075,26 +1086,45 @@ function validateOptionSelected(formEl) {
     const hasOptionsContainer = document.getElementById('option-pills-container');
     if (hasOptionsContainer && !currentSelectedOption) {
         const isDouble = hasOptionsContainer.getAttribute('data-double-variant') === '1';
-        let msg = 'Please select a size or color option before adding to your bag.';
+        const isBuyNow = formEl && (formEl.querySelector('input[name="buy_now"]') || (formEl.id && formEl.id.includes('buy-now')));
+        const actionText = isBuyNow ? 'proceeding to checkout' : 'adding to your bag';
+
+        let title = 'Select Option';
+        let msg = `Please select a size or color option before ${actionText}.`;
+
         if (isDouble) {
+            title = 'Select Color & Size';
             if (!selectedDoubleColor && !selectedDoubleSize) {
-                msg = 'Please select both a Color and a Size before adding to your bag.';
+                msg = `Please select both a Color and a Size before ${actionText}.`;
             } else if (!selectedDoubleColor) {
                 msg = 'Please select a Color option.';
             } else if (!selectedDoubleSize) {
                 msg = `Please select an available Size for ${selectedDoubleColor}.`;
             }
         }
+
         if (typeof Swal !== 'undefined') {
             Swal.fire({
-                icon: 'info',
-                title: isDouble ? 'Select Color & Size' : 'Please Select an Option',
+                icon: 'warning',
+                title: title,
                 text: msg,
-                confirmButtonColor: '#0284c7'
+                confirmButtonColor: isBuyNow ? '#fb641b' : '#ff9f00',
+                customClass: { popup: 'rounded-4 shadow-lg border-0' }
             });
         } else {
             alert(msg);
         }
+
+        // Smooth scroll to variant selection container and glow outline
+        hasOptionsContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        hasOptionsContainer.style.transition = 'all 0.3s ease';
+        hasOptionsContainer.style.outline = '2px solid #ef4444';
+        hasOptionsContainer.style.boxShadow = '0 0 16px rgba(239, 68, 68, 0.35)';
+        setTimeout(() => {
+            hasOptionsContainer.style.outline = '';
+            hasOptionsContainer.style.boxShadow = '';
+        }, 3000);
+
         return false;
     }
     return true;
@@ -1215,7 +1245,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({ pincode: pincode, save_location: false })
+            body: JSON.stringify({ pincode: pincode, save_location: true })
         })
         .then(r => r.json())
         .then(data => {
@@ -1226,6 +1256,20 @@ document.addEventListener('DOMContentLoaded', function() {
             if (pdpResults) {
                 pdpResults.classList.remove('d-none');
                 if (data.is_serviceable) {
+                    // Update header location text immediately across all pages
+                    const headerText = document.getElementById('header-delivery-text');
+                    if (headerText && data.location_text) {
+                        headerText.textContent = data.location_text;
+                    }
+                    const mobileHeaderText = document.getElementById('header-mobile-delivery-text');
+                    if (mobileHeaderText) {
+                        mobileHeaderText.textContent = data.city || data.pincode;
+                    }
+                    const modalInput = document.getElementById('modalPincodeInput');
+                    if (modalInput) {
+                        modalInput.value = pincode;
+                    }
+
                     const chargeLabel = (parseFloat(data.delivery_charge || 0) === 0)
                         ? 'FREE Delivery'
                         : `₹${parseFloat(data.delivery_charge).toFixed(0)} (FREE ₹${parseFloat(data.free_shipping_min || 499).toFixed(0)}+)`;
@@ -1246,7 +1290,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>`;
                 } else {
                     pdpResults.innerHTML = `
-                        <div class="d-flex align-items-center gap-2 mt-2 p-2 rounded-3 bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size: 0.82rem;">
+                        <div class="d-flex align-items-center gap-2 mt-3 p-3 rounded-3 bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size: 0.85rem;">
                             <i class="bi bi-x-circle-fill fs-6 flex-shrink-0"></i>
                             <span>${data.message || 'Currently not deliverable to this PIN code.'}</span>
                         </div>`;
@@ -1261,13 +1305,21 @@ document.addEventListener('DOMContentLoaded', function() {
             if (pdpResults) {
                 pdpResults.classList.remove('d-none');
                 pdpResults.innerHTML = `
-                    <div class="d-flex align-items-center gap-2 mt-2 p-2 rounded-3 bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size: 0.82rem;">
+                    <div class="d-flex align-items-center gap-2 mt-3 p-3 rounded-3 bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size: 0.85rem;">
                         <i class="bi bi-exclamation-circle-fill fs-6 flex-shrink-0"></i>
                         <span>Network error. Please try again.</span>
                     </div>`;
             }
         });
     }
+
+    // Bidirectional listener when header modal updates pincode
+    window.onDeliveryPincodeUpdated = function(location) {
+        if (location && location.pincode) {
+            if (pdpInput) pdpInput.value = location.pincode;
+            checkPDPPincode(location.pincode);
+        }
+    };
 
     if (pdpCheckBtn && pdpInput) {
         pdpCheckBtn.addEventListener('click', () => checkPDPPincode(pdpInput.value.trim()));
@@ -1286,6 +1338,17 @@ document.addEventListener('DOMContentLoaded', function() {
         if (form && btn) {
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
+
+                if (!validateOptionSelected(form)) {
+                    return false;
+                }
+
+                // Sync current selected option to form's hidden input
+                const optInput = form.querySelector('.hidden-selected-option');
+                if (optInput && currentSelectedOption) {
+                    optInput.value = currentSelectedOption;
+                }
+
                 btn.disabled = true;
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Processing...';
 
@@ -1299,18 +1362,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     body: formData
                 })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        window.location.href = data.redirect_url || '{{ route("checkout.index") }}';
-                    } else {
-                        throw new Error(data.message || 'Could not proceed.');
+                .then(async r => {
+                    const data = await r.json().catch(() => ({}));
+                    if (!r.ok || !data.success) {
+                        const errMsg = data.message || (data.errors ? Object.values(data.errors).flat()[0] : 'Could not proceed to checkout.');
+                        throw new Error(errMsg);
                     }
+                    return data;
+                })
+                .then(data => {
+                    window.location.href = data.redirect_url || '{{ route("checkout.index") }}';
                 })
                 .catch(err => {
                     resetBuyNowBtns();
                     if (typeof Swal !== 'undefined') {
-                        Swal.fire({ icon: 'error', title: 'Notice', text: err.message });
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Option Notice',
+                            text: err.message,
+                            confirmButtonColor: '#fb641b',
+                            customClass: { popup: 'rounded-4 shadow-lg border-0' }
+                        });
                     } else {
                         alert(err.message);
                     }
@@ -1387,6 +1459,65 @@ function executeUserReviewDelete(id, deleteUrl, btnElement) {
         } else {
             alert(err.message);
         }
+    });
+}
+
+// --- AJAX Load More Reviews ---
+const loadMoreReviewsBtn = document.getElementById('loadMoreReviewsBtn');
+if (loadMoreReviewsBtn) {
+    loadMoreReviewsBtn.addEventListener('click', function() {
+        const btn = this;
+        const page = parseInt(btn.getAttribute('data-page') || '2', 10);
+        const url = btn.getAttribute('data-url');
+        const originalHtml = btn.innerHTML;
+
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> <span>Loading reviews...</span>`;
+
+        fetch(`${url}?page=${page}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Failed to load reviews');
+            return res.json();
+        })
+        .then(data => {
+            const container = document.getElementById('pdp-reviews-container');
+            if (container && data.html) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = data.html;
+                const newCards = Array.from(tempDiv.children);
+                newCards.forEach(card => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(10px)';
+                    card.style.transition = 'all 0.35s ease';
+                    container.appendChild(card);
+                    requestAnimationFrame(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    });
+                });
+            }
+
+            if (data.hasMore) {
+                btn.setAttribute('data-page', data.nextPage);
+                btn.disabled = false;
+                btn.innerHTML = `<span class="btn-text">Load More Reviews (<span id="reviewsRemainingCount">${data.remaining}</span> remaining)</span> <i class="bi bi-chevron-down" style="font-size: 0.75rem;"></i>`;
+            } else {
+                const wrap = document.getElementById('loadMoreReviewsWrap');
+                if (wrap) {
+                    wrap.innerHTML = `<span class="badge bg-light text-muted border px-3 py-1.5 rounded-pill" style="font-size: 0.78rem;"><i class="bi bi-check2-all text-success me-1"></i> All ${data.total} reviews loaded</span>`;
+                }
+            }
+        })
+        .catch(err => {
+            console.error('Error loading reviews:', err);
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        });
     });
 }
 </script>

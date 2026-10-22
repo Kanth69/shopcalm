@@ -44,7 +44,7 @@ class ProfileController extends Controller
         $newEmail = $request->filled('email') ? strtolower(trim($request->email)) : null;
 
         $user->name = $request->input('name');
-        $user->mobile_number = $request->input('mobile_number');
+        // Primary mobile number is permanently tied to account authentication and cannot be updated via profile form
 
         if ($user->email !== $newEmail) {
             $user->email = $newEmail;

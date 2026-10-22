@@ -103,28 +103,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
             </div>
 
-            <!-- Center: Desktop Clean Search Bar -->
-            <div class="flex-grow-1 d-none d-md-block mx-2 mx-xl-4" style="max-width: 480px;">
+            <!-- Center: Desktop Clean Search Bar (App-Style Live Search) -->
+            <div class="flex-grow-1 d-none d-md-block mx-2 mx-xl-4 position-relative" style="max-width: 520px;">
                 <form action="{{ route('shop') }}" method="GET" class="position-relative" id="mainSearchForm" autocomplete="off">
-                    <div class="input-group search-input-group">
-                        <span class="input-group-text bg-light border-0 ps-3 text-muted">
-                            <i class="bi bi-search"></i>
+                    <div class="input-group rounded-pill overflow-hidden border shadow-xs search-input-group position-relative" style="background: #f8fafc; border-color: #cbd5e1 !important; transition: border-color 0.2s ease, box-shadow 0.2s ease;">
+                        <span class="input-group-text bg-transparent border-0 ps-3 text-muted">
+                            <i class="bi bi-search text-primary" style="font-size: 0.9rem;"></i>
                         </span>
                         <input
                             type="text"
                             name="q"
                             id="mainSearchInput"
-                            class="form-control bg-light border-0 shadow-none ps-2 py-2"
-                            placeholder="Search products, brands, categories…"
+                            class="form-control bg-transparent border-0 shadow-none ps-2 py-2"
+                            placeholder="Search products, brands, categories, tags..."
                             value="{{ request('q') }}"
                             style="font-size: 0.88rem;"
                             autocomplete="off"
                         >
+                        <button type="button" class="btn btn-link text-muted p-0 pe-3 d-none btn-clear-search" aria-label="Clear search" style="text-decoration: none;">
+                            <i class="bi bi-x-circle-fill"></i>
+                        </button>
                     </div>
 
                     <!-- Live Suggestions Dropdown -->
-                    <div id="searchSuggestions" class="position-absolute bg-white border rounded-3 shadow-lg mt-2 d-none overflow-hidden" 
-                         style="z-index: 1060; top: 100%; left: 0; right: 0; max-height: 360px; overflow-y: auto;">
+                    <div id="searchSuggestions" class="position-absolute bg-white border rounded-4 shadow-lg mt-2 d-none overflow-hidden search-suggestions-box" 
+                         style="z-index: 1060; top: 100%; left: 0; right: 0; max-height: 540px; overflow-y: auto;">
                     </div>
                 </form>
             </div>
@@ -136,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <button type="button" class="btn btn-sm btn-light border-0 d-flex d-md-none align-items-center gap-1 px-2 py-1 rounded-pill text-primary fw-semibold flex-shrink-0" 
                         data-bs-toggle="modal" data-bs-target="#deliveryLocationModal" style="font-size: 0.72rem; background: rgba(99, 102, 241, 0.08);">
                     <i class="bi bi-geo-alt-fill text-primary" style="font-size: 0.76rem;"></i>
-                    <span class="text-truncate" style="max-width: 72px;">{{ $deliveryLocation['location_text'] ?? 'Pincode' }}</span>
+                    <span class="text-truncate" id="header-mobile-delivery-text" style="max-width: 72px;">{{ $deliveryLocation['location_text'] ?? 'Pincode' }}</span>
                 </button>
 
                 <!-- Desktop Wishlist Icon -->
@@ -145,11 +148,13 @@ document.addEventListener('DOMContentLoaded', function() {
                        class="text-dark text-decoration-none position-relative p-2 header-icon-link d-none d-md-flex align-items-center justify-content-center"
                        title="Wishlist">
                         <i class="bi bi-heart fs-5"></i>
-                        @if(isset($wishlistedProductIds) && count($wishlistedProductIds) > 0)
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 9px; min-width: 17px; padding: 2px 4px;">
-                                {{ count($wishlistedProductIds) }}
-                            </span>
-                        @endif
+                        @php
+                            $wCount = isset($wishlistedProductIds) ? count($wishlistedProductIds) : 0;
+                        @endphp
+                        <span id="wishlist-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger wishlist-badge-count" 
+                              style="font-size: 9px; min-width: 17px; padding: 2px 4px; display: {{ $wCount > 0 ? 'inline-block' : 'none' }};">
+                            {{ $wCount }}
+                        </span>
                     </a>
                 @endauth
 
@@ -215,14 +220,22 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         </div>
 
-        <!-- Mobile Search Bar (Clean Full Width) -->
-        <div class="d-block d-md-none pt-1.5 pb-0.5">
-            <form action="{{ route('shop') }}" method="GET" class="position-relative">
-                <div class="input-group rounded-pill overflow-hidden border shadow-xs" style="background: #f8fafc; border-color: #e2e8f0 !important;">
+        <!-- Mobile Search Bar (Clean Full Width App-Style Live Search) -->
+        <div class="d-block d-md-none pt-1.5 pb-0.5 position-relative">
+            <form action="{{ route('shop') }}" method="GET" class="position-relative" id="mobileSearchForm" autocomplete="off">
+                <div class="input-group rounded-pill overflow-hidden border shadow-xs search-input-group position-relative" style="background: #f8fafc; border-color: #cbd5e1 !important;">
                     <span class="input-group-text bg-transparent border-0 ps-3 text-muted">
-                        <i class="bi bi-search" style="font-size: 0.85rem;"></i>
+                        <i class="bi bi-search text-primary" style="font-size: 0.85rem;"></i>
                     </span>
-                    <input type="text" name="q" class="form-control bg-transparent border-0 shadow-none ps-1 py-2" placeholder="Search for products, brands..." value="{{ request('q') }}" style="font-size: 0.86rem;">
+                    <input type="text" name="q" id="mobileSearchInput" class="form-control bg-transparent border-0 shadow-none ps-1 py-2" placeholder="Search products, brands, categories, tags..." value="{{ request('q') }}" style="font-size: 0.86rem;" autocomplete="off">
+                    <button type="button" class="btn btn-link text-muted p-0 pe-3 d-none btn-clear-search" aria-label="Clear search" style="text-decoration: none;">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </button>
+                </div>
+
+                <!-- Mobile Live Suggestions Dropdown -->
+                <div id="mobileSearchSuggestions" class="position-absolute bg-white border rounded-4 shadow-lg mt-2 d-none overflow-hidden search-suggestions-box" 
+                     style="z-index: 1070; top: 100%; left: 0; right: 0; max-height: 75vh; overflow-y: auto;">
                 </div>
             </form>
         </div>
@@ -251,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <i class="bi bi-grid drawer-icon me-3"></i> <span>Shop All Products</span>
                     </a>
                     <a href="{{ route('offers.index') }}" class="drawer-link {{ request()->routeIs('offers.*') ? 'active' : '' }}">
-                        <i class="bi bi-percent drawer-icon me-3 text-danger"></i> <span>Special Offers & Deals</span>
+                        <i class="bi bi-percent drawer-icon me-3 text-success"></i> <span>Special Offers & Deals</span>
                     </a>
                     <a href="{{ route('cart.index') }}" class="drawer-link d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center">
@@ -264,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="d-flex align-items-center">
                             <i class="bi bi-heart drawer-icon me-3 text-danger"></i> <span>Saved Wishlist</span>
                         </div>
-                        <span class="badge bg-light text-dark border font-monospace">{{ count($wishlistedProductIds ?? []) }}</span>
+                        <span id="drawer-wishlist-badge" class="badge bg-light text-dark border font-monospace wishlist-badge-count">{{ count($wishlistedProductIds ?? []) }}</span>
                     </a>
                     @endauth
                 </div>
@@ -461,73 +474,383 @@ document.addEventListener('DOMContentLoaded', function() {
         transform: translateX(3px);
     }
 
-    #searchSuggestions .suggestion-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 16px;
-        cursor: pointer;
-        transition: background 0.15s;
-        border-bottom: 1px solid #f1f5f9;
-        font-size: 0.88rem;
-        color: #1e293b;
+    /* App-Style Product Search Dropdown Styling */
+    .search-input-group:focus-within {
+        border-color: #4f46e5 !important;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12) !important;
+        background: #ffffff !important;
     }
-    #searchSuggestions .suggestion-item:last-child {
-        border-bottom: none;
+    .search-suggestions-box {
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+        border-radius: 1rem !important;
     }
-    #searchSuggestions .suggestion-item:hover {
+    .search-suggestions-box,
+    .search-suggestions-box * {
+        user-select: none;
+    }
+    .suggestion-query-row,
+    .suggestion-query-row * {
+        cursor: pointer !important;
+    }
+    .suggestion-query-row {
+        transition: all 0.15s ease;
+    }
+    .suggestion-query-row:hover, .suggestion-query-row.active {
+        background-color: #f5f3ff !important;
+    }
+    .suggestion-row-item,
+    .suggestion-row-item * {
+        cursor: pointer !important;
+    }
+    .suggestion-row-item {
+        transition: all 0.15s ease;
+    }
+    .suggestion-row-item:hover, .suggestion-row-item.active {
+        background-color: #f8fafc;
+    }
+    .suggestion-footer-btn,
+    .suggestion-footer-btn * {
+        cursor: pointer !important;
+    }
+    .suggestion-footer-btn {
+        transition: all 0.2s ease;
+        background-color: #f8fafc;
+    }
+    .suggestion-footer-btn:hover {
+        background-color: #eef2ff !important;
+    }
+    .suggestion-footer-btn:hover .footer-arrow-icon {
+        transform: translateX(5px);
+    }
+    .recent-search-item,
+    .recent-search-item * {
+        cursor: pointer !important;
+    }
+    .recent-search-item {
+        padding: 8px 12px;
+        border-radius: 8px;
+        transition: background 0.15s ease;
+    }
+    .recent-search-item:hover {
         background: #f8fafc;
     }
 </style>
 
 <script>
 (function () {
-    const input = document.getElementById('mainSearchInput');
-    const form  = document.getElementById('mainSearchForm');
-    const box   = document.getElementById('searchSuggestions');
-    let timer;
+    const STORAGE_KEY = 'wk_recent_searches';
 
-    if (!input) return;
+    function getRecentSearches() {
+        try {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        } catch (e) {
+            return [];
+        }
+    }
 
-    input.addEventListener('input', function () {
-        clearTimeout(timer);
-        const q = this.value.trim();
-        if (q.length < 2) { box.classList.add('d-none'); box.innerHTML = ''; return; }
+    function saveRecentSearch(term) {
+        if (!term || term.trim().length < 2) return;
+        term = term.trim();
+        let list = getRecentSearches().filter(item => item.toLowerCase() !== term.toLowerCase());
+        list.unshift(term);
+        if (list.length > 5) list = list.slice(0, 5);
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+        } catch (e) {}
+    }
 
-        timer = setTimeout(() => {
-            fetch(`{{ route('shop') }}?q=${encodeURIComponent(q)}&suggestion=1`, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (!data.suggestions || data.suggestions.length === 0) {
-                    box.innerHTML = '<div class="p-3 text-muted text-center small">No matching products found</div>';
+    function removeRecentSearch(term) {
+        let list = getRecentSearches().filter(item => item.toLowerCase() !== term.toLowerCase());
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+        } catch (e) {}
+    }
+
+    function clearAllRecentSearches() {
+        try {
+            localStorage.removeItem(STORAGE_KEY);
+        } catch (e) {}
+    }
+
+    function renderEmptyState(box, input, form) {
+        const recent = getRecentSearches();
+        if (recent.length === 0) {
+            box.classList.add('d-none');
+            box.innerHTML = '';
+            return;
+        }
+
+        box.innerHTML = `
+            <div class="p-3.5 px-4 bg-white">
+                <div class="d-flex align-items-center justify-content-between mb-2.5 pb-1">
+                    <span class="small fw-bold text-muted text-uppercase" style="font-size: 0.74rem; letter-spacing: 0.6px;">
+                        <i class="bi bi-clock-history me-1.5 text-primary"></i> Recent Searches
+                    </span>
+                    <button type="button" class="btn btn-link p-0 text-muted small text-decoration-none fw-semibold" style="font-size: 0.78rem;" id="clear-all-recent-btn">
+                        Clear All
+                    </button>
+                </div>
+                <div class="d-flex flex-column gap-1.5">
+                    ${recent.map(term => `
+                        <div class="recent-search-item d-flex align-items-center justify-content-between text-dark" data-term="${escapeHtml(term)}">
+                            <div class="d-flex align-items-center gap-2.5 cursor-pointer flex-grow-1" onclick="applySearchTerm('${escapeJs(term)}')">
+                                <i class="bi bi-search text-muted opacity-50" style="font-size: 0.8rem;"></i>
+                                <span class="fw-medium" style="font-size: 0.88rem;">${escapeHtml(term)}</span>
+                            </div>
+                            <button type="button" class="btn btn-link text-muted p-1 px-2 border-0" onclick="removeSingleRecent(event, '${escapeJs(term)}')" title="Remove">
+                                <i class="bi bi-x fs-5"></i>
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        box.classList.remove('d-none');
+
+        const clearAllBtn = box.querySelector('#clear-all-recent-btn');
+        if (clearAllBtn) {
+            clearAllBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                clearAllRecentSearches();
+                renderEmptyState(box, input, form);
+            });
+        }
+    }
+
+    function setupSearch(inputId, formId, boxId) {
+        const input = document.getElementById(inputId);
+        const form  = document.getElementById(formId);
+        const box   = document.getElementById(boxId);
+        if (!input || !form || !box) return;
+
+        const clearBtn = form.querySelector('.btn-clear-search');
+        let timer;
+
+        function updateClearBtn() {
+            if (clearBtn) {
+                if (input.value.trim().length > 0) {
+                    clearBtn.classList.remove('d-none');
                 } else {
-                    box.innerHTML = data.suggestions.map(s =>
-                        `<div class="suggestion-item" onclick="window.location='${s.url}'">
-                            <i class="bi bi-search small text-primary"></i>
-                            <span class="fw-semibold">${s.name}</span>
-                            <small class="text-muted ms-auto text-nowrap badge bg-light border">${s.category}</small>
-                        </div>`
-                    ).join('');
+                    clearBtn.classList.add('d-none');
                 }
+            }
+        }
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function () {
+                input.value = '';
+                updateClearBtn();
+                input.focus();
+                renderEmptyState(box, input, form);
+            });
+        }
+
+        form.addEventListener('submit', function () {
+            saveRecentSearch(input.value.trim());
+        });
+
+        input.addEventListener('input', function () {
+            clearTimeout(timer);
+            updateClearBtn();
+            const q = this.value.trim();
+
+            if (q.length === 0) {
+                renderEmptyState(box, input, form);
+                return;
+            }
+
+            timer = setTimeout(() => {
+                fetch(`{{ route('shop') }}?q=${encodeURIComponent(q)}&suggestion=1`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    const structured = data.structured || [];
+                    const totalCount = data.total_count || structured.length;
+                    const suggestions = structured.filter(s => s.type !== 'tag');
+                    const currentLower = q.toLowerCase();
+                    const matchingRecent = getRecentSearches().filter(term => term.toLowerCase().includes(currentLower));
+
+                    if (suggestions.length === 0 && matchingRecent.length === 0) {
+                        box.innerHTML = `
+                            <div class="p-4 text-center">
+                                <i class="bi bi-search display-6 text-muted opacity-25 mb-2 d-block"></i>
+                                <div class="fw-bold text-dark mb-1">No results found for "${escapeHtml(q)}"</div>
+                                <div class="text-muted small">Try checking your spelling or use general keywords like "mobiles", "samsung", "5g".</div>
+                            </div>
+                        `;
+                    } else {
+                        let html = '';
+
+                        // 1. Direct Search Query Row
+                        html += `
+                            <div class="suggestion-query-row py-3 px-4 border-bottom d-flex align-items-center gap-3 text-dark" onclick="applySearchTerm('${escapeJs(q)}')">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary flex-shrink-0" style="width: 32px; height: 32px;">
+                                    <i class="bi bi-search" style="font-size: 0.85rem;"></i>
+                                </div>
+                                <span style="font-size: 0.92rem;">Search for <strong class="text-primary">"${escapeHtml(q)}"</strong></span>
+                                <i class="bi bi-arrow-up-left ms-auto text-muted fs-6"></i>
+                            </div>
+                        `;
+
+                        // 2. Matching Recent Searches
+                        if (matchingRecent.length > 0) {
+                            html += `
+                                <div class="py-2.5 px-3 border-bottom">
+                                    <div class="px-3 pt-1 pb-2">
+                                        <span class="small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.6px;">
+                                            <i class="bi bi-clock-history me-1.5 text-primary"></i> Recent History
+                                        </span>
+                                    </div>
+                                    <div class="d-flex flex-column gap-1">
+                                        ${matchingRecent.slice(0, 3).map(term => `
+                                            <div class="d-flex align-items-center justify-content-between py-2 px-3 rounded-3 cursor-pointer suggestion-row-item" onclick="applySearchTerm('${escapeJs(term)}')">
+                                                <div class="d-flex align-items-center gap-3 min-w-0">
+                                                    <i class="bi bi-clock-history text-muted" style="font-size: 0.88rem;"></i>
+                                                    <span class="fw-semibold text-dark text-truncate" style="font-size: 0.88rem;">${escapeHtml(term)}</span>
+                                                </div>
+                                                <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-2">
+                                                    <span class="badge" style="background: #eef2ff; color: #4338ca; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; padding: 4px 8px;">RECENT</span>
+                                                    <button type="button" class="btn btn-link p-0 text-muted border-0" onclick="removeSingleRecent(event, '${escapeJs(term)}')" title="Remove">
+                                                        <i class="bi bi-x fs-5"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `;
+                        }
+
+                        // 3. Autocomplete Rows (Matching Product Names, Brands, Categories)
+                        if (suggestions.length > 0) {
+                            html += `
+                                <div class="py-2">
+                                    <div class="d-flex flex-column gap-0.5">
+                                        ${suggestions.slice(0, 8).map(s => {
+                                            let iconClass = 'bi bi-search text-muted';
+                                            let badgeBg = '#f1f5f9';
+                                            let badgeFg = '#475569';
+                                            let clickHandler = s.url ? `selectSearchProduct('${escapeJs(s.url)}', '${escapeJs(q)}')` : `applySearchTerm('${escapeJs(s.text)}')`;
+
+                                            if (s.type === 'category') {
+                                                iconClass = 'bi bi-grid-fill text-info';
+                                                badgeBg = '#e0f2fe';
+                                                badgeFg = '#0369a1';
+                                            } else if (s.type === 'brand') {
+                                                iconClass = 'bi bi-patch-check-fill text-warning';
+                                                badgeBg = '#fef3c7';
+                                                badgeFg = '#b45309';
+                                            } else if (s.type === 'product') {
+                                                iconClass = 'bi bi-box-seam text-primary';
+                                                badgeBg = '#eef2ff';
+                                                badgeFg = '#4338ca';
+                                            }
+
+                                            return `
+                                                <div class="d-flex align-items-center justify-content-between py-2.5 px-4 cursor-pointer suggestion-row-item" onclick="${clickHandler}">
+                                                    <div class="d-flex align-items-center gap-3 min-w-0">
+                                                        <i class="${iconClass} fs-6 flex-shrink-0"></i>
+                                                        <span class="fw-medium text-dark text-truncate" style="font-size: 0.9rem;">${highlightMatch(s.text, q)}</span>
+                                                    </div>
+                                                    <div class="d-flex align-items-center gap-2.5 flex-shrink-0 ms-2">
+                                                        <span class="badge" style="background: ${badgeBg}; color: ${badgeFg}; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; padding: 4px 8px;">${s.type.toUpperCase()}</span>
+                                                        <i class="bi bi-arrow-up-left text-muted small"></i>
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                            `;
+                        }
+
+                        // 4. View All Results Footer (Spacious, prominent, clean)
+                        html += `
+                            <div class="py-3.5 px-4 text-center cursor-pointer suggestion-footer-btn d-flex align-items-center justify-content-center gap-2.5 border-top" onclick="applySearchTerm('${escapeJs(q)}')">
+                                <span class="fw-semibold text-primary" style="font-size: 0.94rem;">
+                                    See all <span class="badge bg-primary rounded-pill px-2.5 py-1 mx-1 shadow-xs" style="font-size: 0.82rem; font-weight: 700;">${totalCount}</span> results for "${escapeHtml(q)}"
+                                </span>
+                                <i class="bi bi-arrow-right fs-6 text-primary fw-bold footer-arrow-icon"></i>
+                            </div>
+                        `;
+
+                        box.innerHTML = html;
+                    }
+                    box.classList.remove('d-none');
+                })
+                .catch(() => box.classList.add('d-none'));
+            }, 250);
+        });
+
+        input.addEventListener('focus', function () {
+            if (this.value.trim().length === 0) {
+                renderEmptyState(box, input, form);
+            } else if (this.value.trim().length >= 1) {
                 box.classList.remove('d-none');
-            })
-            .catch(() => box.classList.add('d-none'));
-        }, 280);
-    });
+            }
+        });
 
-    input.addEventListener('focus', function () {
-        if (this.value.trim().length >= 2) box.classList.remove('d-none');
-    });
+        document.addEventListener('click', function (e) {
+            if (!form.contains(e.target)) {
+                box.classList.add('d-none');
+            }
+        });
 
-    document.addEventListener('click', function (e) {
-        if (!form.contains(e.target)) box.classList.add('d-none');
-    });
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                box.classList.add('d-none');
+                this.blur();
+            }
+        });
 
-    input.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') { box.classList.add('d-none'); this.blur(); }
-    });
+        updateClearBtn();
+    }
+
+    function escapeHtml(str) {
+        return (str || '').replace(/[&<>"']/g, m => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[m]);
+    }
+
+    function escapeJs(str) {
+        return (str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    function highlightMatch(text, term) {
+        if (!term || !text) return escapeHtml(text);
+        const safeTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(${safeTerm})`, 'gi');
+        return escapeHtml(text).replace(regex, '<strong class="text-primary">$1</strong>');
+    }
+
+    window.applySearchTerm = function (term) {
+        saveRecentSearch(term);
+        window.location.href = `{{ route('shop') }}?q=${encodeURIComponent(term)}`;
+    };
+
+    window.selectSearchProduct = function (url, term) {
+        saveRecentSearch(term);
+        window.location.href = url;
+    };
+
+    window.removeSingleRecent = function (event, term) {
+        event.stopPropagation();
+        removeRecentSearch(term);
+        const desktopBox = document.getElementById('searchSuggestions');
+        const mobileBox = document.getElementById('mobileSearchSuggestions');
+        if (desktopBox && !desktopBox.classList.contains('d-none')) {
+            renderEmptyState(desktopBox, document.getElementById('mainSearchInput'), document.getElementById('mainSearchForm'));
+        }
+        if (mobileBox && !mobileBox.classList.contains('d-none')) {
+            renderEmptyState(mobileBox, document.getElementById('mobileSearchInput'), document.getElementById('mobileSearchForm'));
+        }
+    };
+
+    // Initialize both Desktop and Mobile search bars
+    setupSearch('mainSearchInput', 'mainSearchForm', 'searchSuggestions');
+    setupSearch('mobileSearchInput', 'mobileSearchForm', 'mobileSearchSuggestions');
 })();
 </script>
 
@@ -535,24 +858,24 @@ document.addEventListener('DOMContentLoaded', function() {
 <div class="modal fade" id="deliveryLocationModal" tabindex="-1" aria-labelledby="deliveryLocationModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-            <div class="modal-header border-0 pb-0 pt-4 px-4 d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center" style="gap: 0.85rem !important;">
+            <div class="modal-header border-0 pb-0 pt-3 pt-sm-4 px-3 px-sm-4 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-3">
                     <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs" 
                          style="width: 44px; height: 44px; background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); color: #6366f1; font-size: 1.2rem;">
                         <i class="bi bi-geo-alt-fill"></i>
                     </div>
                     <div>
-                        <h6 class="modal-title fw-bold text-dark mb-0.5" id="deliveryLocationModalLabel" style="font-size: 1.05rem;">Choose Delivery Location</h6>
-                        <small class="text-muted" style="font-size: 0.78rem;">Check delivery speed & payment availability</small>
+                        <h6 class="modal-title fw-bold text-dark mb-1" id="deliveryLocationModalLabel" style="font-size: 1.05rem;">Choose Delivery Location</h6>
+                        <small class="text-muted" style="font-size: 0.8rem;">Check delivery speed & payment availability</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <div class="modal-body p-4">
+            <div class="modal-body p-3 p-sm-4">
                 <!-- Pincode Input Box -->
                 <div class="mb-3">
-                    <label class="form-label small fw-bold text-dark mb-1.5" style="font-size: 0.82rem;">Enter a 6-digit Indian PIN code</label>
+                    <label class="form-label small fw-bold text-dark mb-2" style="font-size: 0.84rem;">Enter a 6-digit Indian PIN code</label>
                     <div class="input-group shadow-xs rounded-pill overflow-hidden border p-1" style="background: #f8fafc; border-color: #cbd5e1 !important;">
                         <span class="input-group-text bg-transparent border-0 ps-3 pe-2 text-primary" style="font-size: 1.1rem;">
                             <i class="bi bi-geo-alt-fill"></i>
@@ -561,43 +884,17 @@ document.addEventListener('DOMContentLoaded', function() {
                                class="form-control bg-transparent border-0 font-monospace fw-bold ps-1 text-dark shadow-none" 
                                placeholder="e.g. 500081" value="{{ $deliveryLocation['pincode'] ?? '' }}"
                                style="font-size: 0.95rem; letter-spacing: 0.08em;">
-                        <button type="button" class="btn btn-primary rounded-pill px-4 fw-semibold shadow-xs d-inline-flex align-items-center" 
-                                style="gap: 0.4rem !important; font-size: 0.88rem;" id="modalApplyPincodeBtn">
+                        <button type="button" class="btn btn-primary rounded-pill px-3 px-sm-4 fw-semibold shadow-xs d-inline-flex align-items-center gap-1" 
+                                style="font-size: 0.88rem;" id="modalApplyPincodeBtn">
                             <span>Apply</span> <i class="bi bi-arrow-right-short fs-5"></i>
                         </button>
                     </div>
-                    <div id="modalPincodeFeedback" class="mt-2.5 small d-none"></div>
+                    <div id="modalPincodeFeedback" class="mt-3 p-3 rounded-3 small d-none"></div>
                 </div>
-
-                @auth('customer')
-                <!-- Saved Customer Addresses -->
-                <div class="mt-4 pt-3 border-top" id="modalSavedAddressesContainer">
-                    <div class="d-flex align-items-center justify-content-between mb-2.5">
-                        <span class="small fw-bold text-dark text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Or pick from saved addresses</span>
-                        <a href="{{ route('profile.edit') }}" class="small text-primary text-decoration-none fw-semibold" style="font-size: 0.78rem;">
-                            Manage Addresses <i class="bi bi-arrow-right-short"></i>
-                        </a>
-                    </div>
-                    <div class="d-flex flex-column gap-2.5" id="modalSavedAddressesList">
-                        <div class="text-center py-3 text-muted small">
-                            <span class="spinner-border spinner-border-sm me-1" role="status"></span> Loading saved addresses...
-                        </div>
-                    </div>
-                </div>
-                @endauth
             </div>
         </div>
     </div>
 </div>
-
-<style>
-    .address-picker-card:hover {
-        background-color: #f8fafc !important;
-        border-color: #6366f1 !important;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08) !important;
-    }
-</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -605,11 +902,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const input = document.getElementById('modalPincodeInput');
     const feedback = document.getElementById('modalPincodeFeedback');
     const headerText = document.getElementById('header-delivery-text');
+    const mobileHeaderText = document.getElementById('header-mobile-delivery-text');
 
     function checkAndSaveLocation(pincode) {
         if (!pincode || pincode.length !== 6) {
-            feedback.className = 'mt-2.5 p-2.5 bg-danger bg-opacity-10 text-danger rounded-3 border border-danger border-opacity-25 small fw-semibold';
-            feedback.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i> Please enter a valid 6-digit PIN code.';
+            feedback.className = 'mt-3 p-3 bg-danger bg-opacity-10 text-danger rounded-3 border border-danger border-opacity-25 small fw-semibold d-flex align-items-center gap-2';
+            feedback.innerHTML = '<i class="bi bi-exclamation-circle fs-6 flex-shrink-0"></i> <span>Please enter a valid 6-digit PIN code.</span>';
             feedback.classList.remove('d-none');
             return;
         }
@@ -632,12 +930,15 @@ document.addEventListener('DOMContentLoaded', function () {
             applyBtn.innerHTML = '<span>Apply</span> <i class="bi bi-arrow-right-short fs-5"></i>';
 
             if (data.success && data.location && data.location.is_serviceable) {
-                feedback.className = 'mt-2.5 p-2.5 bg-success bg-opacity-10 text-success rounded-3 border border-success border-opacity-25 small fw-semibold';
-                feedback.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> Delivering to <strong>${data.location.location_text}</strong> • ${data.location.estimated_delivery}`;
+                feedback.className = 'mt-3 p-3 bg-success bg-opacity-10 text-success rounded-3 border border-success border-opacity-25 small fw-semibold d-flex align-items-center gap-2';
+                feedback.innerHTML = `<i class="bi bi-check-circle-fill text-success fs-6 flex-shrink-0"></i> <span>Delivering to <strong>${data.location.location_text}</strong> • ${data.location.estimated_delivery}</span>`;
                 feedback.classList.remove('d-none');
 
                 if (headerText) {
                     headerText.textContent = data.location.location_text;
+                }
+                if (mobileHeaderText) {
+                    mobileHeaderText.textContent = data.location.city || data.location.pincode;
                 }
 
                 // If product details page has delivery widget, update it too
@@ -651,16 +952,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (modal) modal.hide();
                 }, 1000);
             } else {
-                feedback.className = 'mt-2.5 p-2.5 bg-danger bg-opacity-10 text-danger rounded-3 border border-danger border-opacity-25 small fw-semibold';
-                feedback.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i> ${data.message || 'Location not serviceable.'}`;
+                feedback.className = 'mt-3 p-3 bg-danger bg-opacity-10 text-danger rounded-3 border border-danger border-opacity-25 small fw-semibold d-flex align-items-center gap-2';
+                feedback.innerHTML = `<i class="bi bi-x-circle-fill fs-6 flex-shrink-0"></i> <span>${data.message || 'Location not serviceable.'}</span>`;
                 feedback.classList.remove('d-none');
             }
         })
         .catch(err => {
             applyBtn.disabled = false;
             applyBtn.innerHTML = '<span>Apply</span> <i class="bi bi-arrow-right-short fs-5"></i>';
-            feedback.className = 'mt-2.5 p-2.5 bg-danger bg-opacity-10 text-danger rounded-3 border border-danger border-opacity-25 small fw-semibold';
-            feedback.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i> Network error. Please try again.';
+            feedback.className = 'mt-3 p-3 bg-danger bg-opacity-10 text-danger rounded-3 border border-danger border-opacity-25 small fw-semibold d-flex align-items-center gap-2';
+            feedback.innerHTML = '<i class="bi bi-exclamation-circle fs-6 flex-shrink-0"></i> <span>Network error. Please try again.</span>';
             feedback.classList.remove('d-none');
         });
     }
@@ -674,59 +975,5 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
-
-    // Load saved addresses for logged-in customer when modal opens
-    const modalEl = document.getElementById('deliveryLocationModal');
-    if (modalEl) {
-        modalEl.addEventListener('show.bs.modal', function () {
-            const list = document.getElementById('modalSavedAddressesList');
-            if (!list) return;
-
-            fetch('{{ route("delivery.addresses") }}', {
-                headers: { 'Accept': 'application/json' }
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.addresses && data.addresses.length > 0) {
-                    list.innerHTML = data.addresses.map(addr => `
-                        <div class="p-3 rounded-4 border bg-white shadow-xs d-flex align-items-center justify-content-between address-picker-card" 
-                             style="cursor: pointer; transition: all 0.2s ease; border-color: #e2e8f0 !important; gap: 0.75rem !important;" 
-                             onclick="selectSavedAddress('${addr.zip}')">
-                            <div class="d-flex align-items-start" style="gap: 0.75rem !important; min-width: 0;">
-                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 mt-0.5" 
-                                     style="width: 34px; height: 34px; background: #ede9fe; color: #6366f1;">
-                                    <i class="bi bi-house-door-fill" style="font-size: 0.95rem;"></i>
-                                </div>
-                                <div class="overflow-hidden">
-                                    <div class="fw-bold text-dark small mb-0.5 text-truncate" style="font-size: 0.86rem;">
-                                        ${addr.name} • <span class="font-monospace text-primary fw-bold">${addr.zip}</span>
-                                    </div>
-                                    <div class="text-muted small text-truncate" style="font-size: 0.76rem;">
-                                        ${addr.address ? addr.address + ', ' : ''}${addr.city}, ${addr.state}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex-shrink-0">
-                                ${addr.is_serviceable 
-                                    ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center" style="gap: 0.3rem !important; font-size: 0.72rem;"><i class="bi bi-check-circle-fill"></i> Available</span>'
-                                    : '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center" style="gap: 0.3rem !important; font-size: 0.72rem;"><i class="bi bi-x-circle-fill"></i> Unavailable</span>'
-                                }
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    list.innerHTML = '<div class="text-center py-3 text-muted small">No saved addresses yet.</div>';
-                }
-            })
-            .catch(() => {
-                list.innerHTML = '<div class="text-center py-3 text-muted small">Could not load addresses.</div>';
-            });
-        });
-    }
-
-    window.selectSavedAddress = function (zip) {
-        if (input) input.value = zip;
-        checkAndSaveLocation(zip);
-    };
 });
 </script>
