@@ -544,7 +544,7 @@
                                             </div>
                                             <div class="col-12 col-sm-6">
                                                 <label for="new_phone" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Mobile Number <span class="text-danger">*</span></label>
-                                                <input type="tel" class="form-control form-control-sm rounded-3 py-1.5" id="new_phone" value="{{ auth()->user()->mobile_number ?? '' }}" placeholder="10-digit mobile" maxlength="15">
+                                                <input type="tel" class="form-control form-control-sm rounded-3 py-1.5" id="new_phone" value="{{ auth()->user()->mobile_number ?? '' }}" placeholder="10-digit mobile" maxlength="10" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 10)">
                                             </div>
                                             <div class="col-12 col-sm-6">
                                                 <label for="new_zip" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Pincode <span class="text-danger">*</span></label>
@@ -2611,6 +2611,7 @@ function closeNewAddressForm() {
     }
 }
 
+let newPincodeLookupTimer = null;
 function handleNewPincodeLookup(val) {
     const pin = (val || '').replace(/\D/g, '').slice(0, 6);
     const zipInput = document.getElementById('new_zip');
@@ -2618,6 +2619,9 @@ function handleNewPincodeLookup(val) {
         zipInput.value = pin;
     }
     const hintEl = document.getElementById('new_zip_lookup_hint');
+    if (newPincodeLookupTimer) {
+        clearTimeout(newPincodeLookupTimer);
+    }
     if (pin.length < 6) {
         if (hintEl) hintEl.textContent = '';
         return;
@@ -2625,41 +2629,83 @@ function handleNewPincodeLookup(val) {
 
     if (hintEl) {
         hintEl.className = 'text-muted d-block mt-0.5';
-        hintEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1" style="width:0.6rem;height:0.6rem;"></span> Looking up PIN...';
+        hintEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1" style="width:0.6rem;height:0.6rem;"></span> Checking pincode...';
     }
 
-    fetch('{{ route("delivery.check") }}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify({ pincode: pin })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.city && !data.city.startsWith('PIN ')) {
-            const cityInput = document.getElementById('new_city');
-            if (cityInput && !cityInput.value.trim()) cityInput.value = data.city;
-        }
-        if (data.state && data.state !== 'India') {
-            const stateInput = document.getElementById('new_state');
-            if (stateInput && !stateInput.value.trim()) stateInput.value = data.state;
-        }
-        if (hintEl) {
+    newPincodeLookupTimer = setTimeout(async () => {
+        let city = '';
+        let state = '';
+        let isServiceable = false;
+        let deliveryMessage = '';
+
+        // 1. Check WiseKart store delivery serviceability first
+        try {
+            const res = await fetch('{{ route("delivery.check") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ pincode: pin })
+            });
+            const data = await res.json();
+            if (data.city && !data.city.startsWith('PIN ')) city = data.city;
+            if (data.state && data.state !== 'India') state = data.state;
             if (data.is_serviceable) {
+                isServiceable = true;
+                deliveryMessage = data.message || `Delivery available to ${data.city || 'your area'}`;
+            }
+        } catch (err) {
+            console.warn('WiseKart delivery service check failed:', err);
+        }
+
+        // 2. Fallback to Postal Pincode Directory if city/state not in local DB or generic
+        if (!city || !state) {
+            try {
+                const postalRes = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+                const postalData = await postalRes.json();
+                if (Array.isArray(postalData) && postalData[0]?.Status === 'Success' && postalData[0].PostOffice?.length > 0) {
+                    const po = postalData[0].PostOffice[0];
+                    if (!city) city = po.District || po.Division || po.Block || '';
+                    if (!state) state = po.State || '';
+                }
+            } catch (postalErr) {
+                console.warn('Postal API lookup fallback error:', postalErr);
+            }
+        }
+
+        // 3. Auto-populate City & State inputs seamlessly with soft flash
+        const cityInput = document.getElementById('new_city');
+        const stateInput = document.getElementById('new_state');
+
+        if (city && cityInput) {
+            cityInput.value = city;
+            cityInput.style.transition = 'background-color 0.4s ease';
+            cityInput.style.backgroundColor = '#ecfdf5';
+            setTimeout(() => { if (cityInput) cityInput.style.backgroundColor = ''; }, 1200);
+        }
+        if (state && stateInput) {
+            stateInput.value = state;
+            stateInput.style.transition = 'background-color 0.4s ease';
+            stateInput.style.backgroundColor = '#ecfdf5';
+            setTimeout(() => { if (stateInput) stateInput.style.backgroundColor = ''; }, 1200);
+        }
+
+        // 4. Update status hint
+        if (hintEl) {
+            if (isServiceable) {
                 hintEl.className = 'text-success fw-semibold d-block mt-0.5';
-                hintEl.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>Serviceable (${data.city || pin})`;
+                hintEl.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>${deliveryMessage || `Delivery available to ${city || pin}`}`;
+            } else if (city && state) {
+                hintEl.className = 'text-warning fw-semibold d-block mt-0.5';
+                hintEl.innerHTML = `<i class="bi bi-geo-alt-fill me-1"></i>${city}, ${state} <span class="text-danger ms-1">(Unserviceable for delivery)</span>`;
             } else {
                 hintEl.className = 'text-danger fw-semibold d-block mt-0.5';
                 hintEl.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i>Delivery unavailable for ${pin}`;
             }
         }
-    })
-    .catch(() => {
-        if (hintEl) hintEl.textContent = '';
-    });
+    }, 280);
 }
 
 function escapeAddressHtml(str) {
@@ -2750,6 +2796,16 @@ function handleSaveAddress(e) {
             icon: 'warning',
             title: 'Incomplete Address',
             text: 'Please fill in Full Name, Mobile Number, 6-digit PIN Code, Street Address, City, and State.',
+            confirmButtonColor: '#4f46e5'
+        });
+        return;
+    }
+
+    if (phoneVal.length !== 10) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Invalid Mobile Number',
+            text: 'Please enter a valid 10-digit mobile number.',
             confirmButtonColor: '#4f46e5'
         });
         return;
