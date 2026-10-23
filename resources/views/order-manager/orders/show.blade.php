@@ -1,243 +1,630 @@
 @extends('order-manager.layouts.app')
 
 @section('title', 'Order #' . $order->order_number)
-@section('header', 'Order Management & Fulfillment')
+@section('header', 'Order Command Center')
 
 @section('content')
 
 @php
     $stages = ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'out for delivery', 'delivered'];
-    $currentStatusIndex = array_search($order->status, $stages);
-    $isCancelled = in_array($order->status, ['cancelled', 'returned']);
+    $currentStatusIndex = array_search(strtolower(str_replace('_', ' ', $order->status)), $stages);
+    $isCancelled = in_array(strtolower((string)$order->status), ['cancelled', 'returned']);
+    $isDelivered = strtolower(str_replace('_', ' ', (string)$order->status)) === 'delivered';
+    $isOutForDelivery = strtolower(str_replace('_', ' ', (string)$order->status)) === 'out for delivery';
+    $payment = $order->primaryPayment ?? $order->latestPayment;
 @endphp
 
-<!-- ── 1. Master Order Header & Actions Toolbar ── -->
-<div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white" style="border-top: 4px solid #4f46e5 !important;">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
-        <div>
-            <div class="d-flex align-items-center gap-2.5 flex-wrap mb-1.5">
-                <h3 class="fw-bolder text-dark mb-0 font-monospace" style="letter-spacing: -0.5px; font-size: 1.5rem;">
-                    #{{ $order->order_number }}
-                </h3>
-                <span id="topStatusBadge" class="badge rounded-pill px-3 py-1.5 fw-bold shadow-xs" 
-                      style="background: #eef2ff; color: #4338ca; border: 1.5px solid #c7d2fe; font-size: 0.78rem;">
-                    Status: {{ ucfirst(str_replace('_', ' ', $order->status)) }}
-                </span>
-                <span id="topFulfillmentBadge">{!! $order->fulfillment_badge !!}</span>
-            </div>
-            <div class="text-secondary small d-flex align-items-center gap-2 flex-wrap" style="font-size: 0.82rem;">
-                <span>Customer: <strong class="text-dark">{{ $order->shipping_name }}</strong></span>
-                <span>&bull;</span>
-                <span>Placed: <strong class="text-dark">{{ $order->created_at->format('d M Y, h:i A') }}</strong> ({{ $order->created_at->diffForHumans() }})</span>
-            </div>
-        </div>
-
-        <!-- Quick Action Buttons Toolbar -->
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-            <a href="{{ route('order-manager.orders.index') }}" class="btn btn-light border btn-sm rounded-pill px-3.5 py-2 fw-bold text-dark shadow-xs" style="font-size: 0.82rem;">
-                <i class="bi bi-arrow-left me-1"></i> Back to Queue
-            </a>
-            @if(!in_array($order->status, ['cancelled', 'delivered', 'returned']))
-                <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3.5 py-2 fw-bold shadow-xs bg-white" data-bs-toggle="modal" data-bs-target="#staffCancelOrderModal" style="font-size: 0.82rem;">
-                    <i class="bi bi-x-circle me-1"></i> Cancel Order
-                </button>
-            @endif
-            @if($order->isLocalBengaluruDelivery())
-                <a href="{{ route('order-manager.orders.manifest', $order) }}" target="_blank" class="btn text-white btn-sm rounded-pill px-3.5 py-2 fw-bold shadow-xs" style="background: #0284c7; font-size: 0.82rem;">
-                    <i class="bi bi-file-earmark-text me-1"></i> Run-Sheet
+{{-- ── 1. Top Order Command Strip ── --}}
+<div class="card border-0 shadow-sm rounded-4 mb-4 bg-white overflow-hidden" style="border: 1px solid #e2e8f0 !important;">
+    <div class="p-3.5 p-lg-4">
+        {{-- Navigation & Document Actions Row --}}
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2.5 pb-3 border-bottom">
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ route('order-manager.orders.index') }}" class="btn btn-sm btn-light border rounded-pill px-3 py-1.5 fw-semibold text-secondary d-inline-flex align-items-center gap-1.5 shadow-2xs">
+                    <i class="bi bi-arrow-left"></i> <span>Orders Queue</span>
                 </a>
-            @endif
-            <a href="{{ route('order-manager.orders.shipping-label', $order) }}" target="_blank" class="btn text-white btn-sm rounded-pill px-3.5 py-2 fw-bold shadow-xs" style="background: #0f172a; font-size: 0.82rem;">
-                <i class="bi bi-tag-fill me-1 text-warning"></i> Shipping Label (4x6)
-            </a>
-            <a href="{{ route('order-manager.orders.packing-slip', $order) }}" target="_blank" class="btn text-white btn-sm rounded-pill px-3.5 py-2 fw-bold shadow-xs" style="background: #4f46e5; font-size: 0.82rem;">
-                <i class="bi bi-printer me-1"></i> Packing Slip
-            </a>
-        </div>
-    </div>
-
-    <!-- Logistics & Payment Channel Strip -->
-    <div class="p-3 rounded-3 bg-light border d-flex align-items-center justify-content-between flex-wrap gap-2.5 mb-3">
-        <div class="d-flex align-items-center gap-2.5">
-            <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-xs flex-shrink-0" 
-                 style="width: 32px; height: 32px; background: #4f46e5; font-size: 0.88rem;">
-                <i class="bi bi-truck"></i>
+                <span class="text-muted d-none d-sm-inline">•</span>
+                <span class="text-muted small d-none d-sm-inline">
+                    Placed {{ $order->created_at->format('d M, Y \a\t h:i A') }} ({{ $order->created_at->diffForHumans() }})
+                </span>
             </div>
-            <div id="topLogisticsInfo" class="text-dark small" style="font-size: 0.84rem;">
+
+            {{-- Document Printouts & Quick Actions --}}
+            <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                <a href="{{ route('order-manager.orders.packing-slip', $order) }}" target="_blank" class="btn btn-sm btn-light border rounded-pill px-3 py-1.5 fw-semibold text-dark shadow-2xs d-inline-flex align-items-center gap-1.5" title="Print Warehouse Packing Slip">
+                    <i class="bi bi-printer text-primary"></i> <span>Packing Slip</span>
+                </a>
+                <a href="{{ route('order-manager.orders.shipping-label', $order) }}" target="_blank" class="btn btn-sm btn-light border rounded-pill px-3 py-1.5 fw-semibold text-dark shadow-2xs d-inline-flex align-items-center gap-1.5" title="Print Shipping Label (4x6 Thermal)">
+                    <i class="bi bi-tag-fill text-warning"></i> <span>Label (4x6)</span>
+                </a>
                 @if($order->isLocalBengaluruDelivery())
-                    Bengaluru Local Fleet: Rider <strong>{{ $order->rider_name ?? 'Unassigned' }}</strong> {{ $order->rider_phone ? ' (' . $order->rider_phone . ')' : '' }}
-                @else
-                    National Courier: <strong>{{ $order->courier_partner ?? 'Pending Courier Partner' }}</strong> &bull; AWB: <strong class="font-monospace text-primary">{{ $order->tracking_number ?? 'Unassigned' }}</strong>
+                    <a href="{{ route('order-manager.orders.manifest', $order) }}" target="_blank" class="btn btn-sm btn-light border rounded-pill px-3 py-1.5 fw-semibold text-dark shadow-2xs d-inline-flex align-items-center gap-1.5" title="Local Fleet Run-Sheet">
+                        <i class="bi bi-file-earmark-ruled text-info"></i> <span>Run-Sheet</span>
+                    </a>
+                @endif
+                <a href="{{ route('order-manager.orders.invoice', $order) }}" target="_blank" class="btn btn-sm btn-light border rounded-pill px-3 py-1.5 fw-semibold text-dark shadow-2xs d-inline-flex align-items-center gap-1.5" title="Tax Invoice">
+                    <i class="bi bi-receipt text-success"></i> <span>Invoice</span>
+                </a>
+                @if(!in_array($order->status, ['cancelled', 'delivered', 'returned']))
+                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1.5 fw-semibold shadow-2xs d-inline-flex align-items-center gap-1 ms-1" data-bs-toggle="modal" data-bs-target="#staffCancelOrderModal">
+                        <i class="bi bi-x-circle"></i> <span>Cancel</span>
+                    </button>
                 @endif
             </div>
         </div>
 
-        <div class="small text-secondary d-flex align-items-center gap-1.5">
-            <span>Payment:</span>
-            <span class="badge bg-white text-dark border fw-bold text-uppercase px-2.5 py-1" style="font-size: 0.72rem;">
-                {{ $order->payment_method }}
-            </span>
-            <span class="badge rounded-pill px-2.5 py-1 fw-bold {{ $order->payment_status === 'paid' ? 'bg-success text-white' : 'bg-warning text-dark' }}" style="font-size: 0.72rem;">
-                {{ ucfirst($order->payment_status ?? 'pending') }}
-            </span>
-        </div>
-    </div>
+        {{-- Order ID, Badges & Logistics Summary Row --}}
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 pt-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                    <h3 class="fw-extrabold text-dark mb-0 font-monospace" style="letter-spacing: -0.02em; font-size: 1.55rem;">
+                        #{{ $order->order_number }}
+                    </h3>
+                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 py-0.5 text-muted small" onclick="navigator.clipboard.writeText('{{ $order->order_number }}'); this.innerText = 'Copied!'; setTimeout(() => this.innerHTML = '<i class=\'bi bi-copy\'></i>', 1500);" title="Copy Order Number">
+                        <i class="bi bi-copy"></i>
+                    </button>
+                    <span id="topStatusBadge" class="badge rounded-pill px-3 py-1.5 fw-bold shadow-2xs" 
+                          style="background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; font-size: 0.78rem;">
+                        Status: {{ ucfirst(str_replace('_', ' ', $order->status)) }}
+                    </span>
+                    <span id="topFulfillmentBadge">{!! $order->fulfillment_badge !!}</span>
+                </div>
 
-    <!-- Status Stepper Progress Bar -->
-    @if(!$isCancelled)
-        <div class="position-relative my-4 px-2" id="trackerContainer">
-            <div class="progress" style="height: 6px; background-color: #e2e8f0; border-radius: 9999px;">
-                @php
-                    $pct = $currentStatusIndex !== false ? (($currentStatusIndex) / (count($stages) - 1)) * 100 : 0;
-                @endphp
-                <div id="trackerProgressBar" class="progress-bar" role="progressbar" 
-                     style="width: {{ $pct }}%; background: linear-gradient(90deg, #4f46e5, #10b981); transition: width 0.4s ease;" 
-                     aria-valuenow="{{ $pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+                <div class="d-flex align-items-center gap-2.5 text-secondary small flex-wrap pt-0.5" style="font-size: 0.82rem;">
+                    <span>Customer: <strong class="text-dark">{{ $order->shipping_name }}</strong></span>
+                    <span>&bull;</span>
+                    <span id="topLogisticsInfo">
+                        @if($order->isLocalBengaluruDelivery())
+                            Bengaluru Local Fleet: <strong>{{ $order->rider_name ? 'Assigned to ' . $order->rider_name : 'Unassigned Rider' }}</strong>
+                        @else
+                            Courier: <strong>{{ $order->courier_partner ?: 'National Logistics' }}</strong> (AWB: {{ $order->tracking_number ?: 'Pending' }})
+                        @endif
+                    </span>
+                </div>
             </div>
 
-            <div class="d-flex justify-content-between position-relative mt-2 text-center" style="margin-top: -16px !important;">
-                @foreach($stages as $idx => $st)
-                    @php
-                        $isPast = $currentStatusIndex !== false && $idx <= $currentStatusIndex;
-                        $isCurrent = $currentStatusIndex !== false && $idx === $currentStatusIndex;
-                    @endphp
-                    <div style="width: 14%;" class="stage-step" data-stage="{{ $st }}" data-index="{{ $idx }}">
-                        <div class="stage-dot rounded-circle d-inline-flex align-items-center justify-content-center shadow-xs" 
-                             style="width: 28px; height: 28px; font-size: 0.75rem; font-weight: bold; background: {{ $isPast ? '#10b981' : '#ffffff' }}; color: {{ $isPast ? '#ffffff' : '#64748b' }}; border: 2px solid {{ $isCurrent ? '#4f46e5' : ($isPast ? '#10b981' : '#cbd5e1') }}; transition: all 0.3s ease;">
-                            @if($isPast)
-                                <i class="bi bi-check-lg"></i>
-                            @else
-                                {{ $idx + 1 }}
-                            @endif
-                        </div>
-                        <div class="stage-label small fw-semibold mt-1.5 d-none d-md-block {{ $isCurrent ? 'text-primary fw-bold' : ($isPast ? 'text-dark' : 'text-muted') }}" 
-                             style="font-size: 0.72rem; text-transform: capitalize;">
-                            {{ $st }}
-                        </div>
+            {{-- Quick Payment Ledger Badge --}}
+            <div class="text-start text-sm-end">
+                <div class="d-flex align-items-center gap-2 justify-content-sm-end mb-1">
+                    <span class="badge bg-light text-dark border px-2.5 py-1 fw-bold text-uppercase" style="font-size: 0.72rem;">
+                        <i class="bi bi-wallet2 me-1"></i>{{ $order->payment_method }}
+                    </span>
+                    <span class="badge rounded-pill px-2.5 py-1 fw-bold {{ $order->payment_status === 'paid' ? 'bg-success text-white' : 'bg-warning text-dark' }}" style="font-size: 0.72rem;">
+                        {{ ucfirst($order->payment_status ?? 'pending') }}
+                    </span>
+                </div>
+                <div class="h4 fw-extrabold text-dark mb-0 font-monospace">₹{{ number_format($order->total_amount, 2) }}</div>
+            </div>
+        </div>
+
+        {{-- Visual Status Stepper (Interactive & Responsive) --}}
+        @if(!$isCancelled)
+            <div class="mt-4 pt-2 border-top">
+                <div class="position-relative px-2 my-2" id="trackerContainer">
+                    <div class="progress" style="height: 6px; background-color: #f1f5f9; border-radius: 9999px;">
+                        @php
+                            $pct = $currentStatusIndex !== false ? (($currentStatusIndex) / (count($stages) - 1)) * 100 : 0;
+                        @endphp
+                        <div id="trackerProgressBar" class="progress-bar" role="progressbar" 
+                             style="width: {{ $pct }}%; background: linear-gradient(90deg, #4f46e5, #10b981); transition: width 0.4s ease;" 
+                             aria-valuenow="{{ $pct }}" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
-                @endforeach
+
+                    <div class="d-flex justify-content-between position-relative mt-2 text-center" style="margin-top: -16px !important;">
+                        @foreach($stages as $idx => $st)
+                            @php
+                                $isPast = $currentStatusIndex !== false && $idx <= $currentStatusIndex;
+                                $isCurrent = $currentStatusIndex !== false && $idx === $currentStatusIndex;
+                            @endphp
+                            <div style="width: 14%;" class="stage-step" data-stage="{{ $st }}" data-index="{{ $idx }}">
+                                <div class="stage-dot rounded-circle d-inline-flex align-items-center justify-content-center shadow-2xs" 
+                                     style="width: 26px; height: 26px; font-size: 0.72rem; font-weight: 700; background: {{ $isPast ? '#10b981' : '#ffffff' }}; color: {{ $isPast ? '#ffffff' : '#64748b' }}; border: 2px solid {{ $isCurrent ? '#4f46e5' : ($isPast ? '#10b981' : '#cbd5e1') }}; transition: all 0.3s ease;">
+                                    @if($isPast)
+                                        <i class="bi bi-check-lg"></i>
+                                    @else
+                                        {{ $idx + 1 }}
+                                    @endif
+                                </div>
+                                <div class="stage-label small fw-semibold mt-1 d-none d-md-block {{ $isCurrent ? 'text-primary fw-bold' : ($isPast ? 'text-dark' : 'text-muted') }}" 
+                                     style="font-size: 0.72rem; text-transform: capitalize;">
+                                    {{ $st }}
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
             </div>
-        </div>
-    @else
-        @php
-            $cancellation = $order->cancellation;
-            $isAdminCancelled = ($cancellation && $cancellation->cancelled_by_type === 'admin');
-            $ticketNo = 'CNL-' . $order->order_number;
-            $walletRefundVal = (float) ($cancellation?->wallet_refund_amount ?? 0);
-            $onlineRefundVal = (float) ($cancellation?->online_refund_amount ?? 0);
-            $totalRefundVal = (float) ($cancellation?->refund_amount ?? ($walletRefundVal + $onlineRefundVal));
-            $refundProof = $cancellation?->razorpay_refund_id ?: $cancellation?->payment_reference;
-        @endphp
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 1.5px solid #fecaca !important;">
-            <div class="card-header py-3 px-4 border-bottom border-danger-subtle d-flex align-items-center justify-content-between flex-wrap gap-2"
-                 style="background: linear-gradient(135deg, #fef2f2 0%, #fff1f1 100%);">
+        @endif
+    </div>
+</div>
+
+{{-- ── 2. Smart 1-Click Primary Action Banner ── --}}
+@if(!$isCancelled)
+    @if($order->status === 'pending' && $order->payment_method === 'cod')
+        {{-- COD 1-Click Confirmation --}}
+        <div class="card border-0 shadow-sm rounded-4 p-3.5 p-md-4 mb-4 text-white" style="background: linear-gradient(135deg, #059669 0%, #047857 100%);">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs" style="width: 40px; height: 40px;">
-                        <i class="bi bi-x-circle-fill fs-5"></i>
+                    <div class="rounded-3 bg-white bg-opacity-20 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px; font-size: 1.4rem;">
+                        <i class="bi bi-cash-coin"></i>
                     </div>
                     <div>
-                        <h6 class="fw-bold text-danger mb-0.5" style="font-size: 0.96rem;">Order Cancellation &amp; Refund Breakdown</h6>
-                        <div class="text-secondary small" style="font-size: 0.76rem;">
-                            Cancelled on <span class="fw-semibold text-dark">{{ $cancellation ? $cancellation->created_at->format('d M, Y \a\t h:i A') : $order->updated_at->format('d M, Y \a\t h:i A') }}</span>
+                        <h6 class="fw-bold mb-0.5 text-white" style="font-size: 1rem;">Action Required: Pending COD Order Approval</h6>
+                        <div class="text-white-50 small" style="font-size: 0.8rem;">
+                            Customer requested Cash on Delivery (₹{{ number_format($order->total_amount, 2) }}). Confirm to release for warehouse packing.
+                        </div>
+                    </div>
+                </div>
+                <form action="{{ route('order-manager.orders.update-status', $order) }}" method="POST" class="ms-auto ms-sm-0">
+                    @csrf
+                    <input type="hidden" name="status" value="confirmed">
+                    <input type="hidden" name="notes" value="COD order confirmed & approved by Order Manager.">
+                    <button type="submit" class="btn btn-light rounded-pill px-4 py-2 fw-bold text-success shadow-sm d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-check-circle-fill"></i> <span>Accept & Confirm COD Order</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    @elseif($order->status === 'pending' && $order->payment_method === 'online' && $order->payment_status !== 'paid')
+        {{-- Online Payment Incomplete Warning --}}
+        <div class="card border-0 shadow-sm rounded-4 p-3.5 p-md-4 mb-4 bg-white" style="border: 1.5px solid #fed7aa !important; border-left: 5px solid #ea580c !important;">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px; background: #ffedd5; color: #ea580c; font-size: 1.3rem;">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0.5" style="font-size: 0.96rem;">Awaiting Customer Online Payment</h6>
+                        <div class="text-secondary small" style="font-size: 0.8rem;">
+                            Do not pack or dispatch yet. The customer has not completed online payment via Razorpay.
                         </div>
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-white text-dark border font-monospace px-2.5 py-1" style="font-size: 0.72rem;">
-                        <i class="bi bi-ticket-perforated text-primary me-1"></i>{{ $ticketNo }}
-                        <button type="button" class="btn btn-link p-0 text-muted ms-1" onclick="navigator.clipboard.writeText('{{ $ticketNo }}')" title="Copy Ticket No">
-                            <i class="bi bi-copy"></i>
-                        </button>
-                    </span>
-                    @if($isAdminCancelled)
-                        <span class="badge bg-danger text-white rounded-pill px-3 py-1.5 fw-bold shadow-xs" style="font-size: 0.74rem;">
-                            <i class="bi bi-shield-x me-1"></i> Cancelled by Store Management (Admin)
-                        </span>
-                    @else
-                        <span class="badge bg-secondary text-white rounded-pill px-3 py-1.5 fw-bold shadow-xs" style="font-size: 0.74rem;">
-                            <i class="bi bi-person-x me-1"></i> Cancelled by Customer
-                        </span>
-                    @endif
+                    <a href="tel:{{ $order->shipping_phone }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5">
+                        <i class="bi bi-telephone me-1"></i> Call Customer
+                    </a>
                 </div>
             </div>
-
-            <div class="card-body p-4">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="p-3 rounded-3 bg-light border h-100">
-                            <div class="text-uppercase text-muted fw-bold mb-1" style="font-size: 0.68rem;">Cancellation Reason</div>
-                            <div class="fw-bold text-dark" style="font-size: 0.9rem;">
-                                {{ $cancellation?->cancellation_reason ?? ($isAdminCancelled ? 'Cancelled by Store Staff' : 'Cancelled by Customer') }}
-                            </div>
-                            @if($cancellation && $cancellation->admin_notes)
-                                <div class="mt-2 text-muted small p-2 rounded bg-white border" style="font-size: 0.75rem;">
-                                    <strong>Admin Remarks:</strong> {{ $cancellation->admin_notes }}
-                                </div>
+        </div>
+    @elseif($order->status === 'confirmed')
+        {{-- 1-Click Move to Processing / Packing --}}
+        <div class="card border-0 shadow-sm rounded-4 p-3.5 p-md-4 mb-4 bg-white" style="border: 1.5px solid #e0e7ff !important; border-left: 5px solid #4f46e5 !important;">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px; background: #e0e7ff; color: #4338ca; font-size: 1.3rem;">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0.5" style="font-size: 0.96rem;">Order Confirmed &bull; Ready for Warehouse Picking</h6>
+                        <div class="text-secondary small" style="font-size: 0.8rem;">
+                            Advance order to Warehouse Packing to begin parcel preparation.
+                        </div>
+                    </div>
+                </div>
+                <form action="{{ route('order-manager.orders.update-status', $order) }}" method="POST" class="ms-auto ms-sm-0">
+                    @csrf
+                    <input type="hidden" name="status" value="processing">
+                    <input type="hidden" name="notes" value="Started warehouse picking & packing.">
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 fw-bold text-white shadow-sm d-inline-flex align-items-center gap-2" style="background: #4f46e5; border: none;">
+                        <i class="bi bi-gear-fill"></i> <span>Start Warehouse Packing (Processing)</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    @elseif($order->status === 'processing')
+        {{-- 1-Click Move to Packed --}}
+        <div class="card border-0 shadow-sm rounded-4 p-3.5 p-md-4 mb-4 bg-white" style="border: 1.5px solid #bae6fd !important; border-left: 5px solid #0284c7 !important;">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px; background: #e0f2fe; color: #0284c7; font-size: 1.3rem;">
+                        <i class="bi bi-boxes"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0.5" style="font-size: 0.96rem;">Packing in Progress</h6>
+                        <div class="text-secondary small" style="font-size: 0.8rem;">
+                            Items picked from shelf and packaged. Mark as packed to prepare for rider dispatch.
+                        </div>
+                    </div>
+                </div>
+                <form action="{{ route('order-manager.orders.update-status', $order) }}" method="POST" class="ms-auto ms-sm-0">
+                    @csrf
+                    <input type="hidden" name="status" value="packed">
+                    <input type="hidden" name="notes" value="Package picked, packed, and labeled in warehouse.">
+                    <button type="submit" class="btn rounded-pill px-4 py-2 fw-bold text-white shadow-sm d-inline-flex align-items-center gap-2" style="background: #0284c7; border: none;">
+                        <i class="bi bi-box2-heart-fill"></i> <span>Mark Packed & Ready for Dispatch</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    @elseif($order->status === 'packed')
+        {{-- Ready for Dispatch Notice --}}
+        <div class="card border-0 shadow-sm rounded-4 p-3.5 p-md-4 mb-4 bg-white" style="border: 1.5px solid #fde68a !important; border-left: 5px solid #d97706 !important;">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px; background: #fef3c7; color: #d97706; font-size: 1.3rem;">
+                        <i class="bi bi-bicycle"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0.5" style="font-size: 0.96rem;">Package Packed &bull; Ready for Logistics Handover</h6>
+                        <div class="text-secondary small" style="font-size: 0.8rem;">
+                            @if($order->isLocalBengaluruDelivery())
+                                Assign a local fleet rider below to move order into <strong>Out for Delivery</strong>.
+                            @else
+                                Enter courier tracking details below to mark order as <strong>Shipped</strong>.
                             @endif
                         </div>
                     </div>
-
-                    <div class="col-md-6">
-                        <div class="p-3 rounded-3 bg-light border h-100">
-                            <div class="text-uppercase text-muted fw-bold mb-1" style="font-size: 0.68rem;">Refund Status &amp; Financial Ledger</div>
-                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1.5">
-                                <span class="fw-bold text-dark" style="font-size: 0.9rem;">
-                                    Net Refund: <span class="font-monospace text-success fs-6">₹{{ number_format($totalRefundVal, 2) }}</span>
-                                </span>
-                                @if(($cancellation?->refund_status === 'processed' || $cancellation?->online_refund_status === 'processed'))
-                                    <span class="badge bg-success text-white rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">
-                                        ✓ Processed
-                                    </span>
-                                @elseif($cancellation?->refund_status === 'pending')
-                                    <span class="badge bg-warning text-dark rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">
-                                        ⏳ Pending Payout
-                                    </span>
-                                @else
-                                    <span class="badge bg-secondary rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">
-                                        None (COD)
-                                    </span>
-                                @endif
-                            </div>
-
-                            @if($walletRefundVal > 0)
-                                <div class="small text-muted" style="font-size: 0.73rem;">
-                                    • Wallet Credited: <strong class="text-success">₹{{ number_format($walletRefundVal, 2) }}</strong> (Instant)
-                                </div>
-                            @endif
-                            @if($onlineRefundVal > 0)
-                                <div class="small text-muted" style="font-size: 0.73rem;">
-                                    • Razorpay PG Refund: <strong class="text-primary">₹{{ number_format($onlineRefundVal, 2) }}</strong>
-                                </div>
-                            @endif
-                            @if($refundProof)
-                                <div class="small text-muted mt-1 font-monospace d-flex align-items-center gap-1" style="font-size: 0.73rem;">
-                                    <span>Bank UTR Ref: <strong>{{ $refundProof }}</strong></span>
-                                    <button type="button" class="btn btn-link p-0 text-muted" onclick="navigator.clipboard.writeText('{{ $refundProof }}')" title="Copy UTR">
-                                        <i class="bi bi-copy"></i>
-                                    </button>
-                                </div>
-                            @endif
-                            <div class="text-muted small mt-1" style="font-size: 0.73rem;">
-                                GST Fee Retained: <strong class="text-danger">-₹{{ number_format($cancellation->cancellation_fee ?? 0, 2) }}</strong>
-                            </div>
+                </div>
+                <a href="#dispatchCard" class="btn btn-warning text-dark rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-send-fill"></i> <span>Dispatch Now</span>
+                </a>
+            </div>
+        </div>
+    @elseif($isOutForDelivery)
+        {{-- Live Out For Delivery Banner with OTP (Delivery Handover handled exclusively by Delivery Partner) --}}
+        <div class="card border-0 shadow-sm rounded-4 p-3.5 p-md-4 mb-4 bg-white" style="border: 1.5px solid #fde68a !important; border-left: 5px solid #f59e0b !important;">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px; background: #fffbeb; color: #d97706; font-size: 1.45rem;">
+                        <i class="bi bi-bicycle"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <span class="badge bg-warning text-dark fw-bold rounded-pill px-2.5 py-0.5 small">⚡ OUT FOR DELIVERY</span>
+                            <strong class="text-dark" style="font-size: 0.96rem;">Rider: {{ $order->rider_name ?? 'In-House Fleet' }}</strong>
+                            <span class="badge rounded-pill bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-0.5" style="font-size: 0.72rem;">
+                                <i class="bi bi-shield-lock-fill me-1"></i> Awaiting Rider OTP Handover
+                            </span>
                         </div>
+                        <div class="text-secondary small" style="font-size: 0.82rem;">
+                            Customer Handover OTP: <strong class="badge bg-light text-dark border font-monospace fs-6 px-2.5 py-0.5">{{ $order->delivery_otp }}</strong>
+                            &bull; Handover completion is restricted to the delivery partner portal upon verifying this OTP at doorstep.
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Out For Delivery Actions for Order Manager --}}
+                <div class="d-flex align-items-center gap-2 flex-wrap ms-auto ms-sm-0">
+                    @if($order->rider_phone)
+                        <a href="tel:{{ $order->rider_phone }}" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-2xs">
+                            <i class="bi bi-telephone-fill"></i> <span>Call Rider</span>
+                        </a>
+                    @endif
+                    <a href="{{ route('delivery.orders.show', $order) }}" target="_blank" class="btn btn-sm btn-light border rounded-pill px-3 py-1.5 fw-semibold text-secondary d-inline-flex align-items-center gap-1.5 shadow-2xs" title="Open Delivery Partner Mobile View">
+                        <i class="bi bi-box-arrow-up-right"></i> <span>Delivery Partner View</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    @elseif($isDelivered)
+        <div class="card border-0 shadow-sm rounded-4 p-3.5 p-md-4 mb-4 bg-white" style="border: 1.5px solid #a7f3d0 !important; border-left: 5px solid #059669 !important;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px; background: #ecfdf5; color: #059669; font-size: 1.3rem;">
+                    <i class="bi bi-bag-check-fill"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-dark mb-0.5" style="font-size: 0.96rem;">Package Delivered Successfully</h6>
+                    <div class="text-secondary small" style="font-size: 0.8rem;">
+                        Delivered on <strong>{{ $order->delivered_at ? $order->delivered_at->format('d M, Y \a\t h:i A') : $order->updated_at->format('d M, Y \a\t h:i A') }}</strong>
+                        @if($order->rider_name) &bull; Handed over by <strong>{{ $order->rider_name }}</strong> @endif
                     </div>
                 </div>
             </div>
         </div>
     @endif
-</div>
+@else
+    {{-- Order Cancelled Banner --}}
+    @php
+        $cancellation = $order->cancellation;
+        $isAdminCancelled = ($cancellation && $cancellation->cancelled_by_type === 'admin');
+        $ticketNo = 'CNL-' . $order->order_number;
+        $walletRefundVal = (float) ($cancellation?->wallet_refund_amount ?? 0);
+        $onlineRefundVal = (float) ($cancellation?->online_refund_amount ?? 0);
+        $totalRefundVal = (float) ($cancellation?->refund_amount ?? ($walletRefundVal + $onlineRefundVal));
+        $refundProof = $cancellation?->razorpay_refund_id ?: $cancellation?->payment_reference;
+    @endphp
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 1.5px solid #fecaca !important; border-left: 5px solid #ef4444 !important;">
+        <div class="card-header py-3 px-4 border-bottom border-danger-subtle d-flex align-items-center justify-content-between flex-wrap gap-2" style="background: #fff5f5;">
+            <div class="d-flex align-items-center gap-2.5">
+                <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center flex-shrink-0 shadow-2xs" style="width: 36px; height: 36px;">
+                    <i class="bi bi-x-circle-fill fs-5"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-danger mb-0" style="font-size: 0.95rem;">Order Cancelled</h6>
+                    <div class="text-secondary small" style="font-size: 0.76rem;">
+                        Cancelled on {{ $cancellation ? $cancellation->created_at->format('d M, Y \a\t h:i A') : $order->updated_at->format('d M, Y \a\t h:i A') }}
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-white text-dark border font-monospace px-2.5 py-1">Ticket: {{ $ticketNo }}</span>
+                <span class="badge {{ $isAdminCancelled ? 'bg-danger text-white' : 'bg-secondary text-white' }} rounded-pill px-2.5 py-1">
+                    {{ $isAdminCancelled ? 'Store Staff Cancelled' : 'Customer Cancelled' }}
+                </span>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 bg-light border h-100">
+                        <div class="text-uppercase text-muted fw-bold mb-1" style="font-size: 0.68rem;">Reason</div>
+                        <div class="fw-bold text-dark small">{{ $cancellation?->cancellation_reason ?? 'No specific reason entered.' }}</div>
+                        @if($cancellation && $cancellation->admin_notes)
+                            <div class="mt-2 text-muted small p-2 rounded bg-white border" style="font-size: 0.75rem;">
+                                <strong>Remarks:</strong> {{ $cancellation->admin_notes }}
+                            </div>
+                        @endif
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 bg-light border h-100">
+                        <div class="text-uppercase text-muted fw-bold mb-1" style="font-size: 0.68rem;">Refund Summary</div>
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="text-secondary small">Total Refunded:</span>
+                            <strong class="font-monospace text-success fs-6">₹{{ number_format($totalRefundVal, 2) }}</strong>
+                        </div>
+                        @if($walletRefundVal > 0)
+                            <div class="small text-muted" style="font-size: 0.74rem;">• Store Wallet: ₹{{ number_format($walletRefundVal, 2) }}</div>
+                        @endif
+                        @if($onlineRefundVal > 0)
+                            <div class="small text-muted" style="font-size: 0.74rem;">• Razorpay PG: ₹{{ number_format($onlineRefundVal, 2) }}</div>
+                        @endif
+                        @if($refundProof)
+                            <div class="small text-muted mt-1 font-monospace" style="font-size: 0.74rem;">Bank UTR: <strong>{{ $refundProof }}</strong></div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
 
+{{-- ── 3. Active Delivery Issue Banner (If Rider Reported Exception) ── --}}
+@php
+    $hasActiveException = $order->fulfillment?->hasActiveDeliveryIssue() && !in_array($order->status, ['delivered', 'cancelled', 'returned']);
+@endphp
+@if($hasActiveException)
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border: 1.5px solid #fecdd3 !important; border-left: 5px solid #e11d48 !important; background: #ffffff;">
+        <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+                <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center shadow-2xs" style="width: 28px; height: 28px; font-size: 0.8rem;">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <h6 class="mb-0 fw-bold text-danger" style="font-size: 0.94rem;">Active Delivery Exception Reported</h6>
+            </div>
+            <span class="badge bg-danger rounded-pill px-2.5 py-1 text-white small fw-bold">Action Needed</span>
+        </div>
+        <div class="card-body p-4">
+            <div class="alert alert-danger bg-danger bg-opacity-10 border-0 rounded-3 p-3 mb-3">
+                <div class="fw-bold text-danger small"><i class="bi bi-megaphone-fill me-1"></i> Issue:</div>
+                <div class="text-dark fw-bold mt-1" style="font-size: 0.9rem;">{{ $order->fulfillment->delivery_issue }}</div>
+                <div class="text-secondary small mt-1 font-monospace" style="font-size: 0.75rem;">
+                    Reported by <strong>{{ $order->fulfillment->rider?->name ?? ($order->rider_name ?? 'Fleet Rider') }}</strong> &bull; {{ $order->fulfillment->delivery_issue_at?->diffForHumans() ?? 'Recently' }}
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <a href="tel:{{ $order->shipping_phone }}" class="btn btn-sm btn-success rounded-pill px-3 py-2 flex-grow-1 fw-bold text-center shadow-2xs" style="font-size: 0.8rem;">
+                    <i class="bi bi-telephone-fill me-1"></i> Call Customer ({{ $order->shipping_phone }})
+                </a>
+                @php
+                    $cleanP = preg_replace('/[^0-9]/', '', $order->shipping_phone);
+                    if (strlen($cleanP) === 10) $cleanP = '91' . $cleanP;
+                @endphp
+                <a href="https://wa.me/{{ $cleanP }}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill px-3 py-2 flex-grow-1 fw-bold text-center shadow-2xs" style="font-size: 0.8rem;">
+                    <i class="bi bi-whatsapp me-1"></i> WhatsApp
+                </a>
+            </div>
+
+            <form action="{{ route('order-manager.orders.resolve-exception', $order) }}" method="POST">
+                @csrf
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold text-dark small mb-1">Resolution Action</label>
+                        <select name="resolution_action" class="form-select form-select-sm" required>
+                            <option value="re-attempt">🚀 1. Re-attempt Delivery Today</option>
+                            <option value="reschedule">📅 2. Reschedule Delivery Slot</option>
+                            <option value="return_warehouse">🔄 3. Return Parcel to Warehouse</option>
+                            <option value="cancel">❌ 4. Customer Refused — Cancel Order</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold text-dark small mb-1">Resolution Notes</label>
+                        <input type="text" name="resolution_notes" class="form-control form-control-sm" placeholder="e.g. Spoke to customer, delivering now">
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-sm btn-danger w-100 fw-bold rounded-pill py-2 shadow-2xs">
+                            Apply Resolution
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+@endif
+
+{{-- ── 4. Main Two-Column Layout ── --}}
 <div class="row g-4">
-    <!-- ── Left Column: Items & Financials (8 Cols) ── -->
-    <div class="col-lg-8">
-        <!-- Order Items Table Card -->
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-            <div class="card-header bg-white py-3.5 px-4 border-bottom d-flex align-items-center justify-content-between">
-                <h6 class="mb-0 fw-bold text-dark" style="font-size: 0.96rem;">
-                    <i class="bi bi-box-seam text-primary me-2"></i>Ordered Products ({{ $order->items->count() }})
+    {{-- ── LEFT COLUMN (7 Cols) — Operations, Products & Timeline ── --}}
+    <div class="col-lg-7">
+        {{-- Card A: Unified Logistics & Rider Dispatch Card --}}
+        @if(!$isCancelled && !$isDelivered)
+            <div id="dispatchCard" class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border: 1px solid #e2e8f0 !important;">
+                <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.95rem;">
+                        <i class="bi {{ $order->isLocalBengaluruDelivery() ? 'bi-geo-fill text-info' : 'bi-truck text-primary' }}"></i>
+                        <span>{{ $order->isLocalBengaluruDelivery() ? 'Bengaluru Local Fleet Dispatch' : 'National Courier Logistics' }}</span>
+                    </h6>
+                    <span class="badge rounded-pill px-2.5 py-1 fw-bold text-white shadow-2xs" style="background: {{ $order->isLocalBengaluruDelivery() ? '#0284c7' : '#4f46e5' }}; font-size: 0.68rem;">
+                        {{ $order->isLocalBengaluruDelivery() ? 'In-House Fleet' : '3PL Carrier' }}
+                    </span>
+                </div>
+
+                <div class="card-body p-4">
+                    @if($order->isLocalBengaluruDelivery())
+                        {{-- Bengaluru Local Rider Assignment Form --}}
+                        <form id="formAssignRider" action="{{ route('order-manager.orders.assign-rider', $order) }}" method="POST">
+                            @csrf
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-bold text-dark small mb-1">Select Delivery Partner / Rider</label>
+                                    <select id="selectRegisteredRider" name="rider_id" class="form-select form-select-sm">
+                                        <option value="">-- Choose In-House Delivery Partner --</option>
+                                        @foreach($deliveryPartners as $dp)
+                                            <option value="{{ $dp->id }}" 
+                                                    data-name="{{ $dp->name }}" 
+                                                    data-phone="{{ $dp->mobile_number }}"
+                                                    {{ $order->rider_id === $dp->id ? 'selected' : '' }}>
+                                                🛵 {{ $dp->name }} ({{ $dp->mobile_number ?? 'No Phone' }}) &bull; {{ $dp->assigned_deliveries_count }} active loads
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-sm-6">
+                                    <label class="form-label fw-bold text-dark small mb-1">Rider Name <span class="text-danger">*</span></label>
+                                    <input type="text" id="inputRiderName" name="rider_name" class="form-control form-control-sm" 
+                                           value="{{ old('rider_name', $order->rider_name) }}" required placeholder="e.g. Ramesh Kumar">
+                                </div>
+
+                                <div class="col-sm-6">
+                                    <label class="form-label fw-bold text-dark small mb-1">Rider Mobile Number <span class="text-danger">*</span></label>
+                                    <input type="text" id="inputRiderPhone" name="rider_phone" class="form-control form-control-sm" 
+                                           value="{{ old('rider_phone', $order->rider_phone) }}" required placeholder="e.g. 9876543210">
+                                </div>
+
+                                <div class="col-sm-6">
+                                    <label class="form-label fw-bold text-dark small mb-1">Delivery Window Slot</label>
+                                    <select id="selectDeliverySlot" name="delivery_slot" class="form-select form-select-sm">
+                                        <option value="Next-Day Express Delivery (1-2 Days)" {{ ($order->delivery_slot === 'Next-Day Express Delivery (1-2 Days)' || !$order->delivery_slot) ? 'selected' : '' }}>⚡ Next-Day Express (1-2 Days)</option>
+                                        <option value="Morning Slot (10:00 AM - 02:00 PM)" {{ $order->delivery_slot === 'Morning Slot (10:00 AM - 02:00 PM)' ? 'selected' : '' }}>🌅 Morning (10 AM - 2 PM)</option>
+                                        <option value="Evening Slot (04:00 PM - 08:00 PM)" {{ $order->delivery_slot === 'Evening Slot (04:00 PM - 08:00 PM)' ? 'selected' : '' }}>🌆 Evening (4 PM - 8 PM)</option>
+                                        <option value="Standard Local Delivery (2-3 Days)" {{ $order->delivery_slot === 'Standard Local Delivery (2-3 Days)' ? 'selected' : '' }}>📦 Standard Local (2-3 Days)</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-sm-6">
+                                    <label class="form-label fw-bold text-dark small mb-1">Delivery Instructions</label>
+                                    <input type="text" id="inputRiderNotes" name="notes" class="form-control form-control-sm" 
+                                           value="{{ old('notes', $order->fulfillment?->notes) }}" placeholder="e.g. Call customer before gate">
+                                </div>
+
+                                <div class="col-12 pt-2">
+                                    <button type="submit" id="btnSubmitRider" class="btn text-white w-100 fw-bold rounded-pill shadow-xs py-2 d-inline-flex align-items-center justify-content-center gap-2" style="background: #0284c7; border: none; font-size: 0.88rem;">
+                                        <i class="bi bi-send-fill"></i>
+                                        <span>Assign Rider & Mark Out for Delivery</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    @else
+                        {{-- National Courier Tracking Form --}}
+                        <form id="formUpdateTracking" action="{{ route('order-manager.orders.update-tracking', $order) }}" method="POST">
+                            @csrf
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <label class="form-label fw-bold text-dark small mb-1">Courier Partner <span class="text-danger">*</span></label>
+                                    <select id="selectCourierPartner" name="courier_partner" class="form-select form-select-sm" required>
+                                        <option value="Delhivery" {{ $order->courier_partner === 'Delhivery' ? 'selected' : '' }}>Delhivery Express</option>
+                                        <option value="BlueDart" {{ $order->courier_partner === 'BlueDart' ? 'selected' : '' }}>BlueDart Aviation</option>
+                                        <option value="DTDC" {{ $order->courier_partner === 'DTDC' ? 'selected' : '' }}>DTDC Courier</option>
+                                        <option value="Ecom Express" {{ $order->courier_partner === 'Ecom Express' ? 'selected' : '' }}>Ecom Express</option>
+                                        <option value="FedEx" {{ $order->courier_partner === 'FedEx' ? 'selected' : '' }}>FedEx India</option>
+                                        <option value="India Post" {{ $order->courier_partner === 'India Post' ? 'selected' : '' }}>India Post SpeedPost</option>
+                                        <option value="Shadowfax" {{ $order->courier_partner === 'Shadowfax' ? 'selected' : '' }}>Shadowfax</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-sm-6">
+                                    <label class="form-label fw-bold text-dark small mb-1">AWB / Tracking Number <span class="text-danger">*</span></label>
+                                    <input type="text" id="inputTrackingNumber" name="tracking_number" class="form-control form-control-sm font-monospace" 
+                                           value="{{ old('tracking_number', $order->tracking_number) }}" required placeholder="e.g. BD983471092">
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label fw-bold text-dark small mb-1">Tracking URL (Optional)</label>
+                                    <input type="url" id="inputTrackingUrl" name="tracking_url" class="form-control form-control-sm" 
+                                           value="{{ old('tracking_url', $order->tracking_url) }}" placeholder="https://www.bluedart.com/track/...">
+                                </div>
+
+                                <div class="col-12 pt-2">
+                                    <button type="submit" id="btnSubmitTracking" class="btn text-white w-100 fw-bold rounded-pill shadow-xs py-2 d-inline-flex align-items-center justify-content-center gap-2" style="background: #4f46e5; border: none; font-size: 0.88rem;">
+                                        <i class="bi bi-box-seam-fill"></i>
+                                        <span>Save Tracking & Mark as Shipped</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    @endif
+                </div>
+
+                {{-- Clean Collapsible Manual Status & Notes Override --}}
+                <div class="card-footer bg-light border-top p-3">
+                    <div class="accordion accordion-flush" id="accordionStatusOverride">
+                        <div class="accordion-item bg-transparent border-0">
+                            <h2 class="accordion-header" id="headingOverride">
+                                <button class="accordion-button collapsed py-1 px-0 bg-transparent text-secondary small fw-bold shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOverride" aria-expanded="false" aria-controls="collapseOverride" style="font-size: 0.8rem;">
+                                    <i class="bi bi-sliders me-1.5 text-primary"></i> Need to force a different status or add warehouse note?
+                                </button>
+                            </h2>
+                            <div id="collapseOverride" class="accordion-collapse collapse" aria-labelledby="headingOverride">
+                                <div class="pt-3">
+                                    <form id="formUpdateStatus" action="{{ route('order-manager.orders.update-status', $order) }}" method="POST">
+                                        @csrf
+                                        <div class="row g-2 align-items-end">
+                                            <div class="col-sm-5">
+                                                <label class="form-label text-dark small fw-bold mb-1">Change Status to:</label>
+                                                <select id="orderStatusSelect" name="status" class="form-select form-select-sm fw-bold">
+                                                    <option value="pending" {{ $order->status === 'pending' ? 'selected' : '' }}>⏳ Pending</option>
+                                                    <option value="confirmed" {{ $order->status === 'confirmed' ? 'selected' : '' }}>✅ Confirmed</option>
+                                                    <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>📦 Processing (Warehouse)</option>
+                                                    <option value="packed" {{ $order->status === 'packed' ? 'selected' : '' }}>🏷️ Packed & Ready</option>
+                                                    <option value="shipped" {{ $order->status === 'shipped' ? 'selected' : '' }}>🚚 Shipped (In-Transit)</option>
+                                                    <option value="out for delivery" {{ $order->status === 'out for delivery' ? 'selected' : '' }}>📍 Out for Delivery</option>
+                                                    @if($order->isLocalBengaluruDelivery() || $order->rider_id)
+                                                        @if($order->status === 'delivered')
+                                                            <option value="delivered" selected>🎉 Delivered</option>
+                                                        @else
+                                                            <option value="delivered" disabled class="text-muted">🔒 Delivered (Delivery Partner OTP Handover Only)</option>
+                                                        @endif
+                                                    @else
+                                                        <option value="delivered" {{ $order->status === 'delivered' ? 'selected' : '' }}>🎉 Delivered</option>
+                                                    @endif
+                                                </select>
+                                            </div>
+                                            <div class="col-sm-5">
+                                                <label class="form-label text-dark small fw-bold mb-1">Fulfillment Note</label>
+                                                <input type="text" id="statusNotesInput" name="notes" class="form-control form-control-sm" placeholder="Internal log notes...">
+                                            </div>
+                                            <div class="col-sm-2">
+                                                <button type="submit" id="btnSubmitStatus" class="btn btn-sm btn-dark w-100 fw-bold rounded-pill">
+                                                    Update
+                                                </button>
+                                            </div>
+                                        </div>
+                                    @if($order->isLocalBengaluruDelivery() || $order->rider_id)
+                                        <div class="form-text text-muted small mt-1.5">
+                                            <i class="bi bi-shield-lock-fill text-warning me-1"></i> Delivery completion is restricted to the assigned delivery partner upon customer OTP verification.
+                                        </div>
+                                    @endif
+                                </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        {{-- Card B: Ordered Items & Financial Summary Table --}}
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border: 1px solid #e2e8f0 !important;">
+            <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+                <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.95rem;">
+                    <i class="bi bi-box-seam-fill text-primary"></i>
+                    <span>Purchased Items ({{ $order->items->count() }})</span>
                 </h6>
-                <span class="badge bg-light text-dark border px-3 py-1.5 rounded-pill small fw-bold">
+                <span class="badge bg-light text-dark border px-2.5 py-1 rounded-pill small fw-bold">
                     {{ $order->items->sum('quantity') }} Total Units
                 </span>
             </div>
@@ -246,49 +633,55 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #475569; font-size: 0.74rem; letter-spacing: 0.04em;">
                         <tr>
-                            <th class="ps-4 py-3 text-uppercase fw-bold">Product Name</th>
-                            <th class="py-3 text-uppercase fw-bold">SKU</th>
-                            <th class="py-3 text-center text-uppercase fw-bold">Qty</th>
-                            <th class="py-3 text-end text-uppercase fw-bold">Unit Price</th>
-                            <th class="pe-4 py-3 text-end text-uppercase fw-bold">Line Total</th>
+                            <th class="ps-4 py-2.5 text-uppercase fw-bold">Product</th>
+                            <th class="py-2.5 text-uppercase fw-bold">SKU</th>
+                            <th class="py-2.5 text-center text-uppercase fw-bold">Qty</th>
+                            <th class="py-2.5 text-end text-uppercase fw-bold">Unit Price</th>
+                            <th class="pe-4 py-2.5 text-end text-uppercase fw-bold">Line Total</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y">
                         @foreach($order->items as $item)
                             <tr>
-                                <td class="ps-4 py-3.5">
+                                <td class="ps-4 py-3">
                                     <div class="d-flex align-items-center gap-3">
                                         @if($item->product && $item->product->main_image)
                                             <img src="{{ asset('storage/' . $item->product->main_image) }}" alt="{{ $item->product_name }}" 
-                                                 class="rounded-3 border object-fit-cover shadow-xs flex-shrink-0" style="width: 48px; height: 48px;">
+                                                 class="rounded-3 border object-fit-contain shadow-2xs p-1 bg-white flex-shrink-0" width="48" height="48">
                                         @else
-                                            <div class="rounded-3 bg-light border d-flex align-items-center justify-content-center text-muted shadow-xs flex-shrink-0" style="width: 48px; height: 48px;">
-                                                <i class="bi bi-box-seam fs-5"></i>
+                                            <div class="rounded-3 bg-light border d-flex align-items-center justify-content-center text-muted shadow-2xs flex-shrink-0" style="width: 48px; height: 48px;">
+                                                <i class="bi bi-image fs-5 opacity-25"></i>
                                             </div>
                                         @endif
                                         <div class="min-w-0">
-                                            <div class="fw-bold text-dark small mb-0.5" style="font-size: 0.88rem;">{{ $item->product_name }}</div>
-                                            @if($item->selected_option)
-                                                <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 font-monospace fw-bold px-2 py-0.5 me-1" style="font-size: 0.68rem;">
-                                                    <i class="bi bi-tag-fill me-1"></i> Option: {{ $item->selected_option }}
-                                                </span>
-                                            @endif
-                                            @if($item->product)
-                                                <a href="{{ route('admin.products.show', $item->product_id) }}" target="_blank" class="text-secondary text-decoration-none" style="font-size: 0.72rem;">
-                                                    Specs <i class="bi bi-box-arrow-up-right" style="font-size: 0.65rem;"></i>
-                                                </a>
-                                            @endif
+                                            <div class="fw-bold text-dark small text-truncate" style="font-size: 0.88rem; max-width: 260px;" title="{{ $item->product_name }}">
+                                                {{ $item->product_name }}
+                                            </div>
+                                            <div class="d-flex align-items-center gap-1.5 flex-wrap mt-0.5">
+                                                @if($item->selected_option)
+                                                    <span class="badge rounded-pill px-2 py-0.5 fw-bold d-inline-flex align-items-center gap-1 shadow-2xs" 
+                                                          style="background: #e0f2fe !important; color: #0369a1 !important; border: 1px solid #7dd3fc !important; font-size: 0.68rem;">
+                                                        <i class="bi bi-tag-fill" style="font-size: 0.6rem; color: #0284c7;"></i>
+                                                        <span>{{ $item->selected_option }}</span>
+                                                    </span>
+                                                @endif
+                                                @if($item->product)
+                                                    <a href="{{ route('admin.products.show', $item->product_id) }}" target="_blank" class="text-secondary small text-decoration-none" style="font-size: 0.72rem;">
+                                                        Catalog <i class="bi bi-box-arrow-up-right" style="font-size: 0.62rem;"></i>
+                                                    </a>
+                                                @endif
+                                            </div>
                                         </div>
                                     </div>
                                 </td>
 
                                 <td class="font-monospace small text-secondary">
-                                    {{ $item->product?->sku ?? 'SKU-N/A' }}
+                                    {{ $item->product?->sku ?? '—' }}
                                 </td>
 
                                 <td class="text-center fw-bold text-dark">
                                     <span class="badge bg-light text-dark border px-2.5 py-1 rounded-pill fw-bold" style="font-size: 0.76rem;">
-                                        {{ $item->quantity }}x
+                                        ×{{ $item->quantity }}
                                     </span>
                                 </td>
 
@@ -305,39 +698,39 @@
                 </table>
             </div>
 
-            <!-- Financial Summary Footer -->
-            <div class="card-footer bg-light border-top p-4">
+            {{-- Financial Summary Footer --}}
+            <div class="card-footer bg-light border-top p-3.5">
                 <div class="row justify-content-end">
-                    <div class="col-md-6 col-lg-5">
-                        <div class="d-flex justify-content-between mb-2 small text-secondary">
+                    <div class="col-sm-7 col-md-6 col-lg-6">
+                        <div class="d-flex justify-content-between mb-1.5 small text-secondary">
                             <span>Subtotal Amount:</span>
                             <span class="fw-bold text-dark font-monospace">₹{{ number_format($order->subtotal_amount, 2) }}</span>
                         </div>
 
                         @if($order->coupon_discount_amount > 0)
-                            <div class="d-flex justify-content-between mb-2 small text-success">
-                                <span>Coupon Discount ({{ $order->coupon?->code ?? 'PROMO' }}):</span>
+                            <div class="d-flex justify-content-between mb-1.5 small text-success">
+                                <span>Coupon ({{ $order->coupon?->code ?? 'PROMO' }}):</span>
                                 <span class="fw-bold font-monospace">- ₹{{ number_format($order->coupon_discount_amount, 2) }}</span>
                             </div>
                         @endif
 
                         @if($order->wallet_amount_used > 0)
-                            <div class="d-flex justify-content-between mb-2 small text-primary">
+                            <div class="d-flex justify-content-between mb-1.5 small text-primary">
                                 <span><i class="bi bi-wallet2 me-1"></i>Wallet Applied:</span>
                                 <span class="fw-bold font-monospace">- ₹{{ number_format($order->wallet_amount_used, 2) }}</span>
                             </div>
                         @endif
 
-                        <div class="d-flex justify-content-between mb-2 small text-secondary">
-                            <span>Shipping Fee:</span>
-                            <span class="text-success fw-bold">FREE (Complimentary)</span>
+                        <div class="d-flex justify-content-between mb-1.5 small text-secondary">
+                            <span>Shipping Charge:</span>
+                            <span class="text-success fw-bold">FREE</span>
                         </div>
 
-                        <hr class="my-2.5">
+                        <hr class="my-2 border-secondary-subtle">
 
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="fw-bold text-dark" style="font-size: 0.95rem;">Grand Total:</span>
-                            <span class="h4 fw-bolder text-primary mb-0 font-monospace" style="font-size: 1.3rem;">
+                            <span class="h4 fw-extrabold text-primary mb-0 font-monospace" style="font-size: 1.25rem;">
                                 ₹{{ number_format($order->total_amount, 2) }}
                             </span>
                         </div>
@@ -346,439 +739,179 @@
             </div>
         </div>
 
-        <!-- Order Timeline / Activity Log -->
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-            <div class="card-header bg-white py-3.5 px-4 border-bottom">
-                <h6 class="mb-0 fw-bold text-dark" style="font-size: 0.96rem;">
-                    <i class="bi bi-clock-history text-secondary me-2"></i>Status History & Fulfillment Timeline
+        {{-- Card C: Timeline & Activity Audit Trail --}}
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border: 1px solid #e2e8f0 !important;">
+            <div class="card-header bg-white py-3 px-4 border-bottom">
+                <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.95rem;">
+                    <i class="bi bi-clock-history text-secondary"></i>
+                    <span>Fulfillment Timeline & Status Audit</span>
                 </h6>
             </div>
             <div class="card-body p-4">
                 <div id="timelineContainer" class="timeline position-relative ps-3">
                     @forelse($order->statusHistories->sortByDesc('created_at') as $history)
-                        <div class="position-relative pb-4 ps-4 border-start border-2 border-primary timeline-item">
-                            <div class="position-absolute start-0 top-0 translate-middle-x rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-xs" 
-                                 style="width: 20px; height: 20px; font-size: 0.65rem; left: -1px;">
+                        <div class="position-relative pb-3.5 ps-4 border-start border-2 border-primary timeline-item">
+                            <div class="position-absolute start-0 top-0 translate-middle-x rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-2xs" 
+                                 style="width: 18px; height: 18px; font-size: 0.6rem; left: -1px;">
                                 <i class="bi bi-check-lg"></i>
                             </div>
-                            <div class="d-flex align-items-center justify-content-between mb-1">
-                                <span class="badge bg-light text-dark border px-2.5 py-1 rounded-pill fw-bold" style="font-size: 0.72rem;">
+                            <div class="d-flex align-items-center justify-content-between mb-0.5">
+                                <span class="badge bg-light text-dark border px-2 py-0.5 rounded-pill fw-bold" style="font-size: 0.7rem;">
                                     {{ ucfirst(str_replace('_', ' ', $history->current_status)) }}
                                 </span>
                                 <span class="text-secondary small" style="font-size: 0.72rem;">
                                     {{ $history->created_at->format('d M Y, h:i A') }} ({{ $history->created_at->diffForHumans() }})
                                 </span>
                             </div>
-                            <p class="text-dark small mb-0 mt-1" style="font-size: 0.84rem; line-height: 1.4;">
+                            <p class="text-dark small mb-0 mt-0.5" style="font-size: 0.82rem; line-height: 1.35;">
                                 {{ $history->notes }}
                             </p>
                             @if($history->user)
-                                <span class="text-secondary small mt-0.5 d-inline-block" style="font-size: 0.7rem;">By: {{ $history->user->name }}</span>
+                                <span class="text-secondary small mt-0.5 d-inline-block" style="font-size: 0.68rem;">By: {{ $history->user->name }}</span>
                             @endif
                         </div>
                     @empty
-                        <div id="emptyTimelineMsg" class="text-center py-4 text-secondary small">No timeline events recorded yet.</div>
+                        <div id="emptyTimelineMsg" class="text-center py-3 text-secondary small">No status change events logged yet.</div>
                     @endforelse
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ── Right Column: Operations & Customer (4 Cols) ── -->
-    <div class="col-lg-4">
-        @php
-            $hasActiveException = $order->fulfillment?->hasActiveDeliveryIssue() && !in_array($order->status, ['delivered', 'cancelled', 'returned']);
-        @endphp
-
-        @if($hasActiveException)
-            <!-- Active Delivery Exception Warning Card -->
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border: 1.5px solid #fecdd3 !important; border-top: 4px solid #e11d48 !important; background: #ffffff;">
-                <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center shadow-xs" style="width: 28px; height: 28px; font-size: 0.8rem;">
-                            <i class="bi bi-exclamation-triangle-fill"></i>
-                        </div>
-                        <h6 class="mb-0 fw-bold text-danger" style="font-size: 0.92rem;">Active Delivery Issue</h6>
-                    </div>
-                    <span class="badge bg-danger rounded-pill px-2.5 py-1 text-white small fw-bold">Action Needed</span>
+    {{-- ── RIGHT COLUMN (5 Cols) — Customer, Location & Security ── --}}
+    <div class="col-lg-5">
+        {{-- Card 1: Handover OTP & Doorstep Payment Security --}}
+        @if($order->delivery_otp && !$isCancelled)
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 1.5px solid #cbd5e1 !important;">
+                <div class="card-header bg-dark text-white py-2.5 px-3.5 d-flex align-items-center justify-content-between">
+                    <span class="small fw-bold text-uppercase d-flex align-items-center gap-1.5" style="font-size: 0.74rem; letter-spacing: 0.04em;">
+                        <i class="bi bi-shield-lock-fill text-warning"></i> Customer Handover Code
+                    </span>
+                    <span class="badge bg-warning text-dark rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.65rem;">
+                        Doorstep OTP
+                    </span>
                 </div>
-                <div class="card-body p-4">
-                    <div class="alert alert-danger bg-danger bg-opacity-10 border-0 rounded-3 p-3 mb-3">
-                        <div class="fw-bold text-danger small">
-                            <i class="bi bi-megaphone-fill me-1"></i> Reported Issue:
-                        </div>
-                        <div class="text-dark fw-bold mt-1" style="font-size: 0.88rem;">
-                            {{ $order->fulfillment->delivery_issue }}
-                        </div>
-                        <div class="text-secondary small mt-1 font-monospace" style="font-size: 0.72rem;">
-                            Reported by <strong>{{ $order->fulfillment->rider?->name ?? ($order->rider_name ?? 'Fleet Rider') }}</strong> &bull; {{ $order->fulfillment->delivery_issue_at?->diffForHumans() ?? 'Recently' }}
-                        </div>
-                    </div>
-
-                    <!-- Customer Contact Action Buttons -->
-                    <div class="d-flex align-items-center gap-2 mb-3">
-                        <a href="tel:{{ $order->shipping_phone }}" class="btn btn-sm btn-success rounded-pill px-3 py-2 flex-grow-1 fw-bold text-center shadow-xs" style="font-size: 0.8rem;">
-                            <i class="bi bi-telephone-fill me-1"></i> Call ({{ $order->shipping_phone }})
-                        </a>
-                        @php
-                            $cleanP = preg_replace('/[^0-9]/', '', $order->shipping_phone);
-                            if (strlen($cleanP) === 10) $cleanP = '91' . $cleanP;
-                        @endphp
-                        <a href="https://wa.me/{{ $cleanP }}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill px-3 py-2 flex-grow-1 fw-bold text-center shadow-xs" style="font-size: 0.8rem;">
-                            <i class="bi bi-whatsapp me-1"></i> WhatsApp
-                        </a>
-                    </div>
-
-                    <!-- Quick Resolution Form -->
-                    <form action="{{ route('order-manager.orders.resolve-exception', $order) }}" method="POST">
-                        @csrf
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-dark small">Resolve Exception Action</label>
-                            <select name="resolution_action" class="form-select small" required>
-                                <option value="re-attempt">🚀 1. Re-attempt Delivery Today (Customer Reachable Now)</option>
-                                <option value="reschedule">📅 2. Reschedule Delivery Slot (Tomorrow / Evening)</option>
-                                <option value="return_warehouse">🔄 3. Return Parcel to Warehouse Inventory</option>
-                                <option value="cancel">❌ 4. Customer Refused — Cancel Order</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-dark small">Resolution Notes</label>
-                            <input type="text" name="resolution_notes" class="form-control small" placeholder="e.g. Spoke with customer, opening door now">
-                        </div>
-                        <button type="submit" class="btn btn-danger w-100 fw-bold rounded-pill py-2 shadow-xs" style="font-size: 0.84rem;">
-                            <i class="bi bi-check2-circle me-1"></i> Apply Exception Resolution
-                        </button>
-                    </form>
-                </div>
-            </div>
-        @endif
-
-        {{-- COD Order Quick Approval Banner --}}
-        @if($order->status === 'pending' && $order->payment_method === 'cod')
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 1.5px solid #86efac !important; border-top: 4px solid #16a34a !important;">
-                <div class="p-3.5 p-md-4">
-                    <div class="d-flex align-items-center gap-2.5 mb-2">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs" style="width: 38px; height: 38px; background: #dcfce7; color: #16a34a;">
-                            <i class="bi bi-cash-coin fs-5"></i>
-                        </div>
+                <div class="card-body p-3.5">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                         <div>
-                            <h6 class="fw-bolder text-dark mb-0" style="font-size: 0.94rem;">Pending COD Approval</h6>
-                            <span class="text-muted small" style="font-size: 0.74rem;">Customer selected Cash on Delivery (₹{{ number_format($order->total_amount, 2) }})</span>
+                            <div class="text-secondary small mb-1" style="font-size: 0.74rem;">Share code with rider upon handover:</div>
+                            <div class="d-flex align-items-center gap-1.5">
+                                @foreach(str_split((string) $order->delivery_otp) as $digit)
+                                    <span class="d-inline-flex align-items-center justify-content-center fw-extrabold rounded-2 bg-light border text-dark shadow-2xs font-monospace" 
+                                          style="width: 36px; height: 40px; font-size: 1.35rem; border-color: #94a3b8 !important;">
+                                        {{ $digit }}
+                                    </span>
+                                @endforeach
+                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 text-secondary fw-semibold ms-1" 
+                                        onclick="navigator.clipboard.writeText('{{ $order->delivery_otp }}'); this.innerText = 'Copied!'; setTimeout(() => this.innerHTML = '<i class=\'bi bi-copy\'></i>', 1500);" style="font-size: 0.74rem;" title="Copy OTP">
+                                    <i class="bi bi-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- Payment Due at Doorstep --}}
+                        <div class="text-start text-sm-end">
+                            <div class="text-uppercase text-muted fw-bold small" style="font-size: 0.65rem;">Doorstep Collection</div>
+                            @if($order->payment_status === 'paid')
+                                <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.74rem;">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Collect ₹0 (Paid)
+                                </span>
+                            @else
+                                <div class="h5 fw-extrabold text-dark mb-0 font-monospace">₹{{ number_format($order->total_amount, 2) }}</div>
+                                <div class="text-muted small" style="font-size: 0.68rem;">Cash or UPI QR</div>
+                            @endif
                         </div>
                     </div>
-                    <p class="text-secondary small mb-3" style="font-size: 0.8rem; line-height: 1.4;">
-                        Click below to accept and confirm this order so the warehouse team can begin packing and logistics assignment.
-                    </p>
-                    <form action="{{ route('order-manager.orders.update-status', $order) }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="status" value="confirmed">
-                        <input type="hidden" name="notes" value="Cash on Delivery order approved & confirmed by Order Manager.">
-                        <button type="submit" class="btn btn-success w-100 fw-bold rounded-pill py-2.5 shadow-sm d-flex align-items-center justify-content-center gap-2" style="font-size: 0.86rem;">
-                            <i class="bi bi-check-circle-fill"></i>
-                            <span>Accept & Confirm COD Order</span>
-                        </button>
-                    </form>
-                </div>
-            </div>
-        @elseif($order->status === 'pending' && $order->payment_method === 'online' && $order->payment_status !== 'paid')
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 1.5px solid #fed7aa !important; border-top: 4px solid #ea580c !important;">
-                <div class="p-3.5 p-md-4">
-                    <div class="d-flex align-items-center gap-2.5 mb-2">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs" style="width: 38px; height: 38px; background: #ffedd5; color: #ea580c;">
-                            <i class="bi bi-shield-exclamation fs-5"></i>
-                        </div>
-                        <div>
-                            <h6 class="fw-bolder text-dark mb-0" style="font-size: 0.94rem;">Awaiting Online Payment</h6>
-                            <span class="badge bg-warning text-dark font-monospace" style="font-size: 0.68rem;">Payment Pending</span>
-                        </div>
-                    </div>
-                    <p class="text-danger small fw-semibold mb-0" style="font-size: 0.8rem; line-height: 1.4;">
-                        ⚠️ Do NOT pack or dispatch this order yet. The customer has not completed their online payment.
-                    </p>
                 </div>
             </div>
         @endif
 
-        @if(!$isCancelled && $order->status !== 'delivered')
-            <!-- 1. Order Status Advancement Action Card -->
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border-top: 4px solid #4f46e5 !important;">
-                <div class="card-header bg-white py-3 px-4 border-bottom">
-                    <h6 class="mb-0 fw-bold text-dark" style="font-size: 0.95rem;">
-                        <i class="bi bi-arrow-repeat text-primary me-2"></i>Advance Fulfillment Status
-                    </h6>
-                </div>
-                <div class="card-body p-4">
-                    <form id="formUpdateStatus" action="{{ route('order-manager.orders.update-status', $order) }}" method="POST">
-                        @csrf
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-dark small">Advance Status to:</label>
-                            <select id="orderStatusSelect" name="status" class="form-select fw-bold small">
-                                <option value="pending" {{ $order->status === 'pending' ? 'selected' : '' }}>⏳ 1. Pending</option>
-                                <option value="confirmed" {{ $order->status === 'confirmed' ? 'selected' : '' }}>✅ 2. Confirmed</option>
-                                <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>📦 3. Processing (Warehouse)</option>
-                                <option value="packed" {{ $order->status === 'packed' ? 'selected' : '' }}>🏷️ 4. Packed & Ready</option>
-                                <option value="shipped" {{ $order->status === 'shipped' ? 'selected' : '' }}>🚚 5. Shipped (In-Transit)</option>
-                                <option value="out for delivery" {{ $order->status === 'out for delivery' ? 'selected' : '' }}>📍 6. Out for Delivery</option>
-                                <option value="delivered" {{ $order->status === 'delivered' ? 'selected' : '' }}>🎉 7. Delivered</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-dark small">Internal Fulfillment Notes</label>
-                            <textarea id="statusNotesInput" name="notes" rows="2" class="form-control small" placeholder="e.g. Package picked from warehouse rack and labeled."></textarea>
-                        </div>
-
-                        <button type="submit" id="btnSubmitStatus" class="btn text-white w-100 fw-bold rounded-pill shadow-xs py-2" style="background: #4f46e5; border: none; font-size: 0.84rem;">
-                            <i class="bi bi-check2-circle me-1"></i> Update Status (Instant)
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- 2. Logistics & Dispatch Card (Context-Aware) -->
-            @if($order->isLocalBengaluruDelivery())
-                <!-- Bengaluru Local Fleet Assignment Card -->
-                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border: 1.5px solid #bae6fd !important; border-top: 4px solid #0284c7 !important;">
-                    <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
-                        <h6 class="mb-0 fw-bold text-dark" style="font-size: 0.94rem;">
-                            <i class="bi bi-geo-fill text-info me-1.5"></i>Bengaluru Fleet Dispatch
-                        </h6>
-                        <span class="badge rounded-pill px-2.5 py-1 small fw-bold text-white shadow-xs" style="background: #0284c7; font-size: 0.68rem;">
-                            Local Fleet
-                        </span>
-                    </div>
-                    <div class="card-body p-4">
-                        <form id="formAssignRider" action="{{ route('order-manager.orders.assign-rider', $order) }}" method="POST">
-                            @csrf
-                            <div class="mb-3">
-                                <label class="form-label fw-bold text-dark small">Select Delivery Partner</label>
-                                <select id="selectRegisteredRider" name="rider_id" class="form-select small">
-                                    <option value="">-- Choose In-House Delivery Partner --</option>
-                                    @foreach($deliveryPartners as $dp)
-                                        <option value="{{ $dp->id }}" 
-                                                data-name="{{ $dp->name }}" 
-                                                data-phone="{{ $dp->mobile_number }}"
-                                                {{ $order->rider_id === $dp->id ? 'selected' : '' }}>
-                                            🛵 {{ $dp->name }} ({{ $dp->mobile_number ?? 'No Phone' }}) &bull; {{ $dp->assigned_deliveries_count }} active
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-bold text-dark small">Rider Name <span class="text-danger">*</span></label>
-                                <input type="text" id="inputRiderName" name="rider_name" class="form-control small" 
-                                       value="{{ old('rider_name', $order->rider_name) }}" required placeholder="e.g. Karthik">
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-bold text-dark small">Rider Phone <span class="text-danger">*</span></label>
-                                <input type="text" id="inputRiderPhone" name="rider_phone" class="form-control small" 
-                                       value="{{ old('rider_phone', $order->rider_phone) }}" required placeholder="e.g. +91 9123456789">
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-bold text-dark small">Delivery Window</label>
-                                <select id="selectDeliverySlot" name="delivery_slot" class="form-select small">
-                                    <option value="Next-Day Express Delivery (1-2 Days)" {{ ($order->delivery_slot === 'Next-Day Express Delivery (1-2 Days)' || !$order->delivery_slot) ? 'selected' : '' }}>⚡ Next-Day Express Delivery (1-2 Days)</option>
-                                    <option value="Morning Slot (10:00 AM - 02:00 PM)" {{ $order->delivery_slot === 'Morning Slot (10:00 AM - 02:00 PM)' ? 'selected' : '' }}>🌅 Morning Slot (10:00 AM - 02:00 PM)</option>
-                                    <option value="Evening Slot (04:00 PM - 08:00 PM)" {{ $order->delivery_slot === 'Evening Slot (04:00 PM - 08:00 PM)' ? 'selected' : '' }}>🌆 Evening Slot (04:00 PM - 08:00 PM)</option>
-                                    <option value="Standard Local Delivery (2-3 Days)" {{ $order->delivery_slot === 'Standard Local Delivery (2-3 Days)' ? 'selected' : '' }}>📦 Standard Local Delivery (2-3 Days)</option>
-                                </select>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-bold text-dark small">Rider Delivery Notes (Optional)</label>
-                                <input type="text" id="inputRiderNotes" name="notes" class="form-control small" 
-                                       value="{{ old('notes', $order->fulfillment?->notes) }}" placeholder="e.g. Gate security call before delivery">
-                            </div>
-
-                            <button type="submit" id="btnSubmitRider" class="btn text-white w-100 fw-bold rounded-pill shadow-xs py-2" style="background: #0284c7; border: none; font-size: 0.84rem;">
-                                <i class="bi bi-send-fill me-1.5"></i> Assign Rider & Dispatch (Out for Delivery)
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            @else
-                <!-- National 3rd-Party Courier Logistics Card -->
-                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border: 1.5px solid #ddd6fe !important; border-top: 4px solid #4f46e5 !important;">
-                    <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
-                        <h6 class="mb-0 fw-bold text-dark" style="font-size: 0.94rem;">
-                            <i class="bi bi-truck me-1.5 text-primary"></i>National Courier Logistics
-                        </h6>
-                        <span class="badge rounded-pill px-2.5 py-1 small fw-bold text-white shadow-xs" style="background: #4f46e5; font-size: 0.68rem;">
-                            Pan-India AWB
-                        </span>
-                    </div>
-                    <div class="card-body p-4">
-                        <form id="formUpdateTracking" action="{{ route('order-manager.orders.update-tracking', $order) }}" method="POST">
-                            @csrf
-                            <div class="mb-3">
-                                <label class="form-label fw-bold text-dark small">Courier Partner <span class="text-danger">*</span></label>
-                                <select id="selectCourierPartner" name="courier_partner" class="form-select small" required>
-                                    <option value="Delhivery" {{ $order->courier_partner === 'Delhivery' ? 'selected' : '' }}>Delhivery Express</option>
-                                    <option value="BlueDart" {{ $order->courier_partner === 'BlueDart' ? 'selected' : '' }}>BlueDart Aviation</option>
-                                    <option value="DTDC" {{ $order->courier_partner === 'DTDC' ? 'selected' : '' }}>DTDC Courier</option>
-                                    <option value="Ecom Express" {{ $order->courier_partner === 'Ecom Express' ? 'selected' : '' }}>Ecom Express</option>
-                                    <option value="FedEx" {{ $order->courier_partner === 'FedEx' ? 'selected' : '' }}>FedEx India</option>
-                                    <option value="India Post" {{ $order->courier_partner === 'India Post' ? 'selected' : '' }}>India Post SpeedPost</option>
-                                    <option value="Shadowfax" {{ $order->courier_partner === 'Shadowfax' ? 'selected' : '' }}>Shadowfax</option>
-                                </select>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-bold text-dark small">AWB / Tracking Number <span class="text-danger">*</span></label>
-                                <input type="text" id="inputTrackingNumber" name="tracking_number" class="form-control font-monospace small" 
-                                       value="{{ old('tracking_number', $order->tracking_number) }}" required placeholder="e.g. BD983471092">
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-bold text-dark small">Tracking URL (Optional)</label>
-                                <input type="url" id="inputTrackingUrl" name="tracking_url" class="form-control small" 
-                                       value="{{ old('tracking_url', $order->tracking_url) }}" placeholder="https://www.bluedart.com/track/...">
-                            </div>
-
-                            <button type="submit" id="btnSubmitTracking" class="btn text-white w-100 fw-bold rounded-pill shadow-xs py-2" style="background: #4f46e5; border: none; font-size: 0.84rem;">
-                                <i class="bi bi-box-seam-fill me-1.5"></i> Save Tracking & Dispatch (Shipped)
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            @endif
-        @elseif($order->status === 'delivered')
-            <!-- Fulfillment Complete Card for Delivered Orders -->
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 1.5px solid #bbf7d0 !important; border-top: 4px solid #16a34a !important;">
-                <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
-                    <h6 class="mb-0 fw-bold text-success" style="font-size: 0.94rem;">
-                        <i class="bi bi-check-circle-fill me-1.5 text-success"></i> Fulfillment Complete
-                    </h6>
-                    <span class="badge bg-success text-white rounded-pill px-2.5 py-1" style="font-size: 0.68rem;">✓ Delivered</span>
-                </div>
-                <div class="card-body p-4 text-center">
-                    <div class="rounded-circle bg-success bg-opacity-10 text-success d-inline-flex align-items-center justify-content-center mb-2.5" style="width: 48px; height: 48px; font-size: 1.3rem;">
-                        <i class="bi bi-bag-check-fill"></i>
-                    </div>
-                    <h6 class="fw-bold text-dark mb-1" style="font-size: 0.94rem;">Package Delivered Successfully</h6>
-                    <p class="text-secondary small mb-3" style="font-size: 0.78rem; line-height: 1.4;">
-                        Delivered on <strong>{{ $order->delivered_at ? $order->delivered_at->format('d M Y, h:i A') : $order->updated_at->format('d M Y, h:i A') }}</strong>
-                    </p>
-
-                    <!-- Delivered By Info Badge -->
-                    <div class="p-2.5 rounded-3 bg-light border text-start small">
-                        <div class="text-uppercase text-muted fw-bold mb-1" style="font-size: 0.65rem;">Delivered By</div>
-                        @if($order->isLocalBengaluruDelivery())
-                            <div class="fw-bold text-dark d-flex align-items-center gap-1.5" style="font-size: 0.84rem;">
-                                <i class="bi bi-person-badge-fill text-success"></i>
-                                <span>🛵 {{ $order->rider_name ?? 'In-House Fleet Rider' }}</span>
-                            </div>
-                            @if($order->rider_phone)
-                                <div class="text-muted small mt-0.5" style="font-size: 0.74rem;">
-                                    Phone: <a href="tel:{{ $order->rider_phone }}" class="text-primary text-decoration-none fw-semibold">{{ $order->rider_phone }}</a>
-                                </div>
-                            @endif
-                        @else
-                            <div class="fw-bold text-dark d-flex align-items-center gap-1.5" style="font-size: 0.84rem;">
-                                <i class="bi bi-truck text-primary"></i>
-                                <span>🚚 {{ $order->courier_partner ?? 'National Courier' }}</span>
-                            </div>
-                            @if($order->tracking_number)
-                                <div class="text-muted small mt-0.5 font-monospace" style="font-size: 0.74rem;">
-                                    AWB: <strong>{{ $order->tracking_number }}</strong>
-                                </div>
-                            @endif
-                        @endif
-                    </div>
-                </div>
-            </div>
-        @else
-            <!-- Operations Locked Notice for Cancelled Orders -->
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 1.5px solid #fecaca !important; border-top: 4px solid #ef4444 !important;">
-                <div class="card-header bg-white py-3 px-4 border-bottom">
-                    <h6 class="mb-0 fw-bold text-danger" style="font-size: 0.94rem;">
-                        <i class="bi bi-slash-circle me-1.5 text-danger"></i> Fulfillment Operations Locked
-                    </h6>
-                </div>
-                <div class="card-body p-4 text-center">
-                    <div class="rounded-circle bg-danger bg-opacity-10 text-danger d-inline-flex align-items-center justify-content-center mb-2.5" style="width: 48px; height: 48px; font-size: 1.3rem;">
-                        <i class="bi bi-x-circle-fill"></i>
-                    </div>
-                    <h6 class="fw-bold text-dark mb-1" style="font-size: 0.92rem;">Order Cancelled</h6>
-                    <p class="text-secondary small mb-0" style="font-size: 0.78rem; line-height: 1.4;">
-                        This order has been cancelled on <strong>{{ $cancellation ? $cancellation->created_at->format('d M Y, h:i A') : $order->updated_at->format('d M Y, h:i A') }}</strong>.
-                        <br>Status advancement and rider dispatches are locked.
-                    </p>
-                </div>
-            </div>
-        @endif
-
-        <!-- 3. Customer & Shipping Address Card -->
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-            <div class="card-header bg-white py-3 px-4 border-bottom">
-                <h6 class="mb-0 fw-bold text-dark" style="font-size: 0.94rem;">
-                    <i class="bi bi-person-fill text-primary me-2"></i>Customer & Shipping Details
+        {{-- Card 2: Customer & Delivery Address Card --}}
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border: 1px solid #e2e8f0 !important;">
+            <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+                <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.95rem;">
+                    <i class="bi bi-person-circle text-primary"></i>
+                    <span>Customer & Delivery Destination</span>
                 </h6>
+                <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5 small">
+                    ID #{{ $order->user_id }}
+                </span>
             </div>
-            <div class="card-body p-4">
-                <div class="mb-3">
-                    <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.68rem;">Customer Name</div>
-                    <div class="fw-bold text-dark" style="font-size: 0.96rem;">{{ $order->shipping_name }}</div>
-                </div>
 
-                <div class="mb-3">
-                    <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.68rem;">Contact Details</div>
-                    <div class="small text-dark mt-0.5"><i class="bi bi-envelope me-1 text-secondary"></i>{{ $order->shipping_email }}</div>
-                    <div class="d-flex align-items-center gap-2 mt-1">
-                        <span class="small text-dark"><i class="bi bi-telephone me-1 text-secondary"></i>{{ $order->shipping_phone }}</span>
-                        <a href="tel:{{ $order->shipping_phone }}" class="badge bg-light text-success border text-decoration-none py-1">Call</a>
+            <div class="card-body p-4">
+                {{-- Customer Identity & Fast Contact Buttons --}}
+                <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3 pb-3 border-bottom">
+                    <div>
+                        <div class="fw-bold text-dark" style="font-size: 1rem;">{{ $order->shipping_name }}</div>
+                        <div class="text-muted small mt-0.5"><i class="bi bi-envelope me-1"></i>{{ $order->shipping_email }}</div>
+                    </div>
+                    <div class="d-flex align-items-center gap-1.5">
+                        <a href="tel:{{ $order->shipping_phone }}" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 fw-bold shadow-2xs d-inline-flex align-items-center gap-1" style="font-size: 0.78rem;">
+                            <i class="bi bi-telephone-fill"></i> <span>Call</span>
+                        </a>
                         @php
                             $cleanPhone = preg_replace('/[^0-9]/', '', $order->shipping_phone);
                             if (strlen($cleanPhone) === 10) $cleanPhone = '91' . $cleanPhone;
                         @endphp
-                        <a href="https://wa.me/{{ $cleanPhone }}" target="_blank" class="badge bg-success bg-opacity-10 text-success border text-decoration-none py-1">WhatsApp</a>
+                        <a href="https://wa.me/{{ $cleanPhone }}" target="_blank" class="btn btn-sm btn-success rounded-pill px-3 py-1 fw-bold text-white shadow-2xs d-inline-flex align-items-center gap-1" style="font-size: 0.78rem;">
+                            <i class="bi bi-whatsapp"></i> <span>WhatsApp</span>
+                        </a>
                     </div>
                 </div>
 
+                {{-- Delivery Address Block --}}
                 <div class="mb-3">
-                    <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.68rem;">Shipping Destination</div>
-                    <div class="p-2.5 rounded-3 bg-light border mt-1 small text-dark" style="line-height: 1.45;">
-                        <i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ $order->shipping_address }}<br>
-                        <strong>{{ $order->shipping_city }}, {{ $order->shipping_state }} - {{ $order->shipping_zip }}</strong><br>
-                        <span class="text-secondary">{{ $order->shipping_country ?? 'India' }}</span>
+                    <div class="text-secondary small fw-bold text-uppercase mb-1.5" style="font-size: 0.68rem; letter-spacing: 0.04em;">
+                        <i class="bi bi-geo-alt-fill text-danger me-1"></i> Delivery Street Address
+                    </div>
+                    <div class="p-3 rounded-3 bg-light border text-dark small" style="line-height: 1.5; font-size: 0.84rem;">
+                        <div class="fw-semibold text-dark">{{ $order->shipping_address }}</div>
+                        <div>{{ $order->shipping_city }}, {{ $order->shipping_state }} - <strong>{{ $order->shipping_zip }}</strong></div>
+                        <div class="text-secondary">{{ $order->shipping_country ?? 'India' }}</div>
+                        @if($order->shipping_landmark)
+                            <div class="mt-1 pt-1 border-top border-secondary-subtle text-muted">
+                                <strong>Landmark:</strong> {{ $order->shipping_landmark }}
+                            </div>
+                        @endif
                     </div>
                 </div>
 
-                <div class="pt-3 border-top">
-                    <div class="d-flex align-items-center justify-content-between mb-1.5">
-                        <span class="text-secondary small">Payment Method:</span>
-                        <span class="badge bg-light text-dark border fw-bold text-uppercase" style="font-size: 0.72rem;">
-                            {{ $order->payment_method }}
-                        </span>
+                {{-- Map Coordinates Link (If Lat/Lng Present) --}}
+                @if($order->shipping_latitude && $order->shipping_longitude)
+                    <div class="p-2.5 rounded-3 border d-flex align-items-center justify-content-between mb-2" style="background: #f0fdf4; border-color: #bbf7d0 !important;">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-geo-fill text-success fs-5"></i>
+                            <div>
+                                <div class="fw-bold text-success small" style="font-size: 0.78rem;">Exact GPS Pin Verified</div>
+                                <div class="text-muted font-monospace" style="font-size: 0.7rem;">{{ round($order->shipping_latitude, 5) }}, {{ round($order->shipping_longitude, 5) }}</div>
+                            </div>
+                        </div>
+                        <a href="https://www.google.com/maps?q={{ $order->shipping_latitude }},{{ $order->shipping_longitude }}" target="_blank" class="btn btn-sm btn-success rounded-pill px-3 py-1 fw-bold text-white" style="font-size: 0.75rem;">
+                            <i class="bi bi-box-arrow-up-right me-1"></i> View on Map
+                        </a>
                     </div>
-                    <div class="d-flex align-items-center justify-content-between">
-                        <span class="text-secondary small">Payment Status:</span>
-                        <span class="badge {{ $order->payment_status === 'paid' ? 'bg-success text-white' : 'bg-warning text-dark' }}" style="font-size: 0.72rem;">
-                            {{ ucfirst($order->payment_status ?? 'pending') }}
-                        </span>
-                    </div>
-                </div>
+                @else
+                    <a href="https://www.google.com/maps/search/?api=1&query={{ urlencode($order->shipping_address . ' ' . $order->shipping_city . ' ' . $order->shipping_zip) }}" target="_blank" class="btn btn-sm btn-light border rounded-pill w-100 fw-semibold text-secondary py-1.5" style="font-size: 0.78rem;">
+                        <i class="bi bi-search me-1"></i> Search Address on Google Maps
+                    </a>
+                @endif
             </div>
         </div>
 
-        <!-- 4. Payment Gateway & Bank Audit Card -->
-        @php
-            $payment = $order->primaryPayment ?? $order->latestPayment;
-        @endphp
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border: 1.5px solid #e2e8f0 !important; border-top: 4px solid {{ ($order->payment_method === 'online' || $order->payment_method === 'wallet' || $order->wallet_amount_used > 0) ? '#10b981' : '#64748b' }} !important;">
+        {{-- Card 3: Payment & Gateway Audit Trail --}}
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border: 1px solid #e2e8f0 !important;">
             <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
-                <h6 class="mb-0 fw-bold text-dark" style="font-size: 0.94rem;">
-                    <i class="bi bi-credit-card-2-front-fill text-success me-1.5"></i>Payment & Gateway Audit
+                <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.95rem;">
+                    <i class="bi bi-credit-card-2-front-fill text-success"></i>
+                    <span>Payment & Transaction Audit</span>
                 </h6>
                 {!! $payment?->status_badge ?? ($order->payment_status === 'paid' ? '<span class="badge bg-success rounded-pill px-2.5 py-1 text-white">Paid</span>' : '<span class="badge bg-warning text-dark rounded-pill px-2.5 py-1">Pending</span>') !!}
             </div>
-            <div class="card-body p-4">
-                <div class="mb-3">
-                    <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.68rem;">Payment Channel</div>
-                    <div class="fw-bold text-dark mt-0.5" style="font-size: 0.92rem;">
+
+            <div class="card-body p-4 small">
+                <div class="mb-2.5">
+                    <span class="text-secondary fw-semibold text-uppercase" style="font-size: 0.68rem;">Payment Channel</span>
+                    <div class="fw-bold text-dark mt-0.5" style="font-size: 0.88rem;">
                         @if($order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0))
                             💳 ShopCalm Wallet (100% Paid)
                         @elseif($order->wallet_amount_used > 0)
@@ -792,37 +925,28 @@
                 </div>
 
                 @if($payment && $payment->bank_reference)
-                    <div class="mb-3 p-2.5 rounded-3 bg-light border">
-                        <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.68rem;">Bank Reference (UTR / RRN)</div>
-                        <div class="fw-bold font-monospace text-primary" style="font-size: 0.94rem;">
+                    <div class="mb-2.5 p-2 rounded-2 bg-light border">
+                        <span class="text-secondary fw-semibold text-uppercase" style="font-size: 0.65rem;">Bank UTR / Reference</span>
+                        <div class="fw-bold font-monospace text-primary" style="font-size: 0.88rem;">
                             {{ $payment->bank_reference }}
                         </div>
                     </div>
                 @endif
 
                 @if($payment && $payment->gateway_payment_id)
-                    <div class="mb-3">
-                        <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.68rem;">Gateway Transaction ID</div>
-                        <div class="text-dark font-monospace small">
+                    <div class="mb-2.5">
+                        <span class="text-secondary fw-semibold text-uppercase" style="font-size: 0.65rem;">Razorpay Payment ID</span>
+                        <div class="text-dark font-monospace" style="font-size: 0.82rem;">
                             #{{ $payment->gateway_payment_id }}
                         </div>
                     </div>
                 @endif
 
-                @if($payment && $payment->gateway_order_id)
-                    <div class="mb-3">
-                        <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.68rem;">Razorpay Order Ref</div>
-                        <div class="text-secondary font-monospace small">
-                            {{ $payment->gateway_order_id }}
-                        </div>
-                    </div>
-                @endif
-
                 @if($payment && $payment->payment_time)
-                    <div class="mb-0">
-                        <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.68rem;">Payment Timestamp</div>
-                        <div class="text-dark small mt-0.5">
-                            <i class="bi bi-clock-history me-1 text-muted"></i>{{ $payment->payment_time->format('d M Y, h:i A') }}
+                    <div>
+                        <span class="text-secondary fw-semibold text-uppercase" style="font-size: 0.65rem;">Verified At</span>
+                        <div class="text-muted" style="font-size: 0.78rem;">
+                            {{ $payment->payment_time->format('d M Y, h:i A') }}
                         </div>
                     </div>
                 @endif
@@ -854,7 +978,7 @@ document.addEventListener('DOMContentLoaded', function () {
             topBadge.textContent = 'Status: ' + newStatus.charAt(0).toUpperCase() + newStatus.slice(1).replace('_', ' ');
         }
 
-        const idx = stages.indexOf(newStatus);
+        const idx = stages.indexOf(newStatus.toLowerCase().replace('_', ' '));
         const progressBar = document.getElementById('trackerProgressBar');
         if (progressBar && idx !== -1) {
             const pct = (idx / (stages.length - 1)) * 100;
@@ -874,7 +998,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 dot.innerHTML = isPast ? '<i class="bi bi-check-lg"></i>' : (sIdx + 1);
             }
             if (label) {
-                label.className = 'stage-label small fw-semibold mt-1.5 d-none d-md-block ' + (isCurrent ? 'text-primary fw-bold' : (isPast ? 'text-dark' : 'text-muted'));
+                label.className = 'stage-label small fw-semibold mt-1 d-none d-md-block ' + (isCurrent ? 'text-primary fw-bold' : (isPast ? 'text-dark' : 'text-muted'));
             }
         });
 
@@ -891,22 +1015,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (container) {
             const item = document.createElement('div');
-            item.className = 'position-relative pb-4 ps-4 border-start border-2 border-primary timeline-item';
+            item.className = 'position-relative pb-3.5 ps-4 border-start border-2 border-primary timeline-item';
             item.innerHTML = `
-                <div class="position-absolute start-0 top-0 translate-middle-x rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-xs" 
-                     style="width: 20px; height: 20px; font-size: 0.65rem; left: -1px;">
+                <div class="position-absolute start-0 top-0 translate-middle-x rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-2xs" 
+                     style="width: 18px; height: 18px; font-size: 0.6rem; left: -1px;">
                     <i class="bi bi-check-lg"></i>
                 </div>
-                <div class="d-flex align-items-center justify-content-between mb-1">
-                    <span class="badge bg-light text-dark border px-2.5 py-1 rounded-pill fw-bold" style="font-size: 0.72rem;">
+                <div class="d-flex align-items-center justify-content-between mb-0.5">
+                    <span class="badge bg-light text-dark border px-2 py-0.5 rounded-pill fw-bold" style="font-size: 0.7rem;">
                         ${status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
                     </span>
                     <span class="text-secondary small" style="font-size: 0.72rem;">Just now</span>
                 </div>
-                <p class="text-dark small mb-0 mt-1" style="font-size: 0.84rem; line-height: 1.4;">
-                    ${notes || 'Status updated via Order Operations'}
+                <p class="text-dark small mb-0 mt-0.5" style="font-size: 0.82rem; line-height: 1.35;">
+                    ${notes || 'Status updated via Order Command Center'}
                 </p>
-                <span class="text-secondary small mt-0.5 d-inline-block" style="font-size: 0.7rem;">By: Staff Manager</span>
+                <span class="text-secondary small mt-0.5 d-inline-block" style="font-size: 0.68rem;">By: Staff Manager</span>
             `;
             container.insertBefore(item, container.firstChild);
         }
@@ -918,9 +1042,11 @@ document.addEventListener('DOMContentLoaded', function () {
         formStatus.addEventListener('submit', async function (e) {
             e.preventDefault();
             const btn = document.getElementById('btnSubmitStatus');
-            const originalBtnHtml = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Updating...';
+            const originalBtnHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Updating...';
+            }
 
             const formData = new FormData(formStatus);
 
@@ -943,7 +1069,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                     updateProgressTracker(data.status);
                     prependTimeline(data.status, formData.get('notes'));
-                    document.getElementById('statusNotesInput').value = '';
+                    const noteInput = document.getElementById('statusNotesInput');
+                    if (noteInput) noteInput.value = '';
                 } else {
                     Toast.fire({
                         icon: 'error',
@@ -957,8 +1084,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     title: 'Network error. Please try again.'
                 });
             } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalBtnHtml;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalBtnHtml;
+                }
             }
         });
     }
@@ -971,8 +1100,8 @@ document.addEventListener('DOMContentLoaded', function () {
             if (selectedOpt && selectedOpt.value) {
                 const name = selectedOpt.getAttribute('data-name');
                 const phone = selectedOpt.getAttribute('data-phone');
-                if (name) document.getElementById('inputRiderName').value = name;
-                if (phone) document.getElementById('inputRiderPhone').value = phone;
+                if (name && document.getElementById('inputRiderName')) document.getElementById('inputRiderName').value = name;
+                if (phone && document.getElementById('inputRiderPhone')) document.getElementById('inputRiderPhone').value = phone;
             }
         });
     }
@@ -983,9 +1112,11 @@ document.addEventListener('DOMContentLoaded', function () {
         formRider.addEventListener('submit', async function (e) {
             e.preventDefault();
             const btn = document.getElementById('btnSubmitRider');
-            const originalBtnHtml = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Assigning Rider...';
+            const originalBtnHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Assigning Rider...';
+            }
 
             const formData = new FormData(formRider);
 
@@ -1025,8 +1156,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     title: 'Network error. Please try again.'
                 });
             } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalBtnHtml;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalBtnHtml;
+                }
             }
         });
     }
@@ -1037,9 +1170,11 @@ document.addEventListener('DOMContentLoaded', function () {
         formTracking.addEventListener('submit', async function (e) {
             e.preventDefault();
             const btn = document.getElementById('btnSubmitTracking');
-            const originalBtnHtml = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Saving Tracking...';
+            const originalBtnHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Saving Tracking...';
+            }
 
             const formData = new FormData(formTracking);
 
@@ -1079,12 +1214,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     title: 'Network error. Please try again.'
                 });
             } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalBtnHtml;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalBtnHtml;
+                }
             }
         });
     }
 });
+
+
 </script>
 @endpush
 

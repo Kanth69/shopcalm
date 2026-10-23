@@ -47,4 +47,8 @@ return [
         'key_secret' => env('RAZORPAY_KEY_SECRET'),
     ],
 
+    'locationiq' => [
+        'key' => env('LOCATIONIQ_API_KEY'),
+    ],
+
 ];

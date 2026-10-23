@@ -13,7 +13,7 @@ class AccountController extends Controller
     public function orders()
     {
         $user   = Auth::guard('customer')->user() ?? Auth::user();
-        $orders = $user->orders()->with('items.product')->latest()->paginate(10);
+        $orders = $user->orders()->with(['items.product', 'fulfillment'])->latest()->paginate(10);
 
         $totalCount     = $user->orders()->count();
         $deliveredCount = $user->orders()->where('status', 'delivered')->count();
@@ -52,7 +52,7 @@ class AccountController extends Controller
             }
         }
 
-        $order->load(['items.product.category', 'items.product.brand', 'coupon', 'feedback', 'cancellation', 'statusHistories']);
+        $order->load(['items.product.category', 'items.product.brand', 'coupon', 'feedback', 'cancellation', 'statusHistories', 'fulfillment']);
 
         $recommendedProducts = \Illuminate\Support\Facades\Cache::remember('recommended_products', 600, function () {
             $products = \App\Models\Product::with(['category', 'brand'])->where('status', 'Active')->inRandomOrder()->take(4)->get();

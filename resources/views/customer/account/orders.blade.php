@@ -236,10 +236,19 @@
                                     <i class="bi bi-exclamation-triangle-fill text-dark me-1.5"></i> <span>Payment Incomplete</span>
                                 </span>
                             @endif
-                            @if($order->delivery_otp && $order->status !== 'delivered' && $order->status !== 'cancelled')
+                            @if($order->delivery_otp && $order->status !== 'delivered' && $order->status !== 'cancelled' && $order->status !== 'failed')
                                 <span class="badge rounded-pill px-2.5 py-1 fw-bold font-monospace shadow-xs d-inline-flex align-items-center" style="background: #0f172a; color: #fcd34d; border: 1px solid rgba(245,158,11,0.4); font-size: 0.7rem;">
                                     <i class="bi bi-shield-lock-fill text-warning me-1.5"></i> <span>OTP: {{ $order->delivery_otp }}</span>
                                 </span>
+                                @if($order->rider_name)
+                                    <span class="badge rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center bg-success bg-opacity-10 text-success border border-success-subtle" style="font-size: 0.7rem;">
+                                        <i class="bi bi-bicycle me-1.5"></i> <span>Rider: {{ $order->rider_name }}</span>
+                                    </span>
+                                @else
+                                    <span class="badge rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle" style="font-size: 0.7rem;">
+                                        <i class="bi bi-person-x me-1.5"></i> <span>Rider: Unassigned</span>
+                                    </span>
+                                @endif
                             @endif
                         </div>
                         <div class="d-flex align-items-center gap-2 text-muted small flex-wrap" style="font-size: 0.76rem;">

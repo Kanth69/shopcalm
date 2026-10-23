@@ -107,6 +107,80 @@ class WhatsAppService
     }
 
     /**
+     * Send direct freeform text message via Meta WhatsApp Cloud API.
+     */
+    public function sendTextMessage(string $mobileNumber, string $text): bool
+    {
+        $cleanPhone = preg_replace('/\D/', '', $mobileNumber);
+        if (strlen($cleanPhone) === 10) {
+            $cleanPhone = '91' . $cleanPhone;
+        }
+
+        $apiToken = Setting::get('whatsapp_api_token') 
+            ?: (env('WHATSAPP_CLOUD_API_TOKEN') ?: env('WHATSAPP_API_TOKEN'));
+
+        $phoneNumberId = Setting::get('whatsapp_phone_number_id') 
+            ?: (env('WHATSAPP_CLOUD_PHONE_NUMBER_ID') ?: env('WHATSAPP_PHONE_NUMBER_ID'));
+
+        if (empty($apiToken) || empty($phoneNumberId)) {
+            Log::info("LOCAL DEV FALLBACK: WhatsApp direct text for {$cleanPhone}: {$text}");
+            return true;
+        }
+
+        try {
+            $response = Http::timeout(5)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", [
+                'messaging_product' => 'whatsapp',
+                'to'                => $cleanPhone,
+                'type'              => 'text',
+                'text'              => [
+                    'body' => $text,
+                ],
+            ]);
+
+            if ($response->failed()) {
+                Log::warning("Meta WhatsApp Cloud API text failed for {$cleanPhone}: " . $response->body());
+                return false;
+            }
+
+            Log::info("Meta WhatsApp API direct text dispatched to {$cleanPhone}. Message ID: " . ($response->json('messages.0.id') ?? 'N/A'));
+            return true;
+        } catch (\Exception $e) {
+            Log::error("Meta WhatsApp API text exception for {$cleanPhone}: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get the formatted Out For Delivery message text.
+     */
+    public function getOutForDeliveryMessage(Order $order): string
+    {
+        $otp = $order->delivery_otp ?? $order->fulfillment?->delivery_otp ?? '1234';
+        $customerName = $order->shipping_name ?: 'Customer';
+        $riderName = $order->rider_name ?? 'Our Delivery Partner';
+        $riderPhone = $order->rider_phone ? " ({$order->rider_phone})" : '';
+        $riderInfo = $riderName . $riderPhone;
+
+        return "Hello *{$customerName}*,\n\nYour ShopCalm order *#{$order->order_number}* is out for delivery with delivery partner *{$riderInfo}*.\n\nTo receive your parcel, please share your delivery pass *{$otp}* with the rider at your doorstep.\n\nThank you for choosing ShopCalm!\n\n_— ShopCalm Express Dispatch_";
+    }
+
+    /**
+     * Generate 1-click wa.me URL for the rider or staff to send the OTP to the customer.
+     */
+    public function getOutForDeliveryWhatsAppUrl(Order $order): string
+    {
+        $phone = $order->shipping_phone ?? $order->user?->mobile_number ?? '';
+        $cleanPhone = preg_replace('/\D/', '', $phone);
+        if (strlen($cleanPhone) === 10) {
+            $cleanPhone = '91' . $cleanPhone;
+        }
+
+        $text = $this->getOutForDeliveryMessage($order);
+
+        return "https://wa.me/{$cleanPhone}?text=" . rawurlencode($text);
+    }
+
+    /**
      * Generate 6-digit OTP and send via Meta WhatsApp Cloud API.
      */
     public function sendOtp(string $mobileNumber, string $purpose = 'REGISTER'): string
@@ -179,20 +253,34 @@ class WhatsAppService
         $phone = $order->shipping_phone ?? $order->user?->mobile_number;
         if (empty($phone)) return false;
 
-        $otp = $order->fulfillment?->delivery_otp ?? '1234';
+        $otp = $order->delivery_otp ?? $order->fulfillment?->delivery_otp ?? '1234';
         $riderInfo = ($order->rider_name ?? 'Fleet Rider') . ($order->rider_phone ? " ({$order->rider_phone})" : '');
 
-        // Parameters: [Customer Name, Order Number, Delivery OTP, Rider Info]
-        return $this->sendTemplateMessage(
-            $phone,
-            'whatsapp_template_out_for_delivery_local',
-            [
-                $order->shipping_name ?? 'Customer',
-                $order->order_number,
-                $otp,
-                $riderInfo
-            ]
-        );
+        // 1. Direct formatted text message via Meta WhatsApp Cloud API (when 24-hr customer window is active)
+        $message = $this->getOutForDeliveryMessage($order);
+        if ($this->sendTextMessage($phone, $message)) {
+            return true;
+        }
+
+        // 2. Configured custom out for delivery template (configured in Admin -> WhatsApp Integrations)
+        $customTemplate = Setting::get('whatsapp_template_out_for_delivery_local') 
+            ?: env('WHATSAPP_TEMPLATE_OUT_FOR_DELIVERY_LOCAL');
+
+        if (!empty($customTemplate) && $customTemplate !== 'out_for_delivery_otp') {
+            return $this->sendTemplateMessage(
+                $phone,
+                'whatsapp_template_out_for_delivery_local',
+                [
+                    $order->shipping_name ?? 'Customer',
+                    $order->order_number,
+                    $otp,
+                    $riderInfo
+                ]
+            );
+        }
+
+        Log::info("[WhatsAppService] Out for delivery template not yet configured in WhatsApp Integrations. Use 1-click WhatsApp button to send OTP.");
+        return false;
     }
 
     /**

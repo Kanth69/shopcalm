@@ -375,10 +375,14 @@
                 {{-- Quantity Stepper Row --}}
                 <div class="d-flex align-items-center gap-3 mb-3">
                     <span class="text-muted small fw-semibold" style="font-size: 0.85rem;">Quantity:</span>
-                    <div class="input-group shadow-xs rounded-pill border p-0.5" style="background: #ffffff; border-color: #cbd5e1 !important; width: 120px;">
-                        <button class="btn btn-sm btn-link text-dark text-decoration-none px-3 py-1" type="button" onclick="changeQty(-1)"><i class="bi bi-dash-lg fw-bold"></i></button>
-                        <input type="number" id="qty-input" class="form-control text-center border-0 p-0 fw-bold bg-transparent shadow-none" value="1" min="1" max="{{ $product->stock }}" readonly style="font-size: 0.95rem;">
-                        <button class="btn btn-sm btn-link text-dark text-decoration-none px-3 py-1" type="button" onclick="changeQty(1)"><i class="bi bi-plus-lg fw-bold"></i></button>
+                    <div class="d-inline-flex align-items-center border rounded-pill shadow-xs bg-white p-1" style="border-color: #cbd5e1 !important; height: 38px;">
+                        <button class="btn btn-sm btn-light border-0 rounded-circle text-dark d-flex align-items-center justify-content-center p-0 flex-shrink-0" type="button" onclick="changeQty(-1)" style="width: 28px; height: 28px; background: #f1f5f9;" aria-label="Decrease quantity">
+                            <i class="bi bi-dash fw-bold fs-6"></i>
+                        </button>
+                        <input type="text" inputmode="numeric" id="qty-input" class="form-control text-center border-0 p-0 fw-bold bg-white shadow-none text-dark" value="1" min="1" max="{{ $product->stock }}" readonly style="font-size: 1.05rem; font-weight: 800 !important; color: #0f172a !important; width: 48px; min-width: 48px; pointer-events: none; -webkit-text-fill-color: #0f172a !important; opacity: 1 !important;">
+                        <button class="btn btn-sm btn-light border-0 rounded-circle text-dark d-flex align-items-center justify-content-center p-0 flex-shrink-0" type="button" onclick="changeQty(1)" style="width: 28px; height: 28px; background: #f1f5f9;" aria-label="Increase quantity">
+                            <i class="bi bi-plus fw-bold fs-6"></i>
+                        </button>
                     </div>
                 </div>
 
@@ -716,55 +720,7 @@
 
 </div>
 
-{{-- 📱 12. App-Like Sticky Bottom Bar on Mobile (Flipkart/Amazon Mobile Experience) --}}
-@if($product->stock > 0)
-<div class="d-block d-md-none position-fixed bottom-0 start-0 end-0 bg-white border-top shadow-lg p-2.5 p-sm-3 z-3 pdp-mobile-sticky-bar" 
-     style="backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.98) !important; z-index: 1045; padding-bottom: calc(0.6rem + env(safe-area-inset-bottom, 0px)) !important;">
-    <div class="container-fluid px-2">
-        <div class="row g-2 align-items-center">
-            {{-- Price Summary on Left --}}
-            <div class="col-4">
-                <div class="d-flex flex-column">
-                    <span class="text-muted" style="font-size: 0.68rem; line-height: 1;">Total Price:</span>
-                    <span class="fw-bolder text-dark" style="font-size: 1rem; letter-spacing: -0.3px;">
-                        ₹{{ number_format($product->sale_price ?? $product->price, 0) }}
-                    </span>
-                </div>
-            </div>
 
-            {{-- 2 Action Buttons on Right --}}
-            <div class="col-8">
-                <div class="d-flex gap-1.5">
-                    {{-- Mobile Add to Cart --}}
-                    <form action="{{ route('cart.add') }}" method="POST" class="flex-fill ajax-cart-form no-loader" onsubmit="return validateOptionSelected(this)">
-                        @csrf
-                        <input type="hidden" name="product_id" value="{{ $product->id }}">
-                        <input type="hidden" name="quantity" class="hidden-qty-input" value="1">
-                        <input type="hidden" name="selected_option" class="hidden-selected-option" value="">
-                        <button type="submit" class="btn text-white w-100 rounded-3 py-2 fw-bold text-nowrap add-to-cart-btn no-loader shadow-xs" 
-                                style="font-size: 0.8rem; background: #ff9f00; border: none;">
-                            <i class="bi bi-cart-plus-fill me-1"></i> Cart
-                        </button>
-                    </form>
-
-                    {{-- Mobile Instant Buy Now --}}
-                    <form action="{{ route('cart.add') }}" method="POST" class="flex-fill" id="mobile-buy-now-form" onsubmit="return validateOptionSelected(this)">
-                        @csrf
-                        <input type="hidden" name="product_id" value="{{ $product->id }}">
-                        <input type="hidden" name="quantity" class="hidden-qty-input" value="1">
-                        <input type="hidden" name="selected_option" class="hidden-selected-option" value="">
-                        <input type="hidden" name="buy_now" value="1">
-                        <button type="submit" id="mobile-buy-now-btn" class="btn text-white w-100 rounded-3 py-2 fw-bold text-nowrap shadow-xs" 
-                                style="font-size: 0.8rem; background: #fb641b; border: none;">
-                            <i class="bi bi-lightning-fill me-1"></i> Buy Now
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-@endif
 
 <style>
     .pdp-main-image-stage {
@@ -1190,17 +1146,12 @@ function changeQty(amt) {
     }
 }
 
-// Reset Buy Now Buttons on page load/restore
+// Reset Buy Now Button on page load/restore
 function resetBuyNowBtns() {
     const desktopBtn = document.getElementById('buy-now-btn');
     if (desktopBtn) {
         desktopBtn.disabled = false;
         desktopBtn.innerHTML = '<i class="bi bi-lightning-fill fs-5"></i> <span>Buy Now</span>';
-    }
-    const mobileBtn = document.getElementById('mobile-buy-now-btn');
-    if (mobileBtn) {
-        mobileBtn.disabled = false;
-        mobileBtn.innerHTML = '<i class="bi bi-lightning-fill me-1"></i> Buy Now';
     }
 }
 
@@ -1392,7 +1343,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     bindBuyNow('buy-now-form', 'buy-now-btn');
-    bindBuyNow('mobile-buy-now-form', 'mobile-buy-now-btn');
 });
 
 function confirmDeleteUserReview(id, deleteUrl, btnElement) {

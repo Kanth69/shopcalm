@@ -7,6 +7,7 @@ use App\Enums\StockSource;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -154,6 +155,9 @@ class CheckoutService
                         'state' => $data['shipping_state'],
                         'zip' => $data['shipping_zip'],
                         'country' => $data['shipping_country'] ?? 'India',
+                        'latitude'  => $data['shipping_latitude'] ?? ($data['latitude'] ?? null),
+                        'longitude' => $data['shipping_longitude'] ?? ($data['longitude'] ?? null),
+                        'landmark'  => $data['shipping_landmark'] ?? ($data['landmark'] ?? null),
                     ]);
                 }
             }
@@ -182,6 +186,9 @@ class CheckoutService
                 'shipping_state' => $data['shipping_state'],
                 'shipping_zip' => $data['shipping_zip'],
                 'shipping_country' => $data['shipping_country'],
+                'shipping_latitude'  => $data['shipping_latitude'] ?? ($data['latitude'] ?? null),
+                'shipping_longitude' => $data['shipping_longitude'] ?? ($data['longitude'] ?? null),
+                'shipping_landmark'  => $data['shipping_landmark'] ?? ($data['landmark'] ?? null),
                 'notes' => $data['notes'] ?? null,
             ]);
 
@@ -358,6 +365,9 @@ class CheckoutService
                     'state'   => $data['shipping_state'],
                     'zip'     => $data['shipping_zip'],
                     'country' => $data['shipping_country'] ?? 'India',
+                    'latitude'  => $data['shipping_latitude'] ?? ($data['latitude'] ?? null),
+                    'longitude' => $data['shipping_longitude'] ?? ($data['longitude'] ?? null),
+                    'landmark'  => $data['shipping_landmark'] ?? ($data['landmark'] ?? null),
                 ]);
             }
 
@@ -385,6 +395,9 @@ class CheckoutService
                 'shipping_state'         => $data['shipping_state'],
                 'shipping_zip'           => $data['shipping_zip'] ?? ($data['shipping_pincode'] ?? ''),
                 'shipping_country'       => $data['shipping_country'] ?? 'India',
+                'shipping_latitude'      => $data['shipping_latitude'] ?? ($data['latitude'] ?? null),
+                'shipping_longitude'     => $data['shipping_longitude'] ?? ($data['longitude'] ?? null),
+                'shipping_landmark'      => $data['shipping_landmark'] ?? ($data['landmark'] ?? null),
                 'notes'                  => $data['notes'] ?? null,
             ]);
 

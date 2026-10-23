@@ -401,13 +401,16 @@
 @endif
 
 {{-- ── Context-Aware Logistics & Live Handover Card ── --}}
+@php
+    $isOutForDelivery = ($s === 'out_for_delivery') || strtolower(str_replace(['_', '-'], ' ', (string) $order->status)) === 'out for delivery';
+    $isDelivered = ($s === 'delivered') || strtolower((string) $order->status) === 'delivered';
+@endphp
 @if($order->isLocalBengaluruDelivery() && $s !== 'cancelled')
-    {{-- Bengaluru Local Fleet & Handover Card --}}
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 p-3 p-sm-4" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
-        {{-- Top Row: Rider & Status info --}}
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 {{ ($order->delivery_otp && $order->status === 'out for delivery') ? 'pb-3 border-bottom' : '' }}">
-            <div class="d-flex align-items-center gap-2">
-                @if($order->status === 'delivered')
+    @if($isDelivered)
+        {{-- Delivered State Card --}}
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 p-3 p-sm-4" style="background: #ffffff; border: 1.5px solid #a7f3d0 !important;">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2.5">
                     <div style="width: 44px; height: 44px; border-radius: 12px; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">
                         <i class="bi bi-bag-check-fill"></i>
                     </div>
@@ -421,103 +424,125 @@
                         <div class="text-secondary small" style="font-size: 0.78rem;">
                             Delivered on <span class="fw-semibold text-dark">{{ $order->delivered_at?->format('d M, Y \a\t h:i A') ?? $order->updated_at->format('d M, Y \a\t h:i A') }}</span>
                             @if($order->rider_name)
-                                &bull; Rider: <span class="fw-semibold text-dark">{{ $order->rider_name }}</span>
+                                &bull; Handed over by <span class="fw-semibold text-dark">{{ $order->rider_name }}</span>
                             @endif
                         </div>
                     </div>
-                @elseif($order->status === 'out for delivery')
-                    <div style="width: 44px; height: 44px; border-radius: 12px; background: #fffbeb; color: #d97706; border: 1px solid #fde68a; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">
-                        <i class="bi bi-bicycle"></i>
-                    </div>
-                    <div>
-                        <div class="d-flex align-items-center gap-1.5 mb-0.5 flex-wrap">
-                            <span class="badge rounded-pill px-2 py-0.5 fw-bold" style="background: #059669; color: #ffffff; font-size: 0.65rem;">⚡ BENGALURU EXPRESS</span>
-                            <strong class="text-dark" style="font-size: 0.92rem;">
-                                {{ $order->rider_name ? 'Out for Delivery with ' . $order->rider_name : 'In-House Local Delivery Fleet' }}
-                            </strong>
-                        </div>
-                        <div class="text-secondary small" style="font-size: 0.78rem;">
-                            @if($order->delivery_slot)
-                                Schedule: <span class="fw-semibold text-dark">{{ $order->delivery_slot }}</span>
-                            @else
-                                Arriving Today in Bengaluru
-                            @endif
-                        </div>
-                    </div>
-                @else
-                    <div style="width: 44px; height: 44px; border-radius: 12px; background: #f0fdf4; color: #059669; border: 1px solid #bbf7d0; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">
-                        <i class="bi bi-box-seam"></i>
-                    </div>
-                    <div>
-                        <div class="d-flex align-items-center gap-1.5 mb-0.5 flex-wrap">
-                            <span class="badge rounded-pill px-2 py-0.5 fw-bold" style="background: #059669; color: #ffffff; font-size: 0.65rem;">⚡ BENGALURU FLEET</span>
-                            <strong class="text-dark" style="font-size: 0.92rem;">Being Processed for Bengaluru Dispatch</strong>
-                        </div>
-                        <div class="text-secondary small" style="font-size: 0.78rem;">
-                            Estimated Delivery: 1–2 Business Days
-                        </div>
-                    </div>
-                @endif
-            </div>
+                </div>
 
-            <div class="d-flex align-items-center gap-2 flex-wrap ms-auto ms-sm-0">
-                @if($order->status === 'out for delivery' && $order->rider_phone)
-                    <a href="tel:{{ $order->rider_phone }}" class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold text-white shadow-xs" style="background: #059669; border: none; font-size: 0.78rem;">
-                        <i class="bi bi-telephone-fill me-1"></i> Call Rider
-                    </a>
-                @elseif($order->status === 'delivered')
+                <div class="ms-auto ms-sm-0">
                     <button type="button" class="btn btn-sm {{ $order->feedback ? 'btn-outline-success' : 'btn-warning text-dark' }} rounded-pill px-3 py-1.5 fw-bold shadow-xs d-inline-flex align-items-center gap-1" 
                             data-bs-toggle="modal" data-bs-target="#modalOrderFeedback" style="font-size: 0.78rem;">
                         <i class="bi {{ $order->feedback ? 'bi-star-fill text-warning' : 'bi-star-fill' }}"></i> 
                         <span>{{ $order->feedback ? 'Feedback (' . $order->feedback->delivery_rating . '★)' : 'Rate Delivery' }}</span>
                     </button>
-                @endif
-            </div>
-        </div>
-
-        {{-- Bottom Row: Clean OTP Box & Payment summary --}}
-        @if($order->delivery_otp && $order->status === 'out for delivery')
-            <div class="pt-3">
-                <div class="p-3 rounded-3 d-flex align-items-center justify-content-between flex-wrap gap-2.5" style="background: #f8fafc; border: 1px dashed #cbd5e1;">
-                    {{-- OTP Digits --}}
-                    <div>
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="badge bg-dark rounded-pill px-2 py-0.5 text-warning fw-bold small" style="font-size: 0.65rem;">
-                                <i class="bi bi-shield-lock-fill me-1"></i> Handover OTP
-                            </span>
-                            <span class="text-secondary small" style="font-size: 0.74rem;">Share with rider upon receiving parcel</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-1.5 mt-1">
-                            @foreach(str_split((string) $order->delivery_otp) as $digit)
-                                <span class="d-inline-flex align-items-center justify-content-center fw-extrabold rounded-2 bg-white border text-dark shadow-xs" 
-                                      style="width: 34px; height: 38px; font-size: 1.25rem; font-family: monospace; border-color: #94a3b8 !important;">
-                                    {{ $digit }}
-                                </span>
-                            @endforeach
-                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 py-1 text-secondary fw-semibold ms-1" 
-                                    onclick="navigator.clipboard.writeText('{{ $order->delivery_otp }}'); this.innerText = 'Copied!'; setTimeout(() => this.innerHTML = '<i class=\'bi bi-copy\'></i> Copy', 1500);" style="font-size: 0.72rem;">
-                                <i class="bi bi-copy"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    {{-- Payment Status at Doorstep --}}
-                    <div class="text-start text-sm-end">
-                        @if($order->payment_status === 'paid')
-                            <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.74rem;">
-                                <i class="bi bi-check-circle-fill me-1"></i> Paid Online &bull; Collect ₹0
-                            </span>
-                            <div class="text-secondary small mt-0.5" style="font-size: 0.7rem;">Zero amount to pay at doorstep</div>
-                        @else
-                            <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.65rem;">Payable at Doorstep</div>
-                            <div class="h5 fw-extrabold text-dark mb-0 font-monospace">₹{{ number_format($order->total_amount, 2) }}</div>
-                            <div class="text-muted small" style="font-size: 0.68rem;">Cash or Instant UPI QR</div>
-                        @endif
-                    </div>
                 </div>
             </div>
-        @endif
-    </div>
+        </div>
+    @else
+        {{-- Active Delivery Card with Partner Assignment & Handover OTP --}}
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 p-3 p-sm-4" style="background: #ffffff; border: 1.5px solid {{ $order->rider_name ? '#bbf7d0' : '#e2e8f0' }} !important;">
+            {{-- Top Row: Rider & Status info --}}
+            <div class="d-flex align-items-center justify-content-between gap-2.5 pb-3 border-bottom">
+                <div class="d-flex align-items-center gap-2.5 min-w-0">
+                    @if($order->rider_name)
+                        {{-- Assigned Rider Icon --}}
+                        <div style="width: 44px; height: 44px; border-radius: 12px; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0;">
+                            <i class="bi bi-bicycle"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="d-flex align-items-center gap-2 mb-0.5">
+                                <span class="badge rounded-pill px-2 py-0.5 fw-bold" style="background: {{ $isOutForDelivery ? '#f59e0b' : '#059669' }}; color: #ffffff; font-size: 0.65rem;">
+                                    <i class="bi {{ $isOutForDelivery ? 'bi-lightning-charge-fill' : 'bi-check2-circle' }} me-1"></i>
+                                    {{ $isOutForDelivery ? 'OUT FOR DELIVERY' : 'RIDER ASSIGNED' }}
+                                </span>
+                            </div>
+                            <div class="fw-bold text-dark text-truncate" style="font-size: 0.94rem;" title="{{ $order->rider_name }}">
+                                {{ $order->rider_name }}
+                            </div>
+                            <div class="text-secondary small text-truncate" style="font-size: 0.75rem;">
+                                {{ $order->delivery_slot ?: ($isOutForDelivery ? 'Arriving today at your address' : 'Preparing for dispatch') }}
+                            </div>
+                        </div>
+                    @else
+                        {{-- Unassigned Rider Icon --}}
+                        <div style="width: 44px; height: 44px; border-radius: 12px; background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0;">
+                            <i class="bi bi-person-badge"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="d-flex align-items-center gap-2 mb-0.5">
+                                <span class="badge rounded-pill px-2 py-0.5 fw-bold bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle" style="font-size: 0.65rem;">
+                                    <i class="bi bi-clock-history me-1"></i> ASSIGNING SOON
+                                </span>
+                            </div>
+                            <div class="fw-bold text-dark text-truncate" style="font-size: 0.94rem;">
+                                Delivery Partner: <span class="text-secondary fw-semibold">Unassigned</span>
+                            </div>
+                            <div class="text-secondary small text-truncate" style="font-size: 0.75rem;">
+                                A local delivery partner will be assigned shortly
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Right Action: Call Rider Button --}}
+                <div class="flex-shrink-0 ms-2">
+                    @if($order->rider_name && $order->rider_phone)
+                        <a href="tel:{{ $order->rider_phone }}" class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold text-white shadow-xs d-inline-flex align-items-center gap-1.5" style="background: #059669; border: none; font-size: 0.78rem;">
+                            <i class="bi bi-telephone-fill"></i> <span class="d-none d-sm-inline">Call Rider</span><span class="d-inline d-sm-none">Call</span>
+                        </a>
+                    @elseif(!$order->rider_name)
+                        <span class="badge rounded-pill px-2.5 py-1 bg-light text-muted border small d-inline-flex align-items-center gap-1" style="font-size: 0.7rem;">
+                            <i class="bi bi-hourglass-split"></i> <span class="d-none d-sm-inline">Awaiting Assignment</span><span class="d-inline d-sm-none">Pending</span>
+                        </span>
+                    @endif
+                </div>
+            </div>
+
+            {{-- Bottom Row: Clean OTP Box & Payment summary --}}
+            @if($order->delivery_otp)
+                <div class="pt-3">
+                    <div class="p-3 rounded-3 d-flex align-items-center justify-content-between flex-wrap gap-2.5" style="background: #f8fafc; border: 1.5px dashed #cbd5e1;">
+                        {{-- OTP Digits --}}
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-1.5">
+                                <span class="badge bg-dark rounded-pill px-2 py-0.5 text-warning fw-bold small" style="font-size: 0.65rem;">
+                                    <i class="bi bi-shield-lock-fill me-1"></i> Handover OTP
+                                </span>
+                                <span class="text-secondary small" style="font-size: 0.75rem;">Share with rider upon receiving parcel</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-1.5 mt-1">
+                                @foreach(str_split((string) $order->delivery_otp) as $digit)
+                                    <span class="d-inline-flex align-items-center justify-content-center fw-extrabold rounded-2 bg-white border text-dark shadow-xs" 
+                                          style="width: 36px; height: 40px; font-size: 1.3rem; font-family: monospace; border-color: #94a3b8 !important;">
+                                        {{ $digit }}
+                                    </span>
+                                @endforeach
+                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 text-secondary fw-semibold ms-1" 
+                                        onclick="navigator.clipboard.writeText('{{ $order->delivery_otp }}'); this.innerText = 'Copied!'; setTimeout(() => this.innerHTML = '<i class=\'bi bi-copy\'></i> Copy', 1500);" style="font-size: 0.74rem;">
+                                    <i class="bi bi-copy"></i> Copy
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- Payment Status at Doorstep --}}
+                        <div class="text-start text-sm-end">
+                            @if($order->payment_status === 'paid')
+                                <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.74rem;">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Paid Online &bull; Collect ₹0
+                                </span>
+                                <div class="text-secondary small mt-0.5" style="font-size: 0.7rem;">Zero amount to pay at doorstep</div>
+                            @else
+                                <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.65rem;">Payable at Doorstep</div>
+                                <div class="h5 fw-extrabold text-dark mb-0 font-monospace">₹{{ number_format($order->total_amount, 2) }}</div>
+                                <div class="text-muted small" style="font-size: 0.68rem;">Cash or Instant UPI QR</div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @endif
+        </div>
+    @endif
 @elseif(($order->courier_partner || $order->tracking_number || in_array($order->status, ['shipped', 'out for delivery', 'delivered'])) && $s !== 'cancelled')
     {{-- Pan-India National Courier Logistics Card --}}
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 p-3 p-sm-4" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
@@ -709,8 +734,10 @@
                                     </span>
                                 @endif
                                 @if($item->selected_option)
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
-                                        {{ $item->selected_option }}
+                                    <span class="badge rounded-pill px-2.5 py-0.5 fw-bold d-inline-flex align-items-center gap-1 shadow-2xs" 
+                                          style="background: #e0f2fe !important; color: #0369a1 !important; border: 1px solid #7dd3fc !important; font-size: 0.74rem;">
+                                        <i class="bi bi-tag-fill" style="font-size: 0.65rem; color: #0284c7;"></i>
+                                        <span>{{ $item->selected_option }}</span>
                                     </span>
                                 @endif
                             </div>
@@ -786,8 +813,10 @@
                                     </span>
                                 @endif
                                 @if($item->selected_option)
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
-                                        {{ $item->selected_option }}
+                                    <span class="badge rounded-pill px-2.5 py-0.5 fw-bold d-inline-flex align-items-center gap-1 shadow-2xs" 
+                                          style="background: #e0f2fe !important; color: #0369a1 !important; border: 1px solid #7dd3fc !important; font-size: 0.74rem;">
+                                        <i class="bi bi-tag-fill" style="font-size: 0.65rem; color: #0284c7;"></i>
+                                        <span>{{ $item->selected_option }}</span>
                                     </span>
                                 @endif
                             </div>

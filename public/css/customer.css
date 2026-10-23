@@ -34,7 +34,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Override Bootstrap Primary */
 .text-primary { color: var(--primary-color) !important; }
-.bg-primary { background-color: var(--primary-color) !important; }
+.bg-primary:not([class*="bg-opacity-"]) { background-color: var(--primary-color) !important; }
 .btn-primary { background-color: var(--primary-color); border-color: var(--primary-color); }
 .btn-primary:hover { background-color: #1e3a8a; border-color: #1e3a8a; }
 .btn-outline-primary { color: var(--primary-color); border-color: var(--primary-color); }

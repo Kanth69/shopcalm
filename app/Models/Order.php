@@ -49,6 +49,9 @@ class Order extends Model
         'shipping_state',
         'shipping_zip',
         'shipping_country',
+        'shipping_latitude',
+        'shipping_longitude',
+        'shipping_landmark',
         'notes',
     ];
 
@@ -221,7 +224,34 @@ class Order extends Model
 
     public function getDeliveryOtpAttribute(): ?string
     {
-        return $this->fulfillment?->delivery_otp;
+        $otp = $this->fulfillment?->delivery_otp;
+
+        // Auto-provision 4-digit handover OTP if missing on active orders
+        if (!$otp && !in_array(strtolower((string)$this->status), ['cancelled', 'failed'])) {
+            $otp = (string) random_int(1000, 9999);
+            try {
+                if ($this->relationLoaded('fulfillment') && $this->fulfillment) {
+                    $this->fulfillment->update(['delivery_otp' => $otp]);
+                } else {
+                    $fulfillment = $this->fulfillment()->firstOrCreate(
+                        ['order_id' => $this->id],
+                        [
+                            'type'         => $this->isLocalBengaluruDelivery() ? 'local_fleet' : 'courier',
+                            'status'       => 'pending',
+                            'delivery_otp' => $otp,
+                        ]
+                    );
+                    if (!$fulfillment->delivery_otp) {
+                        $fulfillment->update(['delivery_otp' => $otp]);
+                    }
+                    $this->load('fulfillment');
+                }
+            } catch (\Throwable $e) {
+                // Silently fallback to the generated OTP in memory
+            }
+        }
+
+        return $otp;
     }
 
     public function getShippedAtAttribute()

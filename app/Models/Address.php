@@ -19,6 +19,10 @@ class Address extends Model
         'state',
         'zip',
         'country',
+        'latitude',
+        'longitude',
+        'landmark',
+        'type',
     ];
 
     public function user(): BelongsTo

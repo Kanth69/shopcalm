@@ -34,8 +34,9 @@ class FulfillmentService
         return OrderFulfillment::updateOrCreate(
             ['order_id' => $order->id],
             [
-                'type'   => $zoneType,
-                'status' => 'pending',
+                'type'         => $zoneType,
+                'status'       => 'pending',
+                'delivery_otp' => (string) random_int(1000, 9999),
             ]
         );
     }

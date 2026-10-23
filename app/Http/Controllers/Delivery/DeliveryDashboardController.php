@@ -331,6 +331,36 @@ class DeliveryDashboardController extends Controller
     }
 
     /**
+     * Send or resend Handover OTP to customer via WhatsApp from Rider screen.
+     */
+    public function sendOtpWhatsApp(Request $request, Order $order): RedirectResponse|JsonResponse
+    {
+        $rider = Auth::guard('delivery_partner')->user();
+        if ($order->rider_id !== $rider->id && !$rider->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $sent = app(\App\Services\WhatsAppService::class)->sendOutForDeliveryLocal($order);
+
+        $msg = $sent 
+            ? "Handover OTP ({$order->delivery_otp}) has been sent to customer's WhatsApp."
+            : "Could not send automated message. Please tap the WhatsApp button to chat directly.";
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => $sent,
+                'message' => $msg,
+            ]);
+        }
+
+        return back()->with('toast', [
+            'type'    => $sent ? 'success' : 'error',
+            'title'   => $sent ? 'OTP Sent via WhatsApp' : 'Dispatch Failed',
+            'message' => $msg,
+        ]);
+    }
+
+    /**
      * Complete Delivery & Verify OTP.
      */
     public function completeDelivery(Request $request, Order $order): RedirectResponse|JsonResponse

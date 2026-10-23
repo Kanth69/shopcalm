@@ -3,8 +3,93 @@
 @section('title', 'Secure Checkout — ' . \App\Models\Setting::get('store_name', 'ShopCalm'))
 
 @push('styles')
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 <style>
+    /* Delivery Map Modal Styles */
+    #delivery-map-container {
+        min-height: 290px !important;
+        height: 290px !important;
+        width: 100% !important;
+        background-color: #e2e8f0;
+    }
+    .leaflet-container {
+        font-family: inherit;
+    }
+
+    /* ============================================================== */
+    /* 📱 APP-LIKE MOBILE BOTTOM SHEET FOR LOCATION PICKER           */
+    /* ============================================================== */
+    @media (max-width: 767.98px) {
+        #locationPickerModal .modal-dialog {
+            margin: 0 !important;
+            max-width: 100% !important;
+            height: 100% !important;
+            display: flex !important;
+            align-items: flex-end !important;
+        }
+        #locationPickerModal .modal-content {
+            border-radius: 1.35rem 1.35rem 0 0 !important;
+            max-height: 94vh !important;
+            height: 94vh !important;
+            display: flex !important;
+            flex-direction: column !important;
+            box-shadow: 0 -12px 30px rgba(0,0,0,0.22) !important;
+            border: none !important;
+        }
+        #locationPickerModal .modal-header {
+            padding: 0.75rem 1rem !important;
+        }
+        #locationPickerModal .modal-body {
+            flex: 1 1 auto !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            padding: 0 !important;
+        }
+        #delivery-map-container {
+            min-height: 240px !important;
+            height: 240px !important;
+            width: 100% !important;
+        }
+        #locationPickerModal .modal-footer {
+            position: sticky !important;
+            bottom: 0 !important;
+            background: #ffffff !important;
+            box-shadow: 0 -6px 20px rgba(0,0,0,0.08) !important;
+            z-index: 1050 !important;
+            padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px)) 1rem !important;
+            border-top: 1px solid #f1f5f9 !important;
+        }
+        #btn-save-map-address {
+            width: 100% !important;
+            justify-content: center !important;
+            padding: 0.75rem 1.25rem !important;
+            font-size: 0.92rem !important;
+            border-radius: 9999px !important;
+        }
+        #locationPickerModal .modal-footer .btn-light {
+            display: none !important;
+        }
+
+        /* Step 1 Address Action Buttons: Touch-optimized equal pills */
+        .checkout-address-actions {
+            display: flex !important;
+            gap: 0.5rem !important;
+        }
+        .checkout-address-actions .btn {
+            flex: 1 1 0 !important;
+            justify-content: center !important;
+            padding: 0.65rem 0.5rem !important;
+            font-size: 0.78rem !important;
+            white-space: nowrap !important;
+        }
+
+        /* Prevent auto-zoom on iOS Safari when tapping inputs */
+        #locationPickerModal input.form-control,
+        #new-address-card input.form-control {
+            font-size: 16px !important;
+        }
+    }
     /* Prevent zoom horizontal overflow */
     html, body {
         overflow-x: hidden !important;
@@ -82,9 +167,9 @@
     /* Payment Tiles */
     .payment-tile {
         border: 2px solid #e2e8f0;
-        border-radius: 1.15rem;
-        padding: 1.35rem 1.4rem;
-        margin-bottom: 1.25rem !important;
+        border-radius: 1rem;
+        padding: 1.15rem 1.25rem;
+        margin-bottom: 0.9rem !important;
         cursor: pointer;
         transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         background: #ffffff;
@@ -92,8 +177,8 @@
     }
     @media (min-width: 768px) {
         .payment-tile {
-            padding: 1.6rem 1.8rem;
-            margin-bottom: 1.4rem !important;
+            padding: 1.15rem 1.35rem;
+            margin-bottom: 0.95rem !important;
         }
     }
     .payment-tile:hover {
@@ -179,20 +264,20 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: 0.88rem;
-        margin-bottom: 0.82rem;
+        font-size: 0.84rem;
+        margin-bottom: 0.55rem;
     }
     .grand-total-row-wrapper {
-        border-top: 1.5px dashed #cbd5e1 !important;
-        margin-top: 1rem;
-        padding-top: 1.15rem !important;
-        padding-bottom: 0.25rem !important;
+        border-top: 1px dashed #cbd5e1 !important;
+        margin-top: 0.65rem;
+        padding-top: 0.75rem !important;
+        padding-bottom: 0.15rem !important;
     }
     @media (max-width: 767.98px) {
         .grand-total-row-wrapper {
-            margin-top: 0.85rem;
-            padding-top: 0.95rem !important;
-            padding-bottom: 0.2rem !important;
+            margin-top: 0.55rem;
+            padding-top: 0.65rem !important;
+            padding-bottom: 0.1rem !important;
         }
     }
     
@@ -292,9 +377,9 @@
             max-width: 65px;
         }
         .payment-tile {
-            padding: 1.25rem 1.35rem !important;
-            border-radius: 1.1rem !important;
-            margin-bottom: 1.25rem !important;
+            padding: 0.95rem 1rem !important;
+            border-radius: 1rem !important;
+            margin-bottom: 0.75rem !important;
         }
         .confirm-review-card .card-body {
             padding: 1.15rem 1.2rem !important;
@@ -458,6 +543,9 @@
         <input type="hidden" name="shipping_state" id="hidden_shipping_state">
         <input type="hidden" name="shipping_zip" id="hidden_shipping_zip">
         <input type="hidden" name="shipping_country" id="hidden_shipping_country" value="India">
+        <input type="hidden" name="shipping_latitude" id="hidden_shipping_latitude">
+        <input type="hidden" name="shipping_longitude" id="hidden_shipping_longitude">
+        <input type="hidden" name="shipping_landmark" id="hidden_shipping_landmark">
 
         <!-- ========================================================================= -->
         <!-- STEPS 1 & 2 CONTAINER: Focused, Distraction-Free (NO Price Details Card!) -->
@@ -522,17 +610,27 @@
                                 </div>
                             </div>
 
-                            <!-- Add New Address Button -->
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3.5 py-2 fw-semibold" onclick="openNewAddressForm()" style="font-size: 0.82rem;">
-                                    <i class="bi bi-plus-lg me-1"></i> Add New Address
+                            <!-- Address Action Buttons: Use Current Location / Add Manually -->
+                            <div class="d-flex align-items-center gap-2 mb-3.5 flex-wrap checkout-address-actions">
+                                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3.5 py-2 fw-bold d-inline-flex align-items-center gap-1.5 shadow-xs" onclick="openLocationPickerModal(true)" style="font-size: 0.82rem; background: #4f46e5; border-color: #4f46e5;">
+                                    <i class="bi bi-crosshair fs-6"></i>
+                                    <span>Use Current Location</span>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3.5 py-2 fw-semibold d-inline-flex align-items-center gap-1.5" onclick="openNewAddressForm()" style="font-size: 0.82rem;">
+                                    <i class="bi bi-plus-lg"></i>
+                                    <span>Add Manually</span>
                                 </button>
                             </div>
 
                             <!-- Collapsible Add New Address Form -->
                             <div class="card border rounded-4 mb-4 overflow-hidden shadow-xs" id="new-address-card" style="display: {{ $addresses->count() === 0 ? 'block' : 'none' }}; border-color: #cbd5e1 !important; background: #f8fafc;">
                                 <div class="card-header bg-white py-2.5 px-3.5 d-flex justify-content-between align-items-center border-bottom">
-                                    <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.88rem;"><i class="bi bi-house-add text-primary me-2"></i>Add New Address</h6>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.88rem;"><i class="bi bi-house-add text-primary me-2"></i>Add New Address</h6>
+                                        <button type="button" class="btn btn-sm btn-link text-primary p-0 fw-semibold text-decoration-none" onclick="openLocationPickerModal()" style="font-size: 0.78rem;">
+                                            <i class="bi bi-map-fill me-1"></i>Select on Map
+                                        </button>
+                                    </div>
                                     <button type="button" class="btn-close" id="btn-close-new-address-header" onclick="closeNewAddressForm()" style="display: {{ $addresses->count() > 0 ? 'inline-block' : 'none' }};"></button>
                                 </div>
                                 <div class="card-body p-3.5 p-md-4">
@@ -544,11 +642,11 @@
                                             </div>
                                             <div class="col-12 col-sm-6">
                                                 <label for="new_phone" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Mobile Number <span class="text-danger">*</span></label>
-                                                <input type="tel" class="form-control form-control-sm rounded-3 py-1.5" id="new_phone" value="{{ auth()->user()->mobile_number ?? '' }}" placeholder="10-digit mobile" maxlength="10" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 10)">
+                                                <input type="tel" class="form-control form-control-sm rounded-3 py-1.5" id="new_phone" value="{{ auth()->user()->mobile_number ?? '' }}" placeholder="10-digit mobile" maxlength="10" inputmode="tel" autocomplete="tel" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 10)">
                                             </div>
                                             <div class="col-12 col-sm-6">
                                                 <label for="new_zip" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Pincode <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control form-control-sm rounded-3 font-monospace fw-bold py-1.5" id="new_zip" placeholder="6-digit PIN" maxlength="6" oninput="handleNewPincodeLookup(this.value)">
+                                                <input type="text" class="form-control form-control-sm rounded-3 font-monospace fw-bold py-1.5" id="new_zip" placeholder="6-digit PIN" maxlength="6" inputmode="numeric" oninput="handleNewPincodeLookup(this.value)">
                                                 <small id="new_zip_lookup_hint" class="text-muted d-block mt-0.5" style="font-size: 0.7rem;"></small>
                                             </div>
                                             <div class="col-12">
@@ -575,37 +673,27 @@
                                 </div>
                             </div>
 
-                            <!-- Delivery Notes (Spacious on Mobile + Word/Character Limitation) -->
+                            <!-- Delivery Notes Card (Compact & Clean on Mobile) -->
                             <div class="card checkout-delivery-notes-card shadow-xs">
-                                <div class="card-body p-3.5 p-sm-4 p-md-4">
-                                    <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
-                                        <label for="notes" class="fw-bold text-dark d-flex align-items-center gap-2 mb-0" style="font-size: 0.94rem;">
-                                            <span class="rounded-circle d-flex align-items-center justify-content-center text-primary bg-primary bg-opacity-10" style="width: 30px; height: 30px;">
-                                                <i class="bi bi-chat-left-text-fill" style="font-size: 0.85rem;"></i>
-                                            </span>
-                                            Delivery Instructions / Notes
+                                <div class="card-body p-3 p-sm-3.5">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <label for="notes" class="fw-bold text-dark d-flex align-items-center gap-2 mb-0" style="font-size: 0.88rem;">
+                                            <i class="bi bi-chat-left-text-fill text-primary" style="font-size: 0.95rem;"></i>
+                                            <span>Delivery Notes</span>
+                                            <span class="text-muted fw-normal" style="font-size: 0.74rem;">(Optional)</span>
                                         </label>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">Optional</span>
-                                            <span id="notes-counter" class="badge rounded-pill bg-light text-secondary border font-monospace px-2.5 py-1" style="font-size: 0.72rem;">0 / 150</span>
-                                        </div>
+                                        <span id="notes-counter" class="badge rounded-pill bg-light text-secondary border font-monospace px-2 py-0.5" style="font-size: 0.68rem;">0 / 150</span>
                                     </div>
-                                    <p class="text-secondary small mb-2.5" style="font-size: 0.82rem; line-height: 1.5;">
-                                        Add short instructions for delivery partner (e.g. landmark, call before delivery, leave with security). Max 150 characters (~25 words).
-                                    </p>
-                                    <textarea class="form-control rounded-3 p-3" 
+                                    <textarea class="form-control rounded-3 px-3 py-2" 
                                               id="notes" 
                                               name="notes" 
                                               rows="2" 
-                                              maxlength="150"
-                                              placeholder="e.g. Ring bell twice / Call before reaching / Leave with gate security." 
-                                              style="font-size: 0.86rem; line-height: 1.5; border: 1.5px solid #cbd5e1 !important; resize: none;"></textarea>
-                                    <div class="d-flex justify-content-between align-items-center mt-2 px-0.5">
-                                        <small class="text-muted" style="font-size: 0.74rem;">
-                                            <i class="bi bi-shield-check text-success me-1"></i>Kept concise for delivery partner mobile screen
-                                        </small>
-                                        <small id="notes-warning" class="text-danger fw-semibold" style="font-size: 0.74rem; display: none;">
-                                            <i class="bi bi-exclamation-circle me-1"></i>Max limit reached (150 chars)
+                                              maxlength="150" 
+                                              placeholder="e.g. Call before delivery, leave with security, landmark..." 
+                                              style="font-size: 0.84rem; line-height: 1.45; border: 1px solid #cbd5e1 !important; resize: none;"></textarea>
+                                    <div class="text-end mt-1" id="notes-warning-wrap">
+                                        <small id="notes-warning" class="text-danger fw-semibold" style="font-size: 0.72rem; display: none;">
+                                            <i class="bi bi-exclamation-circle me-1"></i>Max 150 characters reached
                                         </small>
                                     </div>
                                 </div>
@@ -673,22 +761,6 @@
                 <!-- STEP 2 VIEW: OFFERS & WALLET (Spacious, No Quick Apply)-->
                 <!-- ====================================================== -->
                 <div id="checkout-step-2-view" class="d-none">
-                    
-                    <!-- Selected Address Summary Strip (Zoom-Safe, Full Fit) -->
-                    <div class="checkout-delivering-strip d-flex justify-content-between align-items-center gap-3 flex-wrap flex-sm-nowrap overflow-hidden">
-                        <div class="d-flex align-items-start gap-3 min-w-0 flex-grow-1">
-                            <div class="rounded-circle text-success bg-success bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0 mt-0.5" style="width: 36px; height: 36px;">
-                                <i class="bi bi-geo-alt-fill fs-5"></i>
-                            </div>
-                            <div class="min-w-0 flex-grow-1 text-break-word">
-                                <span class="text-muted small d-block mb-1 fw-semibold text-uppercase" style="font-size: 0.72rem; line-height: 1.2; letter-spacing: 0.4px;">DELIVERING TO</span>
-                                <strong class="text-dark d-block text-break-word" id="step-2-address-summary" style="font-size: 0.88rem; line-height: 1.5;"></strong>
-                            </div>
-                        </div>
-                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-bold flex-shrink-0 align-self-sm-center align-self-start" onclick="goToStep(1)" style="font-size: 0.78rem;">
-                            <i class="bi bi-pencil me-1"></i> Change
-                        </button>
-                    </div>
 
                     <!-- Offers & Wallet Card (With generous breathing spacing) -->
                     <div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 1.5px solid #10b981 !important;">
@@ -880,22 +952,6 @@
                 <!-- STEP 3 VIEW: PAYMENT METHOD SELECTION                 -->
                 <!-- ====================================================== -->
                 <div id="checkout-step-3-view" class="d-none">
-                    
-                    <!-- Selected Address Summary Strip (Spacious, Clean) -->
-                    <div class="checkout-delivering-strip d-flex justify-content-between align-items-center gap-3 flex-wrap flex-sm-nowrap overflow-hidden">
-                        <div class="d-flex align-items-start gap-3 min-w-0 flex-grow-1">
-                            <div class="rounded-circle text-success bg-success bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0 mt-0.5" style="width: 36px; height: 36px;">
-                                <i class="bi bi-geo-alt-fill fs-5"></i>
-                            </div>
-                            <div class="min-w-0 flex-grow-1 text-break-word">
-                                <span class="text-muted small d-block mb-1 fw-semibold text-uppercase" style="font-size: 0.72rem; line-height: 1.2; letter-spacing: 0.4px;">DELIVERING TO</span>
-                                <strong class="text-dark d-block text-break-word" id="step-3-address-summary" style="font-size: 0.88rem; line-height: 1.5;"></strong>
-                            </div>
-                        </div>
-                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-bold flex-shrink-0 align-self-sm-center align-self-start" onclick="goToStep(1)" style="font-size: 0.78rem;">
-                            <i class="bi bi-pencil me-1"></i> Change
-                        </button>
-                    </div>
 
                     <!-- Step 3: 100% Wallet/Offers Covered Notice Banner -->
                     <div id="step-3-wallet-full-notice" class="alert alert-success border-0 rounded-4 mb-4 p-3 p-sm-4 shadow-xs {{ ($useWallet && $grandTotal <= 0) ? '' : 'd-none' }}" style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1.5px solid #6ee7b7 !important; color: #065f46;">
@@ -937,36 +993,20 @@
                             </div>
                         </div>
 
-                        <div class="card-body p-3.5 p-sm-4">
+                        <div class="card-body p-3 p-sm-3.5">
                             <!-- Payment Tiles Container -->
                             <div id="payment-tiles-container" style="{{ ($useWallet && $grandTotal <= 0) ? 'opacity: 0.45; pointer-events: none; filter: grayscale(1);' : '' }}">
                                 
                                 <!-- Option 1: Razorpay Online Payment (Default) -->
                                 <div class="payment-tile active-tile" onclick="document.getElementById('pay_online').checked = true; document.getElementById('pay_online').dispatchEvent(new Event('change'));">
-                                    <div class="d-flex align-items-start gap-3">
-                                        <input class="form-check-input mt-1 flex-shrink-0 cursor-pointer" type="radio" name="payment_method" id="pay_online" value="online" checked form="checkout-form" style="width: 1.25rem; height: 1.25rem; accent-color: #4f46e5;">
-                                        <div class="flex-grow-1 min-w-0 text-break-word">
-                                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <input class="form-check-input flex-shrink-0 cursor-pointer m-0" type="radio" name="payment_method" id="pay_online" value="online" checked form="checkout-form" style="width: 1.25rem; height: 1.25rem; accent-color: #4f46e5;">
+                                        <div class="flex-grow-1 min-w-0">
+                                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                                                 <label class="form-check-label fw-bold text-dark mb-0 cursor-pointer fs-6" for="pay_online">
-                                                    ⚡ Instant Online Payment
+                                                    💳 Online Payment (Razorpay)
                                                 </label>
-                                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.68rem; letter-spacing: 0.3px;">FASTEST &amp; RECOMMENDED</span>
-                                            </div>
-                                            <p class="text-secondary mb-2" style="font-size: 0.82rem; line-height: 1.45;">
-                                                Google Pay, PhonePe, Paytm, UPI, Cards &amp; NetBanking.
-                                            </p>
-                                            
-                                            <!-- Concise Supported Mode Pills -->
-                                            <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                                                <span class="payment-method-chip" style="padding: 0.25rem 0.65rem; font-size: 0.72rem;">
-                                                    <i class="bi bi-qr-code text-primary"></i> UPI
-                                                </span>
-                                                <span class="payment-method-chip" style="padding: 0.25rem 0.65rem; font-size: 0.72rem;">
-                                                    <i class="bi bi-credit-card-2-front text-secondary"></i> Cards
-                                                </span>
-                                                <span class="payment-method-chip" style="padding: 0.25rem 0.65rem; font-size: 0.72rem;">
-                                                    <i class="bi bi-bank text-info"></i> Net Banking
-                                                </span>
+                                                <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 fw-semibold" style="font-size: 0.68rem;">UPI, Cards, NetBanking</span>
                                             </div>
                                         </div>
                                     </div>
@@ -978,33 +1018,23 @@
                                 @if($isGlobalCodEnabled)
                                 <!-- Option 2: Cash On Delivery (COD) -->
                                 <div class="payment-tile" id="payment-tile-cod" onclick="handleCodTileClick()">
-                                    <div class="d-flex align-items-start gap-3">
-                                        <input class="form-check-input mt-1 flex-shrink-0 cursor-pointer" type="radio" name="payment_method" id="cod" value="cod" form="checkout-form" style="width: 1.25rem; height: 1.25rem; accent-color: #4f46e5;">
-                                        <div class="flex-grow-1 min-w-0 text-break-word">
-                                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <input class="form-check-input flex-shrink-0 cursor-pointer m-0" type="radio" name="payment_method" id="cod" value="cod" form="checkout-form" style="width: 1.25rem; height: 1.25rem; accent-color: #4f46e5;">
+                                        <div class="flex-grow-1 min-w-0">
+                                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                                                 <label class="form-check-label fw-bold text-dark mb-0 cursor-pointer fs-6" for="cod" id="cod-label">
                                                     💵 Cash on Delivery (COD)
                                                 </label>
-                                                <span id="cod-badge" class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.68rem;">PAY AT DOORSTEP</span>
+                                                <span id="cod-badge" class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 fw-semibold" style="font-size: 0.68rem;">PAY AT DOORSTEP</span>
                                             </div>
-                                            <p class="text-secondary mb-0" id="cod-description" style="font-size: 0.82rem; line-height: 1.45;">
-                                                Pay with physical cash or UPI QR code to delivery executive at doorstep.
-                                            </p>
 
-                                            <div id="cod-unavailable-notice" class="alert alert-danger py-2 px-3 small mt-2.5 rounded-3 d-none mb-0" style="font-size: 0.76rem;">
+                                            <div id="cod-unavailable-notice" class="alert alert-danger py-2 px-3 small mt-2 rounded-3 d-none mb-0" style="font-size: 0.76rem;">
                                                 <i class="bi bi-slash-circle me-1.5"></i> Cash on Delivery is unavailable for this PIN code.
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 @endif
-                            </div>
-
-                            <!-- Lightweight Safe & Secure Strip -->
-                            <div class="d-flex align-items-center justify-content-center gap-3 pt-3 mt-2 border-top text-muted small flex-wrap" style="border-color: #f1f5f9 !important; font-size: 0.76rem;">
-                                <span><i class="bi bi-shield-fill-check text-success me-1"></i>100% Safe Payments</span>
-                                <span><i class="bi bi-lock-fill text-primary me-1"></i>256-Bit SSL Protection</span>
-                                <span><i class="bi bi-arrow-repeat text-info me-1"></i>Fast Refunds</span>
                             </div>
                         </div>
                     </div>
@@ -1016,79 +1046,64 @@
                 <!-- ====================================================== -->
                 <div id="checkout-step-4-view" class="d-none">
                     
-                    <!-- Estimated Delivery Date Banner (Spacious) -->
-                    <div class="confirm-delivery-banner shadow-xs d-flex align-items-center gap-3">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center text-success flex-shrink-0 shadow-xs" style="width: 44px; height: 44px; background: #dcfce7;">
-                            <i class="bi bi-truck fs-4"></i>
-                        </div>
-                        <div class="min-w-0 text-break-word">
-                            <span class="fw-bold text-dark d-block" style="font-size: 0.95rem;" id="review-delivery-date-title">Estimated Delivery</span>
-                            <small class="text-secondary d-block mt-0.5" id="review-delivery-date-text" style="font-size: 0.82rem; line-height: 1.45;">Standard Dispatch within 24-48 hours • Safe Doorstep Delivery</small>
-                        </div>
-                    </div>
-
-                    <!-- Review Card 1: Confirmed Shipping Address (Spacious) -->
-                    <div class="confirm-review-card shadow-xs">
-                        <div class="card-header bg-white d-flex align-items-center justify-content-between">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="rounded-circle text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px; background: #4f46e5; font-size: 0.85rem;">
-                                    <i class="bi bi-geo-alt-fill"></i>
+                    <!-- Items in Order Card -->
+                    <div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 1.5px solid #4f46e5 !important;">
+                        <div class="card-header bg-white py-3 px-3.5 px-md-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <div class="rounded-circle text-white d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs" style="width: 32px; height: 32px; background: #4f46e5; font-size: 0.95rem;">
+                                    <i class="bi bi-bag-check-fill"></i>
                                 </div>
-                                <span class="fw-bold text-dark" style="font-size: 0.92rem;">1. Delivering To</span>
-                            </div>
-                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold" onclick="goToStep(1)" style="font-size: 0.76rem;">
-                                <i class="bi bi-pencil me-1"></i> Change
-                            </button>
-                        </div>
-                        <div class="card-body text-break-word">
-                            <div class="fw-bold text-dark mb-1" id="review-address-name" style="font-size: 0.94rem;"></div>
-                            <div class="text-secondary mb-2 text-break-word" id="review-address-text" style="font-size: 0.86rem; line-height: 1.55;"></div>
-                            <div class="text-dark fw-semibold" id="review-address-phone" style="font-size: 0.82rem;"></div>
-                        </div>
-                    </div>
-
-                    <!-- Review Card 2: Applied Offers & Wallet (Spacious) -->
-                    <div class="confirm-review-card shadow-xs">
-                        <div class="card-header bg-white d-flex align-items-center justify-content-between">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="rounded-circle text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px; background: #10b981; font-size: 0.85rem;">
-                                    <i class="bi bi-gift-fill"></i>
-                                </div>
-                                <span class="fw-bold text-dark" style="font-size: 0.92rem;">2. Offers & Wallet Applied</span>
-                            </div>
-                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold" onclick="goToStep(2)" style="font-size: 0.76rem;">
-                                <i class="bi bi-pencil me-1"></i> Change
-                            </button>
-                        </div>
-                        <div class="card-body">
-                            <div id="review-offers-summary-text" class="text-secondary text-break-word" style="font-size: 0.86rem; line-height: 1.55;"></div>
-                        </div>
-                    </div>
-
-                    <!-- Review Card 3: Payment Method (Spacious) -->
-                    <div class="confirm-review-card shadow-xs">
-                        <div class="card-header bg-white d-flex align-items-center justify-content-between">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="rounded-circle text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px; background: #6366f1; font-size: 0.85rem;">
-                                    <i class="bi bi-credit-card-2-front-fill"></i>
-                                </div>
-                                <span class="fw-bold text-dark" style="font-size: 0.92rem;">3. Selected Payment Method</span>
-                            </div>
-                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold" onclick="goToStep(3)" style="font-size: 0.76rem;">
-                                <i class="bi bi-pencil me-1"></i> Change
-                            </button>
-                        </div>
-                        <div class="card-body">
-                            <div id="review-payment-mode-text" class="text-break-word">
-                                <div class="d-flex align-items-center gap-2 flex-wrap mb-1.5">
-                                    <span class="badge text-white px-3 py-1.5 rounded-pill fw-bold shadow-xs" style="background: #4f46e5; font-size: 0.78rem; letter-spacing: 0.4px;">
-                                        <i class="bi bi-lightning-charge-fill me-1 text-warning"></i>ONLINE PAYMENT
+                                <div class="d-flex align-items-center gap-2">
+                                    <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.96rem;">Items in Your Order</h6>
+                                    <span class="badge rounded-pill px-2.5 py-1 fw-bold font-monospace shadow-2xs" style="background: #4f46e5 !important; color: #ffffff !important; font-size: 0.76rem; letter-spacing: 0.3px;">
+                                        {{ $cart->items->sum('quantity') }} {{ Str::plural('item', $cart->items->sum('quantity')) }}
                                     </span>
-                                    <span class="fw-bold text-dark fs-6">UPI / Cards / NetBanking / PhonePe</span>
                                 </div>
-                                <small class="text-secondary d-block" style="font-size: 0.82rem; line-height: 1.45;">
-                                    Instant payment via Razorpay with instant order confirmation.
-                                </small>
+                            </div>
+                            <a href="{{ route('cart.index') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold d-inline-flex align-items-center gap-1.5" style="font-size: 0.74rem;">
+                                <i class="bi bi-pencil"></i> Edit Bag
+                            </a>
+                        </div>
+                        <div class="card-body p-3 p-md-4">
+                            <div class="d-flex flex-column gap-2.5">
+                                @foreach($cart->items as $item)
+                                @php
+                                    $origPrice = (float) ($item->product->price ?? $item->unit_price);
+                                    $currPrice = (float) $item->unit_price;
+                                    $lineTotal = $item->quantity * $currPrice;
+                                    $hasDiscount = ($origPrice > $currPrice);
+                                @endphp
+                                <div class="p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between gap-3 flex-wrap flex-sm-nowrap" style="border-color: #e2e8f0 !important;">
+                                    <div class="d-flex align-items-center gap-3 min-w-0 flex-grow-1">
+                                        @if($item->product && $item->product->main_image)
+                                            <img src="{{ asset('storage/' . $item->product->main_image) }}" alt="{{ $item->product->name }}" class="rounded-2 border flex-shrink-0 bg-white" style="width: 52px; height: 52px; object-fit: contain;">
+                                        @else
+                                            <div class="rounded-2 bg-white border d-flex align-items-center justify-content-center flex-shrink-0 text-muted" style="width: 52px; height: 52px;">
+                                                <i class="bi bi-box-seam fs-4"></i>
+                                            </div>
+                                        @endif
+                                        <div class="min-w-0 flex-grow-1">
+                                            <h6 class="mb-1 fw-bold text-dark text-truncate" style="font-size: 0.9rem;" title="{{ $item->product->name ?? 'Product' }}">
+                                                {{ $item->product->name ?? 'Product' }}
+                                            </h6>
+                                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                <span class="badge rounded-pill font-monospace fw-bold px-2 py-0.5" style="background: #f1f5f9 !important; color: #0f172a !important; border: 1px solid #cbd5e1 !important; font-size: 0.74rem;">
+                                                    Qty: {{ $item->quantity }}
+                                                </span>
+                                                <span class="small text-muted" style="font-size: 0.8rem;">
+                                                    ₹{{ number_format($currPrice, 2) }} each
+                                                </span>
+                                                @if($hasDiscount)
+                                                    <span class="text-decoration-line-through small text-muted font-monospace" style="font-size: 0.74rem;">₹{{ number_format($origPrice, 2) }}</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-end flex-shrink-0 font-monospace fw-bold text-dark fs-6">
+                                        ₹{{ number_format($lineTotal, 2) }}
+                                    </div>
+                                </div>
+                                @endforeach
                             </div>
                         </div>
                     </div>
@@ -1101,26 +1116,26 @@
             <div class="col-lg-5 col-xl-4" id="checkout-summary-column">
                 <div class="sticky-top" style="top: 20px; z-index: 10;">
                     
-                    <!-- Order Items Summary Card (Spacious & Clean) -->
-                    <div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-3.5" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
-                        <div class="card-header bg-white py-3 px-3.5 border-bottom d-flex align-items-center justify-content-between">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="rounded-circle d-flex align-items-center justify-content-center text-primary flex-shrink-0" style="width: 34px; height: 34px; background: rgba(79, 70, 229, 0.08); font-size: 1rem;">
+                    <!-- Order Items Summary Card (Sleek & Compact) -->
+                    <div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-3" id="checkout-items-summary-card" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
+                        <div class="card-header bg-white py-2.5 px-3 px-sm-3.5 border-bottom d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center text-primary flex-shrink-0" style="width: 28px; height: 28px; background: rgba(79, 70, 229, 0.08); font-size: 0.88rem;">
                                     <i class="bi bi-bag-check-fill"></i>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
-                                    <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.95rem;">Items in Order</h6>
-                                    <span class="badge bg-dark text-white rounded-pill px-2.5 py-1 fw-bold font-monospace shadow-xs" style="font-size: 0.78rem;">
+                                    <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.9rem;">Items in Order</h6>
+                                    <span class="badge bg-dark text-white rounded-pill px-2 py-0.5 fw-bold font-monospace shadow-xs" style="font-size: 0.72rem;">
                                         {{ $cart->items->sum('quantity') }}
                                     </span>
                                 </div>
                             </div>
-                            <a href="{{ route('cart.index') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold d-inline-flex align-items-center gap-1.5" style="font-size: 0.74rem;">
+                            <a href="{{ route('cart.index') }}" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-0.5 fw-bold d-inline-flex align-items-center gap-1" style="font-size: 0.72rem;">
                                 <i class="bi bi-pencil"></i> Edit Bag
                             </a>
                         </div>
-                        <div class="card-body p-3 p-sm-3.5">
-                            <div class="checkout-items-wrapper" style="max-height: 220px; overflow-y: auto;">
+                        <div class="card-body p-2.5 p-sm-3">
+                            <div class="checkout-items-wrapper" style="max-height: 200px; overflow-y: auto;">
                                 @foreach($cart->items as $item)
                                 @php
                                     $origPrice = (float) ($item->product->price ?? $item->unit_price);
@@ -1132,22 +1147,22 @@
                                 <div class="p-2 mb-2 bg-white rounded-3 border shadow-2xs d-flex align-items-center justify-content-between gap-2.5" style="border-color: #f1f5f9 !important;">
                                     <div class="d-flex align-items-center gap-2.5 min-w-0 flex-grow-1">
                                         @if($item->product && $item->product->main_image)
-                                            <img src="{{ asset('storage/' . $item->product->main_image) }}" alt="{{ $item->product->name }}" class="rounded-2 border flex-shrink-0" style="width: 40px; height: 40px; object-fit: contain;">
+                                            <img src="{{ asset('storage/' . $item->product->main_image) }}" alt="{{ $item->product->name }}" class="rounded-2 border flex-shrink-0" style="width: 38px; height: 38px; object-fit: contain;">
                                         @else
-                                            <div class="rounded-2 bg-light border d-flex align-items-center justify-content-center flex-shrink-0 text-muted" style="width: 40px; height: 40px;">
+                                            <div class="rounded-2 bg-light border d-flex align-items-center justify-content-center flex-shrink-0 text-muted" style="width: 38px; height: 38px;">
                                                 <i class="bi bi-box-seam fs-6"></i>
                                             </div>
                                         @endif
                                         <div class="min-w-0 flex-grow-1">
-                                            <h6 class="mb-1 fw-bold text-dark text-truncate" style="font-size: 0.82rem;" title="{{ $item->product->name ?? 'Product' }}">
+                                            <h6 class="mb-0.5 fw-bold text-dark text-truncate" style="font-size: 0.8rem;" title="{{ $item->product->name ?? 'Product' }}">
                                                 {{ $item->product->name ?? 'Product' }}
                                             </h6>
-                                            <span class="badge bg-light text-secondary border px-2 py-0.5 rounded-pill" style="font-size: 0.68rem;">
+                                            <span class="badge bg-light text-secondary border px-1.5 py-0.5 rounded-pill" style="font-size: 0.65rem;">
                                                 Qty: {{ $item->quantity }}
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="text-end flex-shrink-0 font-monospace fw-bold text-dark" style="font-size: 0.85rem;">
+                                    <div class="text-end flex-shrink-0 font-monospace fw-bold text-dark" style="font-size: 0.82rem;">
                                         ₹{{ number_format($lineTotal, 2) }}
                                     </div>
                                 </div>
@@ -1156,80 +1171,77 @@
                         </div>
                     </div>
 
-                    <!-- Price Details Card (Spacious, Clear & Beautiful) -->
-                    <div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-3.5" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
-                        <div class="card-header bg-white py-3 px-3.5 border-bottom">
-                            <h6 class="fw-bold mb-0 text-dark d-flex align-items-center" style="font-size: 0.95rem;">
-                                <i class="bi bi-receipt text-primary fs-5 me-2.5"></i>
+                    <!-- Price Details Card (Sleek & Compact) -->
+                    <div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-3" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
+                        <div class="card-header bg-white py-2.5 px-3 px-sm-3.5 border-bottom d-flex align-items-center justify-content-between">
+                            <h6 class="fw-bold mb-0 text-dark d-flex align-items-center" style="font-size: 0.88rem;">
+                                <i class="bi bi-receipt text-primary me-2"></i>
                                 <span>Price Details</span>
                             </h6>
+                            <span class="badge bg-light text-secondary border px-2 py-0.5 rounded-pill" style="font-size: 0.7rem;">
+                                {{ $cart->items->sum('quantity') }} {{ Str::plural('Item', $cart->items->sum('quantity')) }}
+                            </span>
                         </div>
-                        <div class="card-body p-3.5 p-sm-4">
-                            <div class="p-3.5 p-sm-4 rounded-4 border mb-3" style="border-color: #e2e8f0 !important; background: #f8fafc !important;">
-                                <div class="price-row text-secondary mb-2.5">
-                                    <span>Total MRP:</span>
-                                    <span class="font-monospace text-dark fw-semibold">₹{{ number_format($totalMrp ?? $subtotal, 2) }}</span>
+                        <div class="card-body p-3 px-sm-3.5 py-3">
+                            <div class="price-row text-secondary">
+                                <span>Total MRP</span>
+                                <span class="font-monospace text-dark fw-semibold">₹{{ number_format($totalMrp ?? $subtotal, 2) }}</span>
+                            </div>
+                            @if(isset($totalDiscount) && $totalDiscount > 0)
+                            <div class="price-row text-success">
+                                <span>Discount on MRP</span>
+                                <span class="font-monospace fw-bold">- ₹{{ number_format($totalDiscount, 2) }}</span>
+                            </div>
+                            @endif
+                            <div class="price-row text-secondary">
+                                <span>Cart Subtotal</span>
+                                <span class="font-monospace fw-semibold text-dark" id="summary-subtotal">₹{{ number_format($subtotal, 2) }}</span>
+                            </div>
+                            <div class="price-row text-success {{ $discountAmount > 0 ? '' : 'd-none' }}" id="summary-discount-row">
+                                <span class="d-flex align-items-center gap-1.5 fw-semibold">
+                                    <i class="bi bi-tag-fill"></i> <span id="summary-discount-label">Coupon ({{ $couponCode }})</span>
+                                </span>
+                                <span class="font-monospace fw-bold" id="summary-discount-val">- ₹{{ number_format($discountAmount, 2) }}</span>
+                            </div>
+                            <div class="price-row text-success {{ $walletDiscount > 0 ? '' : 'd-none' }}" id="summary-wallet-row">
+                                <span class="d-flex align-items-center gap-1.5 fw-semibold">
+                                    <i class="bi bi-wallet2"></i> <span>Wallet Credits</span>
+                                </span>
+                                <span class="font-monospace fw-bold" id="summary-wallet-val">- ₹{{ number_format($walletDiscount, 2) }}</span>
+                            </div>
+                            <div class="price-row text-secondary">
+                                <span>Delivery Fee</span>
+                                <span id="summary-shipping-fee">
+                                    @if(isset($shippingFee) && $shippingFee > 0)
+                                        <span class="font-monospace text-dark fw-bold">+ ₹{{ number_format($shippingFee, 2) }}</span>
+                                    @else
+                                        <span class="badge bg-success bg-opacity-10 text-success fw-bold rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">FREE</span>
+                                    @endif
+                                </span>
+                            </div>
+                            <div class="price-row text-secondary" id="summary-cod-fee-row">
+                                <span>COD Handling Fee</span>
+                                <span id="summary-cod-fee-val">
+                                    <span class="badge bg-success bg-opacity-10 text-success fw-bold rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">₹0.00 (Prepaid Offer)</span>
+                                </span>
+                            </div>
+                            <div class="grand-total-row-wrapper d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="fw-bold text-dark fs-6 d-block">Grand Total</span>
+                                    <small class="text-muted d-inline-flex align-items-center gap-1" style="font-size: 0.72rem;">
+                                        <i class="bi bi-shield-check text-success"></i> Inclusive of all taxes
+                                    </small>
                                 </div>
-                                @if(isset($totalDiscount) && $totalDiscount > 0)
-                                <div class="price-row text-success mb-2.5">
-                                    <span>Discount on MRP:</span>
-                                    <span class="font-monospace fw-bold">- ₹{{ number_format($totalDiscount, 2) }}</span>
-                                </div>
-                                @endif
-                                <div class="price-row text-secondary mb-2.5">
-                                    <span>Cart Subtotal:</span>
-                                    <span class="font-monospace fw-semibold text-dark" id="summary-subtotal">₹{{ number_format($subtotal, 2) }}</span>
-                                </div>
-                                <div class="price-row text-success mb-2.5 {{ $discountAmount > 0 ? '' : 'd-none' }}" id="summary-discount-row">
-                                    <span class="d-flex align-items-center gap-1.5 fw-semibold">
-                                        <i class="bi bi-tag-fill"></i> <span id="summary-discount-label">Coupon ({{ $couponCode }})</span>
-                                    </span>
-                                    <span class="font-monospace fw-bold" id="summary-discount-val">- ₹{{ number_format($discountAmount, 2) }}</span>
-                                </div>
-                                <div class="price-row text-success mb-2.5 {{ $walletDiscount > 0 ? '' : 'd-none' }}" id="summary-wallet-row">
-                                    <span class="d-flex align-items-center gap-1.5 fw-semibold">
-                                        <i class="bi bi-wallet2"></i> <span>Wallet Credits</span>
-                                    </span>
-                                    <span class="font-monospace fw-bold" id="summary-wallet-val">- ₹{{ number_format($walletDiscount, 2) }}</span>
-                                </div>
-                                <div class="price-row text-secondary mb-2.5">
-                                    <span>Delivery Fee:</span>
-                                    <span id="summary-shipping-fee">
-                                        @if(isset($shippingFee) && $shippingFee > 0)
-                                            <span class="font-monospace text-dark fw-bold">+ ₹{{ number_format($shippingFee, 2) }}</span>
-                                        @else
-                                            <span class="badge bg-success bg-opacity-10 text-success fw-bold rounded-pill px-2.5 py-1">FREE</span>
-                                        @endif
-                                    </span>
-                                </div>
-                                <div class="price-row text-secondary mb-2" id="summary-cod-fee-row">
-                                    <span>COD Handling Fee:</span>
-                                    <span id="summary-cod-fee-val">
-                                        <span class="badge bg-success bg-opacity-10 text-success fw-bold rounded-pill px-2.5 py-1">₹0.00 (Prepaid Offer)</span>
-                                    </span>
-                                </div>
-                                <div class="grand-total-row-wrapper d-flex justify-content-between align-items-center">
-                                    <div class="pe-2">
-                                        <span class="fw-bold text-dark fs-6 d-block">Grand Total:</span>
-                                        <small class="text-muted d-inline-flex align-items-center gap-1" style="font-size: 0.74rem;">
-                                            <i class="bi bi-shield-check text-success"></i> Inclusive of all taxes
-                                        </small>
-                                    </div>
-                                    <div class="text-end ps-2">
-                                        <span class="fs-4 fw-bolder text-dark font-monospace text-nowrap" id="summary-grand-total">₹{{ number_format($grandTotal, 2) }}</span>
-                                    </div>
+                                <div class="text-end">
+                                    <span class="fs-5 fw-bolder text-dark font-monospace text-nowrap" id="summary-grand-total">₹{{ number_format($grandTotal, 2) }}</span>
                                 </div>
                             </div>
 
-                            <!-- Safe & Secure Badges (Spacious, Distinct & Clear Separation) -->
-                            <div class="d-flex align-items-center justify-content-center gap-3 pt-3 mt-1 border-top flex-wrap" style="border-color: #f1f5f9 !important;">
-                                <span class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-pill bg-light border text-secondary fw-semibold" style="font-size: 0.78rem; border-color: #e2e8f0 !important;">
-                                    <i class="bi bi-shield-lock-fill text-success fs-6"></i> 100% Safe Checkout
-                                </span>
-                                <span class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-pill bg-light border text-secondary fw-semibold" style="font-size: 0.78rem; border-color: #e2e8f0 !important;">
-                                    <i class="bi bi-truck text-primary fs-6"></i> Fast Express Dispatch
-                                </span>
+                            @if((isset($totalDiscount) && $totalDiscount > 0) || $discountAmount > 0 || $walletDiscount > 0)
+                            <div class="bg-success bg-opacity-10 text-success rounded-3 py-1.5 px-2.5 text-center mt-2.5 fw-semibold" style="font-size: 0.74rem;">
+                                <i class="bi bi-check-circle-fill me-1"></i> You save ₹{{ number_format(($totalDiscount ?? 0) + $discountAmount + $walletDiscount, 2) }} on this order
                             </div>
+                            @endif
                         </div>
                     </div>
 
@@ -1237,7 +1249,7 @@
                     <!-- STEP 3 & STEP 4 ACTION BUTTONS (Generously Spaced Below Cards) -->
                     <!-- ============================================================== -->
                     <!-- Step 3 Action Buttons (Visible on Step 3) -->
-                    <div id="step-3-summary-actions" class="mt-4 pt-2 mb-3">
+                    <div id="step-3-summary-actions" class="mt-3 mb-3">
                         <div class="d-flex justify-content-between align-items-center gap-2">
                             <button type="button" class="btn btn-light border rounded-pill px-3 px-sm-3.5 py-2 fw-semibold text-secondary btn-sm d-inline-flex align-items-center gap-1.5" onclick="goToStep(2)" style="font-size: 0.82rem;">
                                 <i class="bi bi-arrow-left"></i> <span>Back<span class="d-none d-sm-inline"> to Offers</span></span>
@@ -1250,7 +1262,7 @@
                     </div>
 
                     <!-- Step 4 Action Buttons (Visible on Step 4) -->
-                    <div id="step-4-summary-actions" class="mt-4 pt-2 mb-3 d-none">
+                    <div id="step-4-summary-actions" class="mt-3 mb-3 d-none">
                         <!-- Mandatory Terms & Conditions Checkbox Card -->
                         <div class="confirm-terms-box" id="confirm-terms-wrapper">
                             <div class="form-check d-flex align-items-start gap-2.5 m-0">
@@ -1295,6 +1307,144 @@
             </a>
         </div>
     </form>
+</div>
+
+
+<!-- ============================================================== -->
+<!-- INTERACTIVE MAP LOCATION PICKER MODAL (AMAZON / SWIGGY STYLE)  -->
+<!-- ============================================================== -->
+<div class="modal fade" id="locationPickerModal" tabindex="-1" aria-labelledby="locationPickerModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <!-- Mobile Pull Handle -->
+            <div class="d-block d-md-none text-center pt-2.5 pb-0.5 bg-white">
+                <div class="mx-auto rounded-pill" style="width: 38px; height: 4px; background: #cbd5e1;"></div>
+            </div>
+            <div class="modal-header bg-white py-2.5 px-3.5 px-md-4 border-bottom d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2.5">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-primary flex-shrink-0" style="width: 34px; height: 34px; background: rgba(79, 70, 229, 0.1);">
+                        <i class="bi bi-geo-alt-fill fs-6"></i>
+                    </div>
+                    <div>
+                        <h6 class="modal-title fw-bold mb-0 text-dark" id="locationPickerModalLabel" style="font-size: 0.95rem;">Select Delivery Location on Map</h6>
+                        <small class="text-muted" style="font-size: 0.72rem;">Drag the pin or search to set your exact doorstep</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body p-0">
+                <!-- Map Container -->
+                <div class="position-relative" style="background: #e2e8f0;">
+                    <div id="delivery-map-container" style="min-height: 290px; height: 290px; width: 100%; z-index: 1; position: relative; background: #e2e8f0;"></div>
+
+                    <!-- Location Permission / Fallback Alert -->
+                    <div id="map-perm-hint" class="position-absolute top-0 start-0 end-0 m-2 alert alert-warning py-1.5 px-3 small d-none d-flex align-items-center justify-content-between shadow rounded-3 border-0" style="z-index: 1050; font-size: 0.74rem;">
+                        <span><i class="bi bi-info-circle-fill me-1.5 text-warning"></i> GPS blocked. Centered via network area. Drag the pin or search above for your exact doorstep.</span>
+                        <button type="button" class="btn-close ms-2" style="font-size: 0.65rem;" onclick="document.getElementById('map-perm-hint').classList.add('d-none')"></button>
+                    </div>
+                    
+                    <!-- Search Location Floating Box -->
+                    <div class="position-absolute top-0 start-0 end-0 p-2.5" style="z-index: 1000; pointer-events: none;">
+                        <div class="input-group shadow-sm rounded-pill overflow-hidden bg-white border" style="pointer-events: auto;">
+                            <span class="input-group-text bg-white border-0 text-muted ps-3 pe-1"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control border-0 py-2" id="map-search-input" placeholder="Search area, colony, or street in India..." style="font-size: 0.84rem;">
+                            <button type="button" class="btn btn-white border-0 text-muted pe-3 d-none" id="btn-clear-map-search" onclick="clearMapSearch()"><i class="bi bi-x-circle-fill"></i></button>
+                        </div>
+                        <div id="map-search-results" class="list-group shadow-sm mt-1 d-none rounded-3 overflow-hidden" style="max-height: 180px; overflow-y: auto; pointer-events: auto; font-size: 0.8rem;"></div>
+                    </div>
+
+                    <!-- Floating Locate Me Button (Target GPS) -->
+                    <button type="button" class="btn btn-light shadow rounded-circle d-flex align-items-center justify-content-center position-absolute bottom-0 end-0 m-3 border" id="btn-locate-me" onclick="recenterToGpsLocation()" title="Locate Me via GPS" style="width: 42px; height: 42px; z-index: 1000; color: #4f46e5;">
+                        <i class="bi bi-crosshair fs-5"></i>
+                    </button>
+                    
+                    <!-- Pin Tip Helper Banner -->
+                    <div class="position-absolute bottom-0 start-0 m-2.5 px-2.5 py-1 rounded-pill bg-dark bg-opacity-75 text-white small" style="z-index: 1000; font-size: 0.72rem;">
+                        <i class="bi bi-pin-map-fill me-1 text-warning"></i> Drag pin or click map to move
+                    </div>
+                </div>
+
+                <!-- Detected Location Summary & Address Form -->
+                <div class="p-3.5 p-md-4 bg-white">
+                    
+                    <!-- Detected Location Pill Bar -->
+                    <div class="p-2.5 rounded-3 mb-3 d-flex align-items-start gap-2.5 border" id="map-detected-badge" style="background: #f8fafc; border-color: #e2e8f0 !important;">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center text-primary flex-shrink-0 mt-0.5" style="width: 26px; height: 26px; background: rgba(79, 70, 229, 0.1);">
+                            <i class="bi bi-geo-alt-fill" style="font-size: 0.85rem;"></i>
+                        </div>
+                        <div class="min-w-0 flex-grow-1">
+                            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                                <span class="fw-bold text-dark small" id="map-detected-area">Detecting location...</span>
+                                <span class="badge bg-primary text-white rounded-pill px-2.5 py-1 font-monospace fw-bold" id="map-detected-zip" style="font-size: 0.72rem;">------</span>
+                            </div>
+                            <div class="text-secondary mt-0.5 text-truncate" id="map-detected-city-state" style="font-size: 0.76rem;">Please allow GPS or search your area.</div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Address Form (House No + Landmark + Contact) -->
+                    <div class="row g-2.5">
+                        <div class="col-12 col-sm-6">
+                            <label for="map_house_no" class="form-label fw-semibold small mb-1" style="font-size: 0.78rem;">Flat / House / Building No. <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm rounded-3 py-1.5" id="map_house_no" placeholder="e.g. Flat 302, Sai Residency">
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label for="map_landmark" class="form-label fw-semibold small mb-1" style="font-size: 0.78rem;">Landmark <span class="text-muted">(Optional)</span></label>
+                            <input type="text" class="form-control form-control-sm rounded-3 py-1.5" id="map_landmark" placeholder="e.g. Near Apollo Pharmacy">
+                        </div>
+                        <div class="col-12">
+                            <label for="map_road_area" class="form-label fw-semibold small mb-1" style="font-size: 0.78rem;">Road / Street / Colony <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm rounded-3 py-1.5" id="map_road_area" placeholder="Detected street or colony">
+                        </div>
+                        <div class="col-12 col-sm-4">
+                            <label for="map_city" class="form-label fw-semibold small mb-1" style="font-size: 0.78rem;">City <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm rounded-3 py-1.5" id="map_city" placeholder="City">
+                        </div>
+                        <div class="col-12 col-sm-4">
+                            <label for="map_state" class="form-label fw-semibold small mb-1" style="font-size: 0.78rem;">State <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm rounded-3 py-1.5" id="map_state" placeholder="State">
+                        </div>
+                        <div class="col-12 col-sm-4">
+                            <label for="map_zip_code" class="form-label fw-semibold small mb-1" style="font-size: 0.78rem;">Pincode <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm rounded-3 font-monospace fw-bold py-1.5" id="map_zip_code" placeholder="6-digit PIN" maxlength="6" inputmode="numeric">
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label for="map_name" class="form-label fw-semibold small mb-1" style="font-size: 0.78rem;">Receiver Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm rounded-3 py-1.5" id="map_name" value="{{ auth()->user()->name ?? '' }}" placeholder="Name" autocomplete="name">
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label for="map_phone" class="form-label fw-semibold small mb-1" style="font-size: 0.78rem;">10-Digit Mobile <span class="text-danger">*</span></label>
+                            <input type="tel" class="form-control form-control-sm rounded-3 py-1.5" id="map_phone" value="{{ auth()->user()->mobile_number ?? '' }}" placeholder="Mobile number" maxlength="10" inputmode="tel" autocomplete="tel" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 10)">
+                        </div>
+                        
+                        <!-- Address Type (Home / Work / Other) -->
+                        <div class="col-12 pt-1">
+                            <label class="form-label fw-semibold small mb-1 d-block" style="font-size: 0.78rem;">Save Address As</label>
+                            <div class="btn-group btn-group-sm w-100" role="group">
+                                <input type="radio" class="btn-check" name="map_address_type" id="map_type_home" value="home" checked autocomplete="off">
+                                <label class="btn btn-outline-secondary py-1" for="map_type_home" style="font-size: 0.76rem;"><i class="bi bi-house me-1"></i>Home</label>
+
+                                <input type="radio" class="btn-check" name="map_address_type" id="map_type_work" value="work" autocomplete="off">
+                                <label class="btn btn-outline-secondary py-1" for="map_type_work" style="font-size: 0.76rem;"><i class="bi bi-briefcase me-1"></i>Work</label>
+
+                                <input type="radio" class="btn-check" name="map_address_type" id="map_type_other" value="other" autocomplete="off">
+                                <label class="btn btn-outline-secondary py-1" for="map_type_other" style="font-size: 0.76rem;"><i class="bi bi-geo me-1"></i>Other</label>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light py-2.5 px-3.5 px-md-4 border-top d-flex justify-content-between align-items-center">
+                <button type="button" class="btn btn-light border rounded-pill px-3.5 py-1.5 btn-sm fw-semibold" data-bs-dismiss="modal" style="font-size: 0.8rem;">Cancel</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4 py-2 btn-sm fw-bold shadow-xs d-inline-flex align-items-center gap-1.5" id="btn-save-map-address" onclick="saveMapAddressToCheckout()" style="background: #4f46e5; border: none; font-size: 0.84rem;">
+                    <i class="bi bi-check2-circle fs-6"></i>
+                    <span>Confirm Location &amp; Deliver Here</span>
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Available Coupons Modal -->
@@ -1392,7 +1542,12 @@
                         <i class="bi bi-geo-alt-fill fs-5"></i>
                     </div>
                     <div>
-                        <h5 class="modal-title fw-bold mb-0 text-dark" id="addressModalLabel" style="font-size: 1.05rem;">Select Saved Address</h5>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <h5 class="modal-title fw-bold mb-0 text-dark" id="addressModalLabel" style="font-size: 1.05rem;">Select Saved Address</h5>
+                                <button type="button" class="btn btn-sm btn-primary rounded-pill px-2.5 py-0.5 fw-semibold d-inline-flex align-items-center gap-1 ms-1 shadow-xs" onclick="const m = bootstrap.Modal.getInstance(document.getElementById('addressSelectorModal')); if (m) m.hide(); openLocationPickerModal(true);" style="font-size: 0.74rem; background: #4f46e5; border-color: #4f46e5;">
+                                    <i class="bi bi-crosshair"></i> Use Current Location
+                                </button>
+                            </div>
                         <small class="text-secondary" style="font-size: 0.78rem;">Choose an address for your order delivery</small>
                     </div>
                 </div>
@@ -1455,6 +1610,7 @@
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
 let userAddresses = {!! json_encode($addresses) !!};
 let currentSelectedAddress = userAddresses.length > 0 ? userAddresses[0] : null;
@@ -1624,9 +1780,10 @@ function goToStep(step) {
     document.getElementById('checkout-step-3-view')?.classList.toggle('d-none', step !== 3);
     document.getElementById('checkout-step-4-view')?.classList.toggle('d-none', step !== 4);
 
-    // Toggle Summary Action Buttons (placed after Price Details)
+    // Toggle Summary Action Buttons & Items Card (placed after Price Details)
     document.getElementById('step-3-summary-actions')?.classList.toggle('d-none', step !== 3);
     document.getElementById('step-4-summary-actions')?.classList.toggle('d-none', step !== 4);
+    document.getElementById('checkout-items-summary-card')?.classList.toggle('d-none', step === 4);
 
     // Update Top Stepper Progress Bar
     const progressLine = document.getElementById('stepper-progress-line');
@@ -2533,6 +2690,12 @@ function applySelectedAddress(addr) {
     document.getElementById('hidden_shipping_city').value = addr.city || '';
     document.getElementById('hidden_shipping_state').value = addr.state || '';
     document.getElementById('hidden_shipping_zip').value = addr.zip || '';
+    const latField = document.getElementById('hidden_shipping_latitude');
+    if (latField) latField.value = addr.latitude || '';
+    const lngField = document.getElementById('hidden_shipping_longitude');
+    if (lngField) lngField.value = addr.longitude || '';
+    const landmarkField = document.getElementById('hidden_shipping_landmark');
+    if (landmarkField) landmarkField.value = addr.landmark || '';
 
     const displayName = document.getElementById('display-name');
     const displayStreetCity = document.getElementById('display-street-city');
@@ -2547,7 +2710,7 @@ function applySelectedAddress(addr) {
     if (activeDetails) activeDetails.style.display = 'block';
     if (noAddrMsg) noAddrMsg.style.display = 'none';
 
-    checkPincodeServiceability(addr.zip);
+    return checkPincodeServiceability(addr.zip);
 }
 
 function selectModalAddress(addr) {
@@ -2556,11 +2719,6 @@ function selectModalAddress(addr) {
     if (modalEl) {
         const modalInstance = bootstrap.Modal.getInstance(modalEl);
         if (modalInstance) modalInstance.hide();
-    }
-    const successBanner = document.getElementById('address-success-banner');
-    if (successBanner) {
-        successBanner.style.display = 'block';
-        setTimeout(() => { successBanner.style.display = 'none'; }, 3000);
     }
 }
 
@@ -2638,7 +2796,7 @@ function handleNewPincodeLookup(val) {
         let isServiceable = false;
         let deliveryMessage = '';
 
-        // 1. Check WiseKart store delivery serviceability first
+        // 1. Check ShopCalm store delivery serviceability first
         try {
             const res = await fetch('{{ route("delivery.check") }}', {
                 method: 'POST',
@@ -2657,7 +2815,7 @@ function handleNewPincodeLookup(val) {
                 deliveryMessage = data.message || `Delivery available to ${data.city || 'your area'}`;
             }
         } catch (err) {
-            console.warn('WiseKart delivery service check failed:', err);
+            console.warn('ShopCalm delivery service check failed:', err);
         }
 
         // 2. Fallback to Postal Pincode Directory if city/state not in local DB or generic
@@ -2855,7 +3013,7 @@ function handleSaveAddress(e) {
         }
         return data;
     })
-    .then(data => {
+    .then(async (data) => {
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = origText;
@@ -2868,7 +3026,7 @@ function handleSaveAddress(e) {
                 userAddresses.unshift(savedAddr);
             }
             renderModalAddressList();
-            applySelectedAddress(savedAddr);
+            const servicePromise = applySelectedAddress(savedAddr);
             closeNewAddressForm();
 
             document.getElementById('new_address').value = '';
@@ -2878,14 +3036,26 @@ function handleSaveAddress(e) {
             const hintEl = document.getElementById('new_zip_lookup_hint');
             if (hintEl) hintEl.textContent = '';
 
-            const successBanner = document.getElementById('address-success-banner');
-            if (successBanner) {
-                successBanner.style.display = 'block';
-                setTimeout(() => { successBanner.style.display = 'none'; }, 3000);
-            }
+            const isServiceable = await servicePromise;
 
-            if (!window.activePendingOrder) {
-                goToStep(2);
+            if (isServiceable) {
+                const successBanner = document.getElementById('address-success-banner');
+                if (successBanner) {
+                    successBanner.style.display = 'block';
+                    setTimeout(() => { successBanner.style.display = 'none'; }, 3000);
+                }
+
+                if (!window.activePendingOrder) {
+                    goToStep(2);
+                }
+            } else {
+                goToStep(1);
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Delivery Unavailable',
+                    text: `Address saved, but ShopCalm currently does not deliver to PIN code ${savedAddr.zip}. Please select or add a serviceable delivery address.`,
+                    confirmButtonColor: '#4f46e5'
+                });
             }
         } else {
             Swal.fire('Error', data.message || 'Could not save address.', 'error');
@@ -2905,13 +3075,16 @@ function checkPincodeServiceability(pincode) {
     const badgeEl = document.getElementById('active-address-serviceability-badge');
     const errorBanner = document.getElementById('address-error-banner');
 
-    if (!pincode) return;
+    if (!pincode) {
+        window.isCurrentAddressServiceable = false;
+        return Promise.resolve(false);
+    }
 
     if (badgeEl) {
         badgeEl.innerHTML = `<span class="badge bg-light text-muted border font-monospace"><span class="spinner-border spinner-border-sm me-1" style="width:0.6rem;height:0.6rem;"></span> Checking PIN ${pincode}...</span>`;
     }
 
-    fetch('{{ route("delivery.check") }}', {
+    return fetch('{{ route("delivery.check") }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -2948,6 +3121,7 @@ function checkPincodeServiceability(pincode) {
             if (typeof updateShippingFeeAndTotal === 'function') {
                 updateShippingFeeAndTotal(data.delivery_charge || 0, data.free_shipping_min || 499);
             }
+            return true;
         } else {
             window.isCurrentAddressServiceable = false;
             window.isCurrentAddressCodAvailable = false;
@@ -2966,10 +3140,13 @@ function checkPincodeServiceability(pincode) {
                 errorBanner.innerHTML = `<i class="bi bi-exclamation-octagon-fill me-2"></i><strong>Delivery Unavailable:</strong> We do not deliver to PIN code <strong>${pincode}</strong>. Please choose a different address.`;
                 errorBanner.style.display = 'block';
             }
+            return false;
         }
     })
     .catch(err => {
         console.error("Serviceability check error:", err);
+        window.isCurrentAddressServiceable = false;
+        return false;
     });
 }
 
@@ -3043,6 +3220,579 @@ function updateCodAvailabilityUI(isAvailable, pincode) {
         if (codNotice) {
             codNotice.classList.add('d-none');
         }
+    }
+}
+
+// ==============================================================
+// LEAFLET INTERACTIVE MAP & DUAL LOCATION PROVIDER (FREE OSM + LOCATIONIQ)
+// ==============================================================
+const LOCATIONIQ_KEY = "{{ config('services.locationiq.key', 'pk.8fcbbfbdafcf2d840b41ffd3c60e443f') }}";
+let deliveryMap = null;
+let deliveryMarker = null;
+let currentMapCoords = { lat: 12.971599, lng: 77.594566 }; // Default Bengaluru (MG Road / Central)
+let isGeocoding = false;
+let searchDebounceTimer = null;
+
+function openLocationPickerModal(forceGps = false) {
+    try {
+        const modalEl = document.getElementById('locationPickerModal');
+        if (!modalEl) {
+            console.error('locationPickerModal element not found');
+            return;
+        }
+        let modal = bootstrap.Modal.getInstance(modalEl);
+        if (!modal) {
+            modal = new bootstrap.Modal(modalEl);
+        }
+        modal.show();
+        setTimeout(() => {
+            if (deliveryMap) {
+                deliveryMap.invalidateSize();
+                if (forceGps) {
+                    recenterToGpsLocation();
+                }
+            }
+        }, 200);
+    } catch (e) {
+        console.error('Error opening locationPickerModal:', e);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const modalEl = document.getElementById('locationPickerModal');
+    if (modalEl) {
+        modalEl.addEventListener('shown.bs.modal', function () {
+            initOrRefreshMap();
+            setTimeout(() => {
+                if (deliveryMap) {
+                    deliveryMap.invalidateSize();
+                    if (deliveryMarker) {
+                        deliveryMap.setView(deliveryMarker.getLatLng(), deliveryMap.getZoom());
+                    }
+                }
+            }, 250);
+        });
+    }
+
+    // Place Search setup
+    const searchInput = document.getElementById('map-search-input');
+    const clearBtn = document.getElementById('btn-clear-map-search');
+    const resultsContainer = document.getElementById('map-search-results');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            const q = this.value.trim();
+            if (clearBtn) clearBtn.classList.toggle('d-none', q.length === 0);
+
+            clearTimeout(searchDebounceTimer);
+            if (q.length < 3) {
+                if (resultsContainer) {
+                    resultsContainer.innerHTML = '';
+                    resultsContainer.classList.add('d-none');
+                }
+                return;
+            }
+
+            searchDebounceTimer = setTimeout(() => {
+                searchPlaces(q);
+            }, 350);
+        });
+    }
+});
+
+function initOrRefreshMap() {
+    if (typeof L === 'undefined') {
+        console.warn('Leaflet library not loaded yet');
+        return;
+    }
+
+    if (!deliveryMap) {
+        deliveryMap = L.map('delivery-map-container', {
+            zoomControl: false
+        }).setView([currentMapCoords.lat, currentMapCoords.lng], 15);
+
+        L.control.zoom({ position: 'bottomright' }).addTo(deliveryMap);
+
+        // 100% Free OpenStreetMap Standard Tiles (No API key needed, reliable global edge CDN)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            subdomains: ['a', 'b', 'c'],
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
+        }).addTo(deliveryMap);
+
+        // Sharp Pin Icon: Tip (17, 44) aligns directly to exact (lat, lng) without extra transform offsets
+        const pinIcon = L.divIcon({
+            className: 'custom-map-pin',
+            html: '<div style="pointer-events: none; width: 34px; height: 44px; position: relative; margin: 0; padding: 0;">' +
+                  '<svg width="34" height="44" viewBox="0 0 384 512" style="display: block; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.35));">' +
+                  '<path fill="#dc2626" d="M172.268 501.67C26.97 291.031 0 269.413 0 192 0 85.961 85.961 0 192 0s192 85.961 192 192c0 77.413-26.97 99.031-172.268 309.67-9.535 13.774-29.93 13.773-39.464 0zM192 272c44.183 0 80-35.817 80-80s-35.817-80-80-80-80 35.817-80 80 35.817 80 80 80z"/>' +
+                  '</svg>' +
+                  '<div style="width: 8px; height: 8px; background: rgba(0,0,0,0.3); border-radius: 50%; position: absolute; left: 13px; bottom: -3px;"></div>' +
+                  '</div>',
+            iconSize: [34, 44],
+            iconAnchor: [17, 44]
+        });
+
+        deliveryMarker = L.marker([currentMapCoords.lat, currentMapCoords.lng], {
+            draggable: true,
+            icon: pinIcon
+        }).addTo(deliveryMap);
+
+        deliveryMarker.on('dragend', function () {
+            const pos = deliveryMarker.getLatLng();
+            currentMapCoords = { lat: pos.lat, lng: pos.lng };
+            reverseGeocode(pos.lat, pos.lng);
+        });
+
+        deliveryMap.on('click', function (e) {
+            deliveryMarker.setLatLng(e.latlng);
+            currentMapCoords = { lat: e.latlng.lat, lng: e.latlng.lng };
+            reverseGeocode(e.latlng.lat, e.latlng.lng);
+        });
+
+        setTimeout(() => {
+            if (deliveryMap) deliveryMap.invalidateSize();
+        }, 150);
+
+        recenterToGpsLocation();
+    } else {
+        deliveryMap.invalidateSize();
+        if (deliveryMarker) {
+            deliveryMap.setView(deliveryMarker.getLatLng(), deliveryMap.getZoom());
+        }
+    }
+}
+
+function recenterToGpsLocation() {
+    const locateBtn = document.getElementById('btn-locate-me');
+    if (locateBtn) locateBtn.innerHTML = '<span class="spinner-border spinner-border-sm" style="width:0.9rem;height:0.9rem;"></span>';
+
+    const permHint = document.getElementById('map-perm-hint');
+    if (permHint) permHint.classList.add('d-none');
+
+    if (!navigator.geolocation) {
+        console.warn("navigator.geolocation not supported on this device/browser");
+        fetchNetworkIpLocation();
+        return;
+    }
+
+    // Phase 1: High-accuracy hardware GPS (Mobile GPS / Location sensor)
+    navigator.geolocation.getCurrentPosition(
+        function (pos) {
+            applyTargetPosition(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+        },
+        function (err) {
+            console.warn("High-accuracy GPS attempt failed (code " + err.code + "), trying standard triangulation...");
+            // Phase 2: Standard Wi-Fi / Cell tower triangulation
+            navigator.geolocation.getCurrentPosition(
+                function (pos2) {
+                    applyTargetPosition(pos2.coords.latitude, pos2.coords.longitude, pos2.coords.accuracy);
+                },
+                function (err2) {
+                    console.warn("Standard geolocation failed (code " + err2.code + "), falling back to network IP location...");
+                    if (err2.code === 1 && permHint) {
+                        permHint.classList.remove('d-none');
+                    }
+                    fetchNetworkIpLocation();
+                },
+                { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
+            );
+        },
+        { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+    );
+}
+
+function applyTargetPosition(lat, lng, accuracy) {
+    const locateBtn = document.getElementById('btn-locate-me');
+    if (locateBtn) locateBtn.innerHTML = '<i class="bi bi-crosshair fs-5"></i>';
+
+    currentMapCoords = { lat, lng };
+    const zoomLevel = (accuracy && accuracy <= 150) ? 18 : 16;
+
+    if (deliveryMap) {
+        deliveryMap.setView([lat, lng], zoomLevel);
+        if (deliveryMarker) {
+            deliveryMarker.setLatLng([lat, lng]);
+        }
+        setTimeout(() => deliveryMap.invalidateSize(), 150);
+    }
+    reverseGeocode(lat, lng);
+}
+
+async function fetchNetworkIpLocation() {
+    const locateBtn = document.getElementById('btn-locate-me');
+    try {
+        const res = await fetch('https://ipwho.is/');
+        const data = await res.json();
+        if (data && data.success && data.latitude && data.longitude) {
+            applyTargetPosition(data.latitude, data.longitude, 2000);
+            return;
+        }
+    } catch (e) {
+        console.warn("ipwho.is failed, trying ipapi.co fallback:", e);
+    }
+
+    try {
+        const res2 = await fetch('https://ipapi.co/json/');
+        const data2 = await res2.json();
+        if (data2 && data2.latitude && data2.longitude) {
+            applyTargetPosition(data2.latitude, data2.longitude, 2000);
+            return;
+        }
+    } catch (e2) {
+        console.warn("ipapi.co failed:", e2);
+    }
+
+    if (locateBtn) locateBtn.innerHTML = '<i class="bi bi-crosshair fs-5"></i>';
+    reverseGeocode(currentMapCoords.lat, currentMapCoords.lng);
+}
+
+function sanitizeToEnglish(str) {
+    if (!str || typeof str !== 'string') return '';
+    // If dual language e.g. 'Road / ರಸ್ತೆ' or 'ರಸ್ತೆ (Road)' or 'Road (ರಸ್ತೆ)'
+    if (str.includes('/') || str.includes('(')) {
+        const parts = str.split(/[/()]/).map(s => s.trim()).filter(Boolean);
+        const latinPart = parts.find(p => /[A-Za-z0-9]/.test(p));
+        if (latinPart) str = latinPart;
+    }
+    // If text contains English/Latin characters along with Indic script, strip Indic characters
+    if (/[A-Za-z]/.test(str)) {
+        return str.replace(/[\u0900-\u0D7F]/g, '').replace(/\s{2,}/g, ' ').trim();
+    }
+    // If entirely Indic script (no Latin letters)
+    if (/^[\u0900-\u0D7F\s,.-]+$/.test(str)) {
+        return '';
+    }
+    return str.trim();
+}
+
+function extractAddressComponents(addr, displayName) {
+    if (!addr && !displayName) return null;
+    addr = addr || {};
+
+    const rawBuilding = addr.building || addr.house_name || addr.house_number || '';
+    const rawRoad = addr.road || addr.street || addr.footway || addr.path || '';
+    const rawColony = addr.colony || addr.neighbourhood || addr.subdivision || addr.quarter || '';
+    const rawSuburb = addr.suburb || addr.residential || addr.commercial || addr.industrial || '';
+    const rawVillage = addr.village || addr.hamlet || addr.locality || '';
+    
+    const building = sanitizeToEnglish(rawBuilding);
+    const road = sanitizeToEnglish(rawRoad);
+    const colony = sanitizeToEnglish(rawColony);
+    const suburb = sanitizeToEnglish(rawSuburb);
+    const village = sanitizeToEnglish(rawVillage);
+
+    const roadParts = [building, road, colony, suburb, village].filter(Boolean);
+    const uniqueRoadParts = [...new Set(roadParts)];
+    
+    let roadStr = uniqueRoadParts.join(', ');
+    if (!roadStr && displayName) {
+        const latinDisplayName = sanitizeToEnglish(displayName);
+        roadStr = latinDisplayName ? latinDisplayName.split(',').slice(0, 3).join(',').trim() : '';
+    }
+
+    let city = sanitizeToEnglish(addr.city || addr.town || addr.municipality || addr.village || addr.county || addr.state_district || '');
+    let state = sanitizeToEnglish(addr.state || '');
+    const zip = (addr.postcode || '').replace(/\D/g, '').slice(0, 6);
+
+    // If city or state were stripped because they were in regional script, extract from English displayName
+    if ((!city || !state) && displayName) {
+        const parts = displayName.split(',').map(s => sanitizeToEnglish(s)).filter(Boolean);
+        if (!city && parts.length >= 2) city = parts[parts.length - 3] || parts[parts.length - 2];
+        if (!state && parts.length >= 1) state = parts[parts.length - 2] || parts[parts.length - 1];
+    }
+
+    return { roadStr, city, state, zip };
+}
+
+async function reverseGeocode(lat, lng) {
+    if (isGeocoding) return;
+    isGeocoding = true;
+
+    const areaEl = document.getElementById('map-detected-area');
+    const zipBadge = document.getElementById('map-detected-zip');
+    const cityStateEl = document.getElementById('map-detected-city-state');
+
+    if (areaEl) areaEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-primary" style="width:0.7rem;height:0.7rem;"></span> Detecting address...';
+    if (zipBadge) zipBadge.textContent = '...';
+
+    let addressData = null;
+
+    // 1. Try LocationIQ primary with STRICT English output (&accept-language=en)
+    if (LOCATIONIQ_KEY && LOCATIONIQ_KEY !== 'pk.your_api_key_here') {
+        try {
+            const url = 'https://us1.locationiq.com/v1/reverse?key=' + LOCATIONIQ_KEY + '&lat=' + lat + '&lon=' + lng + '&format=json&accept-language=en&addressdetails=1&normalizeaddress=1';
+            const res = await fetch(url, {
+                headers: { 'Accept-Language': 'en' }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && (data.address || data.display_name)) {
+                    addressData = extractAddressComponents(data.address, data.display_name);
+                }
+            }
+        } catch (e) {
+            console.warn('LocationIQ reverse failed, falling back to OpenStreetMap Nominatim:', e);
+        }
+    }
+
+    // 2. Free OpenStreetMap Nominatim Fallback with STRICT English output (&accept-language=en)
+    if (!addressData) {
+        try {
+            const nomUrl = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + lat + '&lon=' + lng + '&accept-language=en';
+            const res = await fetch(nomUrl, {
+                headers: {
+                    'User-Agent': 'ShopCalm-App/1.0 (contact@shopcalm.in)',
+                    'Accept-Language': 'en'
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && (data.address || data.display_name)) {
+                    addressData = extractAddressComponents(data.address, data.display_name);
+                }
+            }
+        } catch (e) {
+            console.warn('Nominatim reverse failed:', e);
+        }
+    }
+
+    if (addressData) {
+        if (areaEl) areaEl.textContent = addressData.roadStr || addressData.city || 'Location Pin Dropped';
+        if (zipBadge) zipBadge.textContent = addressData.zip ? addressData.zip : 'PIN --';
+        if (cityStateEl) cityStateEl.textContent = [addressData.city, addressData.state].filter(Boolean).join(', ');
+
+        const roadInput = document.getElementById('map_road_area');
+        const cityInput = document.getElementById('map_city');
+        const stateInput = document.getElementById('map_state');
+        const zipInput = document.getElementById('map_zip_code');
+
+        if (roadInput) roadInput.value = addressData.roadStr;
+        if (cityInput) cityInput.value = addressData.city;
+        if (stateInput) stateInput.value = addressData.state;
+        if (zipInput && addressData.zip) zipInput.value = addressData.zip;
+    } else {
+        if (areaEl) areaEl.textContent = 'Pin Location Selected';
+        if (cityStateEl) cityStateEl.textContent = 'Please confirm your house no and PIN.';
+    }
+
+    isGeocoding = false;
+}
+
+async function searchPlaces(query) {
+    const resultsContainer = document.getElementById('map-search-results');
+    if (!resultsContainer) return;
+
+    let list = [];
+
+    // 1. Try LocationIQ
+    if (LOCATIONIQ_KEY && LOCATIONIQ_KEY !== 'pk.your_api_key_here') {
+        try {
+            const url = 'https://api.locationiq.com/v1/autocomplete?key=' + LOCATIONIQ_KEY + '&q=' + encodeURIComponent(query) + '&countrycodes=in&accept-language=en&limit=5&format=json';
+            const res = await fetch(url);
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    list = data;
+                }
+            }
+        } catch (e) {
+            console.warn('LocationIQ search failed, falling back to OSM:', e);
+        }
+    }
+
+    // 2. Free OpenStreetMap Nominatim Search Fallback (100% Free, No Key Required)
+    if (list.length === 0) {
+        try {
+            const nomUrl = 'https://nominatim.openstreetmap.org/search?format=jsonv2&q=' + encodeURIComponent(query) + '&countrycodes=in&accept-language=en&limit=5';
+            const res = await fetch(nomUrl, { headers: { 'User-Agent': 'ShopCalm-App/1.0 (contact@shopcalm.in)' } });
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    list = data;
+                }
+            }
+        } catch (e) {
+            console.warn('Nominatim search failed:', e);
+        }
+    }
+
+    if (list.length > 0) {
+        resultsContainer.innerHTML = list.map(item => {
+            const cleanName = sanitizeToEnglish(item.display_name || '');
+            const escapedName = cleanName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const lat = item.lat;
+            const lon = item.lon || item.lng;
+            return '<button type="button" class="list-group-item list-group-item-action py-2 px-3 d-flex align-items-center gap-2 border-0 border-bottom" onclick="selectSearchResult(' + lat + ', ' + lon + ', \'' + escapedName + '\')">' +
+                '<i class="bi bi-geo-alt text-primary flex-shrink-0"></i>' +
+                '<span class="text-truncate">' + cleanName + '</span>' +
+            '</button>';
+        }).join('');
+        resultsContainer.classList.remove('d-none');
+    } else {
+        resultsContainer.classList.add('d-none');
+    }
+}
+
+function selectSearchResult(lat, lon, displayName) {
+    const searchInput = document.getElementById('map-search-input');
+    const resultsContainer = document.getElementById('map-search-results');
+    const cleanName = sanitizeToEnglish(displayName);
+    if (searchInput) searchInput.value = cleanName.split(',')[0] || cleanName;
+    if (resultsContainer) resultsContainer.classList.add('d-none');
+
+    currentMapCoords = { lat: parseFloat(lat), lng: parseFloat(lon) };
+    if (deliveryMap) {
+        deliveryMap.flyTo([lat, lon], 16);
+        if (deliveryMarker) {
+            deliveryMarker.setLatLng([lat, lon]);
+        }
+        setTimeout(() => deliveryMap.invalidateSize(), 150);
+    }
+    reverseGeocode(lat, lon);
+}
+
+function clearMapSearch() {
+    const searchInput = document.getElementById('map-search-input');
+    const clearBtn = document.getElementById('btn-clear-map-search');
+    const resultsContainer = document.getElementById('map-search-results');
+    if (searchInput) searchInput.value = '';
+    if (clearBtn) clearBtn.classList.add('d-none');
+    if (resultsContainer) {
+        resultsContainer.innerHTML = '';
+        resultsContainer.classList.add('d-none');
+    }
+}
+
+async function saveMapAddressToCheckout() {
+    const btn = document.getElementById('btn-save-map-address');
+    const origHtml = btn.innerHTML;
+
+    const houseNo = document.getElementById('map_house_no')?.value.trim();
+    const roadArea = document.getElementById('map_road_area')?.value.trim();
+    const landmark = document.getElementById('map_landmark')?.value.trim();
+    const city = document.getElementById('map_city')?.value.trim();
+    const state = document.getElementById('map_state')?.value.trim();
+    const zip = document.getElementById('map_zip_code')?.value.trim();
+    const name = document.getElementById('map_name')?.value.trim();
+    const phone = document.getElementById('map_phone')?.value.trim();
+    const typeEl = document.querySelector('input[name="map_address_type"]:checked');
+    const type = typeEl ? typeEl.value : 'home';
+
+    if (!houseNo) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'House / Flat No Required',
+            text: 'Please enter your Flat / House or Building Number to help the delivery partner find your doorstep.',
+            confirmButtonColor: '#4f46e5'
+        });
+        document.getElementById('map_house_no')?.focus();
+        return;
+    }
+
+    if (!zip || zip.length !== 6 || !/^\d{6}$/.test(zip)) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Valid 6-Digit PIN Required',
+            text: 'Please ensure a valid 6-digit Indian PIN code is entered.',
+            confirmButtonColor: '#4f46e5'
+        });
+        document.getElementById('map_zip_code')?.focus();
+        return;
+    }
+
+    if (!name) {
+        Swal.fire('Error', 'Please enter receiver full name.', 'error');
+        document.getElementById('map_name')?.focus();
+        return;
+    }
+
+    if (!phone || phone.length !== 10 || !/^\d{10}$/.test(phone)) {
+        Swal.fire({
+            icon: 'warning',
+            title: '10-Digit Mobile Required',
+            text: 'Please enter a valid 10-digit mobile number for delivery updates.',
+            confirmButtonColor: '#4f46e5'
+        });
+        document.getElementById('map_phone')?.focus();
+        return;
+    }
+
+    const fullStreetAddress = [houseNo, roadArea, landmark].filter(Boolean).join(', ');
+
+    const payload = {
+        name: name,
+        phone: phone,
+        address: fullStreetAddress,
+        city: city || 'City',
+        state: state || 'State',
+        zip: zip,
+        country: 'India',
+        latitude: currentMapCoords.lat,
+        longitude: currentMapCoords.lng,
+        landmark: landmark || null,
+        type: type,
+        is_default: true
+    };
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving Location...';
+
+    try {
+        const res = await fetch('{{ route("checkout.save-address") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.message || 'Could not save address.');
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+
+        const modalEl = document.getElementById('locationPickerModal');
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) modalInstance.hide();
+
+        const savedAddr = data.address || payload;
+        if (Array.isArray(data.all_addresses)) {
+            userAddresses = data.all_addresses;
+        } else {
+            userAddresses.unshift(savedAddr);
+        }
+        renderModalAddressList();
+        const isServiceable = await applySelectedAddress(savedAddr);
+
+        if (isServiceable) {
+            const successBanner = document.getElementById('address-success-banner');
+            if (successBanner) {
+                successBanner.style.display = 'block';
+                setTimeout(() => { successBanner.style.display = 'none'; }, 3000);
+            }
+            if (!window.activePendingOrder) {
+                goToStep(2);
+            }
+        } else {
+            goToStep(1);
+            Swal.fire({
+                icon: 'warning',
+                title: 'Delivery Unavailable',
+                text: 'Location saved, but ShopCalm currently does not deliver to PIN code ' + savedAddr.zip + '. Please select or add a serviceable delivery address.',
+                confirmButtonColor: '#4f46e5'
+            });
+        }
+    } catch (err) {
+        console.error("Save map address error:", err);
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+        Swal.fire('Error', err.message || 'Could not save address.', 'error');
     }
 }
 </script>

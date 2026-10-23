@@ -282,13 +282,17 @@ class CheckoutController extends Controller
     public function saveAddress(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'required|string|max:20',
-            'address' => 'required|string|max:500',
-            'city' => 'required|string|max:100',
-            'state' => 'required|string|max:100',
-            'zip' => 'required|string|max:20',
-            'country' => 'nullable|string|max:100',
+            'name'      => 'required|string|max:255',
+            'phone'     => 'required|string|max:20',
+            'address'   => 'required|string|max:500',
+            'city'      => 'required|string|max:100',
+            'state'     => 'required|string|max:100',
+            'zip'       => 'required|string|max:20',
+            'country'   => 'nullable|string|max:100',
+            'latitude'  => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'landmark'  => 'nullable|string|max:255',
+            'type'      => 'nullable|string|max:50',
         ]);
 
         $user = Auth::guard('customer')->user() ?? Auth::user();
@@ -300,13 +304,17 @@ class CheckoutController extends Controller
         }
 
         $newAddress = $user->addresses()->create([
-            'name' => $validated['name'],
-            'phone' => $validated['phone'],
-            'address' => $validated['address'],
-            'city' => $validated['city'],
-            'state' => $validated['state'],
-            'zip' => $validated['zip'],
-            'country' => $validated['country'] ?? 'India',
+            'name'      => $validated['name'],
+            'phone'     => $validated['phone'],
+            'address'   => $validated['address'],
+            'city'      => $validated['city'],
+            'state'     => $validated['state'],
+            'zip'       => $validated['zip'],
+            'country'   => $validated['country'] ?? 'India',
+            'latitude'  => $validated['latitude'] ?? null,
+            'longitude' => $validated['longitude'] ?? null,
+            'landmark'  => $validated['landmark'] ?? null,
+            'type'      => $validated['type'] ?? 'home',
         ]);
 
         return response()->json([

@@ -1,4 +1,4 @@
-@if(!request()->routeIs('product.show'))
+@if(!request()->routeIs('checkout.*'))
 <!-- ============================================================ -->
 <!-- 📱 APP-LIKE STICKY MOBILE BOTTOM NAVIGATION BAR -->
 <!-- ============================================================ -->

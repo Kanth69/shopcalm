@@ -153,6 +153,15 @@ class OrderController extends Controller
         $newStatus = $request->status;
         $notes     = $request->notes;
 
+        // Delivery completion for local fleet / rider-assigned orders must be performed exclusively by the delivery partner via OTP verification
+        if ($newStatus === 'delivered' && ($order->isLocalBengaluruDelivery() || $order->rider_id)) {
+            $msg = "Delivery completion is restricted to the assigned delivery partner. The rider must verify the customer's Handover OTP at the doorstep to complete delivery.";
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return back()->with('error', $msg);
+        }
+
         DB::transaction(function () use ($order, $newStatus, $notes) {
             $previousStatus = $order->status;
             $staffId = Auth::guard('order_manager')->id() ?? Auth::guard('admin')->id() ?? Auth::id();
@@ -197,6 +206,15 @@ class OrderController extends Controller
                 'notes'           => $notes ?: "Status updated to " . ucfirst(str_replace('_', ' ', $newStatus)) . " by Order Manager.",
             ]);
 
+            // If marked as out for delivery, automatically trigger WhatsApp Notification with Handover OTP
+            if ($newStatus === 'out for delivery' && $order->isLocalBengaluruDelivery()) {
+                try {
+                    app(\App\Services\WhatsAppService::class)->sendOutForDeliveryLocal($order);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("[OrderManager OrderController] WhatsApp Out For Delivery notification failed: " . $e->getMessage());
+                }
+            }
+
             // If marked as delivered, trigger Tiered Referral Milestone Rewards & WhatsApp Notification
             if ($newStatus === 'delivered') {
                 app(\App\Services\WalletService::class)->rewardReferrerOnDeliveredOrder($order);
@@ -224,6 +242,32 @@ class OrderController extends Controller
             'type'    => 'success',
             'title'   => 'Order Status Updated',
             'message' => "Order #{$order->order_number} is now marked as " . ucfirst(str_replace('_', ' ', $newStatus)) . ".",
+        ]);
+    }
+
+    /**
+     * Trigger / Resend WhatsApp Out For Delivery message with Handover OTP to customer.
+     */
+    public function sendOtpWhatsApp(Request $request, Order $order): RedirectResponse|\Illuminate\Http\JsonResponse
+    {
+        $sent = app(\App\Services\WhatsAppService::class)->sendOutForDeliveryLocal($order);
+
+        $customerPhone = $order->shipping_phone ?? $order->user?->mobile_number ?? 'Customer';
+        $msg = $sent 
+            ? "WhatsApp Out for Delivery notification with OTP ({$order->delivery_otp}) has been sent to {$customerPhone}."
+            : "Could not send automated WhatsApp message. Please check API credentials or use the 1-click WhatsApp button.";
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => $sent,
+                'message' => $msg,
+            ]);
+        }
+
+        return back()->with('toast', [
+            'type'    => $sent ? 'success' : 'error',
+            'title'   => $sent ? 'WhatsApp Dispatched' : 'Dispatch Failed',
+            'message' => $msg,
         ]);
     }
 

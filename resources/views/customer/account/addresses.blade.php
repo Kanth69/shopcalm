@@ -365,7 +365,7 @@ function handleAddressModalPincode(pincode) {
         let isServiceable = false;
         let deliveryMessage = '';
 
-        // 1. Check WiseKart store delivery serviceability first
+        // 1. Check ShopCalm store delivery serviceability first
         try {
             const res = await fetch("{{ route('delivery.check') }}", {
                 method: 'POST',

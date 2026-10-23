@@ -229,6 +229,7 @@ $registerStaffRoutes = function () {
             Route::get('orders/{order}/invoice', [\App\Http\Controllers\OrderManager\OrderController::class, 'invoice'])->name('orders.invoice');
             Route::get('orders/{order}/packing-slip', [\App\Http\Controllers\OrderManager\OrderController::class, 'packingSlip'])->name('orders.packing-slip');
             Route::get('orders/{order}/shipping-label', [\App\Http\Controllers\OrderManager\OrderController::class, 'shippingLabel'])->name('orders.shipping-label');
+            Route::post('orders/{order}/send-otp-whatsapp', [\App\Http\Controllers\OrderManager\OrderController::class, 'sendOtpWhatsApp'])->name('orders.send-otp-whatsapp');
             Route::match(['get', 'post'], 'orders/bulk/shipping-labels', [\App\Http\Controllers\OrderManager\OrderController::class, 'bulkShippingLabels'])->name('orders.bulk-shipping-labels');
             Route::post('orders/auto-assign-riders', [\App\Http\Controllers\OrderManager\OrderController::class, 'autoAssignRiders'])->name('orders.auto-assign-riders');
             Route::get('live-orders', [\App\Http\Controllers\StaffNotificationController::class, 'liveOrders'])->name('live-orders');
@@ -291,6 +292,7 @@ $registerStaffRoutes = function () {
             Route::get('orders/{order}', [\App\Http\Controllers\Delivery\DeliveryDashboardController::class, 'show'])->name('orders.show');
             Route::get('orders/{order}/check-payment', [\App\Http\Controllers\Delivery\DeliveryDashboardController::class, 'checkPayment'])->name('orders.check-payment');
             Route::post('orders/{order}/confirm-doorstep-upi', [\App\Http\Controllers\Delivery\DeliveryDashboardController::class, 'confirmDoorstepUpi'])->name('orders.confirm-doorstep-upi');
+            Route::post('orders/{order}/send-otp-whatsapp', [\App\Http\Controllers\Delivery\DeliveryDashboardController::class, 'sendOtpWhatsApp'])->name('orders.send-otp-whatsapp');
             Route::post('orders/{order}/complete', [\App\Http\Controllers\Delivery\DeliveryDashboardController::class, 'completeDelivery'])->name('orders.complete');
             Route::post('orders/{order}/report-issue', [\App\Http\Controllers\Delivery\DeliveryDashboardController::class, 'reportIssue'])->name('orders.report-issue');
         });
