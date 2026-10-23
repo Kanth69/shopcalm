@@ -9,22 +9,22 @@
     {{-- Category Top Header (Clean Vibrant Gradient Banner) --}}
     <div class="card border-0 shadow-sm rounded-4 mb-3 mb-md-4 overflow-hidden" 
          style="background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #7c3aed 100%); box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25) !important;">
-        <div class="card-body p-3 p-md-4">
+        <div class="card-body p-2.5 p-sm-3 p-md-4">
             <div class="d-flex align-items-center justify-content-between gap-2">
                 {{-- Left: Back Arrow + Title + Count --}}
-                <div class="d-flex align-items-center min-w-0">
-                    <a href="{{ route('categories.index') }}" class="btn rounded-circle p-0 d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs" 
-                       style="width: 38px; height: 38px; color: #ffffff; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.35); backdrop-filter: blur(6px); margin-right: 14px !important;" 
+                <div class="d-flex align-items-center min-w-0 flex-grow-1 pe-1">
+                    <a href="{{ route('categories.index') }}" class="btn rounded-circle p-0 d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs me-2 me-sm-3" 
+                       style="width: 36px; height: 36px; color: #ffffff; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.35); backdrop-filter: blur(6px);" 
                        title="All Categories">
                         <i class="bi bi-arrow-left fs-6"></i>
                     </a>
-                    <div class="min-w-0">
-                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <h1 class="h5 fw-bold text-white mb-0 text-truncate" style="font-size: clamp(1.1rem, 2.3vw, 1.4rem); letter-spacing: -0.01em;">
+                    <div class="min-w-0 flex-grow-1">
+                        <div class="d-flex align-items-center gap-1.5 gap-sm-2 flex-wrap">
+                            <h1 class="h5 fw-bold text-white mb-0 text-truncate" style="font-size: clamp(1rem, 2.5vw, 1.35rem); letter-spacing: -0.01em;">
                                 {{ $category->name }}
                             </h1>
-                            <span class="badge rounded-pill fw-bold" 
-                                  style="background: rgba(255, 255, 255, 0.22); color: #ffffff; font-size: 0.72rem; border: 1px solid rgba(255, 255, 255, 0.4); backdrop-filter: blur(4px);">
+                            <span class="badge rounded-pill fw-bold text-nowrap" 
+                                  style="background: rgba(255, 255, 255, 0.22); color: #ffffff; font-size: 0.7rem; border: 1px solid rgba(255, 255, 255, 0.4); backdrop-filter: blur(4px);">
                                 {{ number_format($products->total()) }} {{ Str::plural('Item', $products->total()) }}
                             </span>
                         </div>
@@ -35,10 +35,11 @@
                 </div>
 
                 {{-- Right: Quick Action Button --}}
-                <div class="d-flex align-items-center flex-shrink-0">
-                    <a href="{{ route('shop') }}" class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-xs transition-all hover-elevate" 
-                       style="font-size: 0.82rem; background: #ffffff; color: #4f46e5; border: none;">
-                        <i class="bi bi-shop me-1"></i> <span>Shop</span>
+                <div class="d-flex align-items-center flex-shrink-0 ms-auto">
+                    <a href="{{ route('shop') }}" class="btn btn-sm rounded-pill px-2.5 px-sm-3 py-1.5 fw-bold shadow-xs transition-all hover-elevate d-inline-flex align-items-center gap-1.5 text-decoration-none" 
+                       style="font-size: 0.82rem; background: #ffffff; color: #4f46e5; border: none;"
+                       title="Browse Shop">
+                        <i class="bi bi-shop fs-6"></i> <span>Shop</span>
                     </a>
                 </div>
             </div>

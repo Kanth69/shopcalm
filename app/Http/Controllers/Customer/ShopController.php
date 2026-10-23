@@ -54,7 +54,15 @@ class ShopController extends Controller
             return Category::where('status', 'Active')->orderBy('name')->take(10)->get();
         });
         $brands = Cache::remember('home_brands', 3600, function () {
-            return Brand::where('status', 1)->orderBy('name')->take(10)->get();
+            return Brand::where('status', 1)
+                ->withCount(['products' => fn($q) => $q->where('status', 'Active')])
+                ->orderBy('products_count', 'desc')
+                ->orderBy('name', 'asc')
+                ->take(6)
+                ->get();
+        });
+        $totalBrandsCount = Cache::remember('home_total_brands_count', 3600, function () {
+            return Brand::where('status', 1)->count();
         });
 
         $flashDeals = $offerService->getLiveFlashDeals();
@@ -126,7 +134,8 @@ class ShopController extends Controller
             'upcomingDeal',
             'testimonials',
             'exploreProducts',
-            'totalExploreCount'
+            'totalExploreCount',
+            'totalBrandsCount'
         ));
     }
 
@@ -258,7 +267,10 @@ class ShopController extends Controller
         if ($request->boolean('featured')) {
             $query->where('featured', true);
         }
-        if ($request->boolean('on_sale') || $request->filled('offer')) {
+        if ($request->boolean('in_stock')) {
+            $query->where('stock', '>', 0);
+        }
+        if ($request->boolean('only_discounted') || $request->boolean('on_sale') || $request->filled('offer')) {
             $liveOffers = \App\Models\Offer::live()->with('targets')->get();
             if ($liveOffers->isNotEmpty()) {
                 $targetCatIds = [];
@@ -285,6 +297,8 @@ class ShopController extends Controller
                         if (!empty($targetProductIds)) $q->orWhereIn('id', $targetProductIds);
                     });
                 }
+            } else {
+                $query->whereRaw('1 = 0');
             }
         }
 
@@ -318,7 +332,7 @@ class ShopController extends Controller
                 'product_grid_html'   => view('customer.components.shop.product-grid', compact('products'))->render(),
                 'pagination_html'     => $products->links('pagination::bootstrap-5')->render(),
                 'product_count'       => $products->total(),
-                'active_filters_html' => view('customer.components.active-filters')->render(),
+                'active_filters_html' => '',
                 'has_more'            => $products->hasMorePages(),
                 'next_page'           => $products->hasMorePages() ? $products->currentPage() + 1 : null,
                 'current_page'        => $products->currentPage(),
@@ -329,10 +343,20 @@ class ShopController extends Controller
         }
 
         $categories = Cache::remember('all_categories', 3600, function () {
-            return Category::where('status', 'Active')->orderBy('name')->get();
+            return Category::where('status', 'Active')
+                ->withCount(['products' => function ($q) {
+                    $q->where('status', 'Active');
+                }])
+                ->orderBy('name')
+                ->get();
         });
         $brands = Cache::remember('all_brands', 3600, function () {
-            return Brand::where('status', 1)->orderBy('name')->get();
+            return Brand::where('status', 1)
+                ->withCount(['products' => function ($q) {
+                    $q->where('status', 'Active');
+                }])
+                ->orderBy('name')
+                ->get();
         });
 
         return view('customer.shop', compact('products', 'categories', 'brands', 'didYouMean'));
@@ -347,9 +371,16 @@ class ShopController extends Controller
 
         if (!empty($categoryIds)) {
             $brandsQuery->whereHas('products', function ($q) use ($categoryIds) {
-                $q->whereIn('category_id', $categoryIds);
+                $q->whereIn('category_id', $categoryIds)->where('status', 'Active');
             });
         }
+
+        $brandsQuery->withCount(['products' => function ($q) use ($categoryIds) {
+            $q->where('status', 'Active');
+            if (!empty($categoryIds)) {
+                $q->whereIn('category_id', $categoryIds);
+            }
+        }]);
 
         $brands = $brandsQuery->orderBy('name')->get();
 

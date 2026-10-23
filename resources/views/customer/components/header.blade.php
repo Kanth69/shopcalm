@@ -211,8 +211,15 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
                     @else
-                        <a href="{{ route('login') }}" class="btn btn-outline-primary rounded-pill px-2.5 px-sm-3.5 py-1 fw-semibold d-flex align-items-center gap-1.5" style="font-size: 0.82rem;">
-                            <i class="bi bi-person"></i> <span class="d-none d-sm-inline">Sign In</span>
+                        {{-- Desktop: Pill with text & icon --}}
+                        <a href="{{ route('login') }}" class="btn btn-outline-primary rounded-pill px-3 py-1 fw-semibold d-none d-sm-inline-flex align-items-center gap-1.5 shadow-2xs" style="font-size: 0.82rem;">
+                            <i class="bi bi-person fs-6"></i> <span>Sign In</span>
+                        </a>
+                        {{-- Mobile: Perfectly aligned 34px circular button --}}
+                        <a href="{{ route('login') }}" class="btn btn-light rounded-circle p-0 d-inline-flex d-sm-none align-items-center justify-content-center text-primary border shadow-2xs flex-shrink-0" 
+                           style="width: 34px; height: 34px; background: rgba(99, 102, 241, 0.08); border-color: rgba(99, 102, 241, 0.25) !important;" 
+                           title="Sign In">
+                            <i class="bi bi-person fs-5"></i>
                         </a>
                     @endauth
                 </div>
@@ -300,6 +307,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         @empty
                             <span class="drawer-sublink text-muted">No categories</span>
                         @endforelse
+                        @if(count($menuCategories ?? []) > 0)
+                            <a href="{{ route('categories.index') }}" class="drawer-sublink text-primary fw-bold pt-1 d-inline-flex align-items-center gap-1">
+                                <span>All Categories</span> <i class="bi bi-arrow-right small"></i>
+                            </a>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -321,6 +333,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         @empty
                             <span class="drawer-sublink text-muted">No brands</span>
                         @endforelse
+                        @if(count($menuBrands ?? []) > 0)
+                            <a href="{{ route('brands.index') }}" class="drawer-sublink text-primary fw-bold pt-1 d-inline-flex align-items-center gap-1">
+                                <span>All Brands</span> <i class="bi bi-arrow-right small"></i>
+                            </a>
+                        @endif
                     </div>
                 </div>
             </div>

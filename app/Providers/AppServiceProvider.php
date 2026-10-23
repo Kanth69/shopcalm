@@ -100,7 +100,7 @@ class AppServiceProvider extends ServiceProvider
                 });
 
                 $menuBrands = \Illuminate\Support\Facades\Cache::remember('menu_brands', 3600, function() {
-                    return \App\Models\Brand::where('status', 'Active')->orderBy('name')->take(8)->get();
+                    return \App\Models\Brand::where('status', 1)->orderBy('name')->take(12)->get();
                 });
 
                 $customerViewShared = [

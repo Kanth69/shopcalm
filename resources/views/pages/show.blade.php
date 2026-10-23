@@ -2,6 +2,8 @@
 
 @if($page->slug === 'about-us')
     @include('pages.about_corporate', ['page' => $page])
+@elseif($page->slug === 'faq')
+    @include('pages.faq', ['page' => $page])
 @else
 
 @php

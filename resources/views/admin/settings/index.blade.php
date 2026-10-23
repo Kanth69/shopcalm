@@ -477,68 +477,12 @@
                 </div>
             </div>
 
-            <!-- 6. Homepage Trust Badges & Promises -->
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 settings-section" id="section-trust">
-                <div class="card-header bg-white py-3.5 px-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <div>
-                        <h6 class="mb-0 fw-bold text-dark d-flex align-items-center">
-                            <i class="bi bi-patch-check-fill text-primary fs-5 me-2"></i>6. Homepage Trust Badges & Guarantees
-                        </h6>
-                        <small class="text-muted">Highlight trust factors, guarantees, and support assurances on the storefront homepage.</small>
-                    </div>
-                    <div class="form-check form-switch mb-0">
-                        <input type="hidden" name="enable_trust_badges" value="0">
-                        <input class="form-check-input" type="checkbox" name="enable_trust_badges" value="1" id="enable_trust_badges" {{ ($settings['enable_trust_badges'] ?? '1') == '1' ? 'checked' : '' }} style="width: 2.8em; height: 1.45em; cursor: pointer;">
-                        <label class="form-check-label small fw-bold text-muted ms-1" for="enable_trust_badges">Display Badges</label>
-                    </div>
-                </div>
-                <div class="card-body p-4 p-md-4">
-                    <div class="row g-4 mb-4">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark small mb-2"><i class="bi bi-truck text-primary me-1"></i>Badge 1: Free Delivery Title</label>
-                            <input type="text" name="trust_badge_1_title" class="form-control" value="{{ $settings['trust_badge_1_title'] ?? 'Free Delivery' }}" placeholder="Free Delivery">
-                            <div class="mt-2">
-                                <label class="form-label fw-semibold text-muted small mb-1">Badge 1 Subtext / Criteria</label>
-                                <input type="text" name="trust_badge_1_desc" class="form-control form-control-sm text-muted" value="{{ $settings['trust_badge_1_desc'] ?? ('Orders ₹' . ($settings['free_shipping_min'] ?? '499') . '+') }}" placeholder="Orders ₹499+">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark small mb-2"><i class="bi bi-shield-check text-success me-1"></i>Badge 2: Secure Payment Title</label>
-                            <input type="text" name="trust_badge_2_title" class="form-control" value="{{ $settings['trust_badge_2_title'] ?? 'Secure Checkout' }}" placeholder="Secure Checkout">
-                            <div class="mt-2">
-                                <label class="form-label fw-semibold text-muted small mb-1">Badge 2 Subtext / Criteria</label>
-                                <input type="text" name="trust_badge_2_desc" class="form-control form-control-sm text-muted" value="{{ $settings['trust_badge_2_desc'] ?? '100% Encrypted' }}" placeholder="100% Encrypted">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row g-4">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark small mb-2"><i class="bi bi-patch-check text-warning me-1"></i>Badge 3: Authenticity Title</label>
-                            <input type="text" name="trust_badge_3_title" class="form-control" value="{{ $settings['trust_badge_3_title'] ?? '100% Genuine' }}" placeholder="100% Genuine">
-                            <div class="mt-2">
-                                <label class="form-label fw-semibold text-muted small mb-1">Badge 3 Subtext / Criteria</label>
-                                <input type="text" name="trust_badge_3_desc" class="form-control form-control-sm text-muted" value="{{ $settings['trust_badge_3_desc'] ?? 'Direct From Brands' }}" placeholder="Direct From Brands">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark small mb-2"><i class="bi bi-headset text-info me-1"></i>Badge 4: Support Title</label>
-                            <input type="text" name="trust_badge_4_title" class="form-control" value="{{ $settings['trust_badge_4_title'] ?? 'Fast Support' }}" placeholder="Fast Support">
-                            <div class="mt-2">
-                                <label class="form-label fw-semibold text-muted small mb-1">Badge 4 Subtext / Criteria</label>
-                                <input type="text" name="trust_badge_4_desc" class="form-control form-control-sm text-muted" value="{{ $settings['trust_badge_4_desc'] ?? 'Helpdesk Available' }}" placeholder="Helpdesk Available">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 7. Customer Order Cancellation Controls -->
+            <!-- 6. Customer Order Cancellation Controls -->
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 settings-section" id="section-cancellation">
                 <div class="card-header bg-white py-3.5 px-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
                     <div>
                         <h6 class="mb-0 fw-bold text-dark d-flex align-items-center">
-                            <i class="bi bi-x-circle-fill text-danger fs-5 me-2"></i>7. Customer Self-Service Cancellation Control
+                            <i class="bi bi-x-circle-fill text-danger fs-5 me-2"></i>6. Customer Self-Service Cancellation Control
                         </h6>
                         <small class="text-muted">Give customers permission to cancel unshipped orders directly from their account orders page.</small>
                     </div>

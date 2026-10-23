@@ -39,7 +39,7 @@
                     <a href="{{ route('home') }}" class="btn btn-outline-light rounded-pill px-3 py-1.5 fw-semibold btn-sm" style="font-size: 0.78rem; border-color: rgba(255,255,255,0.25);">
                         <i class="bi bi-house me-1"></i> Home
                     </a>
-                    @if(request()->boolean('on_sale') || request()->filled('offer') || request()->filled('category') || request()->filled('brand') || request()->filled('min_price') || request()->filled('max_price'))
+                    @if(request()->boolean('on_sale') || request()->filled('offer') || request()->filled('category') || request()->filled('brand') || request()->filled('min_price') || request()->filled('max_price') || request()->boolean('only_discounted') || request()->boolean('featured') || request()->boolean('in_stock'))
                         <a href="{{ route('shop') }}" class="btn btn-primary rounded-pill px-3 py-1.5 fw-semibold btn-sm shadow-sm" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border: none; font-size: 0.78rem;">
                             <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
                         </a>
@@ -60,7 +60,7 @@
                         style="background: #0f172a; border-color: #0f172a; font-size: 0.82rem; letter-spacing: -0.01em;">
                     <i class="bi bi-sliders2"></i> Filter
                     @php
-                        $filterCount = count((array)request('category', [])) + count((array)request('brand', [])) + (request('min_price') || request('max_price') ? 1 : 0) + (request('only_discounted') ? 1 : 0) + (request('featured') ? 1 : 0);
+                        $filterCount = count((array)request('category', [])) + count((array)request('brand', [])) + (request('min_price') || request('max_price') ? 1 : 0) + (request('only_discounted') ? 1 : 0) + (request('featured') ? 1 : 0) + (request('in_stock') ? 1 : 0);
                     @endphp
                     <span id="filter-count-badge" class="badge rounded-pill bg-primary ms-0.5 px-1.5 py-0.5" style="font-size: 0.68rem; display: {{ $filterCount > 0 ? 'inline-block' : 'none' }};">{{ $filterCount }}</span>
                 </button>
@@ -188,10 +188,7 @@
         </div>
     @endif
 
-    {{-- 4. Active Filter Chips --}}
-    <div id="active-filter-chips" class="mb-3 d-flex flex-wrap gap-2 align-items-center">
-        @include('customer.components.active-filters')
-    </div>
+
 
     {{-- 5. Full Width Products Container & Grid (4 per row on Desktop, 3 on Tablet, 2 on Mobile) --}}
     <div id="products-container" class="position-relative min-vh-50">
@@ -234,19 +231,18 @@
 </div>
 
 {{-- 6. Slide-in Offcanvas Filters Drawer (Opens smoothly on Desktop & Mobile) --}}
-<div class="offcanvas offcanvas-start border-0 shadow-lg" tabindex="-1" id="offcanvasFilters" aria-labelledby="offcanvasFiltersLabel" style="width: 380px; max-width: 90vw; z-index: 1060;">
-    <div class="offcanvas-header bg-white py-3 px-3 px-sm-4 border-bottom d-flex align-items-center justify-content-between">
-        <div class="d-flex align-items-center" style="gap: 1rem !important;">
-            <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
-                 style="width: 44px; height: 44px; background: #ede9fe; color: #6366f1; font-size: 1.25rem;">
-                <i class="bi bi-funnel-fill"></i>
+<div class="offcanvas offcanvas-start border-0 shadow-lg" tabindex="-1" id="offcanvasFilters" aria-labelledby="offcanvasFiltersLabel" style="width: 320px; max-width: 85vw; z-index: 1060;">
+    <div class="offcanvas-header bg-white py-2.5 px-3 border-bottom d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+            <div class="rounded-2 d-flex align-items-center justify-content-center flex-shrink-0" 
+                 style="width: 30px; height: 30px; background: #ede9fe; color: #6366f1; font-size: 0.95rem;">
+                <i class="bi bi-sliders2"></i>
             </div>
             <div>
-                <h5 class="offcanvas-title fw-bolder mb-0 text-dark" id="offcanvasFiltersLabel" style="font-size: 1.1rem; letter-spacing: -0.01em;">Filter & Refine</h5>
-                <div class="text-muted small" style="font-size: 0.78rem; margin-top: 2px;">Customize your product view</div>
+                <h6 class="offcanvas-title fw-bold mb-0 text-dark" id="offcanvasFiltersLabel" style="font-size: 0.92rem;">Filter Products</h6>
             </div>
         </div>
-        <button type="button" class="btn-close shadow-none" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-sm shadow-none" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     
     <div class="offcanvas-body p-0 d-flex flex-column" style="background: #ffffff;">

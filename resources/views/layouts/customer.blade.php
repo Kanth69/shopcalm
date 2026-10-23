@@ -50,11 +50,11 @@
 
     @stack('styles')
 </head>
-<body class="bg-light">
+<body class="bg-light d-flex flex-column min-vh-100">
 
     @include('customer.components.header')
 
-    <main class="py-4">
+    <main class="{{ request()->routeIs('home') ? 'flex-grow-1 p-0' : 'flex-grow-1 py-3 py-md-4' }}">
         @yield('content')
     </main>
 

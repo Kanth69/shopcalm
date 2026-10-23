@@ -71,11 +71,7 @@
 .mobile-nav-item.active {
     color: #1e40af !important;
 }
-@media (max-width: 767.98px) {
-    body {
-        padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)) !important;
-    }
-}
+
 </style>
 @endif
 

@@ -1,11 +1,9 @@
 <section class="hero-section container px-3 px-md-4 my-2 my-md-4">
-    <div class="row g-3 align-items-stretch hero-row-responsive">
+    <div class="position-relative">
+        <div id="heroCarousel" class="carousel slide carousel-fade shadow rounded-4 overflow-hidden" data-bs-ride="{{ (isset($banners) && $banners->count() > 1) ? 'carousel' : 'false' }}" data-bs-interval="4500" data-bs-pause="hover">
 
-        {{-- Left: Main Carousel --}}
-        <div class="col-12 col-md-8">
-            <div id="heroCarousel" class="carousel slide carousel-fade h-100 shadow rounded-4 overflow-hidden" data-bs-ride="carousel" data-bs-interval="4500" data-bs-pause="hover">
-
-                {{-- Indicators --}}
+            {{-- Indicators --}}
+            @if(isset($banners) && $banners->count() > 1)
                 <div class="carousel-indicators mb-2 mb-md-3 gap-1.5 z-3">
                     @foreach($banners as $index => $banner)
                         <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="{{ $index }}"
@@ -14,38 +12,46 @@
                                 aria-label="Slide {{ $index + 1 }}"></button>
                     @endforeach
                 </div>
+            @endif
 
-                <div class="carousel-inner h-100 rounded-4">
-                    @foreach($banners as $index => $banner)
-                        <div class="carousel-item h-100 {{ $index === 0 ? 'active' : '' }}">
-                            @php
-                                $hasDesktop = !empty($banner->desktop_image);
-                                $hasMobile  = !empty($banner->mobile_image);
-                                $hasImage   = $hasDesktop || $hasMobile;
-                                $desktopPath = $hasDesktop ? (str_starts_with($banner->desktop_image, 'http') ? $banner->desktop_image : asset('storage/' . $banner->desktop_image)) : null;
-                                $mobilePath  = $hasMobile ? (str_starts_with($banner->mobile_image, 'http') ? $banner->mobile_image : asset('storage/' . $banner->mobile_image)) : $desktopPath;
+            <div class="carousel-inner h-100 rounded-4">
+                @foreach($banners as $index => $banner)
+                    @php
+                        $hasDesktop = !empty($banner->desktop_image);
+                        $hasMobile  = !empty($banner->mobile_image);
+                        $hasImage   = $hasDesktop || $hasMobile;
+                        $desktopPath = $hasDesktop ? (str_starts_with($banner->desktop_image, 'http') ? $banner->desktop_image : asset('storage/' . $banner->desktop_image)) : null;
+                        $mobilePath  = $hasMobile ? (str_starts_with($banner->mobile_image, 'http') ? $banner->mobile_image : asset('storage/' . $banner->mobile_image)) : $desktopPath;
 
-                                // Pick gradient: custom > type-defaults
-                                $typeGradients = [
-                                    'CAMPAIGN_OFFER'  => 'linear-gradient(135deg, #6d28d9 0%, #0f172a 100%)',
-                                    'CATEGORY_HEADER' => 'linear-gradient(135deg, #1e40af 0%, #0f172a 100%)',
-                                    'BRAND_PROMO'     => 'linear-gradient(135deg, #065f46 0%, #0f172a 100%)',
-                                    'GENERAL_PROMO'   => 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-                                ];
-                                $bg = $banner->bg_gradient ?: ($typeGradients[$banner->banner_type ?? 'GENERAL_PROMO'] ?? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)');
-                            @endphp
+                        // Pick gradient: custom > type-defaults
+                        $typeGradients = [
+                            'CAMPAIGN_OFFER'  => 'linear-gradient(135deg, #6d28d9 0%, #0f172a 100%)',
+                            'CATEGORY_HEADER' => 'linear-gradient(135deg, #1e40af 0%, #0f172a 100%)',
+                            'BRAND_PROMO'     => 'linear-gradient(135deg, #065f46 0%, #0f172a 100%)',
+                            'GENERAL_PROMO'   => 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                        ];
+                        $bg = $banner->bg_gradient ?: ($typeGradients[$banner->banner_type ?? 'GENERAL_PROMO'] ?? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)');
 
-                            <div class="w-100 h-100 position-relative d-flex align-items-center hero-slide-item" style="background: {{ $bg }};">
+                        if (($banner->banner_type ?? '') === 'CAMPAIGN_OFFER' && $banner->offer_id) {
+                            $bannerLink = route('offers.index') . '?offer_id=' . $banner->offer_id;
+                        } else {
+                            $bannerLink = $banner->primary_button_link ?? route('shop');
+                        }
+                    @endphp
+
+                    <div class="carousel-item h-100 {{ $index === 0 ? 'active' : '' }}">
+                        <a href="{{ $bannerLink }}" class="text-decoration-none text-white d-block h-100">
+                            <div class="w-100 h-100 position-relative d-flex align-items-center hero-slide-item" style="background: {{ $bg }}; cursor: pointer;">
                                 @if($hasImage)
-                                    <picture class="position-absolute w-100 h-100" style="inset: 0;">
+                                    {{-- Full Graphic Image Only: Edge-to-edge, zero clutter --}}
+                                    <picture class="w-100 h-100 position-absolute" style="inset: 0;">
                                         @if($hasMobile)
                                             <source media="(max-width: 767.98px)" srcset="{{ $mobilePath }}">
                                         @endif
-                                        <img src="{{ $desktopPath ?: $mobilePath }}" class="w-100 h-100 object-fit-cover opacity-75" alt="{{ $banner->title }}">
+                                        <img src="{{ $desktopPath ?: $mobilePath }}" class="w-100 h-100 object-fit-cover" alt="{{ $banner->title }}">
                                     </picture>
-                                    <div class="position-absolute top-0 start-0 w-100 h-100 z-1" style="background: linear-gradient(100deg, rgba(15,23,42,0.85) 0%, rgba(15,23,42,0.35) 65%, transparent 100%);"></div>
                                 @else
-                                    {{-- No image: decorative pattern --}}
+                                    {{-- No Image: Vibrant Gradient Card with Title & Button --}}
                                     <div class="position-absolute top-0 end-0 h-100 d-flex align-items-center pe-3 pe-md-5 opacity-10" style="font-size: 140px; line-height: 1; pointer-events: none; z-index: 0;">
                                         @if(($banner->banner_type ?? '') === 'CAMPAIGN_OFFER') 🔥
                                         @elseif($banner->banner_type === 'CATEGORY_HEADER') 🗂️
@@ -53,102 +59,50 @@
                                         @else 🛍️
                                         @endif
                                     </div>
-                                @endif
 
-                                <div class="w-100 py-4 z-2 px-3 px-md-4 px-lg-5">
-                                    <div class="col-12 col-md-8 col-lg-7">
-                                        @if($banner->subtitle)
-                                            <span class="badge bg-primary bg-opacity-90 text-white rounded-pill px-2.5 py-1 mb-2 fw-semibold text-uppercase" style="font-size: 10px; letter-spacing: 0.8px;">{{ $banner->subtitle }}</span>
-                                        @endif
-                                        <h2 class="fw-bolder text-white mb-2 mb-md-3 lh-sm" style="font-size: clamp(1.3rem, 4vw, 2.75rem); text-shadow: 0 4px 20px rgba(0,0,0,0.5);">
-                                            {{ $banner->title }}
-                                        </h2>
-                                        @if($banner->primary_button_text)
-                                            @php
-                                                if (($banner->banner_type ?? '') === 'CAMPAIGN_OFFER' && $banner->offer_id) {
-                                                    $bannerLink = route('offers.index') . '?offer_id=' . $banner->offer_id;
-                                                } else {
-                                                    $bannerLink = $banner->primary_button_link ?? route('shop');
-                                                }
-                                            @endphp
-                                            <a href="{{ $bannerLink }}" class="btn btn-primary px-3.5 px-md-4 py-1.5 py-md-2.5 rounded-pill shadow-lg fw-bold hover-elevate mt-1" style="font-size: 0.85rem;">
-                                                {{ $banner->primary_button_text }} <i class="bi bi-arrow-right ms-1"></i>
-                                            </a>
-                                        @endif
+                                    <div class="w-100 py-3 py-md-4 z-2 px-3.5 px-md-5">
+                                        <div class="col-12 col-md-8 col-lg-7">
+                                            @if($banner->subtitle)
+                                                <span class="badge bg-primary bg-opacity-90 text-white rounded-pill px-2.5 py-1 mb-2 fw-semibold text-uppercase d-none d-md-inline-block" style="font-size: 10px; letter-spacing: 0.8px;">{{ $banner->subtitle }}</span>
+                                            @endif
+                                            <h2 class="fw-bolder text-white mb-2 mb-md-3 lh-sm" style="font-size: clamp(1.2rem, 3.5vw, 2.3rem); text-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+                                                {{ $banner->title }}
+                                            </h2>
+                                            @if($banner->primary_button_text)
+                                                <div>
+                                                    <span class="btn btn-primary px-3.5 px-md-4 py-1.5 py-md-2 rounded-pill shadow-lg fw-bold hover-elevate d-inline-flex align-items-center gap-1.5" style="font-size: 0.85rem;">
+                                                        {{ $banner->primary_button_text }} <i class="bi bi-arrow-right"></i>
+                                                    </span>
+                                                </div>
+                                            @endif
+                                        </div>
                                     </div>
-                                </div>
+                                @endif
                             </div>
-                        </div>
-                    @endforeach
-                </div>
-
-                {{-- Arrow buttons removed for clean, modern swipeable slider --}}
+                        </a>
+                    </div>
+                @endforeach
             </div>
+
+            {{-- Prev / Next Nav Buttons (desktop only when multiple banners) --}}
+            @if(isset($banners) && $banners->count() > 1)
+                <button class="carousel-control-prev d-none d-md-flex align-items-center justify-content-center z-3 ms-2" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev" style="width: 40px; height: 40px; top: 50%; transform: translateY(-50%); border-radius: 50%; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.2);">
+                    <i class="bi bi-chevron-left text-white fs-5"></i>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next d-none d-md-flex align-items-center justify-content-center z-3 me-2" type="button" data-bs-target="#heroCarousel" data-bs-slide="next" style="width: 40px; height: 40px; top: 50%; transform: translateY(-50%); border-radius: 50%; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.2);">
+                    <i class="bi bi-chevron-right text-white fs-5"></i>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            @endif
+
         </div>
-
-        {{-- Right: Promo Side Cards --}}
-        <div class="col-12 col-md-4 d-none d-md-flex flex-column gap-3">
-            {{-- Card 1: Upcoming Deals --}}
-            @php
-                $bgStyle = "background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);";
-                if (isset($upcomingDeal) && $upcomingDeal && $upcomingDeal->banner_image) {
-                    $bgUrl = asset('storage/' . $upcomingDeal->banner_image);
-                    $bgStyle = "background: linear-gradient(rgba(30, 64, 175, 0.7), rgba(59, 130, 246, 0.8)), url('{$bgUrl}') center/cover no-repeat;";
-                }
-            @endphp
-            <div class="flex-fill rounded-4 overflow-hidden position-relative shadow-sm d-flex flex-column p-4" style="{{ $bgStyle }} min-height: 200px;">
-                <div class="position-absolute top-0 end-0 opacity-10" style="font-size: 120px; line-height: 1; transform: translate(15px, -15px);">🛍️</div>
-                
-                {{-- Top Left Header --}}
-                <div class="z-2 position-relative mb-auto">
-                    <span class="badge bg-white text-primary fw-bold mb-2 px-2 py-1 rounded-pill" style="font-size: 11px; letter-spacing: 0.5px;">UPCOMING DEALS</span>
-                </div>
-
-                {{-- Bottom Content --}}
-                <div class="z-2 position-relative w-100">
-                    @if(isset($upcomingDeal) && $upcomingDeal)
-                        <h3 class="fw-bolder text-white mb-1" style="text-shadow: 0 2px 4px rgba(0,0,0,0.2);">{{ $upcomingDeal->title }}</h3>
-                        
-                        @php
-                            $discountText = $upcomingDeal->discount_type === 'PERCENTAGE' 
-                                ? "Up to " . round($upcomingDeal->discount_value) . "% OFF" 
-                                : "Flat ₹" . round($upcomingDeal->discount_value) . " OFF";
-                        @endphp
-                        <span class="badge bg-warning text-dark fw-bolder mb-2 px-3 py-1 rounded-pill" style="font-size: 12px; letter-spacing: 0.5px;">
-                            {{ $discountText }}
-                        </span>
-                        
-                        <div class="text-white text-opacity-90 small fw-semibold d-flex align-items-center">
-                            <i class="bi bi-calendar-event me-2 fs-6"></i>
-                            Starts: {{ \Carbon\Carbon::parse($upcomingDeal->start_time)->format('M d, h:i A') }}
-                        </div>
-                    @else
-                        <h4 class="fw-bolder text-white mb-2">More Deals Coming</h4>
-                        <p class="text-white text-opacity-75 small mb-0">Stay tuned for exciting new offers curated just for you.</p>
-                    @endif
-                </div>
-            </div>
-
-            {{-- Card 2: New Arrivals --}}
-            <div class="flex-fill rounded-4 overflow-hidden position-relative shadow-sm d-flex align-items-end" style="background: linear-gradient(135deg, #065f46 0%, #10b981 100%); min-height: 200px;">
-                <div class="position-absolute top-0 end-0 opacity-10" style="font-size: 120px; line-height: 1; transform: translate(15px, -15px);">✨</div>
-                <div class="p-4 z-2 position-relative">
-                    <span class="badge bg-light text-dark fw-bold mb-2 px-2 py-1 rounded-pill" style="font-size: 11px;">NEW</span>
-                    <h5 class="fw-bolder text-white mb-1">Fresh Arrivals</h5>
-                    <p class="text-white text-opacity-75 small mb-3">Just dropped this week</p>
-                    <a href="{{ route('shop', ['sort' => 'newest']) }}" class="btn btn-sm btn-light rounded-pill px-3 fw-semibold hover-elevate">
-                        Shop New <i class="bi bi-arrow-right ms-1"></i>
-                    </a>
-                </div>
-            </div>
-        </div>
-
     </div>
 </section>
 
 <style>
-    .hero-slide-item { min-height: 210px; }
-    @media (min-width: 768px) { .hero-slide-item { min-height: 380px; } }
+    .hero-slide-item { min-height: 200px !important; }
+    @media (min-width: 768px) { .hero-slide-item { min-height: 300px !important; } }
     .hero-section .object-fit-cover { object-fit: cover; }
     .carousel-indicators .active.hero-indicator { background-color: var(--bs-primary) !important; opacity: 1 !important; }
 </style>

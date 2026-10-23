@@ -5,9 +5,6 @@
 @section('content')
     @include('customer.components.home.hero-slider')
 
-    @if(($settings['enable_trust_badges'] ?? '1') == '1')
-        @include('customer.components.home.trust-badges', ['settings' => $settings])
-    @endif
 
     @include('customer.components.home.shop-by-category', ['categories' => $categories])
 
@@ -17,7 +14,7 @@
 
     @include('customer.components.home.featured-products', ['featuredProducts' => $featuredProducts])
     @include('customer.components.home.trending-products', ['trendingProducts' => $trendingProducts])
-    @include('customer.components.home.top-brands', ['brands' => $brands])
+    @include('customer.components.home.top-brands', ['brands' => $brands, 'totalBrandsCount' => $totalBrandsCount ?? null])
     @include('customer.components.home.new-arrivals', ['latestProducts' => $latestProducts])
 
     @include('customer.components.home.explore-more', ['exploreProducts' => $exploreProducts, 'totalExploreCount' => $totalExploreCount])

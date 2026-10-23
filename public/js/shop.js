@@ -220,20 +220,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function updateBrandFilter(form) {
         const brandListContainer = form.querySelector('.brand-list-container');
-        const brandFilterSection = form.querySelector('.brand-filter-section');
         const selectedCategories = Array.from(form.querySelectorAll('input[name="category[]"]:checked')).map(cb => cb.value);
 
-        if (brandFilterSection && brandListContainer) {
-            if (selectedCategories.length > 0) {
-                brandFilterSection.style.display = 'block';
-                const prefixMatch = form.querySelector('input[id^="cat_"]');
-                const prefix = prefixMatch ? prefixMatch.id.split('_')[1] : 'ajax';
+        if (brandListContainer) {
+            const prefixMatch = form.querySelector('input[id^="cat_"]');
+            const prefix = prefixMatch ? prefixMatch.id.split('_')[1] : 'ajax';
+            const checkedBrands = Array.from(brandListContainer.querySelectorAll('input[name="brand[]"]:checked')).map(cb => cb.value);
 
-                const response = await fetch(`/shop/brands-by-category?prefix=${prefix}&category_ids[]=${selectedCategories.join('&category_ids[]=')}`);
+            let url = `/shop/brands-by-category?prefix=${prefix}`;
+            if (selectedCategories.length > 0) {
+                url += `&category_ids[]=${selectedCategories.join('&category_ids[]=')}`;
+            }
+
+            try {
+                const response = await fetch(url);
                 brandListContainer.innerHTML = await response.text();
-            } else {
-                brandFilterSection.style.display = 'none';
-                brandListContainer.innerHTML = '';
+
+                checkedBrands.forEach(val => {
+                    const brandInput = brandListContainer.querySelector(`input[name="brand[]"][value="${val}"]`);
+                    if (brandInput) brandInput.checked = true;
+                });
+            } catch (err) {
+                console.error('Error updating brands:', err);
             }
         }
     }
@@ -250,6 +258,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (params.get('min_price') || params.get('max_price')) count++;
             if (params.get('only_discounted')) count++;
             if (params.get('featured')) count++;
+            if (params.get('in_stock')) count++;
 
             const badge = document.getElementById('filter-count-badge');
             if (badge) {

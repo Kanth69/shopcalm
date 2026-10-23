@@ -48,8 +48,9 @@
         @else
             @php
                 $label = ucwords(str_replace('_', ' ', $key)) . ': ' . $value;
-                if($key == 'only_discounted') $label = 'On Sale Deals';
-                if($key == 'featured') $label = 'Featured Only';
+                if($key == 'only_discounted') $label = '🔥 On Sale Deals';
+                if($key == 'featured') $label = '⭐ Featured Only';
+                if($key == 'in_stock') $label = '📦 In Stock Only';
                 $newQuery = request()->query();
                 unset($newQuery[$key]);
             @endphp

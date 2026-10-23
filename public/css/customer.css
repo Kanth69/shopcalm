@@ -119,12 +119,12 @@ h1, h2, h3, h4, h5, h6 {
 /* Hero Carousel Responsive Row & Item */
 .hero-row-responsive,
 .hero-slide-item {
-    min-height: 440px;
+    min-height: 300px;
 }
 @media (max-width: 767.98px) {
     .hero-row-responsive,
     .hero-slide-item {
-        min-height: 240px;
+        min-height: 200px;
     }
 }
 
@@ -364,10 +364,20 @@ h1, h2, h3, h4, h5, h6 {
     }
     
     /* Hero Carousel Mobile Tweaks */
-    #heroCarousel, 
+    /* Hero & Offers Carousel Mobile Tweaks */
+    #heroCarousel,
     #heroCarousel .carousel-item,
-    #heroCarousel .carousel-item > div {
-        min-height: 240px !important;
+    #heroCarousel .carousel-item > div,
+    #heroCarousel .hero-slide-item,
+    #offersCarousel,
+    #offersCarousel .carousel-item,
+    #offersCarousel .carousel-item > div,
+    .offers-slide-item,
+    .hero-slide-item,
+    .offers-page-hero,
+    .offers-hero-img {
+        min-height: 200px !important;
+        height: 200px !important;
     }
     .hero-section {
         margin-top: 0.5rem !important;

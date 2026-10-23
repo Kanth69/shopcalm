@@ -10,7 +10,8 @@
     $textColorShop = $variant === 'light' ? '#ffffff' : '#0a1128';
     $taglineColor  = $variant === 'light' ? 'rgba(255,255,255,0.75)' : '#1e293b';
     $ruleColor     = $variant === 'light' ? 'rgba(255,255,255,0.3)' : '#cbd5e1';
-    $iconSize      = round($height * 0.95);
+    $iconHeight    = round($height * 0.95);
+    $iconWidth     = max(1, round($iconHeight * (109 / 122)));
     $storeName     = \App\Models\Setting::get('store_name', 'ShopCalm');
     $customLogo    = \App\Models\Setting::get('logo');
     $taglineText   = \App\Models\Setting::get('tagline', 'Shop More. Worry Less.');
@@ -22,8 +23,8 @@
     $splitPoint = (stripos($storeName, 'Kart') !== false) ? stripos($storeName, 'Kart') : ((stripos($storeName, 'Calm') !== false) ? stripos($storeName, 'Calm') : (int)ceil($nameLen / 2));
     $part1 = $splitPoint > 0 ? ucfirst(substr($storeName, 0, $splitPoint)) : ucfirst($storeName);
     $part2 = $splitPoint > 0 ? ucfirst(substr($storeName, $splitPoint)) : '';
-    $wordmarkFontSize = max(1.22, round($height * 0.046, 2));
-    $iconGap = max(8, round($height * 0.22));
+    $wordmarkFontSize = max(1.18, round($height * 0.046, 2));
+    $iconGap = max(3, round($height * 0.12));
 @endphp
 
 <div class="d-inline-flex {{ $showTagline ? 'flex-column align-items-center' : 'align-items-center' }} logo-shopcalm-container" style="display: inline-flex !important; {{ $showTagline ? 'flex-direction: column; align-items: center;' : 'flex-direction: row; align-items: center;' }} user-select: none; line-height: 1; text-decoration: none;">
@@ -32,7 +33,7 @@
             <img src="{{ asset('storage/' . $customLogo) }}" height="{{ $height }}" alt="{{ $storeName }}" style="height: {{ $height }}px; max-height: {{ $height }}px; width: auto; object-fit: contain; display: inline-block; flex-shrink: 0;">
         @else
         {{-- ShopCalm Exact Reference Brand Mark (100% Vector SVG) --}}
-        <svg class="logo-shopcalm-svg" width="{{ $iconSize }}" height="{{ $iconSize }}" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; flex-shrink: 0; overflow: visible; width: {{ $iconSize }}px; height: {{ $iconSize }}px;">
+        <svg class="logo-shopcalm-svg" width="{{ $iconWidth }}" height="{{ $iconHeight }}" viewBox="20 16 109 122" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; flex-shrink: 0; overflow: visible; width: {{ $iconWidth }}px; height: {{ $iconHeight }}px;">
             <defs>
                 {{-- Dynamic linear gradient for the "S" body: Purple to Electric Blue --}}
                 <linearGradient id="{{ $uid }}_s_gradient" x1="45%" y1="15%" x2="75%" y2="95%">
