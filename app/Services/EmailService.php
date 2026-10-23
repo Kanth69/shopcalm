@@ -184,6 +184,9 @@ class EmailService
             ])->render();
 
             $result = $this->sendEmail($recipientEmail, $subject, $html);
+            if (!empty($result['success'])) {
+                $order->update(['invoice_emailed_at' => now()]);
+            }
             return $result['success'] ?? false;
         } catch (\Throwable $e) {
             Log::error("[EmailService] Failed to generate/send order confirmation email for #{$order->order_number}: " . $e->getMessage());

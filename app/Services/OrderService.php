@@ -122,6 +122,21 @@ class OrderService
                 'notes'           => $notes,
             ]);
 
+            // 2.1 Trigger Order Confirmation (Email & WhatsApp) if transitioning from pending/failed to confirmed
+            if (in_array($previousStatus, ['pending', 'failed']) && $newStatus === 'confirmed') {
+                try {
+                    app(\App\Services\EmailService::class)->sendOrderConfirmation($order);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("[OrderService] Order confirmation email failed: " . $e->getMessage());
+                }
+
+                try {
+                    app(\App\Services\WhatsAppService::class)->sendOrderConfirmation($order);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("[OrderService] WhatsApp order confirmation failed: " . $e->getMessage());
+                }
+            }
+
             // 3. Trigger Referral Rewards & WhatsApp Delivered Notification when status becomes delivered
             if ($newStatus === 'delivered') {
                 app(\App\Services\WalletService::class)->rewardReferrerOnDeliveredOrder($order);

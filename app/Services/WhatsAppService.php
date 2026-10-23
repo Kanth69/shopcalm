@@ -18,7 +18,9 @@ class WhatsAppService
     public function sendTemplateMessage(string $mobileNumber, string $templateKey = 'whatsapp_template_name', array $bodyParameters = [], array $buttonParameters = []): bool
     {
         $cleanPhone = preg_replace('/\D/', '', $mobileNumber);
-        if (strlen($cleanPhone) === 10) {
+        if (strlen($cleanPhone) === 11 && str_starts_with($cleanPhone, '0')) {
+            $cleanPhone = '91' . substr($cleanPhone, 1);
+        } elseif (strlen($cleanPhone) === 10) {
             $cleanPhone = '91' . $cleanPhone;
         }
 
@@ -103,8 +105,9 @@ class WhatsAppService
                 }
             }
 
-            // 3. Parameter count auto-adaptation (supports both 2-variable and 4-variable template designs)
+            // 3. Parameter count auto-adaptation (supports 4, 2, 1, or 0 variable template designs)
             if ($response->failed() && (str_contains($response->body(), '132000') || str_contains($response->body(), 'does not match the expected number'))) {
+                // 3a. Try 2 parameters [CustomerName, OrderNumber]
                 if (count($bodyParameters) > 2) {
                     $reducedParams = array_slice($bodyParameters, 0, 2);
                     $reducedFormatted = array_map(fn($p) => ['type' => 'text', 'text' => (string)$p], $reducedParams);
@@ -116,18 +119,58 @@ class WhatsAppService
                         Log::info("Meta WhatsApp API Message dispatched to {$cleanPhone} [Template: {$templateName}] (2-variable adaptation). Message ID: " . ($retryRes->json('messages.0.id') ?? 'N/A'));
                         return true;
                     }
+                    $response = $retryRes;
+                }
+
+                // 3b. Try 1 parameter (OrderNumber)
+                if (str_contains($response->body(), '132000') || str_contains($response->body(), 'does not match the expected number')) {
+                    $singleParam = [['type' => 'text', 'text' => (string) ($bodyParameters[1] ?? ($bodyParameters[0] ?? ''))]];
+                    $payload['template']['components'] = [
+                        ['type' => 'body', 'parameters' => $singleParam]
+                    ];
+                    $retryRes = Http::timeout(6)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
+                    if ($retryRes->successful()) {
+                        Log::info("Meta WhatsApp API Message dispatched to {$cleanPhone} [Template: {$templateName}] (1-variable adaptation). Message ID: " . ($retryRes->json('messages.0.id') ?? 'N/A'));
+                        return true;
+                    }
+                    $response = $retryRes;
+                }
+
+                // 3c. Try 0 parameters (static body)
+                if (str_contains($response->body(), '132000') || str_contains($response->body(), 'does not match the expected number')) {
+                    $payload['template']['components'] = [];
+                    $retryRes = Http::timeout(6)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
+                    if ($retryRes->successful()) {
+                        Log::info("Meta WhatsApp API Message dispatched to {$cleanPhone} [Template: {$templateName}] (0-variable adaptation). Message ID: " . ($retryRes->json('messages.0.id') ?? 'N/A'));
+                        return true;
+                    }
+                    $response = $retryRes;
+                }
+            }
+
+            // 4. Fallback template name retry (if default template name variation exists)
+            if ($response->failed() && str_contains($response->body(), '132001') && $templateKey === 'whatsapp_template_order_confirmed') {
+                $altTemplate = ($templateName === 'shopcalm_order_confirmed') ? 'shopcalm_order_confirmation' : 'shopcalm_order_confirmed';
+                if ($altTemplate !== $templateName) {
+                    $payload['template']['name'] = $altTemplate;
+                    $retryRes = Http::timeout(6)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
+                    if ($retryRes->successful()) {
+                        Log::info("Meta WhatsApp API Message dispatched to {$cleanPhone} [Template: {$altTemplate}] (alternate name fallback). Message ID: " . ($retryRes->json('messages.0.id') ?? 'N/A'));
+                        return true;
+                    }
+                    $response = $retryRes;
                 }
             }
 
             if ($response->failed()) {
-                Log::error("Meta WhatsApp Cloud API Error for {$cleanPhone} [Template: {$templateName}]: " . $response->body());
+                Log::warning("Meta WhatsApp Cloud API could not send message for {$cleanPhone} [Template: {$templateName}]: " . $response->body());
                 return false;
             }
 
             Log::info("Meta WhatsApp API Message dispatched to {$cleanPhone} [Template: {$templateName}]. Message ID: " . ($response->json('messages.0.id') ?? 'N/A'));
             return true;
         } catch (\Exception $e) {
-            Log::error("Meta WhatsApp API Exception for {$cleanPhone}: " . $e->getMessage());
+            Log::warning("Meta WhatsApp API Exception for {$cleanPhone}: " . $e->getMessage());
             return false;
         }
     }
@@ -186,24 +229,28 @@ class WhatsAppService
      */
     public function sendOrderConfirmation(Order $order): bool
     {
-        $phone = $order->shipping_phone ?? $order->user?->mobile_number;
+        $phone = $order->shipping_phone ?: ($order->user?->mobile_number ?: null);
         if (empty($phone)) {
             Log::info("[WhatsAppService] Order #{$order->order_number} has no mobile phone. Skipping WhatsApp.");
             return false;
         }
 
-        $customerName = $order->shipping_name ?: ($order->user?->name ?: 'Customer');
-        $orderNumber = $order->order_number;
+        $customerName  = trim($order->shipping_name ?: ($order->user?->name ?: 'Customer'));
+        $orderNumber   = (string) $order->order_number;
+        $totalAmount   = '₹' . number_format((float) $order->total_amount, 2);
+        $paymentMethod = strtoupper($order->payment_method ?? 'COD');
 
-        // Parameters match the Meta Utility template (2 variables):
-        // {{1}} = Customer Name
-        // {{2}} = Order Number
+        // Parameters matching standard Meta Order Confirmation templates:
+        // [CustomerName, OrderNumber, TotalAmount, PaymentMethod]
+        // Auto-adapts down to 2 variables [CustomerName, OrderNumber], 1 variable [OrderNumber], or 0 variables
         return $this->sendTemplateMessage(
             $phone,
             'whatsapp_template_order_confirmed',
             [
                 $customerName,
-                $orderNumber
+                $orderNumber,
+                $totalAmount,
+                $paymentMethod
             ]
         );
     }

@@ -743,11 +743,17 @@ class CheckoutService
             // 5. Clear Selected Cart Items
             $this->cartService->clearSelectedItems();
 
-            // 6. Trigger Email Confirmation
+            // 6. Trigger Order Confirmation Notifications (Email if provided, WhatsApp compulsory)
             try {
                 app(\App\Services\EmailService::class)->sendOrderConfirmation($order);
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning("[CheckoutService] Order confirmation email failed: " . $e->getMessage());
+            }
+
+            try {
+                app(\App\Services\WhatsAppService::class)->sendOrderConfirmation($order);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("[CheckoutService] WhatsApp order confirmation failed on switchToCod: " . $e->getMessage());
             }
 
             return $order;
