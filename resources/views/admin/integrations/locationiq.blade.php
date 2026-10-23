@@ -68,12 +68,25 @@
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
             <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
                 <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-key-fill text-success me-2"></i>LocationIQ Access Token</h6>
-                <span class="badge {{ $isConfigured ? 'bg-success' : 'bg-warning text-dark' }} rounded-pill px-3 py-1 fw-bold" style="font-size: 0.72rem;">
+                <span id="tokenStatusBadge" class="badge {{ $isConfigured ? 'bg-success' : 'bg-warning text-dark' }} rounded-pill px-3 py-1 fw-bold" style="font-size: 0.72rem;">
                     {{ $isConfigured ? 'Connected ✓' : 'Default Token' }}
                 </span>
             </div>
             <div class="card-body p-4">
-                <form action="{{ route('admin.integrations.locationiq.update') }}" method="POST">
+                @if(session('error'))
+                    <div class="alert alert-danger py-2.5 px-3 rounded-3 small mb-3 border-0 d-flex align-items-start gap-2 shadow-xs" style="background: #fef2f2; color: #991b1b; border-left: 4px solid #ef4444 !important;">
+                        <i class="bi bi-x-circle-fill fs-6 flex-shrink-0 mt-0.5"></i>
+                        <div>{{ session('error') }}</div>
+                    </div>
+                @endif
+                @if(session('success'))
+                    <div class="alert alert-success py-2.5 px-3 rounded-3 small mb-3 border-0 d-flex align-items-start gap-2 shadow-xs" style="background: #f0fdf4; color: #166534; border-left: 4px solid #22c55e !important;">
+                        <i class="bi bi-check-circle-fill fs-6 flex-shrink-0 mt-0.5"></i>
+                        <div>{{ session('success') }}</div>
+                    </div>
+                @endif
+
+                <form action="{{ route('admin.integrations.locationiq.update') }}" method="POST" id="locationiqForm" onsubmit="return handleSaveToken(event)">
                     @csrf
                     <div class="mb-3">
                         <div class="d-flex align-items-center justify-content-between mb-1">
@@ -84,10 +97,13 @@
                         </div>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-muted"><i class="bi bi-geo-alt"></i></span>
-                            <input type="password" name="locationiq_api_key" id="locationiq_api_key" class="form-control font-monospace" value="{{ $locationiqKey }}" placeholder="pk.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                            <input type="password" name="locationiq_api_key" id="locationiq_api_key" class="form-control font-monospace" value="{{ old('locationiq_api_key', $locationiqKey) }}" placeholder="pk.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
                             <button type="button" class="btn btn-outline-secondary" onclick="toggleTokenVisibility()" title="Toggle view token"><i class="bi bi-eye" id="toggleIcon"></i></button>
                         </div>
-                        <div class="form-text text-muted" style="font-size: 0.72rem;">Obtain from LocationIQ Dashboard &rarr; Access Tokens (starts with <code>pk.</code>).</div>
+                        <div class="d-flex align-items-center justify-content-between mt-1 text-muted" style="font-size: 0.72rem;">
+                            <span>Starts with <code>pk.</code> (Public Access Token).</span>
+                            <span class="text-primary fw-semibold"><i class="bi bi-shield-check me-0.5"></i> Auto-validated on save</span>
+                        </div>
                     </div>
 
                     <!-- Live Test Connection Feedback Area -->
@@ -97,7 +113,7 @@
                         <button type="button" id="btnTestApi" class="btn btn-outline-secondary rounded-pill px-3 fw-bold small" onclick="testConnection()">
                             <i class="bi bi-broadcast me-1"></i> Test Connection
                         </button>
-                        <button type="submit" class="btn btn-success rounded-pill flex-grow-1 fw-bold">
+                        <button type="submit" class="btn btn-success rounded-pill flex-grow-1 fw-bold" id="btnSaveApi">
                             <i class="bi bi-check-circle me-1"></i> Save Access Token
                         </button>
                     </div>
@@ -241,6 +257,91 @@ function toggleTokenVisibility() {
         input.type = 'password';
         icon.className = 'bi bi-eye';
     }
+}
+
+function handleSaveToken(e) {
+    e.preventDefault();
+
+    const input = document.getElementById('locationiq_api_key');
+    const token = input.value.trim();
+    const btn = document.getElementById('btnSaveApi');
+    const alertBox = document.getElementById('testResultAlert');
+    const statusBadge = document.getElementById('tokenStatusBadge');
+
+    // Quick client-side check if non-empty
+    if (token !== '') {
+        if (!token.startsWith('pk.')) {
+            alertBox.className = 'alert alert-danger py-2.5 px-3 small rounded-3 mb-3 shadow-xs';
+            alertBox.classList.remove('d-none');
+            alertBox.innerHTML = '<strong><i class="bi bi-x-circle-fill me-1"></i> Invalid Token Format:</strong> LocationIQ public access tokens must start with <code>pk.</code> (e.g. <code>pk.8fcbbfbdafcf2d840b41ffd3c60e443f</code>). The token was NOT saved.';
+            input.focus();
+            return false;
+        }
+
+        if (token.length < 20) {
+            alertBox.className = 'alert alert-danger py-2.5 px-3 small rounded-3 mb-3 shadow-xs';
+            alertBox.classList.remove('d-none');
+            alertBox.innerHTML = '<strong><i class="bi bi-x-circle-fill me-1"></i> Token Too Short:</strong> Please enter a complete LocationIQ access token.';
+            input.focus();
+            return false;
+        }
+    }
+
+    // Disable button & show spinner
+    const origBtnHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Validating with LocationIQ...';
+    alertBox.className = 'alert d-none py-2 px-3 small rounded-3 mb-3';
+
+    fetch("{{ route('admin.integrations.locationiq.update') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ locationiq_api_key: token })
+    })
+    .then(res => res.json().then(data => ({ status: res.status, body: data })))
+    .then(({ status, body }) => {
+        btn.disabled = false;
+        btn.innerHTML = origBtnHtml;
+        alertBox.classList.remove('d-none');
+
+        if (status === 200 && body.success) {
+            alertBox.className = 'alert alert-success py-2.5 px-3 small rounded-3 mb-3 shadow-xs';
+            alertBox.innerHTML = '<strong><i class="bi bi-check-circle-fill me-1"></i> ' + (body.message || 'Token verified and saved!') + '</strong>' + 
+                (body.display_name ? '<br><span class="text-dark small"><i class="bi bi-geo-alt me-1 text-danger"></i> Verified location: ' + body.display_name + '</span>' : '');
+
+            if (statusBadge) {
+                if (token !== '') {
+                    statusBadge.className = 'badge bg-success rounded-pill px-3 py-1 fw-bold';
+                    statusBadge.textContent = 'Connected ✓';
+                } else {
+                    statusBadge.className = 'badge bg-warning text-dark rounded-pill px-3 py-1 fw-bold';
+                    statusBadge.textContent = 'OSM Fallback Active';
+                }
+            }
+
+            if (body.display_name) {
+                const geoText = document.getElementById('geocodedText');
+                if (geoText) geoText.textContent = body.display_name;
+            }
+        } else {
+            alertBox.className = 'alert alert-danger py-2.5 px-3 small rounded-3 mb-3 shadow-xs';
+            alertBox.innerHTML = '<strong><i class="bi bi-x-circle-fill me-1"></i> Verification Failed:</strong> ' + 
+                (body.message || 'LocationIQ rejected this access token. The token was NOT saved.');
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = origBtnHtml;
+        alertBox.classList.remove('d-none');
+        alertBox.className = 'alert alert-danger py-2.5 px-3 small rounded-3 mb-3 shadow-xs';
+        alertBox.innerHTML = '<strong><i class="bi bi-x-circle-fill me-1"></i> Connection Error:</strong> ' + err.message;
+    });
+
+    return false;
 }
 
 function testConnection() {

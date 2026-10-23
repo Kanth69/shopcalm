@@ -17,58 +17,71 @@
         font-family: inherit;
     }
 
-    /* ============================================================== */
-    /* 📱 APP-LIKE MOBILE BOTTOM SHEET FOR LOCATION PICKER           */
-    /* ============================================================== */
+    /* Perfectly Centered Location Picker Modal (Desktop & Global) */
+    #locationPickerModal .modal-dialog {
+        max-width: 760px !important;
+        margin: 1.75rem auto !important;
+    }
+    #locationPickerModal .modal-content {
+        border-radius: 1.25rem !important;
+        box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18) !important;
+        border: none !important;
+        overflow: hidden !important;
+    }
+
     @media (max-width: 767.98px) {
+        #locationPickerModal {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
         #locationPickerModal .modal-dialog {
-            margin: 0 !important;
-            max-width: 100% !important;
-            height: 100% !important;
+            margin: 0.75rem auto !important;
+            width: calc(100% - 1rem) !important;
+            max-width: 540px !important;
+            max-height: calc(100dvh - 1.5rem) !important;
+            min-height: calc(100% - 1.5rem) !important;
             display: flex !important;
-            align-items: flex-end !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
         #locationPickerModal .modal-content {
-            border-radius: 1.35rem 1.35rem 0 0 !important;
-            max-height: 94vh !important;
-            height: 94vh !important;
+            border-radius: 1.15rem !important;
+            max-height: calc(100dvh - 1.5rem) !important;
             display: flex !important;
             flex-direction: column !important;
-            box-shadow: 0 -12px 30px rgba(0,0,0,0.22) !important;
+            overflow: hidden !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
             border: none !important;
+            width: 100% !important;
         }
         #locationPickerModal .modal-header {
             padding: 0.75rem 1rem !important;
+            flex-shrink: 0 !important;
         }
         #locationPickerModal .modal-body {
             flex: 1 1 auto !important;
             overflow-y: auto !important;
+            overflow-x: hidden !important;
             -webkit-overflow-scrolling: touch !important;
             padding: 0 !important;
         }
         #delivery-map-container {
-            min-height: 240px !important;
-            height: 240px !important;
+            min-height: 220px !important;
+            height: 220px !important;
             width: 100% !important;
         }
         #locationPickerModal .modal-footer {
+            flex-shrink: 0 !important;
             position: sticky !important;
             bottom: 0 !important;
             background: #ffffff !important;
-            box-shadow: 0 -6px 20px rgba(0,0,0,0.08) !important;
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.06) !important;
             z-index: 1050 !important;
-            padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px)) 1rem !important;
-            border-top: 1px solid #f1f5f9 !important;
+            padding: 0.65rem 0.85rem calc(0.65rem + env(safe-area-inset-bottom, 0px)) 0.85rem !important;
+            border-top: 1px solid #e2e8f0 !important;
         }
-        #btn-save-map-address {
-            width: 100% !important;
-            justify-content: center !important;
-            padding: 0.75rem 1.25rem !important;
-            font-size: 0.92rem !important;
-            border-radius: 9999px !important;
-        }
-        #locationPickerModal .modal-footer .btn-light {
-            display: none !important;
+        #locationPickerModal .modal-footer .btn {
+            font-size: 0.82rem !important;
         }
 
         /* Step 1 Address Action Buttons: Touch-optimized equal pills */
@@ -1316,10 +1329,6 @@
 <div class="modal fade" id="locationPickerModal" tabindex="-1" aria-labelledby="locationPickerModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
-            <!-- Mobile Pull Handle -->
-            <div class="d-block d-md-none text-center pt-2.5 pb-0.5 bg-white">
-                <div class="mx-auto rounded-pill" style="width: 38px; height: 4px; background: #cbd5e1;"></div>
-            </div>
             <div class="modal-header bg-white py-2.5 px-3.5 px-md-4 border-bottom d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2.5">
                     <div class="rounded-circle d-flex align-items-center justify-content-center text-primary flex-shrink-0" style="width: 34px; height: 34px; background: rgba(79, 70, 229, 0.1);">

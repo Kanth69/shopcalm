@@ -15,6 +15,7 @@ use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class IntegrationController extends Controller
 {
@@ -251,7 +252,78 @@ class IntegrationController extends Controller
     }
 
     /**
-     * Update LocationIQ Access Token.
+     * Validate LocationIQ access token against live API.
+     */
+    private function validateLocationiqToken(string $token): array
+    {
+        $token = trim($token);
+
+        if (empty($token)) {
+            return [
+                'valid' => false,
+                'error' => 'LocationIQ API Token cannot be empty.',
+            ];
+        }
+
+        // LocationIQ public tokens start with "pk."
+        if (!str_starts_with($token, 'pk.')) {
+            return [
+                'valid' => false,
+                'error' => 'Invalid token format. LocationIQ public client access tokens must start with "pk." (e.g. pk.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx).',
+            ];
+        }
+
+        if (strlen($token) < 20) {
+            return [
+                'valid' => false,
+                'error' => 'Token is too short to be a valid LocationIQ key.',
+            ];
+        }
+
+        // Test with live reverse geocode against LocationIQ US & EU clusters
+        $endpoints = [
+            'https://us1.locationiq.com/v1/reverse',
+            'https://eu1.locationiq.com/v1/reverse',
+        ];
+
+        $lastError = 'LocationIQ connection failed';
+
+        foreach ($endpoints as $endpoint) {
+            try {
+                $response = Http::timeout(6)->get($endpoint, [
+                    'key'             => $token,
+                    'lat'             => 12.9716,
+                    'lon'             => 77.5946,
+                    'format'          => 'json',
+                    'accept-language' => 'en',
+                ]);
+
+                if ($response->successful()) {
+                    $data = $response->json();
+                    return [
+                        'valid'        => true,
+                        'display_name' => $data['display_name'] ?? 'Bengaluru, Karnataka, India',
+                    ];
+                }
+
+                $error = $response->json('error') ?? ('HTTP ' . $response->status() . ': ' . Str::limit($response->body(), 80));
+                return [
+                    'valid' => false,
+                    'error' => $error,
+                ];
+            } catch (\Exception $e) {
+                $lastError = $e->getMessage();
+            }
+        }
+
+        return [
+            'valid' => false,
+            'error' => 'Connection timed out: ' . $lastError,
+        ];
+    }
+
+    /**
+     * Update LocationIQ Access Token with strict live API verification.
      */
     public function updateLocationiq(Request $request)
     {
@@ -264,13 +336,64 @@ class IntegrationController extends Controller
             'locationiq_api_key' => 'nullable|string|max:255',
         ]);
 
-        Setting::set('locationiq_api_key', trim($request->locationiq_api_key));
+        $token = trim((string) $request->locationiq_api_key);
+
+        // Allow clearing the token (falls back to OpenStreetMap)
+        if (empty($token)) {
+            Setting::set('locationiq_api_key', '');
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success'      => true,
+                    'message'      => 'LocationIQ API Token cleared. Switched to OpenStreetMap Nominatim fallback.',
+                    'display_name' => 'OpenStreetMap Fallback Active',
+                ]);
+            }
+
+            return back()->with('toast', [
+                'type'    => 'info',
+                'title'   => 'Token Cleared',
+                'message' => 'LocationIQ API Token removed. System will use free OpenStreetMap Nominatim.',
+            ])->with('info', 'LocationIQ API Token removed. System will use free OpenStreetMap Nominatim.');
+        }
+
+        // Live validation against LocationIQ
+        $validation = $this->validateLocationiqToken($token);
+
+        if (!$validation['valid']) {
+            $errorMessage = $validation['error'] ?? 'Invalid token';
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'LocationIQ token verification failed: ' . $errorMessage,
+                ], 422);
+            }
+
+            return back()->withInput()->with('toast', [
+                'type'    => 'error',
+                'title'   => 'Token Verification Failed',
+                'message' => 'LocationIQ rejected this token: ' . $errorMessage . '. The token was NOT saved.',
+            ])->with('error', 'LocationIQ Token Verification Failed: ' . $errorMessage . ' (Token was NOT saved). Please check your token from LocationIQ Dashboard.');
+        }
+
+        // Token is 100% verified and active! Save to settings
+        Setting::set('locationiq_api_key', $token);
+        $displayName = $validation['display_name'] ?? 'Bengaluru, India';
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success'      => true,
+                'message'      => 'LocationIQ Token Verified & Saved! Live reverse geocoding is working.',
+                'display_name' => $displayName,
+            ]);
+        }
 
         return back()->with('toast', [
             'type'    => 'success',
-            'title'   => 'LocationIQ Config Saved',
-            'message' => 'LocationIQ Maps API Token updated successfully.',
-        ])->with('success', 'LocationIQ Maps API Token updated successfully.');
+            'title'   => 'LocationIQ Token Verified & Saved',
+            'message' => 'Token verified successfully with LocationIQ! Live reverse geocoding works: ' . Str::limit($displayName, 60),
+        ])->with('success', 'LocationIQ Access Token verified and saved successfully! (' . Str::limit($displayName, 60) . ')');
     }
 
     /**
@@ -283,45 +406,30 @@ class IntegrationController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        $key = trim($request->locationiq_api_key) 
+        $key = trim((string) $request->locationiq_api_key) 
             ?: (Setting::get('locationiq_api_key') ?: config('services.locationiq.key'));
 
         if (empty($key)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Please provide a LocationIQ API token first.',
+                'message' => 'Please enter a LocationIQ API token first.',
             ], 422);
         }
 
-        try {
-            $response = Http::timeout(6)->get('https://us1.locationiq.com/v1/reverse', [
-                'key'             => $key,
-                'lat'             => 12.9716,
-                'lon'             => 77.5946,
-                'format'          => 'json',
-                'accept-language' => 'en',
+        $validation = $this->validateLocationiqToken($key);
+
+        if ($validation['valid']) {
+            return response()->json([
+                'success'      => true,
+                'message'      => 'Connection Verified! Successfully reverse-geocoded sample coordinates with LocationIQ.',
+                'display_name' => $validation['display_name'],
             ]);
-
-            if ($response->successful()) {
-                $data = $response->json();
-                return response()->json([
-                    'success'      => true,
-                    'message'      => 'Connection Verified! Successfully reverse-geocoded sample coordinates.',
-                    'display_name' => $data['display_name'] ?? 'Bengaluru, Karnataka, India',
-                ]);
-            }
-
-            $errorMsg = $response->json('error') ?? ('HTTP ' . $response->status() . ': ' . $response->body());
-            return response()->json([
-                'success' => false,
-                'message' => 'LocationIQ error: ' . $errorMsg,
-            ], 400);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Connection failed: ' . $e->getMessage(),
-            ], 500);
         }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'LocationIQ Error: ' . ($validation['error'] ?? 'Verification failed'),
+        ], 400);
     }
 
     /**
