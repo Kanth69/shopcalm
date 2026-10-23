@@ -15,7 +15,7 @@
             <div class="card-body p-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div>
                     <h4 class="fw-bold mb-1"><i class="bi bi-cpu me-2"></i>Integrations & Third-Party API Services Control Center</h4>
-                    <p class="mb-0 text-white-50 small">Manage live transactional email delivery, WhatsApp Cloud notifications, and Razorpay online payment gateways.</p>
+                    <p class="mb-0 text-white-50 small">Manage live transactional email delivery, WhatsApp Cloud notifications, Razorpay online payment gateways, and LocationIQ interactive maps & doorstep geocoding.</p>
                 </div>
                 <div class="d-flex gap-2">
                     <a href="{{ route('admin.settings.index') }}" class="btn btn-light rounded-pill px-3 py-2 fw-bold text-dark shadow-sm">
@@ -29,7 +29,7 @@
 
 <div class="row g-4 justify-content-center">
     <!-- 1. Brevo Email Service Hub Card -->
-    <div class="col-lg-4 col-md-6">
+    <div class="col-xl-3 col-md-6">
         <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden hover-shadow transition-all">
             <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
@@ -72,7 +72,7 @@
     </div>
 
     <!-- 2. WhatsApp Cloud API Hub Card -->
-    <div class="col-lg-4 col-md-6">
+    <div class="col-xl-3 col-md-6">
         <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden hover-shadow transition-all">
             <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
@@ -117,7 +117,7 @@
     </div>
 
     <!-- 3. Razorpay Payment Gateway Card -->
-    <div class="col-lg-4 col-md-6">
+    <div class="col-xl-3 col-md-6">
         <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden hover-shadow transition-all">
             <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
@@ -154,6 +154,49 @@
                 </div>
                 <a href="{{ route('admin.integrations.razorpay') }}" class="btn btn-info text-white rounded-pill w-100 fw-bold">
                     Open Razorpay Hub <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. LocationIQ Maps & Geocoding Card -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden hover-shadow transition-all">
+            <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-3 p-2 d-flex align-items-center justify-content-center" style="background: rgba(16, 185, 129, 0.1); color: #059669; width: 40px; height: 40px;">
+                        <i class="bi bi-geo-alt-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">LocationIQ Maps API</h6>
+                        <span class="text-muted" style="font-size: 0.72rem;">Interactive Maps & GPS Pinning</span>
+                    </div>
+                </div>
+                <span class="badge {{ $isLocationiqConfigured ? 'bg-success' : 'bg-warning text-dark' }} rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.71rem;">
+                    {{ $isLocationiqConfigured ? 'Connected ✓' : 'Default / OSM' }}
+                </span>
+            </div>
+            <div class="card-body p-4 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="p-3 bg-light rounded-3 border mb-3 text-center">
+                        <div class="text-muted small fw-bold mb-1">Geocoded Addresses</div>
+                        <div class="fs-4 fw-black text-dark">{{ $geocodedAddressesCount }} <span class="fs-6 text-muted fw-normal">/ {{ $totalAddressesCount }}</span></div>
+                        <div class="text-muted" style="font-size: 0.7rem;">5,000 Free Daily API Requests</div>
+                    </div>
+                    <ul class="list-unstyled small text-muted mb-4 space-y-2">
+                        <li class="d-flex align-items-center gap-2">
+                            <i class="bi bi-check-circle-fill text-success"></i> Interactive Leaflet doorstep pin drop
+                        </li>
+                        <li class="d-flex align-items-center gap-2">
+                            <i class="bi bi-check-circle-fill text-success"></i> Dual-provider OpenStreetMap fallback
+                        </li>
+                        <li class="d-flex align-items-center gap-2">
+                            <i class="bi bi-check-circle-fill text-success"></i> Rider Google Maps 1-click navigation
+                        </li>
+                    </ul>
+                </div>
+                <a href="{{ route('admin.integrations.locationiq') }}" class="btn btn-success rounded-pill w-100 fw-bold">
+                    Open LocationIQ Hub <i class="bi bi-arrow-right ms-1"></i>
                 </a>
             </div>
         </div>

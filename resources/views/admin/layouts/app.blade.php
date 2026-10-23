@@ -765,6 +765,9 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('admin.integrations.razorpay') ? 'active' : '' }}" href="{{ route('admin.integrations.razorpay') }}"><i class="bi bi-credit-card-2-front text-primary me-1"></i> Razorpay Gateway</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.integrations.locationiq') ? 'active' : '' }}" href="{{ route('admin.integrations.locationiq') }}"><i class="bi bi-geo-alt-fill text-danger me-1"></i> LocationIQ Maps API</a>
+                            </li>
                         </ul>
                     </div>
                 </li>

@@ -136,6 +136,9 @@ $registerStaffRoutes = function () {
             Route::post('whatsapp/update', [\App\Http\Controllers\Admin\IntegrationController::class, 'updateWhatsApp'])->name('whatsapp.update');
             Route::get('razorpay', [\App\Http\Controllers\Admin\IntegrationController::class, 'razorpay'])->name('razorpay');
             Route::post('razorpay/update', [\App\Http\Controllers\Admin\IntegrationController::class, 'updateRazorpay'])->name('razorpay.update');
+            Route::get('locationiq', [\App\Http\Controllers\Admin\IntegrationController::class, 'locationiq'])->name('locationiq');
+            Route::post('locationiq/update', [\App\Http\Controllers\Admin\IntegrationController::class, 'updateLocationiq'])->name('locationiq.update');
+            Route::post('locationiq/test', [\App\Http\Controllers\Admin\IntegrationController::class, 'testLocationiq'])->name('locationiq.test');
         });
     });
 

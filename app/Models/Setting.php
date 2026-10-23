@@ -22,6 +22,7 @@ class Setting extends Model
         'whatsapp_api_token',
         'razorpay_key_secret',
         'brevo_api_key',
+        'locationiq_api_key',
     ];
 
     /**

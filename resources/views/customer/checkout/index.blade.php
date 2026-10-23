@@ -3226,7 +3226,7 @@ function updateCodAvailabilityUI(isAvailable, pincode) {
 // ==============================================================
 // LEAFLET INTERACTIVE MAP & DUAL LOCATION PROVIDER (FREE OSM + LOCATIONIQ)
 // ==============================================================
-const LOCATIONIQ_KEY = "{{ config('services.locationiq.key', 'pk.8fcbbfbdafcf2d840b41ffd3c60e443f') }}";
+const LOCATIONIQ_KEY = "{{ \App\Models\Setting::get('locationiq_api_key') ?: (config('services.locationiq.key') ?: 'pk.8fcbbfbdafcf2d840b41ffd3c60e443f') }}";
 let deliveryMap = null;
 let deliveryMarker = null;
 let currentMapCoords = { lat: 12.971599, lng: 77.594566 }; // Default Bengaluru (MG Road / Central)

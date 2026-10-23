@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Address;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Setting;
@@ -10,6 +11,7 @@ use App\Services\EmailService;
 use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class IntegrationController extends Controller
 {
@@ -42,6 +44,12 @@ class IntegrationController extends Controller
             ->where(fn($q) => $q->where('gateway', 'razorpay')->orWhere('payment_method_group', 'online')->orWhere('payment_method_group', 'upi'))
             ->sum('amount');
 
+        // 4. LocationIQ Maps Health
+        $locationiqKey = $settings['locationiq_api_key'] ?? config('services.locationiq.key');
+        $isLocationiqConfigured = !empty($locationiqKey);
+        $geocodedAddressesCount = Address::whereNotNull('latitude')->whereNotNull('longitude')->count();
+        $totalAddressesCount = Address::count();
+
         return view('admin.integrations.index', compact(
             'settings',
             'brevoQuota',
@@ -50,7 +58,11 @@ class IntegrationController extends Controller
             'hasWhatsAppPhoneId',
             'isRazorpayConfigured',
             'isRazorpayLive',
-            'todayOnlinePayments'
+            'todayOnlinePayments',
+            'isLocationiqConfigured',
+            'locationiqKey',
+            'geocodedAddressesCount',
+            'totalAddressesCount'
         ));
     }
 
@@ -201,5 +213,111 @@ class IntegrationController extends Controller
         Setting::set('razorpay_key_secret', $request->razorpay_key_secret);
 
         return back()->with('toast', ['type' => 'success', 'title' => 'Razorpay Keys Saved', 'message' => 'Razorpay API credentials updated successfully.'])->with('success', 'Razorpay API credentials updated successfully.');
+    }
+
+    /**
+     * Dedicated LocationIQ & Maps Geocoding Hub.
+     */
+    public function locationiq()
+    {
+        $user = auth('admin')->user() ?? auth()->user();
+        if (!$user || !$user->isSuperAdmin()) {
+            abort(403, 'Unauthorized. Super Admin access required.');
+        }
+
+        $settings = Setting::getAll();
+        $locationiqKey = $settings['locationiq_api_key'] ?? config('services.locationiq.key');
+        $isConfigured = !empty($locationiqKey);
+
+        $stats = [
+            'geocoded_addresses' => Address::whereNotNull('latitude')->whereNotNull('longitude')->count(),
+            'total_addresses'    => Address::count(),
+            'geocoded_orders'    => Order::whereNotNull('latitude')->whereNotNull('longitude')->count(),
+            'total_orders'       => Order::count(),
+        ];
+
+        // Sample recent customer addresses with coordinates for verification
+        $recentGeocodedAddresses = Address::with('user')
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->latest()
+            ->take(8)
+            ->get();
+
+        return view('admin.integrations.locationiq', compact('settings', 'locationiqKey', 'isConfigured', 'stats', 'recentGeocodedAddresses'));
+    }
+
+    /**
+     * Update LocationIQ Access Token.
+     */
+    public function updateLocationiq(Request $request)
+    {
+        $user = auth('admin')->user() ?? auth()->user();
+        if (!$user || !$user->isSuperAdmin()) {
+            abort(403, 'Unauthorized. Super Admin access required.');
+        }
+
+        $request->validate([
+            'locationiq_api_key' => 'nullable|string|max:255',
+        ]);
+
+        Setting::set('locationiq_api_key', trim($request->locationiq_api_key));
+
+        return back()->with('toast', [
+            'type'    => 'success',
+            'title'   => 'LocationIQ Config Saved',
+            'message' => 'LocationIQ Maps API Token updated successfully.',
+        ])->with('success', 'LocationIQ Maps API Token updated successfully.');
+    }
+
+    /**
+     * Test LocationIQ Connection via live reverse geocode.
+     */
+    public function testLocationiq(Request $request)
+    {
+        $user = auth('admin')->user() ?? auth()->user();
+        if (!$user || !$user->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $key = trim($request->locationiq_api_key) 
+            ?: (Setting::get('locationiq_api_key') ?: config('services.locationiq.key'));
+
+        if (empty($key)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please provide a LocationIQ API token first.',
+            ], 422);
+        }
+
+        try {
+            $response = Http::timeout(6)->get('https://us1.locationiq.com/v1/reverse', [
+                'key'             => $key,
+                'lat'             => 12.9716,
+                'lon'             => 77.5946,
+                'format'          => 'json',
+                'accept-language' => 'en',
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return response()->json([
+                    'success'      => true,
+                    'message'      => 'Connection Verified! Successfully reverse-geocoded sample coordinates.',
+                    'display_name' => $data['display_name'] ?? 'Bengaluru, Karnataka, India',
+                ]);
+            }
+
+            $errorMsg = $response->json('error') ?? ('HTTP ' . $response->status() . ': ' . $response->body());
+            return response()->json([
+                'success' => false,
+                'message' => 'LocationIQ error: ' . $errorMsg,
+            ], 400);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Connection failed: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

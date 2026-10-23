@@ -192,7 +192,7 @@
                 <div class="card-body p-4 p-md-4">
                     <div class="row g-4">
                         <!-- Meta WhatsApp Cloud API -->
-                        <div class="col-lg-4 col-md-6">
+                        <div class="col-xl-3 col-md-6">
                             <div class="card h-100 border rounded-4 p-4 bg-white shadow-none d-flex flex-column justify-content-between">
                                 <div>
                                     <div class="d-flex align-items-center justify-content-between mb-3">
@@ -226,7 +226,7 @@
                         </div>
 
                         <!-- Brevo Transactional Email -->
-                        <div class="col-lg-4 col-md-6">
+                        <div class="col-xl-3 col-md-6">
                             <div class="card h-100 border rounded-4 p-4 bg-white shadow-none d-flex flex-column justify-content-between">
                                 <div>
                                     <div class="d-flex align-items-center justify-content-between mb-3">
@@ -260,7 +260,7 @@
                         </div>
 
                         <!-- Razorpay Payment Gateway -->
-                        <div class="col-lg-4 col-md-12">
+                        <div class="col-xl-3 col-md-6">
                             <div class="card h-100 border rounded-4 p-4 bg-white shadow-none d-flex flex-column justify-content-between">
                                 <div>
                                     <div class="d-flex align-items-center justify-content-between mb-3">
@@ -290,6 +290,41 @@
                                 </div>
                                 <a href="{{ route('admin.integrations.razorpay') }}" class="btn btn-sm btn-outline-info text-dark rounded-pill w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-1">
                                     <span>Manage Razorpay</span>
+                                    <i class="bi bi-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- LocationIQ Maps & Geocoding -->
+                        <div class="col-xl-3 col-md-6">
+                            <div class="card h-100 border rounded-4 p-4 bg-white shadow-none d-flex flex-column justify-content-between">
+                                <div>
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="p-2.5 bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                                                <i class="bi bi-geo-alt-fill fs-5"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0 fw-bold text-dark">LocationIQ Maps</h6>
+                                                <span class="text-muted" style="font-size: 0.72rem;">Geocoding & GPS</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @php
+                                        $locKey = $settings['locationiq_api_key'] ?? config('services.locationiq.key');
+                                        $hasLoc = !empty($locKey);
+                                    @endphp
+                                    <div class="mb-3">
+                                        <span class="badge {{ $hasLoc ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25' }} rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">
+                                            <i class="bi {{ $hasLoc ? 'bi-check-circle-fill' : 'bi-exclamation-circle' }} me-1"></i>{{ $hasLoc ? 'Active & Configured' : 'Default / OSM' }}
+                                        </span>
+                                    </div>
+                                    <p class="text-muted small mb-4" style="font-size: 0.8rem; line-height: 1.45;">
+                                        Powers interactive checkout maps, address autocomplete, and GPS coordinates with 5,000 free daily requests.
+                                    </p>
+                                </div>
+                                <a href="{{ route('admin.integrations.locationiq') }}" class="btn btn-sm btn-outline-success rounded-pill w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-1">
+                                    <span>Manage LocationIQ</span>
                                     <i class="bi bi-arrow-right"></i>
                                 </a>
                             </div>
