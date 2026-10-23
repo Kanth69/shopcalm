@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\OrderCancellation;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class RefundController extends Controller
@@ -23,6 +24,49 @@ class RefundController extends Controller
             $query->where('refund_method', $request->method);
         }
 
+        // Filter by Order Payment Method
+        if ($request->filled('payment_method')) {
+            $pm = strtolower($request->payment_method);
+            if ($pm === 'wallet') {
+                $query->where(function ($q) {
+                    $q->where('refund_method', 'wallet')
+                      ->orWhere('wallet_refund_amount', '>', 0)
+                      ->orWhereHas('order', function ($oq) {
+                          $oq->where('payment_method', 'wallet')
+                             ->orWhere('wallet_amount_used', '>', 0);
+                      });
+                });
+            } elseif ($pm === 'online') {
+                $query->whereHas('order', function ($oq) {
+                    $oq->whereIn('payment_method', ['online', 'razorpay', 'prepaid']);
+                });
+            } else {
+                $query->whereHas('order', function ($oq) use ($pm) {
+                    $oq->where('payment_method', $pm);
+                });
+            }
+        }
+
+        // Filter by Cancellation Date (order_cancellations.created_at)
+        if ($request->filled('start_date') || $request->filled('end_date') || $request->filled('from_date') || $request->filled('to_date')) {
+            $rawStart = $request->input('start_date') ?: $request->input('from_date');
+            $rawEnd = $request->input('end_date') ?: $request->input('to_date');
+
+            $start = $rawStart ? Carbon::parse($rawStart)->startOfDay() : null;
+            $end = $rawEnd ? Carbon::parse($rawEnd)->endOfDay() : null;
+
+            if ($start && $end && $start->gt($end)) {
+                [$start, $end] = [$end->copy()->startOfDay(), $start->copy()->endOfDay()];
+            }
+
+            if ($start) {
+                $query->where('order_cancellations.created_at', '>=', $start);
+            }
+            if ($end) {
+                $query->where('order_cancellations.created_at', '<=', $end);
+            }
+        }
+
         if ($request->filled('search')) {
             $search = trim($request->search);
             $cleanSearch = str_replace('CNL-', '', $search);
@@ -36,7 +80,7 @@ class RefundController extends Controller
             });
         }
 
-        $cancellations = $query->paginate(15);
+        $cancellations = $query->paginate(15)->withQueryString();
 
         // Key stats
         $pendingUpiCount   = OrderCancellation::where('refund_method', 'bank_upi')->where('refund_status', 'pending')->count();
@@ -96,7 +140,7 @@ class RefundController extends Controller
 
         // Trigger WhatsApp Refund Processed Notification (with UTR Proof)
         try {
-            app(\App\Services\WhatsAppService::class)->sendRefundProcessed($cancellation);
+            // WhatsApp notification deleted (only registration/reset OTP allowed)
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning("[Admin RefundController] WhatsApp Refund Processed notification failed: " . $e->getMessage());
         }

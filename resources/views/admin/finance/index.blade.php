@@ -9,10 +9,10 @@
 
 @section('actions')
     <div class="d-flex align-items-center gap-2">
-        <a href="{{ route('admin.reports.index', ['type' => 'profit_loss']) }}" class="btn btn-outline-primary rounded-pill px-3 shadow-xs fw-semibold" style="font-size: 0.85rem;">
+        <a href="{{ route('admin.reports.index', array_merge(['type' => 'profit_loss'], $range === 'custom' ? ['start_date' => $start->toDateString(), 'end_date' => $end->toDateString()] : [])) }}" class="btn btn-outline-primary rounded-pill px-3 shadow-xs fw-semibold" style="font-size: 0.85rem;">
             <i class="bi bi-file-earmark-spreadsheet me-1"></i> Full P&L Ledger
         </a>
-        <a href="{{ route('admin.reports.index', ['type' => 'profit_loss', 'export' => 1]) }}" class="btn btn-success rounded-pill px-3.5 shadow-xs fw-semibold" style="font-size: 0.85rem;">
+        <a href="{{ route('admin.reports.index', array_merge(['type' => 'profit_loss', 'export' => 1], $range === 'custom' ? ['start_date' => $start->toDateString(), 'end_date' => $end->toDateString()] : [])) }}" class="btn btn-success rounded-pill px-3.5 shadow-xs fw-semibold" style="font-size: 0.85rem;">
             <i class="bi bi-download me-1"></i> Export P&L CSV
         </a>
     </div>
@@ -62,22 +62,83 @@
                    class="btn btn-sm rounded-pill px-3 fw-bold {{ $range == 'all_time' ? 'btn-primary' : 'text-white-50' }}" style="font-size: 0.78rem;">
                     All Time
                 </a>
+                <button type="button" 
+                        class="btn btn-sm rounded-pill px-3 fw-bold {{ $range == 'custom' ? 'btn-warning text-dark shadow-sm' : 'text-white-50' }}" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#customDateFilterCollapse" 
+                        aria-expanded="{{ $range == 'custom' ? 'true' : 'false' }}"
+                        aria-controls="customDateFilterCollapse"
+                        style="font-size: 0.78rem;">
+                    <i class="bi bi-calendar3 me-1"></i> Custom Range
+                </button>
             </div>
+        </div>
+
+        {{-- Collapsible Custom Date Form --}}
+        <div class="collapse {{ $range == 'custom' ? 'show' : '' }} mb-3" id="customDateFilterCollapse">
+            <form action="{{ route('admin.finance.index') }}" method="GET" class="p-3 rounded-4 border border-warning border-opacity-25" style="background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(10px);">
+                <input type="hidden" name="range" value="custom">
+                <input type="hidden" name="status_scope" value="{{ $statusScope }}">
+                <div class="row g-2.5 align-items-center">
+                    <div class="col-12 col-lg-auto text-white-50 small fw-bold text-uppercase d-flex align-items-center gap-1.5" style="font-size: 0.74rem; letter-spacing: 0.5px;">
+                        <i class="bi bi-calendar-range text-warning fs-6"></i>
+                        <span>Custom Date Filter:</span>
+                    </div>
+                    <div class="col-6 col-sm-auto">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-dark border-secondary border-opacity-50 text-white-50 px-2.5" style="font-size: 0.75rem;">From</span>
+                            <input type="date" name="start_date" 
+                                   value="{{ request('start_date', $start->format('Y-m-d')) }}" 
+                                   class="form-control form-control-sm bg-dark text-white border-secondary border-opacity-50" 
+                                   max="{{ now()->format('Y-m-d') }}" 
+                                   required 
+                                   style="color-scheme: dark; font-size: 0.8rem;">
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm-auto">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-dark border-secondary border-opacity-50 text-white-50 px-2.5" style="font-size: 0.75rem;">To</span>
+                            <input type="date" name="end_date" 
+                                   value="{{ request('end_date', $end->format('Y-m-d')) }}" 
+                                   class="form-control form-control-sm bg-dark text-white border-secondary border-opacity-50" 
+                                   max="{{ now()->format('Y-m-d') }}" 
+                                   required 
+                                   style="color-scheme: dark; font-size: 0.8rem;">
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-auto d-flex align-items-center gap-2">
+                        <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold shadow-xs" style="font-size: 0.78rem;">
+                            <i class="bi bi-funnel me-1"></i> Apply Filter
+                        </button>
+                        @if($range == 'custom')
+                            <a href="{{ route('admin.finance.index', ['range' => 'this_month', 'status_scope' => $statusScope]) }}" 
+                               class="btn btn-sm btn-outline-light rounded-pill px-2.5 text-white-50 border-secondary border-opacity-50" 
+                               style="font-size: 0.78rem;" title="Reset to This Month">
+                                <i class="bi bi-x-circle me-1"></i> Reset
+                            </a>
+                        @endif
+                    </div>
+                    <div class="col-12 col-lg text-lg-end text-white-50 small" style="font-size: 0.75rem;">
+                        Active Window: <strong class="text-white">{{ $start->format('d M Y') }}</strong> &mdash; <strong class="text-white">{{ $end->format('d M Y') }}</strong>
+                        <span class="badge bg-warning bg-opacity-25 text-warning ms-1 px-2 py-0.5 rounded-pill">{{ $start->diffInDays($end) + 1 }} {{ Str::plural('day', $start->diffInDays($end) + 1) }}</span>
+                    </div>
+                </div>
+            </form>
         </div>
 
         {{-- Order Status Scope Filter Bar --}}
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-3 border-top border-secondary border-opacity-25" style="font-size: 0.8rem;">
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <span class="text-white-50 fw-bold small text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Order Scope:</span>
-                <a href="{{ route('admin.finance.index', ['range' => $range, 'status_scope' => 'realized']) }}" 
+                <a href="{{ route('admin.finance.index', array_merge(['range' => $range, 'status_scope' => 'realized'], $range === 'custom' ? ['start_date' => $start->toDateString(), 'end_date' => $end->toDateString()] : [])) }}" 
                    class="badge text-decoration-none rounded-pill px-3 py-1.5 {{ $statusScope == 'realized' ? 'bg-primary text-white' : 'bg-secondary bg-opacity-25 text-white-50 border border-secondary border-opacity-25' }}">
                     Active Fulfillments (Delivered & In-Transit)
                 </a>
-                <a href="{{ route('admin.finance.index', ['range' => $range, 'status_scope' => 'delivered']) }}" 
+                <a href="{{ route('admin.finance.index', array_merge(['range' => $range, 'status_scope' => 'delivered'], $range === 'custom' ? ['start_date' => $start->toDateString(), 'end_date' => $end->toDateString()] : [])) }}" 
                    class="badge text-decoration-none rounded-pill px-3 py-1.5 {{ $statusScope == 'delivered' ? 'bg-primary text-white' : 'bg-secondary bg-opacity-25 text-white-50 border border-secondary border-opacity-25' }}">
                     Delivered & Completed Only
                 </a>
-                <a href="{{ route('admin.finance.index', ['range' => $range, 'status_scope' => 'paid']) }}" 
+                <a href="{{ route('admin.finance.index', array_merge(['range' => $range, 'status_scope' => 'paid'], $range === 'custom' ? ['start_date' => $start->toDateString(), 'end_date' => $end->toDateString()] : [])) }}" 
                    class="badge text-decoration-none rounded-pill px-3 py-1.5 {{ $statusScope == 'paid' ? 'bg-primary text-white' : 'bg-secondary bg-opacity-25 text-white-50 border border-secondary border-opacity-25' }}">
                     Paid Status Verified
                 </a>

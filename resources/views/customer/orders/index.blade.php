@@ -234,6 +234,12 @@
                             <span><i class="bi bi-bag me-1 opacity-75"></i>{{ $order->items->count() }} item{{ $order->items->count() !== 1 ? 's' : '' }}</span>
                             @if($order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0))
                             <span class="text-success fw-bold"><i class="bi bi-wallet2 me-1 opacity-75"></i>WALLET (100% PAID)</span>
+                            @elseif($order->payment_method === 'doorstep_upi')
+                            <span class="text-success fw-bold"><i class="bi bi-qr-code-scan me-1 opacity-75"></i>DOORSTEP UPI</span>
+                            @elseif($order->payment_method === 'online')
+                            <span class="text-primary fw-semibold"><i class="bi bi-credit-card me-1 opacity-75"></i>ONLINE (PREPAID)</span>
+                            @elseif($order->payment_method === 'cod')
+                            <span class="text-secondary"><i class="bi bi-cash me-1 opacity-75"></i>{{ $order->payment_status === 'paid' ? 'COD (PAID)' : 'CASH ON DELIVERY' }}</span>
                             @elseif($order->payment_method)
                             <span><i class="bi bi-credit-card me-1 opacity-75"></i>{{ strtoupper($order->payment_method) }}</span>
                             @endif

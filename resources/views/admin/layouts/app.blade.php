@@ -768,6 +768,9 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('admin.integrations.locationiq') ? 'active' : '' }}" href="{{ route('admin.integrations.locationiq') }}"><i class="bi bi-geo-alt-fill text-danger me-1"></i> LocationIQ Maps API</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.integrations.pincodes') ? 'active' : '' }}" href="{{ route('admin.integrations.pincodes') }}"><i class="bi bi-mailbox2 text-indigo me-1"></i> Postal Pincodes API</a>
+                            </li>
                         </ul>
                     </div>
                 </li>

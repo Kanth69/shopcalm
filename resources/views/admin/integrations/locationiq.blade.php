@@ -105,22 +105,34 @@
             </div>
         </div>
 
-        <!-- How It Works & Setup Guide Card -->
+        <!-- Dual-Provider & OpenStreetMap Fallback Card -->
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
             <div class="card-header bg-white py-3 border-bottom">
-                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-info-circle-fill text-primary me-2"></i>LocationIQ Setup Guide</h6>
+                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-layers-fill text-success me-2"></i>Dual-Provider Fallback Architecture</h6>
             </div>
             <div class="card-body p-4 small text-muted">
-                <ol class="ps-3 mb-3 space-y-2">
-                    <li class="mb-2">Go to <a href="https://locationiq.com" target="_blank" class="fw-bold text-decoration-none">LocationIQ.com <i class="bi bi-box-arrow-up-right" style="font-size: 0.7rem;"></i></a> and create a free account (No credit card required).</li>
-                    <li class="mb-2">From the Dashboard, copy your <strong>Public Access Token</strong> (starts with <code>pk.</code>).</li>
-                    <li class="mb-2">Paste it in the box above, click <strong>Test Connection</strong>, then click <strong>Save Access Token</strong>.</li>
-                    <li>Checkout map reverse geocoding and address search will automatically utilize this key with 5,000 daily free requests!</li>
-                </ol>
+                <div class="p-3 bg-light rounded-3 border mb-3">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <div class="fw-bold text-dark"><i class="bi bi-shield-check text-success me-1"></i> OpenStreetMap Nominatim</div>
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill" style="font-size: 0.68rem;">Fallback Ready</span>
+                    </div>
+                    <p class="mb-2" style="font-size: 0.75rem;">If the LocationIQ client token is missing or daily quota is reached, ShopCalm automatically switches to free <strong>OpenStreetMap Nominatim</strong> with zero downtime.</p>
+                    
+                    <div id="osmResultAlert" class="alert d-none py-2 px-3 small rounded-3 mb-2"></div>
 
-                <div class="p-3 bg-light rounded-3 border">
-                    <div class="fw-bold text-dark mb-1"><i class="bi bi-layers-fill text-success me-1"></i> Dual-Provider Architecture</div>
-                    <p class="mb-0" style="font-size: 0.75rem;">If LocationIQ key is missing or quota is exhausted, ShopCalm seamlessly switches to free <strong>OpenStreetMap Nominatim</strong> as a zero-downtime fallback.</p>
+                    <button type="button" id="btnTestOsm" class="btn btn-sm btn-outline-success rounded-pill w-100 fw-bold" onclick="testOsmConnection()">
+                        <i class="bi bi-shield-check me-1"></i> Test OpenStreetMap Fallback Ping
+                    </button>
+                </div>
+
+                <div class="p-3 bg-primary bg-opacity-10 rounded-3 border border-primary border-opacity-25 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="fw-bold text-dark" style="font-size: 0.8rem;"><i class="bi bi-mailbox2 text-primary me-1"></i> Postal Pincodes Auto-Fill</div>
+                        <div class="text-muted" style="font-size: 0.72rem;">India Post & local serviceability directory</div>
+                    </div>
+                    <a href="{{ route('admin.integrations.pincodes') }}" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" style="font-size: 0.72rem;">
+                        Open Hub <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
                 </div>
             </div>
         </div>
@@ -268,6 +280,43 @@ function testConnection() {
         btn.innerHTML = '<i class="bi bi-broadcast me-1"></i> Test Connection';
         alertBox.classList.remove('d-none');
         alertBox.className = 'alert alert-danger py-2 px-3 small rounded-3 mb-3';
+        alertBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Error: ' + err.message;
+    });
+}
+
+function testOsmConnection() {
+    const btn = document.getElementById('btnTestOsm');
+    const alertBox = document.getElementById('osmResultAlert');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Pinging OSM...';
+    alertBox.className = 'alert d-none py-2 px-3 small rounded-3 mb-2';
+
+    fetch("{{ route('admin.integrations.locationiq.test-osm') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-shield-check me-1"></i> Test OpenStreetMap Fallback Ping';
+        alertBox.classList.remove('d-none');
+        if (data.success) {
+            alertBox.className = 'alert alert-success py-2 px-3 small rounded-3 mb-2';
+            alertBox.innerHTML = '<strong><i class="bi bi-check-circle-fill me-1"></i>' + data.message + '</strong><br><span class="text-dark">' + (data.display_name || '') + '</span>';
+        } else {
+            alertBox.className = 'alert alert-danger py-2 px-3 small rounded-3 mb-2';
+            alertBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> ' + (data.message || 'OSM test failed');
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-shield-check me-1"></i> Test OpenStreetMap Fallback Ping';
+        alertBox.classList.remove('d-none');
+        alertBox.className = 'alert alert-danger py-2 px-3 small rounded-3 mb-2';
         alertBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Error: ' + err.message;
     });
 }

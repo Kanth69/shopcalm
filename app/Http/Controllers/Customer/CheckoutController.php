@@ -393,7 +393,7 @@ class CheckoutController extends Controller
                 $order = $this->checkoutService->placeOrder($data);
                 Session::forget('applied_coupon');
 
-                app(\App\Services\EmailService::class)->sendOrderConfirmation($order);
+                // Order confirmation notifications (Email if provided, WhatsApp compulsory) handled centrally in CheckoutService
 
                 if ($request->ajax() || $request->wantsJson()) {
                     return response()->json([
@@ -486,7 +486,7 @@ class CheckoutController extends Controller
             Session::forget('applied_coupon');
 
             // Send HTML Email Confirmation (Only if customer provided an email address)
-            app(\App\Services\EmailService::class)->sendOrderConfirmation($order);
+            // Order confirmation notifications (Email if provided, WhatsApp compulsory) handled centrally in CheckoutService
 
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
@@ -713,7 +713,7 @@ class CheckoutController extends Controller
         $order = $this->checkoutService->markOrderPaid($order, $paymentDetails, $user);
         Session::forget('applied_coupon');
 
-        app(\App\Services\EmailService::class)->sendOrderConfirmation($order);
+        // Order confirmation notifications (Email if provided, WhatsApp compulsory) handled centrally in CheckoutService
 
         return response()->json([
             'success'      => true,

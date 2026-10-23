@@ -298,4 +298,65 @@ class Order extends Model
 
         return round(($this->gross_profit / $this->total_amount) * 100, 1);
     }
+
+    /**
+     * Get user-friendly formatted title of the payment mode.
+     */
+    public function getPaymentMethodDisplayAttribute(): string
+    {
+        $method = strtolower($this->payment_method ?? 'cod');
+        $isPaid = ($this->payment_status === 'paid');
+        $walletUsed = (float) ($this->wallet_amount_used ?? 0);
+
+        if ($method === 'wallet' || ($this->total_amount <= 0 && $walletUsed > 0)) {
+            return 'ShopCalm Wallet (100% Paid)';
+        }
+
+        if ($walletUsed > 0) {
+            $base = match($method) {
+                'doorstep_upi' => 'Doorstep UPI (Razorpay QR)',
+                'online'       => 'Prepaid Online (Razorpay)',
+                default        => 'Cash on Delivery',
+            };
+            return "ShopCalm Wallet (₹" . number_format($walletUsed, 2) . ") + {$base}";
+        }
+
+        if ($method === 'doorstep_upi') {
+            return 'Doorstep UPI (Razorpay QR)';
+        }
+
+        if ($method === 'online') {
+            $sub = $this->primaryPayment?->method_display;
+            return $sub ? "Prepaid Online ({$sub})" : 'Prepaid Online (Razorpay)';
+        }
+
+        if ($method === 'cod') {
+            return $isPaid ? 'Cash on Delivery (Paid in Cash)' : 'Cash on Delivery (Pay on Delivery)';
+        }
+
+        if ($method === 'cash') {
+            return 'Cash Paid at Doorstep';
+        }
+
+        return strtoupper($method);
+    }
+
+    /**
+     * Get HTML formatted payment method badge with icon.
+     */
+    public function getPaymentMethodBadgeAttribute(): string
+    {
+        $method = strtolower($this->payment_method ?? 'cod');
+        $isPaid = ($this->payment_status === 'paid');
+
+        return match($method) {
+            'doorstep_upi' => '<span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2.5 py-1 fw-bold"><i class="bi bi-qr-code-scan me-1"></i> Doorstep UPI</span>',
+            'online'       => '<span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 fw-bold"><i class="bi bi-shield-check me-1"></i> Prepaid Online</span>',
+            'wallet'       => '<span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2.5 py-1 fw-bold"><i class="bi bi-wallet2 me-1"></i> ShopCalm Wallet</span>',
+            'cod'          => $isPaid 
+                ? '<span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2.5 py-1 fw-bold"><i class="bi bi-cash-stack me-1"></i> COD (Paid)</span>'
+                : '<span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1 fw-bold"><i class="bi bi-cash me-1"></i> Pay on Delivery</span>',
+            default        => '<span class="badge bg-light text-dark border px-2.5 py-1 fw-bold">' . strtoupper($method) . '</span>',
+        };
+    }
 }

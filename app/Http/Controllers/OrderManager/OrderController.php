@@ -80,7 +80,22 @@ class OrderController extends Controller
 
         // 4. Payment Method Filter
         if ($request->filled('payment_method')) {
-            $query->where('payment_method', $request->payment_method);
+            $method = strtolower($request->payment_method);
+            if ($method === 'wallet') {
+                $query->where(function ($q) {
+                    $q->where('payment_method', 'wallet')
+                      ->orWhere('payment_method', 'store_wallet')
+                      ->orWhere('wallet_amount_used', '>', 0);
+                });
+            } elseif ($method === 'online') {
+                $query->where(function ($q) {
+                    $q->where('payment_method', 'online')
+                      ->orWhere('payment_method', 'razorpay')
+                      ->orWhere('payment_method', 'prepaid');
+                });
+            } else {
+                $query->where('payment_method', $method);
+            }
         }
 
         // 5. Payment Status Filter
@@ -89,7 +104,24 @@ class OrderController extends Controller
         }
 
         // 6. Date Filter
-        if ($request->filled('date')) {
+        if ($request->filled('start_date') || $request->filled('end_date') || $request->filled('from_date') || $request->filled('to_date')) {
+            $rawStart = $request->input('start_date') ?: $request->input('from_date');
+            $rawEnd = $request->input('end_date') ?: $request->input('to_date');
+
+            $start = $rawStart ? \Carbon\Carbon::parse($rawStart)->startOfDay() : null;
+            $end = $rawEnd ? \Carbon\Carbon::parse($rawEnd)->endOfDay() : null;
+
+            if ($start && $end && $start->gt($end)) {
+                [$start, $end] = [$end->copy()->startOfDay(), $start->copy()->endOfDay()];
+            }
+
+            if ($start) {
+                $query->where('created_at', '>=', $start);
+            }
+            if ($end) {
+                $query->where('created_at', '<=', $end);
+            }
+        } elseif ($request->filled('date')) {
             if ($request->date === 'today') {
                 $query->whereDate('created_at', today());
             } elseif ($request->date === 'yesterday') {
@@ -206,23 +238,9 @@ class OrderController extends Controller
                 'notes'           => $notes ?: "Status updated to " . ucfirst(str_replace('_', ' ', $newStatus)) . " by Order Manager.",
             ]);
 
-            // If marked as out for delivery, automatically trigger WhatsApp Notification with Handover OTP
-            if ($newStatus === 'out for delivery' && $order->isLocalBengaluruDelivery()) {
-                try {
-                    app(\App\Services\WhatsAppService::class)->sendOutForDeliveryLocal($order);
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning("[OrderManager OrderController] WhatsApp Out For Delivery notification failed: " . $e->getMessage());
-                }
-            }
-
-            // If marked as delivered, trigger Tiered Referral Milestone Rewards & WhatsApp Notification
+            // If marked as delivered, trigger Tiered Referral Milestone Rewards
             if ($newStatus === 'delivered') {
                 app(\App\Services\WalletService::class)->rewardReferrerOnDeliveredOrder($order);
-                try {
-                    app(\App\Services\WhatsAppService::class)->sendOrderDelivered($order);
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning("[OrderManager OrderController] WhatsApp Order Delivered notification failed: " . $e->getMessage());
-                }
             }
         });
 

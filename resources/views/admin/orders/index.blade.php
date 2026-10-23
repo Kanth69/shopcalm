@@ -100,40 +100,113 @@
         </div>
 
         <!-- Search & Advanced Filter Controls -->
-        <form method="GET" action="{{ route('admin.orders.index') }}">
+        <form method="GET" action="{{ route('admin.orders.index') }}" class="mb-1">
             @if(request('status'))
                 <input type="hidden" name="status" value="{{ request('status') }}">
             @endif
 
-            <div class="row g-3 align-items-center">
-                <div class="col-md-6">
+            <div class="row g-2.5 align-items-center">
+                {{-- Search --}}
+                <div class="col-12 col-lg-4">
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0 text-muted">
                             <i class="bi bi-search"></i>
                         </span>
                         <input type="text" name="search" class="form-control border-start-0 ps-0" 
-                            placeholder="Search by Order #, Customer Name, Email, or Phone..." 
+                            placeholder="Search Order #, Name, Phone, Email..." 
                             value="{{ request('search') }}">
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <select name="payment_method" class="form-select" onchange="this.form.submit()">
-                        <option value="">All Payment Methods</option>
-                        <option value="cod" {{ request('payment_method') === 'cod' ? 'selected' : '' }}>Cash on Delivery (COD)</option>
-                        <option value="online" {{ request('payment_method') === 'online' ? 'selected' : '' }}>Online Payment</option>
-                    </select>
+
+                {{-- Payment Method --}}
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-muted small"><i class="bi bi-credit-card-2-front"></i></span>
+                        <select name="payment_method" class="form-select" onchange="this.form.submit()">
+                            <option value="">All Payment Methods</option>
+                            <option value="cod" {{ request('payment_method') === 'cod' ? 'selected' : '' }}>💵 Cash on Delivery (COD)</option>
+                            <option value="online" {{ request('payment_method') === 'online' ? 'selected' : '' }}>💳 Prepaid Online (Razorpay)</option>
+                            <option value="doorstep_upi" {{ request('payment_method') === 'doorstep_upi' ? 'selected' : '' }}>📱 Doorstep UPI (QR Code)</option>
+                            <option value="wallet" {{ request('payment_method') === 'wallet' ? 'selected' : '' }}>⚡ ShopCalm Wallet</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="col-md-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary rounded-pill px-4 w-100 fw-bold">
-                        Filter
+
+                {{-- Custom Date From --}}
+                <div class="col-6 col-sm-3 col-lg-2">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light text-muted small px-2">From</span>
+                        <input type="date" name="start_date" 
+                            value="{{ request('start_date') }}" 
+                            max="{{ now()->format('Y-m-d') }}" 
+                            class="form-control" 
+                            placeholder="Start Date" 
+                            title="Filter from creation date">
+                    </div>
+                </div>
+
+                {{-- Custom Date To --}}
+                <div class="col-6 col-sm-3 col-lg-2">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light text-muted small px-2">To</span>
+                        <input type="date" name="end_date" 
+                            value="{{ request('end_date') }}" 
+                            max="{{ now()->format('Y-m-d') }}" 
+                            class="form-control" 
+                            placeholder="End Date" 
+                            title="Filter to creation date">
+                    </div>
+                </div>
+
+                {{-- Actions --}}
+                <div class="col-12 col-lg-1 d-flex gap-1.5">
+                    <button type="submit" class="btn btn-primary rounded-pill w-100 fw-bold shadow-xs py-2 d-flex align-items-center justify-content-center" title="Apply Filters">
+                        <i class="bi bi-funnel-fill me-1"></i> Filter
                     </button>
-                    @if(request()->hasAny(['search', 'status', 'payment_method']))
-                        <a href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary rounded-pill px-3" title="Clear all filters">
-                            Clear
+                    @if(request()->hasAny(['search', 'status', 'payment_method', 'start_date', 'end_date']))
+                        <a href="{{ route('admin.orders.index', request('status') ? ['status' => request('status')] : []) }}" class="btn btn-outline-secondary rounded-pill px-2.5 py-2" title="Reset Filters">
+                            <i class="bi bi-x-circle"></i>
                         </a>
                     @endif
                 </div>
             </div>
+
+            {{-- Active Filter Pills Summary --}}
+            @if(request()->hasAny(['payment_method', 'start_date', 'end_date', 'search']))
+                <div class="d-flex align-items-center gap-2 flex-wrap pt-2 mt-2 border-top">
+                    <span class="text-muted small fw-semibold" style="font-size: 0.72rem;">ACTIVE FILTERS:</span>
+                    @if(request('search'))
+                        <span class="badge bg-light text-dark border rounded-pill px-2.5 py-1 small">
+                            Search: "{{ request('search') }}"
+                            <a href="{{ route('admin.orders.index', request()->except(['search', 'page'])) }}" class="text-danger ms-1 text-decoration-none">&times;</a>
+                        </span>
+                    @endif
+                    @if(request('payment_method'))
+                        @php
+                            $pmLabels = [
+                                'cod' => 'COD',
+                                'online' => 'Prepaid Online',
+                                'doorstep_upi' => 'Doorstep UPI',
+                                'wallet' => 'ShopCalm Wallet'
+                            ];
+                        @endphp
+                        <span class="badge bg-light text-dark border rounded-pill px-2.5 py-1 small">
+                            Payment: {{ $pmLabels[request('payment_method')] ?? strtoupper(request('payment_method')) }}
+                            <a href="{{ route('admin.orders.index', request()->except(['payment_method', 'page'])) }}" class="text-danger ms-1 text-decoration-none">&times;</a>
+                        </span>
+                    @endif
+                    @if(request('start_date') || request('end_date'))
+                        <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-50 rounded-pill px-2.5 py-1 small">
+                            <i class="bi bi-calendar-event me-1 text-warning"></i>
+                            Date: {{ request('start_date') ? \Carbon\Carbon::parse(request('start_date'))->format('d M Y') : 'Start' }} &rarr; {{ request('end_date') ? \Carbon\Carbon::parse(request('end_date'))->format('d M Y') : 'Today' }}
+                            <a href="{{ route('admin.orders.index', request()->except(['start_date', 'end_date', 'page'])) }}" class="text-danger ms-1 text-decoration-none">&times;</a>
+                        </span>
+                    @endif
+                    <a href="{{ route('admin.orders.index', request('status') ? ['status' => request('status')] : []) }}" class="btn btn-link btn-sm p-0 text-decoration-none text-muted small ms-auto" style="font-size: 0.75rem;">
+                        <i class="bi bi-arrow-counterclockwise me-0.5"></i> Clear all filters
+                    </a>
+                </div>
+            @endif
         </form>
     </div>
 </div>
@@ -228,11 +301,19 @@
                                     <span class="badge bg-dark text-white rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
                                         <i class="bi bi-wallet2 me-1"></i>WALLET + COD
                                     </span>
+                                @elseif($pm === 'doorstep_upi')
+                                    <span class="badge bg-success text-white rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
+                                        <i class="bi bi-qr-code-scan me-1"></i>WALLET + DOORSTEP UPI
+                                    </span>
                                 @else
                                     <span class="badge bg-primary text-white rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
                                         <i class="bi bi-wallet2 me-1"></i>WALLET + ONLINE
                                     </span>
                                 @endif
+                            @elseif($pm === 'doorstep_upi')
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
+                                    <i class="bi bi-qr-code-scan me-1"></i>DOORSTEP UPI
+                                </span>
                             @elseif($pm === 'cod')
                                 <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
                                     <i class="bi bi-cash-stack me-1"></i>COD

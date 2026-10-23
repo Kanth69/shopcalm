@@ -275,7 +275,13 @@ class CheckoutService
             // 6. Clear Selected Cart Items
             $this->cartService->clearSelectedItems();
 
-            // 7. Trigger WhatsApp Order Confirmation
+            // 7. Trigger Order Confirmation Notifications (Email if provided, WhatsApp compulsory)
+            try {
+                app(\App\Services\EmailService::class)->sendOrderConfirmation($order);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("[CheckoutService] Order confirmation email failed: " . $e->getMessage());
+            }
+
             try {
                 app(\App\Services\WhatsAppService::class)->sendOrderConfirmation($order);
             } catch (\Throwable $e) {
@@ -562,12 +568,17 @@ class CheckoutService
             // 7. Clear Selected Cart Items
             $this->cartService->clearSelectedItems();
 
-            // 8. Trigger Email & WhatsApp Confirmation
+            // 8. Trigger Email & WhatsApp Confirmation (Email if provided, WhatsApp compulsory)
             try {
                 app(\App\Services\EmailService::class)->sendOrderConfirmation($order);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("[CheckoutService] Order confirmation email failed: " . $e->getMessage());
+            }
+
+            try {
                 app(\App\Services\WhatsAppService::class)->sendOrderConfirmation($order);
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning("[CheckoutService] Order confirmation notifications failed: " . $e->getMessage());
+                \Illuminate\Support\Facades\Log::warning("[CheckoutService] WhatsApp order confirmation failed: " . $e->getMessage());
             }
 
             return $order;
@@ -732,12 +743,11 @@ class CheckoutService
             // 5. Clear Selected Cart Items
             $this->cartService->clearSelectedItems();
 
-            // 6. Trigger Email & WhatsApp Confirmation
+            // 6. Trigger Email Confirmation
             try {
                 app(\App\Services\EmailService::class)->sendOrderConfirmation($order);
-                app(\App\Services\WhatsAppService::class)->sendOrderConfirmation($order);
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning("[CheckoutService] Order confirmation notifications failed: " . $e->getMessage());
+                \Illuminate\Support\Facades\Log::warning("[CheckoutService] Order confirmation email failed: " . $e->getMessage());
             }
 
             return $order;

@@ -139,6 +139,9 @@ $registerStaffRoutes = function () {
             Route::get('locationiq', [\App\Http\Controllers\Admin\IntegrationController::class, 'locationiq'])->name('locationiq');
             Route::post('locationiq/update', [\App\Http\Controllers\Admin\IntegrationController::class, 'updateLocationiq'])->name('locationiq.update');
             Route::post('locationiq/test', [\App\Http\Controllers\Admin\IntegrationController::class, 'testLocationiq'])->name('locationiq.test');
+            Route::post('locationiq/test-osm', [\App\Http\Controllers\Admin\IntegrationController::class, 'testOsm'])->name('locationiq.test-osm');
+            Route::get('pincodes', [\App\Http\Controllers\Admin\IntegrationController::class, 'pincodes'])->name('pincodes');
+            Route::post('pincodes/test-lookup', [\App\Http\Controllers\Admin\IntegrationController::class, 'testPincodeLookup'])->name('pincodes.test-lookup');
         });
     });
 

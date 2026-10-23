@@ -13,7 +13,7 @@
         <a href="{{ route('admin.orders.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold">
             <i class="bi bi-arrow-left me-1"></i> Back
         </a>
-        @if(!in_array($order->status, ['cancelled', 'delivered', 'returned']))
+        @if(!in_array($order->status, ['cancelled', 'returned']))
             <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-semibold shadow-xs" data-bs-toggle="modal" data-bs-target="#adminCancelOrderModal">
                 <i class="bi bi-x-circle me-1"></i> Cancel Order
             </button>
@@ -46,7 +46,21 @@
                 <div class="d-flex align-items-center gap-2.5 text-muted flex-wrap" style="font-size: 0.82rem;">
                     <span><i class="bi bi-calendar3 me-1 text-primary"></i> Placed on {{ $order->created_at->format('d M, Y \a\t h:i A') }}</span>
                     <span>&bull;</span>
-                    <span><i class="bi bi-credit-card me-1 text-success"></i> Payment: <strong class="text-dark">{{ ($order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0)) ? 'WALLET (100% PAID)' : strtoupper($order->payment_method ?? 'COD') }}</strong></span>
+                    <span><i class="bi bi-credit-card me-1 text-success"></i> Payment: 
+                        <strong class="text-dark">
+                            @if($order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0))
+                                WALLET (100% PAID)
+                            @elseif($order->payment_method === 'doorstep_upi')
+                                DOORSTEP UPI (PAID VIA QR)
+                            @elseif($order->payment_method === 'online')
+                                PREPAID ONLINE (RAZORPAY)
+                            @elseif($order->payment_method === 'cod')
+                                {{ $order->payment_status === 'paid' ? 'COD (PAID IN CASH)' : 'CASH ON DELIVERY' }}
+                            @else
+                                {{ strtoupper($order->payment_method ?? 'COD') }}
+                            @endif
+                        </strong>
+                    </span>
                     <span>&bull;</span>
                     <span>Payment Status: <strong class="text-dark text-capitalize">{{ $order->payment_status ?? 'Paid' }}</strong></span>
                 </div>
@@ -449,7 +463,7 @@
 @endif
 
 {{-- ── Admin Cancel Order Modal ── --}}
-@if(!in_array($order->status, ['cancelled', 'delivered', 'returned']))
+@if(!in_array($order->status, ['cancelled', 'returned']))
 <div class="modal fade" id="adminCancelOrderModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
@@ -479,13 +493,103 @@
                         </select>
                     </div>
 
+                    @php
+                        $isPaid = ($order->payment_status === 'paid');
+                        $walletUsed = (float) ($order->wallet_amount_used ?? 0);
+                        $totalAmt = (float) ($order->total_amount ?? 0);
+                        $method = strtolower($order->payment_method ?? 'cod');
+
+                        if (!$isPaid && $method === 'cod') {
+                            if ($walletUsed > 0) {
+                                $destType = 'wallet';
+                                $destTitle = 'ShopCalm Wallet (₹' . number_format($walletUsed, 2) . ')';
+                                $destBadge = '⚡ Instant Wallet Credit';
+                                $destDesc = 'Wallet amount of ₹' . number_format($walletUsed, 2) . ' will be refunded to customer\'s wallet. Cash on Delivery portion is ₹0 (No cash collected - 100% Free Cancellation).';
+                                $destIcon = 'bi-wallet2 text-success';
+                                $destBg = '#ecfdf5';
+                                $destBorder = '#a7f3d0';
+                            } else {
+                                $destType = 'none';
+                                $destTitle = 'No Refund Required (₹0.00)';
+                                $destBadge = '✓ Free COD Cancellation';
+                                $destDesc = 'This is an unpaid Cash on Delivery order. No cash was collected from the customer. Zero refund charges.';
+                                $destIcon = 'bi-receipt-cutoff text-secondary';
+                                $destBg = '#f8fafc';
+                                $destBorder = '#e2e8f0';
+                            }
+                        } elseif (!$isPaid && $method === 'online') {
+                            if ($walletUsed > 0) {
+                                $destType = 'wallet';
+                                $destTitle = 'ShopCalm Wallet (₹' . number_format($walletUsed, 2) . ')';
+                                $destBadge = '⚡ Instant Wallet Credit';
+                                $destDesc = 'Wallet amount of ₹' . number_format($walletUsed, 2) . ' will be refunded to customer\'s wallet. Unpaid online portion cancelled with ₹0 charges.';
+                                $destIcon = 'bi-wallet2 text-success';
+                                $destBg = '#ecfdf5';
+                                $destBorder = '#a7f3d0';
+                            } else {
+                                $destType = 'none';
+                                $destTitle = 'No Refund Required (₹0.00)';
+                                $destBadge = '✓ Unpaid Online Transaction';
+                                $destDesc = 'Online payment was not completed for this order. No refund required.';
+                                $destIcon = 'bi-slash-circle text-secondary';
+                                $destBg = '#f8fafc';
+                                $destBorder = '#e2e8f0';
+                            }
+                        } elseif ($method === 'online' && $isPaid) {
+                            if ($walletUsed > 0) {
+                                $destType = 'dual';
+                                $destTitle = 'Dual Split Automatic Refund (100%)';
+                                $destBadge = '🔄 Dual Split Refund';
+                                $destDesc = '• ₹' . number_format($walletUsed, 2) . ' credited back to customer\'s ShopCalm Wallet (Instant)' . "\n" . '• ₹' . number_format($totalAmt, 2) . ' direct refund to Original Payment Source (Razorpay Direct API)';
+                                $destIcon = 'bi-arrow-left-right text-primary';
+                                $destBg = '#eff6ff';
+                                $destBorder = '#bfdbfe';
+                            } else {
+                                $destType = 'original_source';
+                                $destTitle = 'Original Payment Source (Razorpay Direct API)';
+                                $destBadge = '🏦 100% PG Direct Refund';
+                                $destDesc = '100% full refund of ₹' . number_format($totalAmt, 2) . ' will be initiated directly back to customer\'s original payment source (UPI / Card / Netbanking via Razorpay API).';
+                                $destIcon = 'bi-credit-card-2-front text-primary';
+                                $destBg = '#eff6ff';
+                                $destBorder = '#bfdbfe';
+                            }
+                        } elseif ($method === 'wallet' || ($walletUsed >= $totalAmt && $walletUsed > 0)) {
+                            $destType = 'wallet';
+                            $destTitle = 'ShopCalm Wallet (100% Instant Credit)';
+                            $destBadge = '⚡ 100% Wallet Refund';
+                            $destDesc = 'Full amount of ₹' . number_format($totalAmt > 0 ? $totalAmt : $walletUsed, 2) . ' will be credited back to customer\'s ShopCalm Wallet balance immediately.';
+                            $destIcon = 'bi-wallet2 text-success';
+                            $destBg = '#ecfdf5';
+                            $destBorder = '#a7f3d0';
+                        } else {
+                            // Doorstep UPI, Cash collected at doorstep, or other paid doorstep method
+                            $destType = 'wallet';
+                            $destTitle = 'ShopCalm Wallet (100% Instant Refund)';
+                            $destBadge = '⚡ 100% Doorstep Refund';
+                            $destDesc = 'Payment collected at doorstep (₹' . number_format($totalAmt, 2) . ') will be credited directly to customer\'s ShopCalm Wallet balance instantly.';
+                            $destIcon = 'bi-wallet2 text-success';
+                            $destBg = '#ecfdf5';
+                            $destBorder = '#a7f3d0';
+                        }
+                    @endphp
+
                     <div class="mb-3">
-                        <label class="form-label fw-bold text-dark small">Refund Destination Mode <span class="text-danger">*</span></label>
-                        <select name="refund_method" class="form-select fw-semibold" required>
-                            <option value="wallet" selected>⚡ Instant Store Wallet Credit (100% Refund)</option>
-                            <option value="bank">🏦 Bank / Original Gateway Payout Queue</option>
-                        </select>
-                        <small class="text-muted d-block mt-1">Instant Store Wallet credit allows the customer to use funds immediately for reorders.</small>
+                        <label class="form-label fw-bold text-dark small mb-1">
+                            Refund Destination Mode <span class="badge bg-secondary-subtle text-secondary border small fw-normal ms-1">Auto-Determined</span>
+                        </label>
+                        <input type="hidden" name="refund_method" value="{{ $destType }}">
+                        <div class="p-3 rounded-3 border d-flex align-items-start gap-2.5" style="background: {{ $destBg }}; border-color: {{ $destBorder }} !important;">
+                            <div class="flex-shrink-0 mt-0.5 fs-5">
+                                <i class="bi {{ $destIcon }}"></i>
+                            </div>
+                            <div class="min-w-0 flex-grow-1">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-1 mb-1">
+                                    <span class="fw-bold text-dark" style="font-size: 0.9rem;">{{ $destTitle }}</span>
+                                    <span class="badge bg-white text-dark border shadow-xs small" style="font-size: 0.72rem;">{{ $destBadge }}</span>
+                                </div>
+                                <div class="text-secondary small" style="font-size: 0.78rem; line-height: 1.4; white-space: pre-line;">{{ $destDesc }}</div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="mb-0">

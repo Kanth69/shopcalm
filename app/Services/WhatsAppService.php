@@ -3,20 +3,19 @@
 namespace App\Services;
 
 use App\Models\Order;
-use App\Models\OrderCancellation;
 use App\Models\OtpVerification;
 use App\Models\Setting;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 class WhatsAppService
 {
     /**
-     * Core method to send Meta WhatsApp Cloud API Template Messages.
+     * Send Meta WhatsApp Cloud API Template Message (Authentication OTP or Order Confirmation).
      */
-    public function sendTemplateMessage(string $mobileNumber, string $templateKey, array $bodyParameters = [], array $buttonParameters = []): bool
+    public function sendTemplateMessage(string $mobileNumber, string $templateKey = 'whatsapp_template_name', array $bodyParameters = [], array $buttonParameters = []): bool
     {
         $cleanPhone = preg_replace('/\D/', '', $mobileNumber);
         if (strlen($cleanPhone) === 10) {
@@ -29,34 +28,25 @@ class WhatsAppService
         $phoneNumberId = Setting::get('whatsapp_phone_number_id') 
             ?: (env('WHATSAPP_CLOUD_PHONE_NUMBER_ID') ?: env('WHATSAPP_PHONE_NUMBER_ID'));
 
-        $templateName = Setting::get($templateKey) ?: env(strtoupper($templateKey));
+        $defaultTemplate = ($templateKey === 'whatsapp_template_order_confirmed') 
+            ? 'shopcalm_order_confirmed' 
+            : 'shopcalm_otp';
 
-        // Default fallbacks if template setting is not customized yet
-        if (empty($templateName)) {
-            $defaults = [
-                'whatsapp_template_name'                    => 'authentication_otp',
-                'whatsapp_template_order_confirmed'         => 'order_confirmed',
-                'whatsapp_template_out_for_delivery_local'  => 'out_for_delivery_otp',
-                'whatsapp_template_courier_dispatched'      => 'courier_dispatched',
-                'whatsapp_template_order_delivered'         => 'order_delivered',
-                'whatsapp_template_order_cancelled'         => 'order_cancelled',
-                'whatsapp_template_refund_processed'        => 'refund_processed',
-            ];
-            $templateName = $defaults[$templateKey] ?? 'authentication_otp';
-        }
+        $templateName = Setting::get($templateKey) 
+            ?: (env(strtoupper($templateKey)) ?: $defaultTemplate);
 
         $langCode = Setting::get('whatsapp_template_language') 
-            ?: (env('WHATSAPP_TEMPLATE_LANGUAGE') ?: 'en');
+            ?: (env('WHATSAPP_TEMPLATE_LANGUAGE') ?: 'en_US');
 
         if (empty($apiToken) || empty($phoneNumberId)) {
-            Log::info("LOCAL DEV FALLBACK: WhatsApp message [Template: {$templateName}] for {$cleanPhone} (Params: " . json_encode($bodyParameters) . ")");
+            Log::info("LOCAL DEV FALLBACK: WhatsApp Message [Template: {$templateName}] for {$cleanPhone} (Params: " . json_encode($bodyParameters) . ")");
             return true;
         }
 
         try {
             $components = [];
 
-            // Body parameters
+            // Body parameters (e.g. OTP code or [Customer Name, Order Number, Amount, Payment Method])
             if (!empty($bodyParameters)) {
                 $bodyParamsFormatted = [];
                 foreach ($bodyParameters as $param) {
@@ -68,7 +58,7 @@ class WhatsAppService
                 ];
             }
 
-            // Button parameters (URL buttons etc.)
+            // Copy-code Button parameter for Meta Authentication Templates
             if (!empty($buttonParameters)) {
                 foreach ($buttonParameters as $index => $param) {
                     $components[] = [
@@ -82,16 +72,52 @@ class WhatsAppService
                 }
             }
 
-            $response = Http::timeout(5)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", [
+            $payload = [
                 'messaging_product' => 'whatsapp',
                 'to'                => $cleanPhone,
                 'type'              => 'template',
                 'template'          => [
                     'name'       => $templateName,
                     'language'   => ['code' => $langCode],
-                    'components' => $components
-                ]
-            ]);
+                    'components' => $components,
+                ],
+            ];
+
+            $response = Http::timeout(6)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
+
+            // 1. Language mismatch retry (if template was registered under 'en' instead of 'en_US' or vice-versa)
+            if ($response->failed() && (str_contains($response->body(), '132001') || str_contains($response->body(), 'translated language'))) {
+                $altLang = ($langCode === 'en_US') ? 'en' : 'en_US';
+                $payload['template']['language']['code'] = $altLang;
+                $response = Http::timeout(6)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
+            }
+
+            // 2. If template with button fails, retry once with body-only components (fallback for templates without buttons)
+            if ($response->failed() && !empty($buttonParameters)) {
+                $bodyOnlyComponents = array_filter($components, fn($c) => ($c['type'] ?? '') === 'body');
+                $payload['template']['components'] = array_values($bodyOnlyComponents);
+                $retryRes = Http::timeout(6)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
+                if ($retryRes->successful()) {
+                    Log::info("Meta WhatsApp API Message dispatched to {$cleanPhone} [Template: {$templateName}] (body-only). Message ID: " . ($retryRes->json('messages.0.id') ?? 'N/A'));
+                    return true;
+                }
+            }
+
+            // 3. Parameter count auto-adaptation (supports both 2-variable and 4-variable template designs)
+            if ($response->failed() && (str_contains($response->body(), '132000') || str_contains($response->body(), 'does not match the expected number'))) {
+                if (count($bodyParameters) > 2) {
+                    $reducedParams = array_slice($bodyParameters, 0, 2);
+                    $reducedFormatted = array_map(fn($p) => ['type' => 'text', 'text' => (string)$p], $reducedParams);
+                    $payload['template']['components'] = [
+                        ['type' => 'body', 'parameters' => $reducedFormatted]
+                    ];
+                    $retryRes = Http::timeout(6)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
+                    if ($retryRes->successful()) {
+                        Log::info("Meta WhatsApp API Message dispatched to {$cleanPhone} [Template: {$templateName}] (2-variable adaptation). Message ID: " . ($retryRes->json('messages.0.id') ?? 'N/A'));
+                        return true;
+                    }
+                }
+            }
 
             if ($response->failed()) {
                 Log::error("Meta WhatsApp Cloud API Error for {$cleanPhone} [Template: {$templateName}]: " . $response->body());
@@ -107,81 +133,7 @@ class WhatsAppService
     }
 
     /**
-     * Send direct freeform text message via Meta WhatsApp Cloud API.
-     */
-    public function sendTextMessage(string $mobileNumber, string $text): bool
-    {
-        $cleanPhone = preg_replace('/\D/', '', $mobileNumber);
-        if (strlen($cleanPhone) === 10) {
-            $cleanPhone = '91' . $cleanPhone;
-        }
-
-        $apiToken = Setting::get('whatsapp_api_token') 
-            ?: (env('WHATSAPP_CLOUD_API_TOKEN') ?: env('WHATSAPP_API_TOKEN'));
-
-        $phoneNumberId = Setting::get('whatsapp_phone_number_id') 
-            ?: (env('WHATSAPP_CLOUD_PHONE_NUMBER_ID') ?: env('WHATSAPP_PHONE_NUMBER_ID'));
-
-        if (empty($apiToken) || empty($phoneNumberId)) {
-            Log::info("LOCAL DEV FALLBACK: WhatsApp direct text for {$cleanPhone}: {$text}");
-            return true;
-        }
-
-        try {
-            $response = Http::timeout(5)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", [
-                'messaging_product' => 'whatsapp',
-                'to'                => $cleanPhone,
-                'type'              => 'text',
-                'text'              => [
-                    'body' => $text,
-                ],
-            ]);
-
-            if ($response->failed()) {
-                Log::warning("Meta WhatsApp Cloud API text failed for {$cleanPhone}: " . $response->body());
-                return false;
-            }
-
-            Log::info("Meta WhatsApp API direct text dispatched to {$cleanPhone}. Message ID: " . ($response->json('messages.0.id') ?? 'N/A'));
-            return true;
-        } catch (\Exception $e) {
-            Log::error("Meta WhatsApp API text exception for {$cleanPhone}: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Get the formatted Out For Delivery message text.
-     */
-    public function getOutForDeliveryMessage(Order $order): string
-    {
-        $otp = $order->delivery_otp ?? $order->fulfillment?->delivery_otp ?? '1234';
-        $customerName = $order->shipping_name ?: 'Customer';
-        $riderName = $order->rider_name ?? 'Our Delivery Partner';
-        $riderPhone = $order->rider_phone ? " ({$order->rider_phone})" : '';
-        $riderInfo = $riderName . $riderPhone;
-
-        return "Hello *{$customerName}*,\n\nYour ShopCalm order *#{$order->order_number}* is out for delivery with delivery partner *{$riderInfo}*.\n\nTo receive your parcel, please share your delivery pass *{$otp}* with the rider at your doorstep.\n\nThank you for choosing ShopCalm!\n\n_— ShopCalm Express Dispatch_";
-    }
-
-    /**
-     * Generate 1-click wa.me URL for the rider or staff to send the OTP to the customer.
-     */
-    public function getOutForDeliveryWhatsAppUrl(Order $order): string
-    {
-        $phone = $order->shipping_phone ?? $order->user?->mobile_number ?? '';
-        $cleanPhone = preg_replace('/\D/', '', $phone);
-        if (strlen($cleanPhone) === 10) {
-            $cleanPhone = '91' . $cleanPhone;
-        }
-
-        $text = $this->getOutForDeliveryMessage($order);
-
-        return "https://wa.me/{$cleanPhone}?text=" . rawurlencode($text);
-    }
-
-    /**
-     * Generate 6-digit OTP and send via Meta WhatsApp Cloud API.
+     * Generate 6-digit OTP and send via Meta WhatsApp Cloud API (Registration / Password Reset / Login).
      */
     public function sendOtp(string $mobileNumber, string $purpose = 'REGISTER'): string
     {
@@ -190,8 +142,8 @@ class WhatsAppService
         OtpVerification::updateOrCreate(
             ['mobile_number' => $mobileNumber, 'purpose' => $purpose],
             [
-                'otp_hash' => Hash::make($otp),
-                'expires_at' => Carbon::now()->addMinutes(10),
+                'otp_hash'    => Hash::make($otp),
+                'expires_at'  => Carbon::now()->addMinutes(10),
                 'verified_at' => null,
             ]
         );
@@ -202,7 +154,7 @@ class WhatsAppService
     }
 
     /**
-     * Verify OTP for a given mobile number and purpose.
+     * Verify OTP for a given mobile number and purpose (Registration / Password Reset / Login).
      */
     public function verifyOtp(string $mobileNumber, string $otp, string $purpose = 'REGISTER'): bool
     {
@@ -221,186 +173,47 @@ class WhatsAppService
     }
 
     /**
-     * 1. Send Order Confirmation Notification.
+     * Resend authentication OTP.
+     */
+    public function resendOtp(string $mobileNumber, string $purpose = 'REGISTER'): string
+    {
+        return $this->sendOtp($mobileNumber, $purpose);
+    }
+
+    /**
+     * Send Order Confirmation Notification via Meta WhatsApp Cloud API (Utility Category).
+     * Compulsory notification sent to the customer's phone number upon order placement.
      */
     public function sendOrderConfirmation(Order $order): bool
     {
         $phone = $order->shipping_phone ?? $order->user?->mobile_number;
-        if (empty($phone)) return false;
+        if (empty($phone)) {
+            Log::info("[WhatsAppService] Order #{$order->order_number} has no mobile phone. Skipping WhatsApp.");
+            return false;
+        }
 
-        $paymentText = ($order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0)) 
-            ? '100% Wallet' 
-            : strtoupper($order->payment_method ?? 'COD');
+        $customerName = $order->shipping_name ?: ($order->user?->name ?: 'Customer');
+        $orderNumber = $order->order_number;
 
-        // Parameters: [Customer Name, Order Number, Total Amount, Payment Method]
+        // Parameters match the Meta Utility template (2 variables):
+        // {{1}} = Customer Name
+        // {{2}} = Order Number
         return $this->sendTemplateMessage(
             $phone,
             'whatsapp_template_order_confirmed',
             [
-                $order->shipping_name ?? 'Customer',
-                $order->order_number,
-                '₹' . number_format($order->total_amount, 2),
-                $paymentText
+                $customerName,
+                $orderNumber
             ]
         );
     }
 
-    /**
-     * 2A. Send Out For Delivery Notification with Doorstep OTP (Bengaluru Local Fleet).
-     */
-    public function sendOutForDeliveryLocal(Order $order): bool
-    {
-        $phone = $order->shipping_phone ?? $order->user?->mobile_number;
-        if (empty($phone)) return false;
-
-        $otp = $order->delivery_otp ?? $order->fulfillment?->delivery_otp ?? '1234';
-        $riderInfo = ($order->rider_name ?? 'Fleet Rider') . ($order->rider_phone ? " ({$order->rider_phone})" : '');
-
-        // 1. Direct formatted text message via Meta WhatsApp Cloud API (when 24-hr customer window is active)
-        $message = $this->getOutForDeliveryMessage($order);
-        if ($this->sendTextMessage($phone, $message)) {
-            return true;
-        }
-
-        // 2. Configured custom out for delivery template (configured in Admin -> WhatsApp Integrations)
-        $customTemplate = Setting::get('whatsapp_template_out_for_delivery_local') 
-            ?: env('WHATSAPP_TEMPLATE_OUT_FOR_DELIVERY_LOCAL');
-
-        if (!empty($customTemplate) && $customTemplate !== 'out_for_delivery_otp') {
-            return $this->sendTemplateMessage(
-                $phone,
-                'whatsapp_template_out_for_delivery_local',
-                [
-                    $order->shipping_name ?? 'Customer',
-                    $order->order_number,
-                    $otp,
-                    $riderInfo
-                ]
-            );
-        }
-
-        Log::info("[WhatsAppService] Out for delivery template not yet configured in WhatsApp Integrations. Use 1-click WhatsApp button to send OTP.");
-        return false;
-    }
-
-    /**
-     * 2B. Send Courier Dispatched Notification with AWB Tracking Link (Pan-India National Courier).
-     */
-    public function sendDispatchedCourier(Order $order): bool
-    {
-        $phone = $order->shipping_phone ?? $order->user?->mobile_number;
-        if (empty($phone)) return false;
-
-        $courierName = $order->courier_partner ?? 'Courier';
-        $awbNumber = $order->tracking_number ?? 'AWB-PENDING';
-        $trackingUrl = $order->tracking_url ?? "https://www.google.com/search?q=" . urlencode("{$courierName} tracking {$awbNumber}");
-
-        // Parameters: [Customer Name, Order Number, Courier Name, AWB Number, Tracking URL]
-        return $this->sendTemplateMessage(
-            $phone,
-            'whatsapp_template_courier_dispatched',
-            [
-                $order->shipping_name ?? 'Customer',
-                $order->order_number,
-                $courierName,
-                $awbNumber,
-                $trackingUrl
-            ]
-        );
-    }
-
-    /**
-     * 3. Send Order Delivered Notification.
-     */
-    public function sendOrderDelivered(Order $order): bool
-    {
-        $phone = $order->shipping_phone ?? $order->user?->mobile_number;
-        if (empty($phone)) return false;
-
-        $deliveredBy = $order->isLocalBengaluruDelivery() 
-            ? "Rider " . ($order->rider_name ?? 'Fleet Partner')
-            : "Courier " . ($order->courier_partner ?? 'Express');
-
-        // Parameters: [Customer Name, Order Number, Delivered By]
-        return $this->sendTemplateMessage(
-            $phone,
-            'whatsapp_template_order_delivered',
-            [
-                $order->shipping_name ?? 'Customer',
-                $order->order_number,
-                $deliveredBy
-            ]
-        );
-    }
-
-    /**
-     * 4. Send Order Cancelled & Refund Initiated Notification.
-     */
-    public function sendOrderCancelled(OrderCancellation $cancellation): bool
-    {
-        $order = $cancellation->order;
-        if (!$order) return false;
-
-        $phone = $order->shipping_phone ?? $order->user?->mobile_number;
-        if (empty($phone)) return false;
-
-        $ticketNo = 'CNL-' . $order->order_number;
-        $reason = $cancellation->cancellation_reason ?? 'Cancelled';
-        
-        $walletRefund = (float) ($cancellation->wallet_refund_amount ?? 0);
-        $onlineRefund = (float) ($cancellation->online_refund_amount ?? 0);
-        $totalRefund = (float) ($cancellation->refund_amount ?? ($walletRefund + $onlineRefund));
-
-        if ($walletRefund > 0 && $onlineRefund > 0) {
-            $destText = "₹" . number_format($walletRefund, 2) . " credited to Wallet & ₹" . number_format($onlineRefund, 2) . " to Razorpay PG";
-        } elseif ($walletRefund > 0) {
-            $destText = "₹" . number_format($walletRefund, 2) . " credited instantly to your ShopCalm Wallet";
-        } elseif ($onlineRefund > 0 || in_array($cancellation->refund_method, ['original_source', 'online'])) {
-            $destText = "₹" . number_format($onlineRefund > 0 ? $onlineRefund : $totalRefund, 2) . " initiated via Razorpay PG (3-5 business days)";
-        } else {
-            $destText = "COD Order (₹0 cash collected)";
-        }
-
-        // Parameters: [Customer Name, Order Number, Ticket No, Cancellation Reason, Refund Destination Info]
-        return $this->sendTemplateMessage(
-            $phone,
-            'whatsapp_template_order_cancelled',
-            [
-                $order->shipping_name ?? 'Customer',
-                $order->order_number,
-                $ticketNo,
-                $reason,
-                $destText
-            ]
-        );
-    }
-
-    /**
-     * 5. Send Refund Processed Notification (UTR Reference).
-     */
-    public function sendRefundProcessed(OrderCancellation $cancellation): bool
-    {
-        $order = $cancellation->order;
-        if (!$order) return false;
-
-        $phone = $order->shipping_phone ?? $order->user?->mobile_number;
-        if (empty($phone)) return false;
-
-        $ticketNo = 'CNL-' . $order->order_number;
-        $refundProof = $cancellation->razorpay_refund_id ?: ($cancellation->payment_reference ?: 'PROCESSED');
-        $refundAmount = number_format($cancellation->refund_amount > 0 ? $cancellation->refund_amount : ($cancellation->online_refund_amount + $cancellation->wallet_refund_amount), 2);
-
-        // Parameters: [Customer Name, Order Number, Ticket No, Refund Amount, Bank UTR Reference]
-        return $this->sendTemplateMessage(
-            $phone,
-            'whatsapp_template_refund_processed',
-            [
-                $order->shipping_name ?? 'Customer',
-                $order->order_number,
-                $ticketNo,
-                '₹' . $refundAmount,
-                $refundProof
-            ]
-        );
-    }
+    // =========================================================================
+    // LEGACY STUBS: Kept as safe no-ops to prevent MethodNotFoundException
+    // =========================================================================
+    public function sendOutForDeliveryLocal($order): bool { return false; }
+    public function sendDispatchedCourier($order): bool { return false; }
+    public function sendOrderDelivered($order): bool { return false; }
+    public function sendOrderCancelled($cancellation): bool { return false; }
+    public function sendRefundProcessed($cancellation): bool { return false; }
 }

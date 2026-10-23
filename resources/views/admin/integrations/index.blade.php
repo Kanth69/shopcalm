@@ -15,7 +15,7 @@
             <div class="card-body p-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div>
                     <h4 class="fw-bold mb-1"><i class="bi bi-cpu me-2"></i>Integrations & Third-Party API Services Control Center</h4>
-                    <p class="mb-0 text-white-50 small">Manage live transactional email delivery, WhatsApp Cloud notifications, Razorpay online payment gateways, and LocationIQ interactive maps & doorstep geocoding.</p>
+                    <p class="mb-0 text-white-50 small">Manage live transactional email delivery, WhatsApp Cloud notifications, Razorpay online payments, LocationIQ interactive dual maps, and India Post pincode directory integrations.</p>
                 </div>
                 <div class="d-flex gap-2">
                     <a href="{{ route('admin.settings.index') }}" class="btn btn-light rounded-pill px-3 py-2 fw-bold text-dark shadow-sm">
@@ -29,7 +29,7 @@
 
 <div class="row g-4 justify-content-center">
     <!-- 1. Brevo Email Service Hub Card -->
-    <div class="col-xl-3 col-md-6">
+    <div class="col-xl-4 col-md-6">
         <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden hover-shadow transition-all">
             <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
@@ -72,7 +72,7 @@
     </div>
 
     <!-- 2. WhatsApp Cloud API Hub Card -->
-    <div class="col-xl-3 col-md-6">
+    <div class="col-xl-4 col-md-6">
         <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden hover-shadow transition-all">
             <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
@@ -81,7 +81,7 @@
                     </div>
                     <div>
                         <h6 class="fw-bold text-dark mb-0">Meta WhatsApp API</h6>
-                        <span class="text-muted" style="font-size: 0.72rem;">Automated Customer Alerts</span>
+                        <span class="text-muted" style="font-size: 0.72rem;">Authentication OTP Engine</span>
                     </div>
                 </div>
                 <span class="badge {{ $whatsAppStatus === 'ACTIVE' ? 'bg-success' : 'bg-warning text-dark' }} rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.71rem;">
@@ -95,17 +95,17 @@
                         <div class="fs-5 fw-bold text-dark font-monospace text-truncate">
                             {{ $hasWhatsAppPhoneId ? 'ID Configured ✓' : 'Phone ID Missing' }}
                         </div>
-                        <div class="text-muted" style="font-size: 0.7rem;">7 Event Templates Registered</div>
+                        <div class="text-muted" style="font-size: 0.7rem;">Template: {{ $settings['whatsapp_template_name'] ?? 'shopcalm_otp' }}</div>
                     </div>
                     <ul class="list-unstyled small text-muted mb-4 space-y-2">
                         <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-circle-fill text-success"></i> Bengaluru Fleet Out for Delivery + OTP
+                            <i class="bi bi-check-circle-fill text-success"></i> Customer Registration 6-Digit OTP
                         </li>
                         <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-circle-fill text-success"></i> National Courier AWB & Tracking Links
+                            <i class="bi bi-check-circle-fill text-success"></i> Secure Forgot Password Reset Codes
                         </li>
                         <li class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check-circle-fill text-success"></i> Cancellation Ticket & Bank UTR Proofs
+                            <i class="bi bi-check-circle-fill text-success"></i> Meta AUTHENTICATION Category Compliant
                         </li>
                     </ul>
                 </div>
@@ -117,7 +117,7 @@
     </div>
 
     <!-- 3. Razorpay Payment Gateway Card -->
-    <div class="col-xl-3 col-md-6">
+    <div class="col-xl-4 col-md-6">
         <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden hover-shadow transition-all">
             <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
@@ -160,7 +160,7 @@
     </div>
 
     <!-- 4. LocationIQ Maps & Geocoding Card -->
-    <div class="col-xl-3 col-md-6">
+    <div class="col-xl-4 col-md-6">
         <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden hover-shadow transition-all">
             <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
@@ -197,6 +197,49 @@
                 </div>
                 <a href="{{ route('admin.integrations.locationiq') }}" class="btn btn-success rounded-pill w-100 fw-bold">
                     Open LocationIQ Hub <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Postal Pincodes & Auto-Fill Directory Card -->
+    <div class="col-xl-4 col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden hover-shadow transition-all">
+            <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-3 p-2 d-flex align-items-center justify-content-center" style="background: rgba(99, 102, 241, 0.1); color: #4f46e5; width: 40px; height: 40px;">
+                        <i class="bi bi-mailbox2 fs-5"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Postal Pincodes API</h6>
+                        <span class="text-muted" style="font-size: 0.72rem;">India Post & Serviceability</span>
+                    </div>
+                </div>
+                <span class="badge bg-success rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.71rem;">
+                    Active & Online ✓
+                </span>
+            </div>
+            <div class="card-body p-4 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="p-3 bg-light rounded-3 border mb-3 text-center">
+                        <div class="text-muted small fw-bold mb-1">Serviceable Pincodes</div>
+                        <div class="fs-4 fw-black text-primary">{{ $serviceablePincodesCount }} <span class="fs-6 text-muted fw-normal">/ {{ $totalPincodesCount }}</span></div>
+                        <div class="text-muted" style="font-size: 0.7rem;">Auto-Fills City, District & State</div>
+                    </div>
+                    <ul class="list-unstyled small text-muted mb-4 space-y-2">
+                        <li class="d-flex align-items-center gap-2">
+                            <i class="bi bi-check-circle-fill text-success"></i> India Post National Directory integration
+                        </li>
+                        <li class="d-flex align-items-center gap-2">
+                            <i class="bi bi-check-circle-fill text-success"></i> Instant checkout address auto-completion
+                        </li>
+                        <li class="d-flex align-items-center gap-2">
+                            <i class="bi bi-check-circle-fill text-success"></i> COD availability & custom delivery fees
+                        </li>
+                    </ul>
+                </div>
+                <a href="{{ route('admin.integrations.pincodes') }}" class="btn btn-primary rounded-pill w-100 fw-bold">
+                    Open Pincodes Hub <i class="bi bi-arrow-right ms-1"></i>
                 </a>
             </div>
         </div>

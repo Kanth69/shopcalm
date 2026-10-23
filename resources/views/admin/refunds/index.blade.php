@@ -80,33 +80,125 @@
     {{-- Filter & Search Card --}}
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body p-3">
-            <form method="GET" action="{{ url()->current() }}" class="row g-2 align-items-center">
-                <div class="col-md-4">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                        <input type="text" name="search" class="form-control border-start-0" placeholder="Search Order #, Customer, or UPI / Ref ID..." value="{{ request('search') }}">
+            <form method="GET" action="{{ url()->current() }}">
+                <div class="row g-2.5 align-items-center">
+                    {{-- Search --}}
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                            <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Search Order #, Customer, or Ref ID..." value="{{ request('search') }}">
+                        </div>
+                    </div>
+
+                    {{-- Refund Status --}}
+                    <div class="col-6 col-md-3 col-xl-2">
+                        <select name="status" class="form-select form-select-sm py-2" onchange="this.form.submit()">
+                            <option value="">All Refund Statuses</option>
+                            <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>⏳ Pending Refunds</option>
+                            <option value="processed" {{ request('status') === 'processed' ? 'selected' : '' }}>✅ Processed Refunds</option>
+                            <option value="none" {{ request('status') === 'none' ? 'selected' : '' }}>⚪ None (COD / Fee Only)</option>
+                        </select>
+                    </div>
+
+                    {{-- Refund Method / Destination --}}
+                    <div class="col-6 col-md-3 col-xl-2">
+                        <select name="method" class="form-select form-select-sm py-2" onchange="this.form.submit()">
+                            <option value="">All Refund Destinations</option>
+                            <option value="original_source" {{ request('method') === 'original_source' ? 'selected' : '' }}>💳 Razorpay PG</option>
+                            <option value="dual" {{ request('method') === 'dual' ? 'selected' : '' }}>⚡💳 Dual (Wallet + PG)</option>
+                            <option value="bank_upi" {{ request('method') === 'bank_upi' ? 'selected' : '' }}>🏦 Bank UPI</option>
+                            <option value="wallet" {{ request('method') === 'wallet' ? 'selected' : '' }}>⚡ Store Wallet</option>
+                        </select>
+                    </div>
+
+                    {{-- Order Payment Mode Filter --}}
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <select name="payment_method" class="form-select form-select-sm py-2" onchange="this.form.submit()">
+                            <option value="">All Payment Modes</option>
+                            <option value="cod" {{ request('payment_method') === 'cod' ? 'selected' : '' }}>💵 COD</option>
+                            <option value="online" {{ request('payment_method') === 'online' ? 'selected' : '' }}>💳 Online (Razorpay)</option>
+                            <option value="doorstep_upi" {{ request('payment_method') === 'doorstep_upi' ? 'selected' : '' }}>📱 Doorstep UPI</option>
+                            <option value="wallet" {{ request('payment_method') === 'wallet' ? 'selected' : '' }}>⚡ Wallet Paid</option>
+                        </select>
+                    </div>
+
+                    {{-- Cancellation Date From --}}
+                    <div class="col-6 col-md-4 col-xl-auto" style="min-width: 155px;">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light text-muted small px-2">Cancel From</span>
+                            <input type="date" name="start_date" 
+                                   value="{{ request('start_date') }}" 
+                                   max="{{ now()->format('Y-m-d') }}" 
+                                   class="form-control" 
+                                   title="Filter by cancellation date from">
+                        </div>
+                    </div>
+
+                    {{-- Cancellation Date To --}}
+                    <div class="col-6 col-md-4 col-xl-auto" style="min-width: 145px;">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light text-muted small px-2">Cancel To</span>
+                            <input type="date" name="end_date" 
+                                   value="{{ request('end_date') }}" 
+                                   max="{{ now()->format('Y-m-d') }}" 
+                                   class="form-control" 
+                                   title="Filter by cancellation date to">
+                        </div>
+                    </div>
+
+                    {{-- Actions --}}
+                    <div class="col-6 col-md-auto ms-auto d-flex gap-1.5">
+                        <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold shadow-xs py-2">
+                            <i class="bi bi-funnel-fill me-1"></i> Filter
+                        </button>
+                        @if(request()->hasAny(['search', 'status', 'method', 'payment_method', 'start_date', 'end_date']))
+                            <a href="{{ url()->current() }}" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-2" title="Reset all filters">
+                                <i class="bi bi-x-circle"></i>
+                            </a>
+                        @endif
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <select name="status" class="form-select" onchange="this.form.submit()">
-                        <option value="">All Refund Statuses</option>
-                        <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending Refunds</option>
-                        <option value="processed" {{ request('status') === 'processed' ? 'selected' : '' }}>Processed Refunds</option>
-                        <option value="none" {{ request('status') === 'none' ? 'selected' : '' }}>None (COD / Fee Only)</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <select name="method" class="form-select" onchange="this.form.submit()">
-                        <option value="">All Refund Methods</option>
-                        <option value="original_source" {{ request('method') === 'original_source' ? 'selected' : '' }}>💳 Razorpay PG (Original Source)</option>
-                        <option value="dual" {{ request('method') === 'dual' ? 'selected' : '' }}>⚡💳 Dual (Wallet + Razorpay PG)</option>
-                        <option value="bank_upi" {{ request('method') === 'bank_upi' ? 'selected' : '' }}>🏦 Bank UPI / Account</option>
-                        <option value="wallet" {{ request('method') === 'wallet' ? 'selected' : '' }}>⚡ Store Wallet</option>
-                    </select>
-                </div>
-                <div class="col-md-2 text-end">
-                    <a href="{{ url()->current() }}" class="btn btn-light border w-100 fw-semibold"><i class="bi bi-arrow-counterclockwise me-1"></i> Reset</a>
-                </div>
+
+                {{-- Active Filter Pills Summary --}}
+                @if(request()->hasAny(['search', 'status', 'method', 'payment_method', 'start_date', 'end_date']))
+                    <div class="d-flex align-items-center gap-2 flex-wrap pt-2 mt-2 border-top">
+                        <span class="text-muted small fw-semibold" style="font-size: 0.72rem;">ACTIVE FILTERS:</span>
+                        @if(request('search'))
+                            <span class="badge bg-light text-dark border rounded-pill px-2.5 py-1 small">
+                                Search: "{{ request('search') }}"
+                                <a href="{{ request()->fullUrlWithQuery(['search' => null, 'page' => null]) }}" class="text-danger ms-1 text-decoration-none">&times;</a>
+                            </span>
+                        @endif
+                        @if(request('status'))
+                            <span class="badge bg-light text-dark border rounded-pill px-2.5 py-1 small">
+                                Status: {{ ucfirst(request('status')) }}
+                                <a href="{{ request()->fullUrlWithQuery(['status' => null, 'page' => null]) }}" class="text-danger ms-1 text-decoration-none">&times;</a>
+                            </span>
+                        @endif
+                        @if(request('method'))
+                            <span class="badge bg-light text-dark border rounded-pill px-2.5 py-1 small">
+                                Destination: {{ strtoupper(str_replace('_', ' ', request('method'))) }}
+                                <a href="{{ request()->fullUrlWithQuery(['method' => null, 'page' => null]) }}" class="text-danger ms-1 text-decoration-none">&times;</a>
+                            </span>
+                        @endif
+                        @if(request('payment_method'))
+                            <span class="badge bg-light text-dark border rounded-pill px-2.5 py-1 small">
+                                Payment: {{ strtoupper(str_replace('_', ' ', request('payment_method'))) }}
+                                <a href="{{ request()->fullUrlWithQuery(['payment_method' => null, 'page' => null]) }}" class="text-danger ms-1 text-decoration-none">&times;</a>
+                            </span>
+                        @endif
+                        @if(request('start_date') || request('end_date'))
+                            <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-50 rounded-pill px-2.5 py-1 small">
+                                <i class="bi bi-calendar-x me-1 text-danger"></i>
+                                Cancelled: {{ request('start_date') ? \Carbon\Carbon::parse(request('start_date'))->format('d M Y') : 'Start' }} &rarr; {{ request('end_date') ? \Carbon\Carbon::parse(request('end_date'))->format('d M Y') : 'Today' }}
+                                <a href="{{ request()->fullUrlWithQuery(['start_date' => null, 'end_date' => null, 'page' => null]) }}" class="text-danger ms-1 text-decoration-none">&times;</a>
+                            </span>
+                        @endif
+                        <a href="{{ url()->current() }}" class="btn btn-link btn-sm p-0 text-decoration-none text-muted small ms-auto" style="font-size: 0.75rem;">
+                            <i class="bi bi-arrow-counterclockwise me-0.5"></i> Clear all filters
+                        </a>
+                    </div>
+                @endif
             </form>
         </div>
     </div>
@@ -152,11 +244,19 @@
                                 $payModeBadgeClass = 'bg-secondary text-white';
                                 $payModeIcon = 'bi-wallet2';
                                 $payModeText = 'Wallet + COD';
+                            } elseif ($payMethod === 'doorstep_upi') {
+                                $payModeBadgeClass = 'bg-success text-white';
+                                $payModeIcon = 'bi-qr-code-scan';
+                                $payModeText = 'Wallet + Doorstep UPI';
                             } else {
                                 $payModeBadgeClass = 'bg-primary text-white';
                                 $payModeIcon = 'bi-wallet2';
                                 $payModeText = 'Wallet + Prepaid';
                             }
+                        } elseif ($payMethod === 'doorstep_upi') {
+                            $payModeBadgeClass = 'bg-success text-white';
+                            $payModeIcon = 'bi-qr-code-scan';
+                            $payModeText = 'Doorstep UPI';
                         } elseif ($payMethod === 'cod') {
                             $payModeBadgeClass = 'bg-dark text-white';
                             $payModeIcon = 'bi-cash-stack';
@@ -185,7 +285,7 @@
                                 <span class="fw-bold text-dark">#{{ $orderNumber }}</span>
                             @endif
                             <div class="text-muted small mb-1" style="font-size: 0.74rem;">
-                                {{ $item->created_at ? $item->created_at->format('d M Y, h:i A') : '—' }}
+                                <i class="bi bi-calendar-x text-danger opacity-75 me-1"></i>Cancelled: {{ $item->created_at ? $item->created_at->format('d M Y, h:i A') : '—' }}
                             </div>
                             <span class="badge {{ $payModeBadgeClass }} rounded-pill px-2 py-0.5 fw-semibold" style="font-size: 0.67rem;">
                                 <i class="bi {{ $payModeIcon }} me-1"></i>{{ $payModeText }}

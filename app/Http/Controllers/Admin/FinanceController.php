@@ -21,6 +21,11 @@ class FinanceController extends Controller
         $statusScope = $request->input('status_scope', 'realized');
         $now = Carbon::now();
 
+        // If custom dates are explicitly passed, automatically default range to custom
+        if ($request->filled('start_date') || $request->filled('end_date') || $request->filled('from_date') || $request->filled('to_date')) {
+            $range = 'custom';
+        }
+
         switch ($range) {
             case 'today':
                 $start = $now->copy()->startOfDay();
@@ -43,8 +48,14 @@ class FinanceController extends Controller
                 $end = $now->copy()->endOfDay();
                 break;
             case 'custom':
-                $start = $request->filled('start_date') ? Carbon::parse($request->start_date)->startOfDay() : $now->copy()->startOfMonth();
-                $end = $request->filled('end_date') ? Carbon::parse($request->end_date)->endOfDay() : $now->copy()->endOfDay();
+                $rawStart = $request->input('start_date') ?: $request->input('from_date');
+                $rawEnd = $request->input('end_date') ?: $request->input('to_date');
+                $start = $rawStart ? Carbon::parse($rawStart)->startOfDay() : $now->copy()->startOfMonth();
+                $end = $rawEnd ? Carbon::parse($rawEnd)->endOfDay() : $now->copy()->endOfDay();
+                if ($start->gt($end)) {
+                    // Swap if user inverted start and end
+                    [$start, $end] = [$end->copy()->startOfDay(), $start->copy()->endOfDay()];
+                }
                 break;
             case 'this_month':
             default:
@@ -97,10 +108,9 @@ class FinanceController extends Controller
         $trendCost = [];
         $trendProfit = [];
 
-        if ($range === 'this_year' || $range === 'all_time') {
-            $monthsCount = $range === 'all_time' ? 12 : $now->month;
-            for ($m = 1; $m <= $monthsCount; $m++) {
-                $monthDate = Carbon::create($now->year, $m, 1);
+        if ($range === 'this_year' || $range === 'all_time' || ($range === 'custom' && $start->diffInDays($end) > 45)) {
+            $period = \Carbon\CarbonPeriod::create($start->copy()->startOfMonth(), '1 month', $end->copy()->endOfMonth());
+            foreach ($period as $monthDate) {
                 $mStart = $monthDate->copy()->startOfMonth();
                 $mEnd = $monthDate->copy()->endOfMonth();
 

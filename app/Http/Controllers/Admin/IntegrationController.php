@@ -6,8 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Address;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\Pincode;
 use App\Models\Setting;
+use App\Services\DeliveryService;
 use App\Services\EmailService;
+use App\Services\FulfillmentService;
 use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -47,8 +50,13 @@ class IntegrationController extends Controller
         // 4. LocationIQ Maps Health
         $locationiqKey = $settings['locationiq_api_key'] ?? config('services.locationiq.key');
         $isLocationiqConfigured = !empty($locationiqKey);
-        $geocodedAddressesCount = Address::whereNotNull('latitude')->whereNotNull('longitude')->count();
+        $hasAddressCoords = \Illuminate\Support\Facades\Schema::hasColumn('addresses', 'latitude');
+        $geocodedAddressesCount = $hasAddressCoords ? Address::whereNotNull('latitude')->whereNotNull('longitude')->count() : 0;
         $totalAddressesCount = Address::count();
+
+        // 5. Postal Pincodes & Serviceability Health
+        $totalPincodesCount = Pincode::count();
+        $serviceablePincodesCount = Pincode::where('is_serviceable', true)->count();
 
         return view('admin.integrations.index', compact(
             'settings',
@@ -62,7 +70,9 @@ class IntegrationController extends Controller
             'isLocationiqConfigured',
             'locationiqKey',
             'geocodedAddressesCount',
-            'totalAddressesCount'
+            'totalAddressesCount',
+            'totalPincodesCount',
+            'serviceablePincodesCount'
         ));
     }
 
@@ -113,7 +123,7 @@ class IntegrationController extends Controller
     }
 
     /**
-     * Dedicated WhatsApp Cloud API Hub.
+     * Dedicated WhatsApp Cloud API Hub (Registration & Password Reset OTP).
      */
     public function whatsapp()
     {
@@ -124,23 +134,16 @@ class IntegrationController extends Controller
 
         $settings = Setting::getAll();
 
-        // Recent WhatsApp Notification Logs from Order Status History
-        $recentWhatsAppLogs = Order::with(['user', 'fulfillment'])
-            ->whereHas('statusHistories', function ($q) {
-                $q->where('notes', 'like', '%assigned%')
-                  ->orWhere('notes', 'like', '%dispatched%')
-                  ->orWhere('notes', 'like', '%delivered%')
-                  ->orWhere('notes', 'like', '%cancelled%');
-            })
-            ->latest()
-            ->take(15)
+        // Recent WhatsApp Authentication OTP Logs
+        $recentOtpLogs = \App\Models\OtpVerification::latest('updated_at')
+            ->take(20)
             ->get();
 
-        return view('admin.integrations.whatsapp', compact('settings', 'recentWhatsAppLogs'));
+        return view('admin.integrations.whatsapp', compact('settings', 'recentOtpLogs'));
     }
 
     /**
-     * Update WhatsApp Cloud API Credentials & Templates.
+     * Update WhatsApp Cloud API Credentials & OTP Template.
      */
     public function updateWhatsApp(Request $request)
     {
@@ -150,22 +153,17 @@ class IntegrationController extends Controller
         }
 
         $validated = $request->validate([
-            'whatsapp_phone_number_id'           => 'nullable|string|max:255',
-            'whatsapp_api_token'                 => 'nullable|string|max:500',
-            'whatsapp_template_name'             => 'nullable|string|max:255',
-            'whatsapp_template_order_confirmed'  => 'nullable|string|max:255',
-            'whatsapp_template_out_for_delivery_local' => 'nullable|string|max:255',
-            'whatsapp_template_courier_dispatched'     => 'nullable|string|max:255',
-            'whatsapp_template_order_delivered'  => 'nullable|string|max:255',
-            'whatsapp_template_order_cancelled'  => 'nullable|string|max:255',
-            'whatsapp_template_refund_processed' => 'nullable|string|max:255',
+            'whatsapp_phone_number_id'          => 'nullable|string|max:255',
+            'whatsapp_api_token'                => 'nullable|string|max:500',
+            'whatsapp_template_name'            => 'nullable|string|max:255',
+            'whatsapp_template_order_confirmed' => 'nullable|string|max:255',
         ]);
 
         foreach ($validated as $key => $value) {
             Setting::set($key, $value);
         }
 
-        return back()->with('toast', ['type' => 'success', 'title' => 'WhatsApp Config Saved', 'message' => 'Meta WhatsApp Business API credentials & template registry updated.'])->with('success', 'Meta WhatsApp Business API credentials & template registry updated.');
+        return back()->with('toast', ['type' => 'success', 'title' => 'WhatsApp Config Saved', 'message' => 'Meta WhatsApp Business API credentials & OTP template updated.'])->with('success', 'Meta WhatsApp Business API credentials & OTP template updated.');
     }
 
     /**
@@ -229,20 +227,25 @@ class IntegrationController extends Controller
         $locationiqKey = $settings['locationiq_api_key'] ?? config('services.locationiq.key');
         $isConfigured = !empty($locationiqKey);
 
+        $hasAddressCoords = \Illuminate\Support\Facades\Schema::hasColumn('addresses', 'latitude');
+        $hasOrderCoords = \Illuminate\Support\Facades\Schema::hasColumn('orders', 'shipping_latitude');
+
         $stats = [
-            'geocoded_addresses' => Address::whereNotNull('latitude')->whereNotNull('longitude')->count(),
+            'geocoded_addresses' => $hasAddressCoords ? Address::whereNotNull('latitude')->whereNotNull('longitude')->count() : 0,
             'total_addresses'    => Address::count(),
-            'geocoded_orders'    => Order::whereNotNull('latitude')->whereNotNull('longitude')->count(),
+            'geocoded_orders'    => $hasOrderCoords ? Order::whereNotNull('shipping_latitude')->whereNotNull('shipping_longitude')->count() : 0,
             'total_orders'       => Order::count(),
         ];
 
         // Sample recent customer addresses with coordinates for verification
-        $recentGeocodedAddresses = Address::with('user')
-            ->whereNotNull('latitude')
-            ->whereNotNull('longitude')
-            ->latest()
-            ->take(8)
-            ->get();
+        $recentGeocodedAddresses = $hasAddressCoords 
+            ? Address::with('user')
+                ->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->latest()
+                ->take(8)
+                ->get()
+            : collect();
 
         return view('admin.integrations.locationiq', compact('settings', 'locationiqKey', 'isConfigured', 'stats', 'recentGeocodedAddresses'));
     }
@@ -319,5 +322,159 @@ class IntegrationController extends Controller
                 'message' => 'Connection failed: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Test OpenStreetMap Nominatim Fallback Connection.
+     */
+    public function testOsm(Request $request)
+    {
+        $user = auth('admin')->user() ?? auth()->user();
+        if (!$user || !$user->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $response = Http::timeout(6)
+                ->withHeaders(['User-Agent' => 'ShopCalm-App/1.0 (contact@shopcalm.in)'])
+                ->get('https://nominatim.openstreetmap.org/reverse', [
+                    'lat'             => 12.9716,
+                    'lon'             => 77.5946,
+                    'format'          => 'json',
+                    'accept-language' => 'en',
+                ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return response()->json([
+                    'success'      => true,
+                    'message'      => 'OpenStreetMap Nominatim is Active & Reachable (Zero-Downtime Fallback Ready)!',
+                    'display_name' => $data['display_name'] ?? 'Bengaluru, Karnataka, India',
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Nominatim returned HTTP ' . $response->status(),
+            ], 400);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nominatim connection failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Dedicated Postal Pincodes & Delivery Serviceability Hub.
+     */
+    public function pincodes()
+    {
+        $user = auth('admin')->user() ?? auth()->user();
+        if (!$user || !$user->isSuperAdmin()) {
+            abort(403, 'Unauthorized. Super Admin access required.');
+        }
+
+        $settings = Setting::getAll();
+
+        $stats = [
+            'total_pincodes'       => Pincode::count(),
+            'serviceable_pincodes' => Pincode::where('is_serviceable', true)->count(),
+            'cod_available'        => Pincode::where('is_cod_available', true)->count(),
+            'total_cities'         => Pincode::distinct('city')->count('city'),
+            'total_states'         => Pincode::distinct('state')->count('state'),
+        ];
+
+        // Sample 10 recently updated pincodes
+        $recentPincodes = Pincode::latest('updated_at')->take(10)->get();
+
+        return view('admin.integrations.pincodes', compact('settings', 'stats', 'recentPincodes'));
+    }
+
+    /**
+     * Test Pincode Lookup via India Post API + Local Database Serviceability.
+     */
+    public function testPincodeLookup(Request $request)
+    {
+        $user = auth('admin')->user() ?? auth()->user();
+        if (!$user || !$user->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $pincode = trim($request->pincode);
+        if (!preg_match('/^[1-9][0-9]{5}$/', $pincode)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please enter a valid 6-digit Indian PIN code (e.g. 560001, 500001).',
+            ], 422);
+        }
+
+        // 1. Fetch from India Post Postal Pincode API
+        $postalInfo = null;
+        try {
+            $postRes = Http::timeout(5)
+                ->withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Accept'     => 'application/json'
+                ])
+                ->get("https://api.postalpincode.in/pincode/{$pincode}");
+
+            if ($postRes->successful()) {
+                $data = $postRes->json();
+                if (is_array($data) && ($data[0]['Status'] ?? '') === 'Success' && !empty($data[0]['PostOffice'])) {
+                    $firstPo = $data[0]['PostOffice'][0];
+                    $postalInfo = [
+                        'source'             => 'India Post National Directory (api.postalpincode.in)',
+                        'district'           => $firstPo['District'] ?? '',
+                        'state'              => $firstPo['State'] ?? '',
+                        'post_office'        => $firstPo['Name'] ?? '',
+                        'post_offices_count' => count($data[0]['PostOffice']),
+                    ];
+                }
+            }
+        } catch (\Exception $e) {
+            // Silently try backup Zippopotam
+        }
+
+        // Fallback to Zippopotam if India Post was unreachable
+        if (!$postalInfo) {
+            try {
+                $zipRes = Http::timeout(5)->get("https://api.zippopotam.us/IN/{$pincode}");
+                if ($zipRes->successful()) {
+                    $zipData = $zipRes->json();
+                    if (!empty($zipData['places'][0])) {
+                        $postalInfo = [
+                            'source'             => 'Global Postal Directory (api.zippopotam.us)',
+                            'district'           => $zipData['places'][0]['place name'] ?? '',
+                            'state'              => $zipData['places'][0]['state'] ?? '',
+                            'post_office'        => $zipData['places'][0]['place name'] ?? '',
+                            'post_offices_count' => 1,
+                        ];
+                    }
+                }
+            } catch (\Exception $e) {
+                // Ignore
+            }
+        }
+
+        // 2. Check local store serviceability
+        $deliveryCheck = app(DeliveryService::class)->checkServiceability($pincode);
+        $zone = app(FulfillmentService::class)->detectZone($pincode, $deliveryCheck['city'] ?? ($postalInfo['district'] ?? ''));
+
+        return response()->json([
+            'success'        => true,
+            'pincode'        => $pincode,
+            'postal_info'    => $postalInfo,
+            'serviceability' => [
+                'is_serviceable'   => $deliveryCheck['is_serviceable'] ?? false,
+                'message'          => $deliveryCheck['message'] ?? '',
+                'city'             => $deliveryCheck['city'] ?? ($postalInfo['district'] ?? 'Unknown'),
+                'state'            => $deliveryCheck['state'] ?? ($postalInfo['state'] ?? 'Unknown'),
+                'delivery_charge'  => $deliveryCheck['delivery_charge'] ?? 0,
+                'is_cod_available' => $deliveryCheck['is_cod_available'] ?? false,
+                'cod_fee'          => $deliveryCheck['cod_fee'] ?? 0,
+                'zone'             => $zone, // 'local_fleet' vs 'national_courier'
+            ]
+        ]);
     }
 }

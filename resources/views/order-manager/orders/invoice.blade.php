@@ -314,11 +314,19 @@
                         @if($order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0))
                             💳 ShopCalm Wallet (100% Paid)
                         @elseif($order->wallet_amount_used > 0)
-                            💳 ShopCalm Wallet (₹{{ number_format($order->wallet_amount_used, 2) }}) + {{ $order->payment_method === 'online' ? '⚡ Razorpay PG (' . ($payment?->method_display ?? 'Online UPI') . ')' : '💵 Cash on Delivery (COD)' }}
+                            💳 ShopCalm Wallet (₹{{ number_format($order->wallet_amount_used, 2) }}) + {{ $order->payment_method === 'online' ? '⚡ Razorpay PG (' . ($payment?->method_display ?? 'Online UPI') . ')' : ($order->payment_method === 'doorstep_upi' ? '📲 Doorstep UPI (Razorpay QR)' : '💵 Cash on Delivery (COD)') }}
+                        @elseif($order->payment_method === 'doorstep_upi')
+                            📲 Doorstep UPI &bull; Paid via Razorpay Dynamic QR to Fleet Rider
                         @elseif($order->payment_method === 'online')
                             ⚡ Razorpay PG ({{ $payment?->method_display ?? 'Online UPI' }})
+                        @elseif($order->payment_method === 'cod')
+                            @if($order->payment_status === 'paid')
+                                💵 Cash on Delivery &bull; Paid in Cash at Doorstep
+                            @else
+                                💵 Cash on Delivery (COD) &bull; Pending Collection
+                            @endif
                         @else
-                            💵 Cash on Delivery (COD)
+                            {{ strtoupper($order->payment_method) }}
                         @endif
                         <br>
                         @if($payment && $payment->bank_reference)

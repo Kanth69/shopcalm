@@ -47,15 +47,16 @@ class OrderController extends Controller
     {
         $request->validate([
             'cancellation_reason' => 'required|string|max:255',
-            'refund_method'       => 'required|in:wallet,bank',
+            'refund_method'       => 'nullable|string|in:wallet,bank,original_source,dual,none,auto',
             'admin_notes'         => 'nullable|string|max:1000',
         ]);
 
         try {
+            $refundMethod = $request->input('refund_method') ?: 'auto';
             $cancellation = $this->orderService->cancelOrderByAdmin(
                 $order,
                 $request->cancellation_reason,
-                $request->refund_method,
+                $refundMethod,
                 $request->admin_notes
             );
 

@@ -215,7 +215,7 @@
                                         </span>
                                     </div>
                                     <p class="text-muted small mb-4" style="font-size: 0.8rem; line-height: 1.45;">
-                                        Sends automated order confirmation, dispatch alerts, OTPs, and delivery notices directly to customers.
+                                        Dispatches instant 6-digit OTP verification codes via Meta WhatsApp Cloud API for customer registration and password resets.
                                     </p>
                                 </div>
                                 <a href="{{ route('admin.integrations.whatsapp') }}" class="btn btn-sm btn-outline-success rounded-pill w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-1">

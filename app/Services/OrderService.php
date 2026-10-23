@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Order;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -57,10 +58,45 @@ class OrderService
         }
 
         if ($request->filled('payment_method')) {
-            $query->where('payment_method', $request->payment_method);
+            $method = strtolower($request->payment_method);
+            if ($method === 'wallet') {
+                $query->where(function ($q) {
+                    $q->where('payment_method', 'wallet')
+                      ->orWhere('payment_method', 'store_wallet')
+                      ->orWhere('wallet_amount_used', '>', 0);
+                });
+            } elseif ($method === 'online') {
+                $query->where(function ($q) {
+                    $q->where('payment_method', 'online')
+                      ->orWhere('payment_method', 'razorpay')
+                      ->orWhere('payment_method', 'prepaid');
+                });
+            } else {
+                $query->where('payment_method', $method);
+            }
         }
 
-        return $query->latest()->paginate(15);
+        // Custom Date Filtering (Order Creation Date)
+        if ($request->filled('start_date') || $request->filled('end_date') || $request->filled('from_date') || $request->filled('to_date')) {
+            $rawStart = $request->input('start_date') ?: $request->input('from_date');
+            $rawEnd = $request->input('end_date') ?: $request->input('to_date');
+
+            $start = $rawStart ? Carbon::parse($rawStart)->startOfDay() : null;
+            $end = $rawEnd ? Carbon::parse($rawEnd)->endOfDay() : null;
+
+            if ($start && $end && $start->gt($end)) {
+                [$start, $end] = [$end->copy()->startOfDay(), $start->copy()->endOfDay()];
+            }
+
+            if ($start) {
+                $query->where('created_at', '>=', $start);
+            }
+            if ($end) {
+                $query->where('created_at', '<=', $end);
+            }
+        }
+
+        return $query->latest()->paginate(15)->withQueryString();
     }
 
     /**
@@ -90,7 +126,7 @@ class OrderService
             if ($newStatus === 'delivered') {
                 app(\App\Services\WalletService::class)->rewardReferrerOnDeliveredOrder($order);
                 try {
-                    app(\App\Services\WhatsAppService::class)->sendOrderDelivered($order);
+                    // WhatsApp notification deleted (only registration/reset OTP allowed)
                 } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::warning("[OrderService] WhatsApp Order Delivered notification failed: " . $e->getMessage());
                 }
@@ -271,7 +307,7 @@ class OrderService
 
             // Trigger WhatsApp Order Cancelled Notification
             try {
-                app(\App\Services\WhatsAppService::class)->sendOrderCancelled($cancellation);
+                // WhatsApp notification deleted (only registration/reset OTP allowed)
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning("[OrderService] WhatsApp Order Cancelled notification failed: " . $e->getMessage());
             }
@@ -332,7 +368,7 @@ class OrderService
 
             // Trigger WhatsApp Order Cancelled Notification
             try {
-                app(\App\Services\WhatsAppService::class)->sendOrderCancelled($cancellation);
+                // WhatsApp notification deleted (only registration/reset OTP allowed)
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning("[OrderService] WhatsApp Order Cancelled notification failed: " . $e->getMessage());
             }
@@ -344,10 +380,10 @@ class OrderService
     /**
      * Cancel an Order by Super Admin / Store Management (Full 100% Refund, Zero Penalty).
      */
-    public function cancelOrderByAdmin(Order $order, string $reason, string $refundMethod = 'wallet', ?string $adminNotes = null): \App\Models\OrderCancellation
+    public function cancelOrderByAdmin(Order $order, string $reason, string $refundMethod = 'auto', ?string $adminNotes = null): \App\Models\OrderCancellation
     {
-        if (in_array($order->status, ['cancelled', 'delivered', 'returned'])) {
-            throw new Exception("Order #{$order->order_number} cannot be cancelled as its status is '{$order->status}'.");
+        if ($order->status === 'cancelled') {
+            throw new Exception("Order #{$order->order_number} is already cancelled.");
         }
 
         return DB::transaction(function () use ($order, $reason, $refundMethod, $adminNotes) {
@@ -365,42 +401,69 @@ class OrderService
             }
 
             $walletPortion = (float) ($order->wallet_amount_used ?? 0);
-            $onlinePortion = ($order->payment_status === 'paid' && strtolower($order->payment_method) === 'online') ? (float) $order->total_amount : 0.00;
+            $totalAmount = (float) ($order->total_amount ?? 0);
+            $isPaid = ($order->payment_status === 'paid');
+            $method = strtolower($order->payment_method ?? 'cod');
+
+            $onlinePortion = 0.00;
+            $doorstepPortion = 0.00;
             $refundRef = null;
             $onlineRefundStatus = 'none';
 
-            if ($refundMethod === 'wallet') {
-                // 100% full refund to customer wallet
-                $refundAmount = $walletPortion + $onlinePortion;
-                if ($refundAmount > 0 && $customer) {
+            if ($isPaid) {
+                if ($method === 'online') {
+                    $onlinePortion = $totalAmount;
+                } elseif (in_array($method, ['doorstep_upi', 'cash']) || $method === 'cod') {
+                    $doorstepPortion = $totalAmount;
+                } elseif ($method === 'wallet') {
+                    if ($walletPortion <= 0) {
+                        $walletPortion = $totalAmount;
+                    }
+                }
+            }
+
+            // 1. Credit wallet portion if debited and not already refunded
+            if ($walletPortion > 0 && $customer) {
+                $debitedCount = \App\Models\WalletTransaction::where('order_id', $order->id)->where('type', 'DEBIT')->count();
+                $creditedCount = \App\Models\WalletTransaction::where('order_id', $order->id)->where('type', 'CREDIT')->count();
+                if ($debitedCount > $creditedCount) {
                     app(\App\Services\WalletService::class)->getOrCreateWallet($customer)->credit(
-                        $refundAmount,
+                        $walletPortion,
+                        'ORDER_REFUND',
+                        "Wallet portion refund for Order #{$order->order_number} cancelled by store admin ({$reason})",
+                        $order->id
+                    );
+                }
+            }
+
+            // 2. Doorstep collected payment (Doorstep UPI / Cash) -> Credit 100% to customer wallet
+            if ($doorstepPortion > 0 && $customer) {
+                app(\App\Services\WalletService::class)->getOrCreateWallet($customer)->credit(
+                    $doorstepPortion,
+                    'ORDER_REFUND',
+                    "100% Doorstep Payment Refund for Order #{$order->order_number} cancelled by store admin ({$reason})",
+                    $order->id
+                );
+                $walletPortion += $doorstepPortion;
+            }
+
+            // 3. Online payment via Razorpay -> Direct Gateway Refund (unless explicit wallet chosen)
+            if ($onlinePortion > 0) {
+                if ($refundMethod === 'wallet' && $customer) {
+                    app(\App\Services\WalletService::class)->getOrCreateWallet($customer)->credit(
+                        $onlinePortion,
                         'ORDER_REFUND',
                         "Full Refund for Order #{$order->order_number} cancelled by store admin ({$reason})",
                         $order->id
                     );
-                }
-                $walletPortion = $refundAmount;
-                $onlinePortion = 0.00;
-                $refundStatus = 'processed';
-                $onlineRefundStatus = 'none';
-            } else {
-                // Bank / Gateway refund
-                // If wallet was used, credit wallet portion to wallet instantly
-                if ($walletPortion > 0 && $customer) {
-                    app(\App\Services\WalletService::class)->getOrCreateWallet($customer)->credit(
-                        $walletPortion,
-                        'ORDER_REFUND',
-                        "Wallet refund portion for Order #{$order->order_number} cancelled by store admin ({$reason})",
-                        $order->id
-                    );
-                }
-
-                // If online paid, trigger Razorpay Gateway refund
-                if ($onlinePortion > 0) {
+                    $walletPortion += $onlinePortion;
+                    $onlinePortion = 0.00;
+                    $onlineRefundStatus = 'none';
+                } else {
+                    // Trigger Razorpay API refund back to Original Source
                     try {
                         $payment = $order->primaryPayment ?? $order->payments()->where('status', 'SUCCESS')->latest()->first();
-                        $targetRef = $payment?->gateway_payment_id ?: ($payment?->gateway_order_id ?: $order->order_number);
+                        $targetRef = $payment?->gateway_payment_id ?: ($payment?->gateway_order_id ?: ($order->payment_reference ?? $order->order_number));
                         $razorpay = app(\App\Services\RazorpayService::class);
                         $rzResult = $razorpay->createRefund(
                             $targetRef,
@@ -419,14 +482,23 @@ class OrderService
                         $onlineRefundStatus = 'pending';
                     }
                 }
-
-                $refundAmount = $walletPortion + $onlinePortion;
-                $refundStatus = ($onlinePortion > 0) ? $onlineRefundStatus : ($walletPortion > 0 ? 'processed' : 'none');
             }
 
-            $recordedMethod = $refundMethod === 'wallet' 
-                ? 'wallet' 
-                : ($walletPortion > 0 && $onlinePortion > 0 ? 'dual' : ($onlinePortion > 0 ? 'original_source' : ($walletPortion > 0 ? 'wallet' : 'none')));
+            $refundAmount = $walletPortion + $onlinePortion;
+
+            if ($onlinePortion > 0 && ($walletPortion - $doorstepPortion) > 0) {
+                $recordedMethod = 'dual';
+                $refundStatus = ($onlineRefundStatus === 'processed') ? 'processed' : 'pending';
+            } elseif ($onlinePortion > 0) {
+                $recordedMethod = 'original_source';
+                $refundStatus = ($onlineRefundStatus === 'processed') ? 'processed' : 'pending';
+            } elseif ($walletPortion > 0) {
+                $recordedMethod = 'wallet';
+                $refundStatus = 'processed';
+            } else {
+                $recordedMethod = 'none';
+                $refundStatus = 'none';
+            }
 
             // Record in order_cancellations table
             $cancellation = \App\Models\OrderCancellation::create([
@@ -456,7 +528,7 @@ class OrderService
 
             // Trigger WhatsApp Order Cancelled Notification
             try {
-                app(\App\Services\WhatsAppService::class)->sendOrderCancelled($cancellation);
+                // WhatsApp notification deleted (only registration/reset OTP allowed)
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning("[OrderService] WhatsApp Order Cancelled notification failed: " . $e->getMessage());
             }
