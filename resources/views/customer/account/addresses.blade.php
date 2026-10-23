@@ -203,7 +203,7 @@
                         <input type="hidden" id="addr_input_country" name="country" value="India">
 
                         {{-- Pincode --}}
-                        <div class="col-12 col-md-4">
+                        <div class="col-12 col-sm-4">
                             <label for="addr_input_zip" class="form-label fw-semibold text-dark small mb-1">
                                 PIN Code <span class="text-danger">*</span>
                             </label>
@@ -212,30 +212,44 @@
                                     <i class="bi bi-pin-map"></i>
                                 </span>
                                 <input type="text" class="form-control border-start-0 py-2 ps-1 font-monospace fw-bold" id="addr_input_zip" name="zip" 
-                                       placeholder="6-digit PIN" maxlength="6" required style="border-radius: 0 10px 10px 0; border-color: #cbd5e1; font-size: 0.88rem;"
-                                       oninput="handleAddressModalPincode(this.value)">
+                                       placeholder="6-digit PIN" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" autocomplete="postal-code"
+                                       onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                                       oninput="handleAddressModalPincodeInput(this)"
+                                       required style="border-radius: 0 10px 10px 0; border-color: #cbd5e1; font-size: 0.88rem;">
                             </div>
-                            <small id="addr_pincode_hint" class="d-block mt-1" style="font-size: 0.72rem; min-height: 18px;"></small>
+                            <small id="addr_pincode_hint" class="d-block mt-1 transition-all" style="font-size: 0.72rem; min-height: 18px; line-height: 1.2;"></small>
                             <div class="invalid-feedback d-block text-danger small mt-1" id="err-zip" style="display:none !important;"></div>
                         </div>
 
                         {{-- City --}}
-                        <div class="col-12 col-sm-6 col-md-4">
+                        <div class="col-12 col-sm-4">
                             <label for="addr_input_city" class="form-label fw-semibold text-dark small mb-1">
                                 City / District <span class="text-danger">*</span>
                             </label>
-                            <input type="text" class="form-control py-2 px-3 rounded-3" id="addr_input_city" name="city" 
-                                   placeholder="City" required style="border-color: #cbd5e1; font-size: 0.88rem;">
+                            <div class="position-relative">
+                                <input type="text" class="form-control py-2 ps-3 pe-4 rounded-3" id="addr_input_city" name="city" 
+                                       placeholder="City / District" required style="border-color: #cbd5e1; font-size: 0.88rem;"
+                                       oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')">
+                                <i class="bi bi-lock-fill position-absolute top-50 end-0 translate-middle-y me-2.5 text-muted d-none" 
+                                   id="addr_city_lock_icon" title="Auto-filled from PIN" style="pointer-events: none; font-size: 0.82rem;"></i>
+                            </div>
+                            <small id="addr_city_hint" class="d-block mt-1 text-muted transition-all" style="font-size: 0.72rem; min-height: 18px; line-height: 1.2;"></small>
                             <div class="invalid-feedback d-block text-danger small mt-1" id="err-city" style="display:none !important;"></div>
                         </div>
 
                         {{-- State --}}
-                        <div class="col-12 col-sm-6 col-md-4">
+                        <div class="col-12 col-sm-4">
                             <label for="addr_input_state" class="form-label fw-semibold text-dark small mb-1">
                                 State <span class="text-danger">*</span>
                             </label>
-                            <input type="text" class="form-control py-2 px-3 rounded-3" id="addr_input_state" name="state" 
-                                   placeholder="State" required style="border-color: #cbd5e1; font-size: 0.88rem;">
+                            <div class="position-relative">
+                                <input type="text" class="form-control py-2 ps-3 pe-4 rounded-3" id="addr_input_state" name="state" 
+                                       placeholder="State" required style="border-color: #cbd5e1; font-size: 0.88rem;"
+                                       oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')">
+                                <i class="bi bi-lock-fill position-absolute top-50 end-0 translate-middle-y me-2.5 text-muted d-none" 
+                                   id="addr_state_lock_icon" title="Auto-filled from PIN" style="pointer-events: none; font-size: 0.82rem;"></i>
+                            </div>
+                            <small id="addr_state_hint" class="d-block mt-1 text-muted transition-all" style="font-size: 0.72rem; min-height: 18px; line-height: 1.2;"></small>
                             <div class="invalid-feedback d-block text-danger small mt-1" id="err-state" style="display:none !important;"></div>
                         </div>
 
@@ -245,7 +259,7 @@
                                 Street Address / House / Flat <span class="text-danger">*</span>
                             </label>
                             <textarea class="form-control py-2 px-3 rounded-3" id="addr_input_address" name="address" rows="2" 
-                                      placeholder="Flat/House No., Building Name, Street, Area, Landmark" required 
+                                      placeholder="Flat / House No. (e.g. #102/B), Building Name, Street, Area, Landmark" required 
                                       style="border-color: #cbd5e1; font-size: 0.88rem; line-height: 1.45;"></textarea>
                             <div class="invalid-feedback d-block text-danger small mt-1" id="err-address" style="display:none !important;"></div>
                         </div>
@@ -259,7 +273,8 @@
                         Cancel
                     </button>
                     <button type="submit" id="btn-save-address-modal" class="btn btn-primary rounded-pill px-4 py-2 fw-bold btn-sm shadow-xs d-inline-flex align-items-center gap-1.5" 
-                            style="background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); border: none; font-size: 0.84rem;">
+                            disabled
+                            style="background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); border: none; font-size: 0.84rem; opacity: 0.6; cursor: not-allowed;">
                         <i class="bi bi-check2-circle" id="btn-save-icon"></i>
                         <span id="btn-save-text">Save Address</span>
                     </button>
@@ -295,6 +310,10 @@ function clearAddressModalErrors() {
     }
     const hint = document.getElementById('addr_pincode_hint');
     if (hint) hint.innerHTML = '';
+    const cityHint = document.getElementById('addr_city_hint');
+    if (cityHint) cityHint.innerHTML = '';
+    const stateHint = document.getElementById('addr_state_hint');
+    if (stateHint) stateHint.innerHTML = '';
 }
 
 // Display error message under specific field
@@ -308,9 +327,136 @@ function showAddressFieldError(field, message) {
     }
 }
 
+// Track if current PIN code is 6-digit validated
+let isProfilePincodeValidated = false;
+let profilePincodeErrorTimer = null;
+let pincodeLookupTimer = null;
+
+// Enable or disable Save button
+function setProfileAddressSaveEnabled(enabled) {
+    const btn = document.getElementById('btn-save-address-modal');
+    if (!btn) return;
+    isProfilePincodeValidated = Boolean(enabled);
+    btn.disabled = !enabled;
+    if (enabled) {
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+    } else {
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+    }
+}
+
+// Lock / Unlock City & State inputs once PIN code is validated
+function lockProfileCityState(locked) {
+    const cityInput = document.getElementById('addr_input_city');
+    const stateInput = document.getElementById('addr_input_state');
+    const cityIcon = document.getElementById('addr_city_lock_icon');
+    const stateIcon = document.getElementById('addr_state_lock_icon');
+    const cityHint = document.getElementById('addr_city_hint');
+    const stateHint = document.getElementById('addr_state_hint');
+
+    if (cityInput) {
+        cityInput.readOnly = locked;
+        if (locked) {
+            cityInput.style.backgroundColor = '#f8fafc';
+            cityInput.style.cursor = 'default';
+            cityInput.style.fontWeight = '600';
+            cityInput.style.color = '#1e293b';
+        } else {
+            cityInput.style.backgroundColor = '';
+            cityInput.style.cursor = '';
+            cityInput.style.fontWeight = '';
+            cityInput.style.color = '';
+        }
+    }
+    if (stateInput) {
+        stateInput.readOnly = locked;
+        if (locked) {
+            stateInput.style.backgroundColor = '#f8fafc';
+            stateInput.style.cursor = 'default';
+            stateInput.style.fontWeight = '600';
+            stateInput.style.color = '#1e293b';
+        } else {
+            stateInput.style.backgroundColor = '';
+            stateInput.style.cursor = '';
+            stateInput.style.fontWeight = '';
+            stateInput.style.color = '';
+        }
+    }
+    if (cityIcon) cityIcon.classList.toggle('d-none', !locked);
+    if (stateIcon) stateIcon.classList.toggle('d-none', !locked);
+    if (cityHint) {
+        cityHint.innerHTML = locked ? '<span class="text-success fw-medium"><i class="bi bi-shield-check me-0.5"></i>Auto-filled</span>' : '';
+    }
+    if (stateHint) {
+        stateHint.innerHTML = locked ? '<span class="text-success fw-medium"><i class="bi bi-shield-check me-0.5"></i>Auto-filled</span>' : '';
+    }
+}
+
+// Clear PIN error and cancel auto-dismiss timer
+function clearProfilePincodeError() {
+    if (profilePincodeErrorTimer) {
+        clearTimeout(profilePincodeErrorTimer);
+        profilePincodeErrorTimer = null;
+    }
+    const hintEl = document.getElementById('addr_pincode_hint');
+    if (hintEl) {
+        hintEl.style.opacity = '1';
+        hintEl.innerHTML = '';
+    }
+    const errZip = document.getElementById('err-zip');
+    if (errZip) {
+        errZip.innerText = '';
+        errZip.style.setProperty('display', 'none', 'important');
+    }
+}
+
+// Show validation error for wrong PIN that auto-dismisses after 4 seconds
+function showDismissableProfilePincodeError(msg) {
+    clearProfilePincodeError();
+    const hintEl = document.getElementById('addr_pincode_hint');
+    if (!hintEl) return;
+    hintEl.style.transition = 'opacity 0.35s ease';
+    hintEl.style.opacity = '1';
+    hintEl.innerHTML = `<span class="text-danger fw-semibold"><i class="bi bi-x-circle-fill me-1"></i>${msg}</span>`;
+
+    profilePincodeErrorTimer = setTimeout(() => {
+        hintEl.style.opacity = '0';
+        setTimeout(() => {
+            hintEl.innerHTML = '';
+            hintEl.style.opacity = '1';
+        }, 350);
+    }, 4500);
+}
+
+// Real-time Pincode typing handler: numbers only, clears previous errors, manages locks
+function handleAddressModalPincodeInput(input) {
+    const pin = (input.value || '').replace(/\D/g, '').slice(0, 6);
+    if (input.value !== pin) {
+        input.value = pin;
+    }
+
+    // Immediately clear error when typing
+    clearProfilePincodeError();
+
+    if (pin.length < 6) {
+        lockProfileCityState(false);
+        setProfileAddressSaveEnabled(false);
+        if (pin.length === 0) {
+            document.getElementById('addr_input_city').value = '';
+            document.getElementById('addr_input_state').value = '';
+        }
+        return;
+    }
+
+    handleAddressModalPincode(pin);
+}
+
 // Open modal for CREATION (No page reload)
 function openCreateAddressModal() {
     clearAddressModalErrors();
+    clearProfilePincodeError();
 
     document.getElementById('modal_address_id').value = '';
     document.getElementById('modal_http_method').value = 'POST';
@@ -321,9 +467,11 @@ function openCreateAddressModal() {
     document.getElementById('addressModalIconBox').style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
     document.getElementById('addressModalIcon').className = 'bi bi-geo-alt-fill fs-5';
 
-    // Button label
+    // Button label & initial disabled state
     document.getElementById('btn-save-icon').className = 'bi bi-plus-circle';
     document.getElementById('btn-save-text').textContent = 'Save Address';
+    setProfileAddressSaveEnabled(false);
+    lockProfileCityState(false);
 
     // Default values
     document.getElementById('addr_input_name').value = '{{ auth()->user()->name ?? "" }}';
@@ -345,6 +493,7 @@ function openCreateAddressModal() {
 function openEditAddressModal(address) {
     if (!address) return;
     clearAddressModalErrors();
+    clearProfilePincodeError();
 
     document.getElementById('modal_address_id').value = address.id;
     document.getElementById('modal_http_method').value = 'PUT';
@@ -360,9 +509,10 @@ function openEditAddressModal(address) {
     document.getElementById('btn-save-text').textContent = 'Update Address';
 
     // Populate data
+    const zipVal = (address.zip || '').replace(/\D/g, '').slice(0, 6);
     document.getElementById('addr_input_name').value = address.name || '';
     document.getElementById('addr_input_phone').value = (address.phone || '').replace(/\D/g, '').slice(-10);
-    document.getElementById('addr_input_zip').value = address.zip || '';
+    document.getElementById('addr_input_zip').value = zipVal;
     document.getElementById('addr_input_address').value = address.address || '';
     document.getElementById('addr_input_city').value = address.city || '';
     document.getElementById('addr_input_state').value = address.state || '';
@@ -370,6 +520,15 @@ function openEditAddressModal(address) {
 
     delete document.getElementById('addr_input_city').dataset.autofilled;
     delete document.getElementById('addr_input_state').dataset.autofilled;
+
+    // In edit mode, if existing address has valid 6-digit zip, city and state, lock and enable save
+    if (zipVal.length === 6 && address.city && address.state) {
+        lockProfileCityState(true);
+        setProfileAddressSaveEnabled(true);
+    } else {
+        lockProfileCityState(false);
+        setProfileAddressSaveEnabled(false);
+    }
 
     const modalEl = document.getElementById('addressModal');
     bootstrap.Modal.getOrCreateInstance(modalEl).show();
@@ -389,14 +548,15 @@ document.addEventListener('click', function(e) {
 });
 
 // Real-time 6-digit Pincode auto-lookup
-let pincodeLookupTimer = null;
 function handleAddressModalPincode(pincode) {
-    pincode = (pincode || '').trim();
+    pincode = (pincode || '').replace(/\D/g, '').slice(0, 6);
     const hintEl = document.getElementById('addr_pincode_hint');
     clearTimeout(pincodeLookupTimer);
 
-    if (pincode.length !== 6 || !/^\d{6}$/.test(pincode)) {
+    if (pincode.length !== 6) {
         if (hintEl) hintEl.innerHTML = '';
+        lockProfileCityState(false);
+        setProfileAddressSaveEnabled(false);
         return;
     }
 
@@ -422,8 +582,8 @@ function handleAddressModalPincode(pincode) {
                 body: JSON.stringify({ pincode: pincode })
             });
             const data = await res.json();
-            if (data.city) city = data.city;
-            if (data.state) state = data.state;
+            if (data.city && !data.city.startsWith('PIN ')) city = data.city;
+            if (data.state && data.state !== 'India') state = data.state;
             if (data.is_serviceable) {
                 isServiceable = true;
                 deliveryMessage = data.message || `Delivery available to ${data.city || 'your area'}`;
@@ -439,40 +599,48 @@ function handleAddressModalPincode(pincode) {
                 const postalData = await postalRes.json();
                 if (Array.isArray(postalData) && postalData[0]?.Status === 'Success' && postalData[0].PostOffice?.length > 0) {
                     const po = postalData[0].PostOffice[0];
-                    city = po.District || po.Division || po.Block || '';
-                    state = po.State || '';
+                    if (!city) city = po.District || po.Division || po.Block || '';
+                    if (!state) state = po.State || '';
                 }
             } catch (postalErr) {
                 console.warn('Postal API lookup fallback error:', postalErr);
             }
         }
 
-        // 3. Auto-populate City & State inputs seamlessly
         const cityInput = document.getElementById('addr_input_city');
         const stateInput = document.getElementById('addr_input_state');
 
-        if (city && cityInput) {
-            cityInput.value = city;
-            cityInput.style.transition = 'background-color 0.4s ease';
-            cityInput.style.backgroundColor = '#ecfdf5';
-            setTimeout(() => { cityInput.style.backgroundColor = ''; }, 1000);
-        }
-        if (state && stateInput) {
-            stateInput.value = state;
-            stateInput.style.transition = 'background-color 0.4s ease';
-            stateInput.style.backgroundColor = '#ecfdf5';
-            setTimeout(() => { stateInput.style.backgroundColor = ''; }, 1000);
-        }
-
-        // 4. Update status hint
-        if (hintEl) {
-            if (isServiceable) {
-                hintEl.innerHTML = `<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>${deliveryMessage}</span>`;
-            } else if (city && state) {
-                hintEl.innerHTML = `<span class="text-primary"><i class="bi bi-geo-alt-fill me-1"></i>${city}, ${state}</span>`;
-            } else {
-                hintEl.innerHTML = `<span class="text-muted"><i class="bi bi-info-circle me-1"></i>Pincode entered. Please verify city & state.</span>`;
+        // 3. Validation result handling: only allow saving if city & state are verified
+        if (city && state) {
+            if (cityInput) {
+                cityInput.value = city;
+                cityInput.style.transition = 'background-color 0.4s ease';
+                cityInput.style.backgroundColor = '#ecfdf5';
+                setTimeout(() => { if (cityInput) cityInput.style.backgroundColor = ''; }, 1000);
             }
+            if (stateInput) {
+                stateInput.value = state;
+                stateInput.style.transition = 'background-color 0.4s ease';
+                stateInput.style.backgroundColor = '#ecfdf5';
+                setTimeout(() => { if (stateInput) stateInput.style.backgroundColor = ''; }, 1000);
+            }
+
+            // Lock City & State (Readonly) and Enable Save Button
+            lockProfileCityState(true);
+            setProfileAddressSaveEnabled(true);
+
+            if (hintEl) {
+                if (isServiceable) {
+                    hintEl.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>${city}, ${state} (${deliveryMessage})</span>`;
+                } else {
+                    hintEl.innerHTML = `<span class="text-primary fw-semibold"><i class="bi bi-geo-alt-fill me-1"></i>${city}, ${state}</span>`;
+                }
+            }
+        } else {
+            // Wrong / Non-existent PIN code: Keep unlocked, Disable Save, Show Auto-Dismiss Error
+            lockProfileCityState(false);
+            setProfileAddressSaveEnabled(false);
+            showDismissableProfilePincodeError(`Invalid PIN code (${pincode}). Please check and enter a valid PIN.`);
         }
     }, 280);
 }
@@ -555,10 +723,18 @@ async function handleAddressFormSubmit(event) {
         showAddressFieldError('phone', 'Please enter a valid 10-digit mobile number.'); 
         hasClientErr = true; 
     }
-    if (!payload.zip) { showAddressFieldError('zip', 'Please enter a 6-digit PIN code.'); hasClientErr = true; }
+    if (!payload.zip || payload.zip.length !== 6) { 
+        showAddressFieldError('zip', 'Please enter a valid 6-digit PIN code.'); 
+        hasClientErr = true; 
+    }
     if (!payload.address) { showAddressFieldError('address', 'Please enter your street address.'); hasClientErr = true; }
     if (!payload.city) { showAddressFieldError('city', 'Please enter your city.'); hasClientErr = true; }
     if (!payload.state) { showAddressFieldError('state', 'Please enter your state.'); hasClientErr = true; }
+    if (!isProfilePincodeValidated && !isEdit) {
+        showAddressFieldError('zip', 'Please wait for your 6-digit PIN code to detect City & State.');
+        showDismissableProfilePincodeError('PIN code must be validated before saving.');
+        hasClientErr = true;
+    }
     if (hasClientErr) return;
 
     // Button loading state

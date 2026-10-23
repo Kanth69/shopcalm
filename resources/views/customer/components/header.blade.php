@@ -243,20 +243,20 @@ document.addEventListener('DOMContentLoaded', function() {
 </header>
 
 <!-- Minimalist Clean Slide-Out Menu Drawer -->
-<div class="offcanvas offcanvas-start border-0 shadow" tabindex="-1" id="siteMenu" aria-labelledby="siteMenuLabel" style="width: 320px; z-index: 1095 !important;">
+<div class="offcanvas offcanvas-start border-0 shadow" tabindex="-1" id="siteMenu" aria-labelledby="siteMenuLabel" style="width: 300px; z-index: 1095 !important;">
     <!-- Drawer Header -->
-    <div class="offcanvas-header px-4 py-3.5 border-bottom d-flex align-items-center justify-content-between">
-        <x-logo height="28" />
+    <div class="offcanvas-header px-3.5 py-2.5 border-bottom d-flex align-items-center justify-content-between">
+        <x-logo height="26" />
         <button type="button" class="btn-close shadow-none" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
 
     <!-- Drawer Content -->
-    <div class="offcanvas-body px-4 py-3.5 d-flex flex-column justify-content-between">
+    <div class="offcanvas-body px-3 py-2.5 d-flex flex-column justify-content-between">
         <div>
             <!-- Main Navigation Links -->
-            <div class="mb-4">
-                <div class="text-uppercase small text-muted fw-bold mb-2.5 px-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Navigation</div>
-                <div class="d-flex flex-column gap-1.5">
+            <div class="mb-2.5">
+                <div class="text-uppercase small text-muted fw-bold mb-1.5 px-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Navigation</div>
+                <div class="d-flex flex-column gap-1">
                     <a href="{{ route('home') }}" class="drawer-link {{ request()->routeIs('home') ? 'active' : '' }}">
                         <i class="bi bi-house drawer-icon me-3"></i> <span>Home</span>
                     </a>
@@ -284,15 +284,15 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
 
             <!-- Categories Dropdown Accordion (Hidden by default, shown on click) -->
-            <div class="mb-3">
+            <div class="mb-2">
                 <a href="#drawerCategoriesCollapse" class="drawer-link d-flex justify-content-between align-items-center" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="drawerCategoriesCollapse">
                     <div class="d-flex align-items-center">
                         <i class="bi bi-tags drawer-icon me-3 text-primary"></i> <span>Categories</span>
                     </div>
                     <i class="bi bi-chevron-down small text-muted chevron-rotate"></i>
                 </a>
-                <div class="collapse mt-1 ps-4" id="drawerCategoriesCollapse">
-                    <div class="d-flex flex-column gap-1.5 py-1 border-start ps-3 ms-2">
+                <div class="collapse mt-1 ps-3" id="drawerCategoriesCollapse">
+                    <div class="d-flex flex-column gap-1 py-1 border-start ps-2.5 ms-2">
                         @forelse($menuCategories ?? [] as $cat)
                             <a href="{{ route('category.products', $cat->slug) }}" class="drawer-sublink">
                                 {{ $cat->name }}
@@ -305,15 +305,15 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
 
             <!-- Brands Dropdown Accordion (Hidden by default, shown on click) -->
-            <div class="mb-4">
+            <div class="mb-2.5">
                 <a href="#drawerBrandsCollapse" class="drawer-link d-flex justify-content-between align-items-center" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="drawerBrandsCollapse">
                     <div class="d-flex align-items-center">
                         <i class="bi bi-award drawer-icon me-3 text-primary"></i> <span>Brands</span>
                     </div>
                     <i class="bi bi-chevron-down small text-muted chevron-rotate"></i>
                 </a>
-                <div class="collapse mt-1 ps-4" id="drawerBrandsCollapse">
-                    <div class="d-flex flex-column gap-1.5 py-1 border-start ps-3 ms-2">
+                <div class="collapse mt-1 ps-3" id="drawerBrandsCollapse">
+                    <div class="d-flex flex-column gap-1 py-1 border-start ps-2.5 ms-2">
                         @forelse($menuBrands ?? [] as $brand)
                             <a href="{{ route('brand.products', $brand->slug) }}" class="drawer-sublink">
                                 {{ $brand->name }}
@@ -325,43 +325,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
 
-            <!-- Support & Legal Links with generous spacing -->
-            <div class="pt-4 border-top mt-4 mb-4">
-                <div class="text-uppercase small text-muted fw-bold mb-3 px-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Help & Information</div>
-                <div class="d-flex flex-column gap-2 px-1">
-                    <a href="{{ url('/about-us') }}" class="drawer-sublink py-1.5">
+            <!-- Support & Legal Links with compact spacing -->
+            <div class="pt-2.5 border-top mt-2.5 mb-2">
+                <div class="text-uppercase small text-muted fw-bold mb-1.5 px-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Help & Information</div>
+                <div class="d-flex flex-column gap-1 px-1">
+                    <a href="{{ url('/about-us') }}" class="drawer-sublink py-1">
                         <i class="bi bi-info-circle drawer-icon me-3 text-muted"></i> <span>About Us</span>
                     </a>
-                    <a href="{{ url('/contact-us') }}" class="drawer-sublink py-1.5">
+                    <a href="{{ url('/contact-us') }}" class="drawer-sublink py-1">
                         <i class="bi bi-headset drawer-icon me-3 text-muted"></i> <span>Contact & Support</span>
                     </a>
                     @auth('customer')
-                    <a href="{{ route('account.tickets') }}" class="drawer-sublink py-1.5">
+                    <a href="{{ route('account.tickets') }}" class="drawer-sublink py-1">
                         <i class="bi bi-ticket-perforated drawer-icon me-3 text-warning"></i> <span class="fw-semibold text-dark">My Tickets</span>
                     </a>
                     @endauth
-                    <a href="{{ url('/faq') }}" class="drawer-sublink py-1.5">
+                    <a href="{{ url('/faq') }}" class="drawer-sublink py-1">
                         <i class="bi bi-question-circle drawer-icon me-3 text-muted"></i> <span>FAQs</span>
                     </a>
                 </div>
             </div>
         </div>
 
-        <!-- Drawer Footer: Single Clean Sign In button for guest, or Account for logged in with generous top margin -->
-        <div class="pt-4 border-top mt-4 pb-2">
+        <!-- Drawer Footer: Single Clean Sign In button for guest, or Account for logged in -->
+        <div class="pt-2.5 border-top mt-2 pb-1">
             @auth('customer')
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <div class="fw-bold text-dark small">{{ Auth::guard('customer')->user()->name }}</div>
-                        <a href="{{ route('dashboard') }}" class="text-primary text-decoration-none small" style="font-size: 0.78rem;">Account Dashboard &rarr;</a>
+                        <div class="fw-bold text-dark small" style="font-size: 0.84rem;">{{ Auth::guard('customer')->user()->name }}</div>
+                        <a href="{{ route('dashboard') }}" class="text-primary text-decoration-none small" style="font-size: 0.74rem;">Account Dashboard &rarr;</a>
                     </div>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">Logout</button>
+                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1" style="font-size: 0.75rem;">Logout</button>
                     </form>
                 </div>
             @else
-                <a href="{{ route('login') }}" class="btn btn-primary rounded-pill w-100 py-2.5 fw-semibold shadow-xs">
+                <a href="{{ route('login') }}" class="btn btn-primary rounded-pill w-100 py-2 fw-semibold shadow-xs" style="font-size: 0.86rem;">
                     Sign In
                 </a>
             @endauth
@@ -424,19 +424,20 @@ document.addEventListener('DOMContentLoaded', function() {
     .drawer-icon {
         width: 22px;
         text-align: center;
-        font-size: 1.1rem;
+        font-size: 1.08rem;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
+        margin-right: 0.85rem !important;
     }
 
     .drawer-link {
         display: flex;
         align-items: center;
-        padding: 0.6rem 0.75rem;
+        padding: 0.45rem 0.75rem;
         border-radius: 0.5rem;
-        font-size: 0.92rem;
+        font-size: 0.89rem;
         font-weight: 500;
         color: #1e293b;
         text-decoration: none;
@@ -462,9 +463,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     .drawer-sublink {
-        display: block;
-        padding: 0.35rem 0.75rem;
-        font-size: 0.88rem;
+        display: flex;
+        align-items: center;
+        padding: 0.28rem 0.65rem;
+        font-size: 0.83rem;
         color: #64748b;
         text-decoration: none;
         transition: color 0.15s, transform 0.15s;
@@ -508,6 +510,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     .suggestion-row-item:hover, .suggestion-row-item.active {
         background-color: #f8fafc;
+    }
+    .suggestion-action-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background-color: #f1f5f9;
+        color: #475569;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.82rem;
+        flex-shrink: 0;
+        transition: all 0.15s ease;
+    }
+    .suggestion-row-item:hover .suggestion-action-icon,
+    .suggestion-query-row:hover .suggestion-action-icon {
+        background-color: #e0e7ff;
+        color: #4338ca;
+        transform: scale(1.08);
     }
     .suggestion-footer-btn,
     .suggestion-footer-btn * {
@@ -582,7 +603,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         box.innerHTML = `
-            <div class="p-3.5 px-4 bg-white">
+            <div class="p-3.5 px-3 px-md-4 bg-white">
                 <div class="d-flex align-items-center justify-content-between mb-2.5 pb-1">
                     <span class="small fw-bold text-muted text-uppercase" style="font-size: 0.74rem; letter-spacing: 0.6px;">
                         <i class="bi bi-clock-history me-1.5 text-primary"></i> Recent Searches
@@ -685,12 +706,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         // 1. Direct Search Query Row
                         html += `
-                            <div class="suggestion-query-row py-3 px-4 border-bottom d-flex align-items-center gap-3 text-dark" onclick="applySearchTerm('${escapeJs(q)}')">
+                            <div class="suggestion-query-row py-3 px-3 px-md-4 border-bottom d-flex align-items-center gap-3 text-dark" onclick="applySearchTerm('${escapeJs(q)}')">
                                 <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary flex-shrink-0" style="width: 32px; height: 32px;">
                                     <i class="bi bi-search" style="font-size: 0.85rem;"></i>
                                 </div>
-                                <span style="font-size: 0.92rem;">Search for <strong class="text-primary">"${escapeHtml(q)}"</strong></span>
-                                <i class="bi bi-arrow-up-left ms-auto text-muted fs-6"></i>
+                                <span style="font-size: 0.92rem;" class="min-w-0 text-truncate">Search for <strong class="text-primary">"${escapeHtml(q)}"</strong></span>
+                                <span class="suggestion-action-icon ms-auto" aria-hidden="true">
+                                    <i class="bi bi-arrow-up-right"></i>
+                                </span>
                             </div>
                         `;
 
@@ -706,13 +729,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <div class="d-flex flex-column gap-1">
                                         ${matchingRecent.slice(0, 3).map(term => `
                                             <div class="d-flex align-items-center justify-content-between py-2 px-3 rounded-3 cursor-pointer suggestion-row-item" onclick="applySearchTerm('${escapeJs(term)}')">
-                                                <div class="d-flex align-items-center gap-3 min-w-0">
+                                                <div class="d-flex align-items-center gap-2.5 gap-md-3 min-w-0">
                                                     <i class="bi bi-clock-history text-muted" style="font-size: 0.88rem;"></i>
                                                     <span class="fw-semibold text-dark text-truncate" style="font-size: 0.88rem;">${escapeHtml(term)}</span>
                                                 </div>
                                                 <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-2">
-                                                    <span class="badge" style="background: #eef2ff; color: #4338ca; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; padding: 4px 8px;">RECENT</span>
-                                                    <button type="button" class="btn btn-link p-0 text-muted border-0" onclick="removeSingleRecent(event, '${escapeJs(term)}')" title="Remove">
+                                                    <span class="badge rounded-pill" style="background: #eef2ff; color: #4338ca; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; padding: 4px 8px;">RECENT</span>
+                                                    <button type="button" class="btn btn-link p-0 text-muted border-0 d-inline-flex align-items-center justify-content-center" onclick="removeSingleRecent(event, '${escapeJs(term)}')" title="Remove" style="width: 24px; height: 24px;">
                                                         <i class="bi bi-x fs-5"></i>
                                                     </button>
                                                 </div>
@@ -749,14 +772,16 @@ document.addEventListener('DOMContentLoaded', function() {
                                             }
 
                                             return `
-                                                <div class="d-flex align-items-center justify-content-between py-2.5 px-4 cursor-pointer suggestion-row-item" onclick="${clickHandler}">
-                                                    <div class="d-flex align-items-center gap-3 min-w-0">
+                                                <div class="d-flex align-items-center justify-content-between py-2.5 px-3 px-md-4 cursor-pointer suggestion-row-item" onclick="${clickHandler}">
+                                                    <div class="d-flex align-items-center gap-2.5 gap-md-3 min-w-0">
                                                         <i class="${iconClass} fs-6 flex-shrink-0"></i>
                                                         <span class="fw-medium text-dark text-truncate" style="font-size: 0.9rem;">${highlightMatch(s.text, q)}</span>
                                                     </div>
-                                                    <div class="d-flex align-items-center gap-2.5 flex-shrink-0 ms-2">
-                                                        <span class="badge" style="background: ${badgeBg}; color: ${badgeFg}; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; padding: 4px 8px;">${s.type.toUpperCase()}</span>
-                                                        <i class="bi bi-arrow-up-left text-muted small"></i>
+                                                    <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-2">
+                                                        <span class="badge rounded-pill" style="background: ${badgeBg}; color: ${badgeFg}; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; padding: 4px 8px;">${s.type.toUpperCase()}</span>
+                                                        <span class="suggestion-action-icon" aria-hidden="true" title="Open ${s.type}">
+                                                            <i class="bi bi-arrow-up-right"></i>
+                                                        </span>
                                                     </div>
                                                 </div>
                                             `;
@@ -768,7 +793,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         // 4. View All Results Footer (Spacious, prominent, clean)
                         html += `
-                            <div class="py-3.5 px-4 text-center cursor-pointer suggestion-footer-btn d-flex align-items-center justify-content-center gap-2.5 border-top" onclick="applySearchTerm('${escapeJs(q)}')">
+                            <div class="py-3 px-3 px-md-4 text-center cursor-pointer suggestion-footer-btn d-flex align-items-center justify-content-center gap-2.5 border-top" onclick="applySearchTerm('${escapeJs(q)}')">
                                 <span class="fw-semibold text-primary" style="font-size: 0.94rem;">
                                     See all <span class="badge bg-primary rounded-pill px-2.5 py-1 mx-1 shadow-xs" style="font-size: 0.82rem; font-weight: 700;">${totalCount}</span> results for "${escapeHtml(q)}"
                                 </span>

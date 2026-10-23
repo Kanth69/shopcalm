@@ -99,7 +99,8 @@
 
         /* Prevent auto-zoom on iOS Safari when tapping inputs */
         #locationPickerModal input.form-control,
-        #new-address-card input.form-control {
+        #checkoutAddressModal input.form-control,
+        #checkoutAddressModal textarea.form-control {
             font-size: 16px !important;
         }
     }
@@ -409,18 +410,28 @@
         }
 
         /* Mobile Address Modal & Step 1 Enhancements */
-        #addressSelectorModal .modal-dialog {
+        #addressSelectorModal .modal-dialog,
+        #checkoutAddressModal .modal-dialog {
             margin: 0.75rem auto !important;
             width: calc(100% - 1.25rem) !important;
-            max-width: 100% !important;
+            max-width: 560px !important;
         }
-        #addressSelectorModal .modal-content {
+        #addressSelectorModal .modal-content,
+        #checkoutAddressModal .modal-content {
             border-radius: 1.25rem !important;
         }
-        #addressSelectorModal .modal-body {
+        #addressSelectorModal .modal-body,
+        #checkoutAddressModal .modal-body {
             padding: 1rem 0.9rem !important;
             max-height: 72vh;
             overflow-y: auto;
+        }
+        #checkoutAddressModal .modal-footer {
+            position: sticky;
+            bottom: 0;
+            background: #ffffff !important;
+            z-index: 1055;
+            box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.05);
         }
         .address-modal-option {
             padding: 1rem 1.15rem !important;
@@ -609,22 +620,33 @@
                             </div>
 
                             <!-- Active Address Box (Spacious & Clean) -->
-                            <div id="active-address-display" class="checkout-address-box border address-card-selected overflow-hidden">
+                            <div id="active-address-display" class="checkout-address-box border address-card-selected">
                                 <div id="no-address-msg" style="display: {{ $addresses->count() > 0 ? 'none' : 'block' }};" class="text-center py-4 text-muted">
                                     <i class="bi bi-building-add fs-2 text-primary d-block mb-2"></i>
-                                    <span class="small fw-semibold text-dark">No saved address found. Click <strong>"+ Add New Address"</strong> below to add one.</span>
+                                    <span class="small fw-semibold text-dark d-block mb-2">No saved address found.</span>
+                                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3.5 py-1.5 fw-semibold" onclick="openCheckoutAddressModal()">
+                                        <i class="bi bi-plus-lg me-1"></i> Add Delivery Address
+                                    </button>
                                 </div>
 
                                 @php $activeAddr = $addresses->count() > 0 ? ($addresses->firstWhere('is_default', true) ?? $addresses->first()) : null; @endphp
                                 <div id="active-address-details" style="display: {{ $addresses->count() > 0 ? 'block' : 'none' }};">
-                                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-                                        <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2 pb-2 border-bottom">
+                                        <div class="d-flex align-items-center gap-2 min-w-0">
                                             <h6 class="fw-bold mb-0 text-dark text-truncate" style="font-size: 0.96rem;" id="display-name">{{ $activeAddr ? $activeAddr->name : '' }}</h6>
                                             <span class="badge bg-success text-white rounded-pill px-2.5 py-1 fw-bold flex-shrink-0" style="font-size: 0.68rem;">✓ Selected</span>
                                         </div>
-                                        <button type="button" id="btn-switch-address" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold flex-shrink-0" onclick="showAddressSelectorModal()" style="font-size: 0.78rem; display: {{ $addresses->count() > 1 ? 'inline-block' : 'none' }};">
-                                            <i class="bi bi-arrow-repeat me-1"></i> Switch Address
-                                        </button>
+                                        <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                            <button type="button" id="btn-switch-address" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center" onclick="showAddressSelectorModal()" style="font-size: 0.76rem; display: {{ $addresses->count() > 1 ? 'inline-flex' : 'none' }};">
+                                                <i class="bi bi-arrow-repeat me-1"></i> Switch
+                                            </button>
+                                            <button type="button" id="btn-edit-active-address" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center" onclick="editActiveCheckoutAddress()" style="font-size: 0.76rem;" title="Edit Selected Address">
+                                                <i class="bi bi-pencil me-1"></i> Edit
+                                            </button>
+                                            <button type="button" id="btn-delete-active-address" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center" onclick="deleteActiveCheckoutAddress(this)" style="font-size: 0.76rem;" title="Delete Selected Address">
+                                                <i class="bi bi-trash me-1"></i> Delete
+                                            </button>
+                                        </div>
                                     </div>
                                     <p class="text-secondary mb-2 text-break-word" id="display-street-city" style="line-height: 1.55; font-size: 0.88rem;">
                                         {{ $activeAddr ? "{$activeAddr->address}, {$activeAddr->city}, {$activeAddr->state}" : '' }} @if($activeAddr)<span class="text-nowrap font-monospace fw-bold text-dark">- {{ $activeAddr->zip }}</span>@endif
@@ -642,62 +664,13 @@
                                     <i class="bi bi-crosshair fs-6"></i>
                                     <span>Use Current Location</span>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3.5 py-2 fw-semibold d-inline-flex align-items-center gap-1.5" onclick="openNewAddressForm()" style="font-size: 0.82rem;">
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3.5 py-2 fw-semibold d-inline-flex align-items-center gap-1.5" onclick="openCheckoutAddressModal()" style="font-size: 0.82rem;">
                                     <i class="bi bi-plus-lg"></i>
-                                    <span>Add Manually</span>
+                                    <span>+ Add New Address</span>
                                 </button>
                             </div>
 
-                            <!-- Collapsible Add New Address Form -->
-                            <div class="card border rounded-4 mb-4 overflow-hidden shadow-xs" id="new-address-card" style="display: {{ $addresses->count() === 0 ? 'block' : 'none' }}; border-color: #cbd5e1 !important; background: #f8fafc;">
-                                <div class="card-header bg-white py-2.5 px-3.5 d-flex justify-content-between align-items-center border-bottom">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.88rem;"><i class="bi bi-house-add text-primary me-2"></i>Add New Address</h6>
-                                        <button type="button" class="btn btn-sm btn-link text-primary p-0 fw-semibold text-decoration-none" onclick="openLocationPickerModal()" style="font-size: 0.78rem;">
-                                            <i class="bi bi-map-fill me-1"></i>Select on Map
-                                        </button>
-                                    </div>
-                                    <button type="button" class="btn-close" id="btn-close-new-address-header" onclick="closeNewAddressForm()" style="display: {{ $addresses->count() > 0 ? 'inline-block' : 'none' }};"></button>
-                                </div>
-                                <div class="card-body p-3.5 p-md-4">
-                                    <div id="new-address-form">
-                                        <div class="row g-2.5">
-                                            <div class="col-12">
-                                                <label for="new_name" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Full Name <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control form-control-sm rounded-3 py-1.5" id="new_name" value="{{ auth()->user()->name ?? '' }}" placeholder="Enter full name">
-                                            </div>
-                                            <div class="col-12 col-sm-6">
-                                                <label for="new_phone" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Mobile Number <span class="text-danger">*</span></label>
-                                                <input type="tel" class="form-control form-control-sm rounded-3 py-1.5" id="new_phone" value="{{ auth()->user()->mobile_number ?? '' }}" placeholder="10-digit mobile" maxlength="10" inputmode="tel" autocomplete="tel" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 10)">
-                                            </div>
-                                            <div class="col-12 col-sm-6">
-                                                <label for="new_zip" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Pincode <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control form-control-sm rounded-3 font-monospace fw-bold py-1.5" id="new_zip" placeholder="6-digit PIN" maxlength="6" inputmode="numeric" oninput="handleNewPincodeLookup(this.value)">
-                                                <small id="new_zip_lookup_hint" class="text-muted d-block mt-0.5" style="font-size: 0.7rem;"></small>
-                                            </div>
-                                            <div class="col-12">
-                                                <label for="new_address" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Street Address <span class="text-danger">*</span></label>
-                                                <textarea class="form-control form-control-sm rounded-3 p-2" id="new_address" rows="2" placeholder="House no, Street, Landmark"></textarea>
-                                            </div>
-                                            <div class="col-12 col-sm-6">
-                                                <label for="new_city" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">City <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control form-control-sm rounded-3 py-1.5" id="new_city" placeholder="City">
-                                            </div>
-                                            <div class="col-12 col-sm-6">
-                                                <label for="new_state" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">State <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control form-control-sm rounded-3 py-1.5" id="new_state" placeholder="State">
-                                            </div>
-                                        </div>
 
-                                        <div class="d-flex justify-content-end gap-2 mt-3">
-                                            <button type="button" id="btn-cancel-new-address" class="btn btn-light border rounded-pill px-3.5 btn-sm fw-semibold" onclick="closeNewAddressForm()" style="display: {{ $addresses->count() > 0 ? 'inline-block' : 'none' }};">Cancel</button>
-                                            <button type="button" onclick="handleSaveAddress(event)" class="btn btn-primary rounded-pill px-4 btn-sm shadow-xs fw-semibold" id="btn-save-address" style="background: #4f46e5; border: none;">
-                                                <i class="bi bi-bookmark-check me-1"></i> Save Address
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
 
                             <!-- Delivery Notes Card (Compact & Clean on Mobile) -->
                             <div class="card checkout-delivery-notes-card shadow-xs">
@@ -1407,15 +1380,15 @@
                         </div>
                         <div class="col-12 col-sm-4">
                             <label for="map_city" class="form-label fw-semibold small mb-1" style="font-size: 0.78rem;">City <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-sm rounded-3 py-1.5" id="map_city" placeholder="City">
+                            <input type="text" class="form-control form-control-sm rounded-3 py-1.5" id="map_city" placeholder="City" oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')">
                         </div>
                         <div class="col-12 col-sm-4">
                             <label for="map_state" class="form-label fw-semibold small mb-1" style="font-size: 0.78rem;">State <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-sm rounded-3 py-1.5" id="map_state" placeholder="State">
+                            <input type="text" class="form-control form-control-sm rounded-3 py-1.5" id="map_state" placeholder="State" oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')">
                         </div>
                         <div class="col-12 col-sm-4">
                             <label for="map_zip_code" class="form-label fw-semibold small mb-1" style="font-size: 0.78rem;">Pincode <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-sm rounded-3 font-monospace fw-bold py-1.5" id="map_zip_code" placeholder="6-digit PIN" maxlength="6" inputmode="numeric">
+                            <input type="text" class="form-control form-control-sm rounded-3 font-monospace fw-bold py-1.5" id="map_zip_code" placeholder="6-digit PIN" maxlength="6" inputmode="numeric" onkeypress="return event.charCode >= 48 && event.charCode <= 57" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 6)">
                         </div>
                         <div class="col-12 col-sm-6">
                             <label for="map_name" class="form-label fw-semibold small mb-1" style="font-size: 0.78rem;">Receiver Name <span class="text-danger">*</span></label>
@@ -1570,8 +1543,8 @@
                     @endphp
                     <div class="col-12">
                         <div class="card border rounded-4 p-3 p-sm-3.5 address-modal-option cursor-pointer position-relative shadow-xs {{ $isCurrent ? 'is-selected' : '' }}" onclick="selectModalAddress({{ json_encode($addr) }})">
-                            <div class="d-flex align-items-start justify-content-between gap-2.5">
-                                <div class="min-w-0 flex-grow-1">
+                            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2.5">
+                                <div class="min-w-0 flex-grow-1 w-100">
                                     <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                                         <strong class="text-dark fs-6">{{ $addr->name }}</strong>
                                         @if($isCurrent)
@@ -1587,7 +1560,7 @@
                                         <i class="bi bi-telephone-fill text-muted me-1 small"></i> Mobile: <strong class="text-dark font-monospace">{{ $addr->phone }}</strong>
                                     </div>
                                 </div>
-                                <div class="flex-shrink-0 align-self-center ps-1">
+                                <div class="flex-shrink-0 align-self-end align-self-sm-center d-flex align-items-center gap-1.5 mt-2 mt-sm-0">
                                     @if($isCurrent)
                                         <span class="btn btn-sm btn-success rounded-pill px-3 py-1.5 fw-semibold shadow-xs text-nowrap" style="font-size: 0.78rem; pointer-events: none;">
                                             <i class="bi bi-check2"></i> Selected
@@ -1597,6 +1570,12 @@
                                             Select
                                         </button>
                                     @endif
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle p-0 d-inline-flex align-items-center justify-content-center" style="width: 34px; height: 34px;" onclick="editCheckoutAddress(event, {{ $addr->id }})" title="Edit Address">
+                                        <i class="bi bi-pencil small"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 d-inline-flex align-items-center justify-content-center" style="width: 34px; height: 34px;" onclick="deleteCheckoutAddress(event, {{ $addr->id }}, this)" title="Delete Address">
+                                        <i class="bi bi-trash small"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1614,6 +1593,99 @@
     </div>
 </div>
 
+<!-- Modern Popup Modal for Adding & Editing Address at Checkout (Mobile Scroll & Sticky Save Button) -->
+<div class="modal fade" id="checkoutAddressModal" tabindex="-1" aria-labelledby="checkoutAddressModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <form class="modal-content border-0 shadow" id="checkoutAddressModalForm" onsubmit="handleSaveAddress(event)" novalidate>
+            @csrf
+            <input type="hidden" id="edit_address_id" value="">
+
+            {{-- Modal Header --}}
+            <div class="modal-header border-bottom py-3 px-3.5 px-sm-4 bg-light bg-opacity-75 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2.5">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" id="checkoutAddressModalIconBox"
+                         style="width: 38px; height: 38px; background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); color: #ffffff;">
+                        <i class="bi bi-house-add-fill fs-5" id="checkoutAddressModalIcon"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="checkoutAddressModalLabel" style="font-size: 1.02rem;">Add New Address</h5>
+                        <p class="text-muted small mb-0" id="checkoutAddressModalSubtitle" style="font-size: 0.74rem;">Enter your delivery destination details</p>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-link text-primary p-0 fw-semibold text-decoration-none d-none d-sm-inline" onclick="openLocationPickerFromAddressModal()" style="font-size: 0.76rem;">
+                        <i class="bi bi-map-fill me-1"></i>Select on Map
+                    </button>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+
+            {{-- Modal Body --}}
+            <div class="modal-body p-3.5 p-sm-4">
+                <div class="d-block d-sm-none mb-2.5 text-end">
+                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 text-primary fw-semibold text-decoration-none" onclick="openLocationPickerFromAddressModal()" style="font-size: 0.74rem;">
+                        <i class="bi bi-map-fill me-1"></i>Select on Map
+                    </button>
+                </div>
+                <div class="row g-2.5">
+                    <div class="col-12">
+                        <label for="new_name" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm rounded-3 py-1.5" id="new_name" value="{{ auth()->user()->name ?? '' }}" placeholder="Enter full name" required>
+                    </div>
+                    <div class="col-12 col-sm-6">
+                        <label for="new_phone" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Mobile Number <span class="text-danger">*</span></label>
+                        <input type="tel" class="form-control form-control-sm rounded-3 py-1.5" id="new_phone" value="{{ auth()->user()->mobile_number ?? '' }}" placeholder="10-digit mobile" maxlength="10" inputmode="tel" autocomplete="tel" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 10)" required>
+                    </div>
+                    <div class="col-12 col-sm-6">
+                        <label for="new_zip" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Pincode <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm rounded-3 font-monospace fw-bold py-1.5" id="new_zip" 
+                               placeholder="6-digit PIN" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" autocomplete="postal-code"
+                               onkeypress="return event.charCode >= 48 && event.charCode <= 57" 
+                               oninput="handleCheckoutPincodeInput(this)" required>
+                        <small id="new_zip_lookup_hint" class="d-block mt-0.5 transition-all" style="font-size: 0.72rem; min-height: 16px;"></small>
+                    </div>
+                    <div class="col-12">
+                        <label for="new_address" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Street Address <span class="text-danger">*</span></label>
+                        <textarea class="form-control form-control-sm rounded-3 p-2" id="new_address" rows="2" 
+                                  placeholder="Flat / House No. (e.g. #102/B), Building Name, Street, Area, Landmark" 
+                                  style="line-height: 1.45;" required></textarea>
+                    </div>
+                    <div class="col-12 col-sm-6">
+                        <label for="new_city" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">City / District <span class="text-danger">*</span></label>
+                        <div class="position-relative">
+                            <input type="text" class="form-control form-control-sm rounded-3 py-1.5 ps-3 pe-4" id="new_city" 
+                                   placeholder="City / District"
+                                   oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')" required>
+                            <i class="bi bi-lock-fill position-absolute top-50 end-0 translate-middle-y me-2.5 text-muted d-none" 
+                               id="new_city_lock_icon" title="Auto-filled from PIN" style="pointer-events: none; font-size: 0.82rem;"></i>
+                        </div>
+                        <small id="new_city_hint" class="d-block mt-0.5 text-muted transition-all" style="font-size: 0.72rem; min-height: 16px;"></small>
+                    </div>
+                    <div class="col-12 col-sm-6">
+                        <label for="new_state" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">State <span class="text-danger">*</span></label>
+                        <div class="position-relative">
+                            <input type="text" class="form-control form-control-sm rounded-3 py-1.5 ps-3 pe-4" id="new_state" 
+                                   placeholder="State"
+                                   oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')" required>
+                            <i class="bi bi-lock-fill position-absolute top-50 end-0 translate-middle-y me-2.5 text-muted d-none" 
+                               id="new_state_lock_icon" title="Auto-filled from PIN" style="pointer-events: none; font-size: 0.82rem;"></i>
+                        </div>
+                        <small id="new_state_hint" class="d-block mt-0.5 text-muted transition-all" style="font-size: 0.72rem; min-height: 16px;"></small>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Modal Sticky Footer --}}
+            <div class="modal-footer py-2.5 px-3.5 px-sm-4 d-flex justify-content-between align-items-center">
+                <button type="button" class="btn btn-sm btn-light border rounded-pill px-3.5 py-1.5 fw-semibold" data-bs-dismiss="modal" style="font-size: 0.82rem;">Cancel</button>
+                <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 py-2 shadow-xs fw-semibold" id="btn-save-address" disabled style="background: #4f46e5; border: none; opacity: 0.6; cursor: not-allowed; font-size: 0.82rem;">
+                    <i class="bi bi-bookmark-check me-1"></i> Save Address
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 @endsection
 
@@ -1622,7 +1694,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
 let userAddresses = {!! json_encode($addresses) !!};
-let currentSelectedAddress = userAddresses.length > 0 ? userAddresses[0] : null;
+let currentSelectedAddress = userAddresses.find(a => a.is_default) || (userAddresses.length > 0 ? userAddresses[0] : null);
 window.isCurrentAddressServiceable = true;
 window.isCurrentAddressCodAvailable = true;
 window.activeShippingCharge = parseFloat("{{ $shippingFee ?? 0 }}");
@@ -2746,39 +2818,407 @@ function openNewAddressFromModal() {
         const modalInstance = bootstrap.Modal.getInstance(modalEl);
         if (modalInstance) modalInstance.hide();
     }
-    const card = document.getElementById('new-address-card');
-    if (card) {
-        card.style.display = 'block';
+    setTimeout(() => {
+        openCheckoutAddressModal();
+    }, 250);
+}
+
+function openCheckoutAddressModal() {
+    resetAddressModalToAddMode();
+    const modalEl = document.getElementById('checkoutAddressModal');
+    if (modalEl) {
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
         setTimeout(() => {
-            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
             const nameInput = document.getElementById('new_name');
             if (nameInput) nameInput.focus();
         }, 200);
     }
 }
 
-function openNewAddressForm() {
-    const card = document.getElementById('new-address-card');
-    if (card) {
-        if (card.style.display === 'block') {
-            card.style.display = 'none';
+function openLocationPickerFromAddressModal() {
+    const addrModalEl = document.getElementById('checkoutAddressModal');
+    if (addrModalEl) {
+        const m = bootstrap.Modal.getInstance(addrModalEl);
+        if (m) m.hide();
+    }
+    openLocationPickerModal(false);
+}
+
+function resetAddressModalToAddMode() {
+    const editIdInput = document.getElementById('edit_address_id');
+    if (editIdInput) editIdInput.value = '';
+
+    const iconBox = document.getElementById('checkoutAddressModalIconBox');
+    if (iconBox) iconBox.style.background = 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)';
+
+    const icon = document.getElementById('checkoutAddressModalIcon');
+    if (icon) icon.className = 'bi bi-house-add-fill fs-5';
+
+    const title = document.getElementById('checkoutAddressModalLabel');
+    if (title) title.textContent = 'Add New Address';
+
+    const subtitle = document.getElementById('checkoutAddressModalSubtitle');
+    if (subtitle) subtitle.textContent = 'Enter your delivery destination details';
+
+    const saveBtn = document.getElementById('btn-save-address');
+    if (saveBtn) {
+        saveBtn.innerHTML = '<i class="bi bi-bookmark-check me-1"></i> Save Address';
+    }
+
+    const nameEl = document.getElementById('new_name');
+    const phoneEl = document.getElementById('new_phone');
+    const zipEl = document.getElementById('new_zip');
+    const addrEl = document.getElementById('new_address');
+    const cityEl = document.getElementById('new_city');
+    const stateEl = document.getElementById('new_state');
+
+    if (nameEl) nameEl.value = '{{ auth()->user()->name ?? "" }}';
+    if (phoneEl) phoneEl.value = '{{ auth()->user()->mobile_number ?? "" }}';
+    if (zipEl) zipEl.value = '';
+    if (addrEl) addrEl.value = '';
+    if (cityEl) cityEl.value = '';
+    if (stateEl) stateEl.value = '';
+
+    clearCheckoutPincodeError();
+    lockCheckoutCityState(false);
+    setCheckoutAddressSaveEnabled(false);
+}
+
+function clearActiveAddress() {
+    currentSelectedAddress = null;
+    ['hidden_shipping_name', 'hidden_shipping_phone', 'hidden_shipping_address', 'hidden_shipping_city', 'hidden_shipping_state', 'hidden_shipping_zip', 'hidden_shipping_latitude', 'hidden_shipping_longitude', 'hidden_shipping_landmark'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    const activeDetails = document.getElementById('active-address-details');
+    const noAddrMsg = document.getElementById('no-address-msg');
+    const badgeEl = document.getElementById('active-address-serviceability-badge');
+    if (activeDetails) activeDetails.style.display = 'none';
+    if (noAddrMsg) noAddrMsg.style.display = 'block';
+    if (badgeEl) badgeEl.innerHTML = '';
+    window.isCurrentAddressServiceable = false;
+
+    // Open popup modal for user to add new address
+    openCheckoutAddressModal();
+}
+
+function editActiveCheckoutAddress() {
+    const addrId = currentSelectedAddress?.id || (userAddresses.length > 0 ? userAddresses[0].id : null);
+    if (!addrId) return;
+    editCheckoutAddress(null, addrId);
+}
+
+function editCheckoutAddress(e, addressId) {
+    if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+    }
+    if (!addressId) return;
+
+    // Close address selector modal if open
+    const selectorModalEl = document.getElementById('addressSelectorModal');
+    if (selectorModalEl) {
+        const modalInstance = bootstrap.Modal.getInstance(selectorModalEl);
+        if (modalInstance) modalInstance.hide();
+    }
+
+    const addr = userAddresses.find(a => Number(a.id) === Number(addressId));
+    if (!addr) {
+        Swal.fire('Error', 'Address details not found.', 'error');
+        return;
+    }
+
+    // Set Edit Mode in Modal
+    const editIdInput = document.getElementById('edit_address_id');
+    if (editIdInput) editIdInput.value = addr.id;
+
+    const iconBox = document.getElementById('checkoutAddressModalIconBox');
+    if (iconBox) iconBox.style.background = 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)';
+
+    const icon = document.getElementById('checkoutAddressModalIcon');
+    if (icon) icon.className = 'bi bi-pencil-square fs-5';
+
+    const title = document.getElementById('checkoutAddressModalLabel');
+    if (title) title.textContent = 'Edit Delivery Address';
+
+    const subtitle = document.getElementById('checkoutAddressModalSubtitle');
+    if (subtitle) subtitle.textContent = 'Update your delivery destination details';
+
+    const saveBtn = document.getElementById('btn-save-address');
+    if (saveBtn) {
+        saveBtn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Update Address';
+    }
+
+    // Populate Fields
+    const nameEl = document.getElementById('new_name');
+    const phoneEl = document.getElementById('new_phone');
+    const zipEl = document.getElementById('new_zip');
+    const addrEl = document.getElementById('new_address');
+    const cityEl = document.getElementById('new_city');
+    const stateEl = document.getElementById('new_state');
+
+    if (nameEl) nameEl.value = addr.name || '';
+    if (phoneEl) phoneEl.value = addr.phone || '';
+    if (zipEl) zipEl.value = addr.zip || '';
+    if (addrEl) addrEl.value = addr.address || '';
+    if (cityEl) cityEl.value = addr.city || '';
+    if (stateEl) stateEl.value = addr.state || '';
+
+    // Set validated & lock city/state
+    if (addr.zip && addr.city && addr.state) {
+        isCheckoutPincodeValidated = true;
+        lockCheckoutCityState(true);
+        setCheckoutAddressSaveEnabled(true);
+        const hintEl = document.getElementById('new_zip_lookup_hint');
+        if (hintEl) {
+            hintEl.className = 'text-success fw-semibold d-block mt-0.5';
+            hintEl.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>${addr.city}, ${addr.state}`;
+        }
+    } else {
+        isCheckoutPincodeValidated = false;
+        lockCheckoutCityState(false);
+        setCheckoutAddressSaveEnabled(false);
+    }
+
+    setTimeout(() => {
+        const addrModalEl = document.getElementById('checkoutAddressModal');
+        if (addrModalEl) {
+            const modal = bootstrap.Modal.getOrCreateInstance(addrModalEl);
+            modal.show();
+            setTimeout(() => {
+                if (addrEl) addrEl.focus();
+            }, 200);
+        }
+    }, 200);
+}
+
+function deleteActiveCheckoutAddress(btn) {
+    const addrId = currentSelectedAddress?.id || (userAddresses.length > 0 ? userAddresses[0].id : null);
+    if (!addrId) return;
+    deleteCheckoutAddress(null, addrId, btn);
+}
+
+function deleteCheckoutAddress(e, addressId, btn) {
+    if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+    }
+    if (!addressId) return;
+
+    Swal.fire({
+        title: 'Delete Address?',
+        text: 'Are you sure you want to delete this address?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Yes, Delete',
+        cancelButtonText: 'Cancel'
+    }).then(result => {
+        if (!result.isConfirmed) return;
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        }
+
+        fetch(`/account/addresses/${addressId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'X-HTTP-Method-Override': 'DELETE',
+                'Accept': 'application/json'
+            }
+        })
+        .then(async res => {
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.message || 'Failed to delete address.');
+            return data;
+        })
+        .then(data => {
+            const wasActive = (currentSelectedAddress && currentSelectedAddress.id === addressId);
+            userAddresses = userAddresses.filter(a => a.id !== addressId);
+
+            if (wasActive) {
+                if (userAddresses.length > 0) {
+                    applySelectedAddress(userAddresses[0]);
+                } else {
+                    clearActiveAddress();
+                }
+            }
+
+            renderModalAddressList();
+
+            if (userAddresses.length === 0) {
+                const modalEl = document.getElementById('addressSelectorModal');
+                if (modalEl) {
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) modalInstance.hide();
+                }
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Deleted!',
+                text: data.message || 'Address deleted successfully.',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+        })
+        .catch(err => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-trash"></i>';
+            }
+            Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'Failed to delete address.' });
+        });
+    });
+}
+
+// Track if checkout PIN code is 6-digit validated
+let isCheckoutPincodeValidated = false;
+let checkoutPincodeErrorTimer = null;
+let newPincodeLookupTimer = null;
+
+// Enable or disable Save button for checkout manual address
+function setCheckoutAddressSaveEnabled(enabled) {
+    const btn = document.getElementById('btn-save-address');
+    if (!btn) return;
+    isCheckoutPincodeValidated = Boolean(enabled);
+    btn.disabled = !enabled;
+    if (enabled) {
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+    } else {
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+    }
+}
+
+// Lock / Unlock City & State inputs once PIN code is validated
+function lockCheckoutCityState(locked) {
+    const cityInput = document.getElementById('new_city');
+    const stateInput = document.getElementById('new_state');
+    const cityIcon = document.getElementById('new_city_lock_icon');
+    const stateIcon = document.getElementById('new_state_lock_icon');
+    const cityHint = document.getElementById('new_city_hint');
+    const stateHint = document.getElementById('new_state_hint');
+
+    if (cityInput) {
+        cityInput.readOnly = locked;
+        if (locked) {
+            cityInput.style.backgroundColor = '#f8fafc';
+            cityInput.style.cursor = 'default';
+            cityInput.style.fontWeight = '600';
+            cityInput.style.color = '#1e293b';
         } else {
-            card.style.display = 'block';
-            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            const nameInput = document.getElementById('new_name');
-            if (nameInput) nameInput.focus();
+            cityInput.style.backgroundColor = '';
+            cityInput.style.cursor = '';
+            cityInput.style.fontWeight = '';
+            cityInput.style.color = '';
         }
     }
+    if (stateInput) {
+        stateInput.readOnly = locked;
+        if (locked) {
+            stateInput.style.backgroundColor = '#f8fafc';
+            stateInput.style.cursor = 'default';
+            stateInput.style.fontWeight = '600';
+            stateInput.style.color = '#1e293b';
+        } else {
+            stateInput.style.backgroundColor = '';
+            stateInput.style.cursor = '';
+            stateInput.style.fontWeight = '';
+            stateInput.style.color = '';
+        }
+    }
+    if (cityIcon) cityIcon.classList.toggle('d-none', !locked);
+    if (stateIcon) stateIcon.classList.toggle('d-none', !locked);
+    if (cityHint) {
+        cityHint.innerHTML = locked ? '<span class="text-success fw-medium"><i class="bi bi-shield-check me-0.5"></i>Auto-filled</span>' : '';
+    }
+    if (stateHint) {
+        stateHint.innerHTML = locked ? '<span class="text-success fw-medium"><i class="bi bi-shield-check me-0.5"></i>Auto-filled</span>' : '';
+    }
+}
+
+// Clear PIN error and cancel auto-dismiss timer
+function clearCheckoutPincodeError() {
+    if (checkoutPincodeErrorTimer) {
+        clearTimeout(checkoutPincodeErrorTimer);
+        checkoutPincodeErrorTimer = null;
+    }
+    const hintEl = document.getElementById('new_zip_lookup_hint');
+    if (hintEl) {
+        hintEl.style.opacity = '1';
+        hintEl.innerHTML = '';
+    }
+    const cityHint = document.getElementById('new_city_hint');
+    if (cityHint) cityHint.innerHTML = '';
+    const stateHint = document.getElementById('new_state_hint');
+    if (stateHint) stateHint.innerHTML = '';
+}
+
+// Show validation error for wrong PIN that auto-dismisses after 4 seconds
+function showDismissableCheckoutPincodeError(msg) {
+    clearCheckoutPincodeError();
+    const hintEl = document.getElementById('new_zip_lookup_hint');
+    if (!hintEl) return;
+    hintEl.className = 'text-danger fw-semibold d-block mt-0.5';
+    hintEl.style.transition = 'opacity 0.35s ease';
+    hintEl.style.opacity = '1';
+    hintEl.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i>${msg}`;
+
+    checkoutPincodeErrorTimer = setTimeout(() => {
+        hintEl.style.opacity = '0';
+        setTimeout(() => {
+            hintEl.innerHTML = '';
+            hintEl.style.opacity = '1';
+        }, 350);
+    }, 4500);
+}
+
+function openNewAddressForm() {
+    openCheckoutAddressModal();
 }
 
 function closeNewAddressForm() {
-    const card = document.getElementById('new-address-card');
-    if (card) {
-        card.style.display = 'none';
+    const modalEl = document.getElementById('checkoutAddressModal');
+    if (modalEl) {
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) modalInstance.hide();
     }
+    resetAddressModalToAddMode();
 }
 
-let newPincodeLookupTimer = null;
+// Real-time Pincode typing handler: numbers only, clears previous errors, manages locks
+function handleCheckoutPincodeInput(input) {
+    const pin = (input.value || '').replace(/\D/g, '').slice(0, 6);
+    if (input.value !== pin) {
+        input.value = pin;
+    }
+
+    // Immediately clear error when typing
+    clearCheckoutPincodeError();
+
+    if (pin.length < 6) {
+        lockCheckoutCityState(false);
+        setCheckoutAddressSaveEnabled(false);
+        if (pin.length === 0) {
+            document.getElementById('new_city').value = '';
+            document.getElementById('new_state').value = '';
+        }
+        return;
+    }
+
+    handleNewPincodeLookup(pin);
+}
+
 function handleNewPincodeLookup(val) {
     const pin = (val || '').replace(/\D/g, '').slice(0, 6);
     const zipInput = document.getElementById('new_zip');
@@ -2791,6 +3231,8 @@ function handleNewPincodeLookup(val) {
     }
     if (pin.length < 6) {
         if (hintEl) hintEl.textContent = '';
+        lockCheckoutCityState(false);
+        setCheckoutAddressSaveEnabled(false);
         return;
     }
 
@@ -2821,7 +3263,7 @@ function handleNewPincodeLookup(val) {
             if (data.state && data.state !== 'India') state = data.state;
             if (data.is_serviceable) {
                 isServiceable = true;
-                deliveryMessage = data.message || `Delivery available to ${data.city || 'your area'}`;
+                deliveryMessage = data.estimated_delivery ? `Est. Delivery: ${data.estimated_delivery}` : 'Delivery Available';
             }
         } catch (err) {
             console.warn('ShopCalm delivery service check failed:', err);
@@ -2842,35 +3284,42 @@ function handleNewPincodeLookup(val) {
             }
         }
 
-        // 3. Auto-populate City & State inputs seamlessly with soft flash
         const cityInput = document.getElementById('new_city');
         const stateInput = document.getElementById('new_state');
 
-        if (city && cityInput) {
-            cityInput.value = city;
-            cityInput.style.transition = 'background-color 0.4s ease';
-            cityInput.style.backgroundColor = '#ecfdf5';
-            setTimeout(() => { if (cityInput) cityInput.style.backgroundColor = ''; }, 1200);
-        }
-        if (state && stateInput) {
-            stateInput.value = state;
-            stateInput.style.transition = 'background-color 0.4s ease';
-            stateInput.style.backgroundColor = '#ecfdf5';
-            setTimeout(() => { if (stateInput) stateInput.style.backgroundColor = ''; }, 1200);
-        }
-
-        // 4. Update status hint
-        if (hintEl) {
-            if (isServiceable) {
-                hintEl.className = 'text-success fw-semibold d-block mt-0.5';
-                hintEl.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>${deliveryMessage || `Delivery available to ${city || pin}`}`;
-            } else if (city && state) {
-                hintEl.className = 'text-warning fw-semibold d-block mt-0.5';
-                hintEl.innerHTML = `<i class="bi bi-geo-alt-fill me-1"></i>${city}, ${state} <span class="text-danger ms-1">(Unserviceable for delivery)</span>`;
-            } else {
-                hintEl.className = 'text-danger fw-semibold d-block mt-0.5';
-                hintEl.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i>Delivery unavailable for ${pin}`;
+        // 3. Validation result handling: only allow saving if city & state are verified
+        if (city && state) {
+            if (cityInput) {
+                cityInput.value = city;
+                cityInput.style.transition = 'background-color 0.4s ease';
+                cityInput.style.backgroundColor = '#ecfdf5';
+                setTimeout(() => { if (cityInput) cityInput.style.backgroundColor = ''; }, 1200);
             }
+            if (stateInput) {
+                stateInput.value = state;
+                stateInput.style.transition = 'background-color 0.4s ease';
+                stateInput.style.backgroundColor = '#ecfdf5';
+                setTimeout(() => { if (stateInput) stateInput.style.backgroundColor = ''; }, 1200);
+            }
+
+            // Lock City & State (Readonly) and Enable Save Button
+            lockCheckoutCityState(true);
+            setCheckoutAddressSaveEnabled(true);
+
+            if (hintEl) {
+                if (isServiceable) {
+                    hintEl.className = 'text-success fw-semibold d-block mt-0.5';
+                    hintEl.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>${city}, ${state} &bull; ${deliveryMessage}`;
+                } else {
+                    hintEl.className = 'text-primary fw-semibold d-block mt-0.5';
+                    hintEl.innerHTML = `<i class="bi bi-geo-alt-fill me-1"></i>${city}, ${state}`;
+                }
+            }
+        } else {
+            // Wrong / Non-existent PIN code: Keep unlocked, Disable Save, Show Auto-Dismiss Error
+            lockCheckoutCityState(false);
+            setCheckoutAddressSaveEnabled(false);
+            showDismissableCheckoutPincodeError(`Invalid PIN code (${pin}). Please check and enter a valid PIN.`);
         }
     }, 280);
 }
@@ -2892,48 +3341,63 @@ function renderModalAddressList() {
     listEl.innerHTML = '';
     const currentId = currentSelectedAddress?.id;
 
-    userAddresses.forEach((addr) => {
-        const isSelected = (currentId && addr.id === currentId) || (!currentId && currentSelectedAddress?.zip === addr.zip);
-        const col = document.createElement('div');
-        col.className = 'col-12';
-        const card = document.createElement('div');
-        card.className = `card border rounded-4 p-3 p-sm-3.5 address-modal-option cursor-pointer position-relative shadow-xs ${isSelected ? 'is-selected' : ''}`;
-        card.onclick = () => selectModalAddress(addr);
-
-        const safeName = addr.name || '';
-        const safePhone = addr.phone || '';
-        const safeZip = addr.zip || '';
-
-        card.innerHTML = `
-            <div class="d-flex align-items-start justify-content-between gap-2.5">
-                <div class="min-w-0 flex-grow-1">
-                    <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                        <strong class="text-dark fs-6">${escapeAddressHtml(safeName)}</strong>
-                        ${isSelected ? '<span class="badge bg-success text-white rounded-pill px-2.5 py-0.5 fw-bold" style="font-size: 0.68rem;">✓ Selected</span>' : (addr.is_default ? '<span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">Default</span>' : '')}
-                    </div>
-                    <div class="text-secondary mb-1.5" style="font-size: 0.86rem; line-height: 1.45;">
-                        ${escapeAddressHtml(addr.address || '')}, ${escapeAddressHtml(addr.city || '')}, ${escapeAddressHtml(addr.state || '')} <span class="text-nowrap font-monospace text-dark fw-bold">- ${escapeAddressHtml(safeZip)}</span>
-                    </div>
-                    <div class="small text-muted text-nowrap" style="font-size: 0.82rem; white-space: nowrap !important;">
-                        <i class="bi bi-telephone-fill text-muted me-1 small"></i> Mobile: <strong class="text-dark font-monospace">${escapeAddressHtml(safePhone)}</strong>
-                    </div>
-                </div>
-                <div class="flex-shrink-0 align-self-center ps-1">
-                    ${isSelected ? `
-                        <span class="btn btn-sm btn-success rounded-pill px-3 py-1.5 fw-semibold shadow-xs text-nowrap" style="font-size: 0.78rem; pointer-events: none;">
-                            <i class="bi bi-check2"></i> Selected
-                        </span>
-                    ` : `
-                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-semibold text-nowrap" style="font-size: 0.78rem;">
-                            Select
-                        </button>
-                    `}
-                </div>
+    if (userAddresses.length === 0) {
+        listEl.innerHTML = `
+            <div class="col-12 text-center py-4 text-muted">
+                <i class="bi bi-geo-alt fs-2 d-block mb-2 text-secondary"></i>
+                <span class="small fw-semibold">No saved addresses found.</span>
             </div>
         `;
-        col.appendChild(card);
-        listEl.appendChild(col);
-    });
+    } else {
+        userAddresses.forEach((addr) => {
+            const isSelected = (currentId && addr.id === currentId) || (!currentId && currentSelectedAddress?.zip === addr.zip);
+            const col = document.createElement('div');
+            col.className = 'col-12';
+            const card = document.createElement('div');
+            card.className = `card border rounded-4 p-3 p-sm-3.5 address-modal-option cursor-pointer position-relative shadow-xs ${isSelected ? 'is-selected' : ''}`;
+            card.onclick = () => selectModalAddress(addr);
+
+            const safeName = addr.name || '';
+            const safePhone = addr.phone || '';
+            const safeZip = addr.zip || '';
+
+            card.innerHTML = `
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2.5">
+                    <div class="min-w-0 flex-grow-1 w-100">
+                        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                            <strong class="text-dark fs-6">${escapeAddressHtml(safeName)}</strong>
+                            ${isSelected ? '<span class="badge bg-success text-white rounded-pill px-2.5 py-0.5 fw-bold" style="font-size: 0.68rem;">✓ Selected</span>' : (addr.is_default ? '<span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">Default</span>' : '')}
+                        </div>
+                        <div class="text-secondary mb-1.5" style="font-size: 0.86rem; line-height: 1.45;">
+                            ${escapeAddressHtml(addr.address || '')}, ${escapeAddressHtml(addr.city || '')}, ${escapeAddressHtml(addr.state || '')} <span class="text-nowrap font-monospace text-dark fw-bold">- ${escapeAddressHtml(safeZip)}</span>
+                        </div>
+                        <div class="small text-muted text-nowrap" style="font-size: 0.82rem; white-space: nowrap !important;">
+                            <i class="bi bi-telephone-fill text-muted me-1 small"></i> Mobile: <strong class="text-dark font-monospace">${escapeAddressHtml(safePhone)}</strong>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0 align-self-end align-self-sm-center d-flex align-items-center gap-1.5 mt-2 mt-sm-0">
+                        ${isSelected ? `
+                            <span class="btn btn-sm btn-success rounded-pill px-3 py-1.5 fw-semibold shadow-xs text-nowrap" style="font-size: 0.78rem; pointer-events: none;">
+                                <i class="bi bi-check2"></i> Selected
+                            </span>
+                        ` : `
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-semibold text-nowrap" style="font-size: 0.78rem;">
+                                Select
+                            </button>
+                        `}
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle p-0 d-inline-flex align-items-center justify-content-center" style="width: 34px; height: 34px;" onclick="editCheckoutAddress(event, ${addr.id})" title="Edit Address">
+                            <i class="bi bi-pencil small"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 d-inline-flex align-items-center justify-content-center" style="width: 34px; height: 34px;" onclick="deleteCheckoutAddress(event, ${addr.id}, this)" title="Delete Address">
+                            <i class="bi bi-trash small"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            col.appendChild(card);
+            listEl.appendChild(col);
+        });
+    }
 
     const headerBtn = document.getElementById('btn-saved-addresses-header');
     const countText = document.getElementById('saved-addresses-count-text');
@@ -2950,6 +3414,9 @@ function renderModalAddressList() {
 
 function handleSaveAddress(e) {
     if (e) e.preventDefault();
+
+    const editAddressId = (document.getElementById('edit_address_id')?.value || '').trim();
+    const isEdit = Boolean(editAddressId);
 
     const nameVal = (document.getElementById('new_name')?.value || '').trim();
     const phoneVal = (document.getElementById('new_phone')?.value || '').trim();
@@ -2988,11 +3455,22 @@ function handleSaveAddress(e) {
         return;
     }
 
+    if (!isCheckoutPincodeValidated && !isEdit) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'PIN Code Not Validated',
+            text: 'Please enter a valid 6-digit PIN code and allow it to detect your City & State before saving.',
+            confirmButtonColor: '#4f46e5'
+        });
+        showDismissableCheckoutPincodeError('PIN code must be verified before saving.');
+        return;
+    }
+
     const btn = document.getElementById('btn-save-address');
-    const origText = btn ? btn.innerHTML : '<i class="bi bi-bookmark-check me-1"></i> Save Address';
+    const origText = btn ? btn.innerHTML : (isEdit ? '<i class="bi bi-check2-circle me-1"></i> Update Address' : '<i class="bi bi-bookmark-check me-1"></i> Save Address');
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> ${isEdit ? 'Updating...' : 'Saving...'}`;
     }
 
     const payload = {
@@ -3006,19 +3484,25 @@ function handleSaveAddress(e) {
         is_default: true
     };
 
-    fetch('{{ route("checkout.save-address") }}', {
+    const targetUrl = isEdit ? `/account/addresses/${editAddressId}` : '{{ route("checkout.save-address") }}';
+    const requestHeaders = {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+        'Accept': 'application/json'
+    };
+    if (isEdit) {
+        requestHeaders['X-HTTP-Method-Override'] = 'PUT';
+    }
+
+    fetch(targetUrl, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json'
-        },
+        headers: requestHeaders,
         body: JSON.stringify(payload)
     })
     .then(async res => {
         const data = await res.json();
         if (!res.ok) {
-            throw new Error(data.message || 'Could not save address.');
+            throw new Error(data.message || (isEdit ? 'Could not update address.' : 'Could not save address.'));
         }
         return data;
     })
@@ -3029,32 +3513,50 @@ function handleSaveAddress(e) {
         }
         if (data.success || data.address) {
             const savedAddr = data.address || payload;
-            if (Array.isArray(data.all_addresses)) {
-                userAddresses = data.all_addresses;
+            if (isEdit && !savedAddr.id) savedAddr.id = Number(editAddressId);
+
+            if (isEdit) {
+                const idx = userAddresses.findIndex(a => Number(a.id) === Number(editAddressId));
+                if (idx !== -1) {
+                    userAddresses[idx] = Object.assign({}, userAddresses[idx], savedAddr);
+                } else {
+                    userAddresses.unshift(savedAddr);
+                }
             } else {
-                userAddresses.unshift(savedAddr);
+                if (Array.isArray(data.all_addresses)) {
+                    userAddresses = data.all_addresses;
+                } else {
+                    userAddresses.unshift(savedAddr);
+                }
             }
+
             renderModalAddressList();
             const servicePromise = applySelectedAddress(savedAddr);
             closeNewAddressForm();
-
-            document.getElementById('new_address').value = '';
-            document.getElementById('new_zip').value = '';
-            document.getElementById('new_city').value = '';
-            document.getElementById('new_state').value = '';
-            const hintEl = document.getElementById('new_zip_lookup_hint');
-            if (hintEl) hintEl.textContent = '';
 
             const isServiceable = await servicePromise;
 
             if (isServiceable) {
                 const successBanner = document.getElementById('address-success-banner');
                 if (successBanner) {
+                    const spanEl = successBanner.querySelector('span');
+                    if (spanEl) spanEl.textContent = isEdit ? 'Address updated successfully!' : 'Address saved successfully!';
                     successBanner.style.display = 'block';
                     setTimeout(() => { successBanner.style.display = 'none'; }, 3000);
                 }
 
-                if (!window.activePendingOrder) {
+                Swal.fire({
+                    icon: 'success',
+                    title: isEdit ? 'Address Updated!' : 'Address Saved!',
+                    text: data.message || (isEdit ? 'Address updated successfully.' : 'Address saved successfully.'),
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+
+                if (!isEdit && !window.activePendingOrder) {
                     goToStep(2);
                 }
             } else {
@@ -3062,12 +3564,12 @@ function handleSaveAddress(e) {
                 Swal.fire({
                     icon: 'warning',
                     title: 'Delivery Unavailable',
-                    text: `Address saved, but ShopCalm currently does not deliver to PIN code ${savedAddr.zip}. Please select or add a serviceable delivery address.`,
+                    text: `Address ${isEdit ? 'updated' : 'saved'}, but ShopCalm currently does not deliver to PIN code ${savedAddr.zip}. Please select or add a serviceable delivery address.`,
                     confirmButtonColor: '#4f46e5'
                 });
             }
         } else {
-            Swal.fire('Error', data.message || 'Could not save address.', 'error');
+            Swal.fire('Error', data.message || (isEdit ? 'Could not update address.' : 'Could not save address.'), 'error');
         }
     })
     .catch(err => {
@@ -3115,9 +3617,13 @@ function checkPincodeServiceability(pincode) {
                 badgeEl.innerHTML = `
                     <div class="d-flex align-items-center gap-2 flex-wrap text-break-word">
                         <span class="badge bg-success bg-opacity-10 text-success fw-bold rounded-pill px-2.5 py-0.5" style="font-size: 0.72rem;">
-                            <i class="bi bi-truck me-1"></i> Delivery Available (${data.delivery_charge > 0 ? '₹' + data.delivery_charge : 'FREE'})
+                            <i class="bi bi-truck me-1"></i> Delivery Available
                         </span>
-                        ${data.estimated_delivery ? `<span class="small text-muted" style="font-size: 0.74rem;"><i class="bi bi-clock me-1"></i> Est: ${data.estimated_delivery}</span>` : ''}
+                        ${data.estimated_delivery ? `
+                            <span class="badge bg-light text-dark border rounded-pill px-2.5 py-0.5 fw-semibold" style="font-size: 0.72rem;">
+                                <i class="bi bi-clock-history text-primary me-1"></i> Est. Delivery: ${escapeAddressHtml(data.estimated_delivery)}
+                            </span>
+                        ` : ''}
                     </div>
                 `;
 

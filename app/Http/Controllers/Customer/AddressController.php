@@ -79,6 +79,7 @@ class AddressController extends Controller
                 'success' => true,
                 'message' => 'Address updated successfully.',
                 'address' => $address->fresh(),
+                'all_addresses' => $user->addresses()->latest()->get(),
             ]);
         }
 

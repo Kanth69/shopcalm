@@ -19,8 +19,11 @@
                     @foreach($banners as $index => $banner)
                         <div class="carousel-item h-100 {{ $index === 0 ? 'active' : '' }}">
                             @php
-                                $hasImage = !empty($banner->desktop_image);
-                                $imgPath  = $hasImage ? (str_starts_with($banner->desktop_image, 'http') ? $banner->desktop_image : asset('storage/' . $banner->desktop_image)) : null;
+                                $hasDesktop = !empty($banner->desktop_image);
+                                $hasMobile  = !empty($banner->mobile_image);
+                                $hasImage   = $hasDesktop || $hasMobile;
+                                $desktopPath = $hasDesktop ? (str_starts_with($banner->desktop_image, 'http') ? $banner->desktop_image : asset('storage/' . $banner->desktop_image)) : null;
+                                $mobilePath  = $hasMobile ? (str_starts_with($banner->mobile_image, 'http') ? $banner->mobile_image : asset('storage/' . $banner->mobile_image)) : $desktopPath;
 
                                 // Pick gradient: custom > type-defaults
                                 $typeGradients = [
@@ -34,7 +37,12 @@
 
                             <div class="w-100 h-100 position-relative d-flex align-items-center hero-slide-item" style="background: {{ $bg }};">
                                 @if($hasImage)
-                                    <img src="{{ $imgPath }}" class="w-100 h-100 object-fit-cover opacity-75 position-absolute" alt="{{ $banner->title }}" style="inset: 0;">
+                                    <picture class="position-absolute w-100 h-100" style="inset: 0;">
+                                        @if($hasMobile)
+                                            <source media="(max-width: 767.98px)" srcset="{{ $mobilePath }}">
+                                        @endif
+                                        <img src="{{ $desktopPath ?: $mobilePath }}" class="w-100 h-100 object-fit-cover opacity-75" alt="{{ $banner->title }}">
+                                    </picture>
                                     <div class="position-absolute top-0 start-0 w-100 h-100 z-1" style="background: linear-gradient(100deg, rgba(15,23,42,0.85) 0%, rgba(15,23,42,0.35) 65%, transparent 100%);"></div>
                                 @else
                                     {{-- No image: decorative pattern --}}

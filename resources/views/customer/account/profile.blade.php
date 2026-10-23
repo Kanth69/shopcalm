@@ -46,7 +46,7 @@
                 <h5 class="mb-1 fw-bolder text-dark" style="letter-spacing: -0.02em; font-size: clamp(1rem, 2.5vw, 1.25rem);"><i class="bi bi-envelope-heart text-primary me-2"></i>Newsletter & Email Preferences</h5>
                 <p class="text-muted small mb-0">Manage your promotional email and newsletter notifications.</p>
             </div>
-            <span id="newsletter-status-badge" class="badge rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-1.5 shadow-2xs" 
+            <span id="newsletter-status-badge" class="badge rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-2 shadow-2xs" 
                   style="{{ $isSubscribed ? 'background:#d1fae5; color:#065f46; border:1px solid #a7f3d0;' : 'background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;' }}; font-size: 0.78rem;">
                 <i class="bi {{ $isSubscribed ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger' }}" id="newsletter-badge-icon"></i>
                 <span id="newsletter-badge-text">{{ $isSubscribed ? 'Subscribed' : 'Unsubscribed' }}</span>
@@ -61,7 +61,7 @@
                 <div class="d-flex align-items-center gap-3">
                     {{-- Status Action Button (Green if Subscribed, Red if Unsubscribed) --}}
                     <button type="button" id="newsletter-action-btn" onclick="toggleNewsletterFromBtn()" 
-                            class="btn btn-sm rounded-pill px-3.5 py-2 fw-bold d-inline-flex align-items-center gap-1.5 shadow-xs transition-all"
+                            class="btn btn-sm rounded-pill px-3.5 py-2 fw-bold d-inline-flex align-items-center gap-2 shadow-xs transition-all"
                             style="{{ $isSubscribed ? 'background: #10b981; color: #ffffff; border: none;' : 'background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5;' }}; font-size: 0.82rem;">
                         <i class="bi {{ $isSubscribed ? 'bi-check-circle-fill' : 'bi-x-circle-fill' }}" id="newsletter-btn-icon"></i>
                         <span id="newsletter-btn-text">{{ $isSubscribed ? 'Subscribed' : 'Unsubscribed' }}</span>
@@ -153,7 +153,7 @@
         {{-- Center Button --}}
         <div class="d-flex justify-content-center mt-3 pt-1">
             <button type="button" class="nl-modal-action-btn" id="nl-modal-action-btn" onclick="closeNewsletterAlert()">
-                <i class="bi bi-check-circle-fill me-1.5" id="nl-modal-action-btn-icon"></i>
+                <i class="bi bi-check-circle-fill me-2" id="nl-modal-action-btn-icon"></i>
                 <span id="nl-modal-action-btn-text">Subscribed</span>
             </button>
         </div>
@@ -316,6 +316,7 @@
 .nl-modal-badge {
     display: inline-flex;
     align-items: center;
+    gap: 0.45rem;
     padding: 0.35rem 0.95rem;
     border-radius: 50px;
     font-size: 0.76rem;
@@ -350,6 +351,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 0.5rem;
     transition: all 0.2s ease;
     cursor: pointer;
 }
@@ -446,21 +448,21 @@ function showNewsletterCenterModal(isSubscribed, message) {
         // GREEN SUCCESS THEME (Subscribed)
         box.className = 'nl-modal-box nl-theme-green';
         if (icon) icon.className = 'bi bi-check2 text-white';
-        if (badgeIcon) badgeIcon.className = 'bi bi-sparkles me-1 text-success';
+        if (badgeIcon) badgeIcon.className = 'bi bi-sparkles me-1.5 text-success';
         if (badgeText) badgeText.textContent = 'Promotions Active';
         if (title) title.textContent = 'Subscribed Successfully!';
         if (desc) desc.textContent = message || 'You have successfully subscribed to receive exclusive offers, promo codes, and product updates.';
-        if (btnIcon) btnIcon.className = 'bi bi-check-circle-fill me-1.5';
+        if (btnIcon) btnIcon.className = 'bi bi-check-circle-fill me-2';
         if (btnText) btnText.textContent = 'Subscribed';
     } else {
         // RED DANGER THEME (Unsubscribed)
         box.className = 'nl-modal-box nl-theme-red';
         if (icon) icon.className = 'bi bi-bell-slash text-white';
-        if (badgeIcon) badgeIcon.className = 'bi bi-x-circle me-1 text-danger';
+        if (badgeIcon) badgeIcon.className = 'bi bi-x-circle me-1.5 text-danger';
         if (badgeText) badgeText.textContent = 'Promotions Paused';
         if (title) title.textContent = 'Unsubscribed';
         if (desc) desc.textContent = message || 'You have unsubscribed from our newsletter. Promotional emails have been turned off.';
-        if (btnIcon) btnIcon.className = 'bi bi-x-circle-fill me-1.5';
+        if (btnIcon) btnIcon.className = 'bi bi-x-circle-fill me-2';
         if (btnText) btnText.textContent = 'Unsubscribed';
     }
 
