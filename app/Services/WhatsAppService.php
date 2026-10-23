@@ -235,22 +235,18 @@ class WhatsAppService
             return false;
         }
 
-        $customerName  = trim($order->shipping_name ?: ($order->user?->name ?: 'Customer'));
-        $orderNumber   = (string) $order->order_number;
-        $totalAmount   = '₹' . number_format((float) $order->total_amount, 2);
-        $paymentMethod = strtoupper($order->payment_method ?? 'COD');
+        $customerName = trim($order->shipping_name ?: ($order->user?->name ?: 'Customer'));
+        $orderNumber  = (string) $order->order_number;
 
-        // Parameters matching standard Meta Order Confirmation templates:
-        // [CustomerName, OrderNumber, TotalAmount, PaymentMethod]
-        // Auto-adapts down to 2 variables [CustomerName, OrderNumber], 1 variable [OrderNumber], or 0 variables
+        // Parameters matching approved Meta Utility Order Confirmation template (2 variables):
+        // {{1}} = Customer Name
+        // {{2}} = Order Number
         return $this->sendTemplateMessage(
             $phone,
             'whatsapp_template_order_confirmed',
             [
                 $customerName,
-                $orderNumber,
-                $totalAmount,
-                $paymentMethod
+                $orderNumber
             ]
         );
     }
