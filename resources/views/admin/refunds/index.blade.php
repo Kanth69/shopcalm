@@ -479,7 +479,7 @@
 
 {{-- Process Refund Modal --}}
 <div class="modal fade" id="processRefundModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
             <div class="modal-header border-bottom bg-light py-3 px-4">
                 <h6 class="modal-title fw-bold text-dark">
@@ -487,7 +487,7 @@
                 </h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="processRefundForm" method="POST" action="">
+            <form id="processRefundForm" method="POST" action="" class="d-flex flex-column h-100" style="min-height: 0; overflow: hidden; flex: 1 1 auto;">
                 @csrf
                 <div class="modal-body p-4">
                     <div class="alert alert-info border-0 rounded-3 p-3 mb-3 small">
@@ -532,7 +532,7 @@
                         <textarea name="notes" class="form-control form-control-sm" rows="2" placeholder="e.g. Transferred via HDFC NetBanking to verified customer UPI handle"></textarea>
                     </div>
                 </div>
-                <div class="modal-footer border-top bg-light py-2 px-4">
+                <div class="modal-footer border-top bg-light py-2 px-4" style="flex-shrink: 0; position: sticky; bottom: 0; z-index: 10; background: #ffffff !important;">
                     <button type="button" class="btn btn-sm btn-light border rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-sm btn-success rounded-pill px-4 fw-bold">
                         Mark Refund Processed

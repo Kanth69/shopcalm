@@ -514,3 +514,79 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
+
+/* Universal Mobile Modal & Popup Form Safeguards */
+@media (max-width: 767.98px) {
+    .modal {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        overflow-x: hidden !important;
+    }
+
+    .modal-dialog {
+        margin: 0.5rem auto !important;
+        width: calc(100% - 1rem) !important;
+        max-width: calc(100vw - 1rem) !important;
+        max-height: calc(100dvh - 1rem) !important;
+        height: auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+    }
+
+    .modal-dialog.modal-dialog-scrollable {
+        height: calc(100dvh - 1rem) !important;
+    }
+
+    .modal-content {
+        max-height: calc(100dvh - 1rem) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+        border-radius: 1rem !important;
+    }
+
+    .modal-header {
+        flex-shrink: 0 !important;
+        padding: 0.85rem 1rem !important;
+    }
+
+    .modal-content > form,
+    .modal-content > div:not(.modal-header):not(.modal-body):not(.modal-footer),
+    .modal-content > div:not(.modal-header):not(.modal-body):not(.modal-footer) > form {
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        max-height: 100% !important;
+        overflow: hidden !important;
+    }
+
+    .modal-body {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior: contain !important;
+        padding: 1rem !important;
+    }
+
+    .modal-footer {
+        flex-shrink: 0 !important;
+        position: sticky !important;
+        bottom: 0 !important;
+        z-index: 1055 !important;
+        background: #ffffff !important;
+        padding: 0.75rem 1rem !important;
+        padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)) !important;
+        border-top: 1px solid #e2e8f0 !important;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    .modal-footer .btn {
+        min-height: 38px !important;
+        font-size: 0.85rem !important;
+    }
+}

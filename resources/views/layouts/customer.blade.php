@@ -45,8 +45,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ asset('css/customer.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/account.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/customer.css') }}?v={{ @filemtime(public_path('css/customer.css')) ?: time() }}">
+    <link rel="stylesheet" href="{{ asset('css/account.css') }}?v={{ @filemtime(public_path('css/account.css')) ?: time() }}">
 
     @stack('styles')
 </head>

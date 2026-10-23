@@ -1044,11 +1044,11 @@
 {{-- ── Order Delivery Experience Feedback Modal ── --}}
 @if($order->status === 'delivered')
 <div class="modal fade" id="modalOrderFeedback" tabindex="-1" aria-labelledby="modalOrderFeedbackLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
             
             {{-- Form Section --}}
-            <div id="feedbackFormSection">
+            <div id="feedbackFormSection" class="d-flex flex-column h-100" style="min-height: 0; overflow: hidden; flex: 1 1 auto;">
                 <div class="modal-header border-0 pb-0 px-4 pt-4">
                     <div class="d-flex align-items-center gap-2">
                         <div style="width: 36px; height: 36px; border-radius: 10px; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
@@ -1062,7 +1062,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
-                <form id="formOrderFeedback" action="{{ route('account.orders.feedback.store', $order) }}" method="POST">
+                <form id="formOrderFeedback" action="{{ route('account.orders.feedback.store', $order) }}" method="POST" class="d-flex flex-column" style="min-height: 0; overflow: hidden; flex: 1 1 auto;">
                     @csrf
                     <div class="modal-body px-4 py-3">
                         <div class="alert alert-light border rounded-3 p-2.5 mb-3 d-flex align-items-center gap-2" style="background:#f8fafc;">
@@ -1143,7 +1143,7 @@
                         </div>
                     </div>
 
-                    <div class="modal-footer border-0 px-4 pb-4 pt-1 d-flex justify-content-end gap-2">
+                    <div class="modal-footer border-0 px-4 pb-3 pt-2 d-flex justify-content-end gap-2" style="flex-shrink: 0; position: sticky; bottom: 0; z-index: 10; background: #ffffff !important; border-top: 1px solid #e2e8f0 !important;">
                         <button type="button" class="btn btn-light rounded-pill px-3 py-2 fw-semibold" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" id="btnSubmitFeedback" class="btn btn-primary rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center gap-1.5 shadow-sm">
                             <i class="bi bi-check-circle-fill"></i> <span>{{ $order->feedback ? 'Update Feedback' : 'Submit Feedback' }}</span>

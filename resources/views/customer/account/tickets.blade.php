@@ -262,7 +262,7 @@
 
 {{-- Raise New Ticket Modal --}}
 <div class="modal fade" id="newTicketModal" tabindex="-1" aria-labelledby="newTicketModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
             <div class="modal-header py-3 px-3 px-md-4 border-bottom" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff;">
                 <div class="d-flex align-items-center gap-2">
@@ -277,7 +277,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <form action="{{ route('page.contact.submit') }}" method="POST">
+            <form action="{{ route('page.contact.submit') }}" method="POST" class="d-flex flex-column" style="max-height: 100%; min-height: 0; overflow: hidden; flex: 1 1 auto;">
                 @csrf
                 <div class="modal-body p-3 p-md-4">
                     <div class="row g-2">
@@ -312,7 +312,7 @@
                     </div>
                 </div>
 
-                <div class="modal-footer bg-light py-2 px-3 px-md-4 border-top d-flex justify-content-between align-items-center">
+                <div class="modal-footer bg-light py-2 px-3 px-md-4 border-top d-flex justify-content-between align-items-center" style="flex-shrink: 0; position: sticky; bottom: 0; z-index: 10; background: #ffffff !important;">
                     <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 fw-semibold" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 py-1.5 fw-bold shadow-xs d-inline-flex align-items-center gap-2"
                             style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border: none;">

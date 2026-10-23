@@ -465,7 +465,7 @@
 {{-- ── Admin Cancel Order Modal ── --}}
 @if(!in_array($order->status, ['cancelled', 'returned']))
 <div class="modal fade" id="adminCancelOrderModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
             <div class="modal-header bg-danger text-white py-3 px-4">
                 <h6 class="modal-title fw-bold text-white mb-0">
@@ -473,7 +473,7 @@
                 </h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('admin.orders.cancel', $order) }}" method="POST">
+            <form action="{{ route('admin.orders.cancel', $order) }}" method="POST" class="d-flex flex-column h-100" style="min-height: 0; overflow: hidden; flex: 1 1 auto;">
                 @csrf
                 <div class="modal-body p-4">
                     <div class="alert alert-warning py-2.5 px-3 small rounded-3 mb-3 border-0 d-flex align-items-center gap-2" style="background: #fffbe6; color: #856404;">
@@ -597,7 +597,7 @@
                         <textarea name="admin_notes" class="form-control" rows="2" placeholder="Internal remarks for store log or customer notice..."></textarea>
                     </div>
                 </div>
-                <div class="modal-footer bg-light py-2.5 px-4 border-top">
+                <div class="modal-footer bg-light py-2.5 px-4 border-top" style="flex-shrink: 0; position: sticky; bottom: 0; z-index: 10; background: #ffffff !important;">
                     <button type="button" class="btn btn-light border rounded-pill px-4" data-bs-dismiss="modal">Close</button>
                     <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">
                         <i class="bi bi-x-circle me-1"></i> Confirm Cancellation

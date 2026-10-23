@@ -433,6 +433,19 @@
             font-size: 0.92rem !important;
             justify-content: center;
         }
+
+        /* Mobile Checkout Items in Order Overflow Protection */
+        #checkout-items-summary-card,
+        #checkout-step-4-view .card {
+            max-width: 100% !important;
+            overflow: hidden !important;
+        }
+        .checkout-items-wrapper {
+            max-height: 230px !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+        }
     }
 </style>
 @endpush
@@ -699,8 +712,8 @@
                                 </div>
                             </div>
 
-                            <!-- Items in Order Summary Card (Spacious & Clean) -->
-                            <div class="card border-0 rounded-4 shadow-xs mb-4 overflow-hidden" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
+                            <!-- Items in Order Summary Card (Hidden on Mobile as requested) -->
+                            <div class="card border-0 rounded-4 shadow-xs mb-4 overflow-hidden d-none d-md-block" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
                                 <div class="card-body p-3.5 p-sm-4">
                                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                                         <div class="d-flex align-items-center gap-2.5 min-w-0">
@@ -729,7 +742,7 @@
                                         @foreach($cart->items as $cartItem)
                                             <div class="d-flex align-items-center gap-2 bg-light rounded-3 px-2.5 py-1.5 border" style="font-size: 0.78rem; border-color: #e2e8f0 !important;">
                                                 @if($cartItem->product && $cartItem->product->main_image)
-                                                    <img src="{{ asset('storage/' . $cartItem->product->main_image) }}" alt="{{ $cartItem->product->name }}" class="rounded-2 border flex-shrink-0 bg-white" style="width: 26px; height: 26px; object-fit: contain;">
+                                                    <img src="{{ asset('storage/' . $cartItem->product->main_image) }}" alt="" aria-hidden="true" class="rounded-2 border flex-shrink-0 bg-white" style="width: 26px; height: 26px; object-fit: contain;">
                                                 @else
                                                     <div class="rounded-2 bg-white border d-flex align-items-center justify-content-center flex-shrink-0 text-muted" style="width: 26px; height: 26px;">
                                                         <i class="bi bi-box-seam" style="font-size: 0.75rem;"></i>
@@ -1064,43 +1077,33 @@
                                 <i class="bi bi-pencil"></i> Edit Bag
                             </a>
                         </div>
-                        <div class="card-body p-3 p-md-4">
+                        <div class="card-body p-2.5 p-sm-3 p-md-4">
                             <div class="d-flex flex-column gap-2.5">
                                 @foreach($cart->items as $item)
                                 @php
-                                    $origPrice = (float) ($item->product->price ?? $item->unit_price);
                                     $currPrice = (float) $item->unit_price;
                                     $lineTotal = $item->quantity * $currPrice;
-                                    $hasDiscount = ($origPrice > $currPrice);
                                 @endphp
-                                <div class="p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between gap-3 flex-wrap flex-sm-nowrap" style="border-color: #e2e8f0 !important;">
-                                    <div class="d-flex align-items-center gap-3 min-w-0 flex-grow-1">
+                                <div class="p-2.5 p-sm-3 bg-light bg-opacity-75 rounded-3 border d-flex align-items-center justify-content-between gap-2 overflow-hidden" style="border-color: #e2e8f0 !important;">
+                                    <div class="d-flex align-items-center gap-2.5 min-w-0 flex-grow-1 overflow-hidden">
                                         @if($item->product && $item->product->main_image)
-                                            <img src="{{ asset('storage/' . $item->product->main_image) }}" alt="{{ $item->product->name }}" class="rounded-2 border flex-shrink-0 bg-white" style="width: 52px; height: 52px; object-fit: contain;">
+                                            <img src="{{ asset('storage/' . $item->product->main_image) }}" alt="" aria-hidden="true" class="rounded-2 border flex-shrink-0 bg-white" style="width: 44px; height: 44px; object-fit: contain;">
                                         @else
-                                            <div class="rounded-2 bg-white border d-flex align-items-center justify-content-center flex-shrink-0 text-muted" style="width: 52px; height: 52px;">
+                                            <div class="rounded-2 bg-white border d-flex align-items-center justify-content-center flex-shrink-0 text-muted" style="width: 44px; height: 44px;">
                                                 <i class="bi bi-box-seam fs-4"></i>
                                             </div>
                                         @endif
                                         <div class="min-w-0 flex-grow-1">
-                                            <h6 class="mb-1 fw-bold text-dark text-truncate" style="font-size: 0.9rem;" title="{{ $item->product->name ?? 'Product' }}">
+                                            <h6 class="mb-0.5 fw-bold text-dark text-truncate" style="font-size: 0.88rem;" title="{{ $item->product->name ?? 'Product' }}">
                                                 {{ $item->product->name ?? 'Product' }}
                                             </h6>
-                                            <div class="d-flex align-items-center gap-2 flex-wrap">
-                                                <span class="badge rounded-pill font-monospace fw-bold px-2 py-0.5" style="background: #f1f5f9 !important; color: #0f172a !important; border: 1px solid #cbd5e1 !important; font-size: 0.74rem;">
-                                                    Qty: {{ $item->quantity }}
-                                                </span>
-                                                <span class="small text-muted" style="font-size: 0.8rem;">
-                                                    ₹{{ number_format($currPrice, 2) }} each
-                                                </span>
-                                                @if($hasDiscount)
-                                                    <span class="text-decoration-line-through small text-muted font-monospace" style="font-size: 0.74rem;">₹{{ number_format($origPrice, 2) }}</span>
-                                                @endif
-                                            </div>
+                                            <div class="text-secondary small" style="font-size: 0.76rem;">Qty: {{ $item->quantity }}</div>
                                         </div>
                                     </div>
-                                    <div class="text-end flex-shrink-0 font-monospace fw-bold text-dark fs-6">
-                                        ₹{{ number_format($lineTotal, 2) }}
+                                    <div class="text-end flex-shrink-0 ps-2">
+                                        <span class="font-monospace fw-bold text-dark fs-6" style="white-space: nowrap;">
+                                            ₹{{ number_format($lineTotal, 2) }}
+                                        </span>
                                     </div>
                                 </div>
                                 @endforeach
@@ -1135,35 +1138,32 @@
                             </a>
                         </div>
                         <div class="card-body p-2.5 p-sm-3">
-                            <div class="checkout-items-wrapper" style="max-height: 200px; overflow-y: auto;">
+                            <div class="checkout-items-wrapper" style="max-height: 220px; overflow-y: auto;">
                                 @foreach($cart->items as $item)
                                 @php
-                                    $origPrice = (float) ($item->product->price ?? $item->unit_price);
                                     $currPrice = (float) $item->unit_price;
-                                    $origLineTotal = $item->quantity * $origPrice;
                                     $lineTotal = $item->quantity * $currPrice;
-                                    $hasDiscount = ($origPrice > $currPrice);
                                 @endphp
-                                <div class="p-2 mb-2 bg-white rounded-3 border shadow-2xs d-flex align-items-center justify-content-between gap-2.5" style="border-color: #f1f5f9 !important;">
-                                    <div class="d-flex align-items-center gap-2.5 min-w-0 flex-grow-1">
+                                <div class="p-2 mb-2 bg-light bg-opacity-50 rounded-3 border d-flex align-items-center justify-content-between gap-2 overflow-hidden" style="border-color: #e2e8f0 !important;">
+                                    <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1 overflow-hidden">
                                         @if($item->product && $item->product->main_image)
-                                            <img src="{{ asset('storage/' . $item->product->main_image) }}" alt="{{ $item->product->name }}" class="rounded-2 border flex-shrink-0" style="width: 38px; height: 38px; object-fit: contain;">
+                                            <img src="{{ asset('storage/' . $item->product->main_image) }}" alt="" aria-hidden="true" class="rounded-2 border flex-shrink-0 bg-white" style="width: 40px; height: 40px; object-fit: contain;">
                                         @else
-                                            <div class="rounded-2 bg-light border d-flex align-items-center justify-content-center flex-shrink-0 text-muted" style="width: 38px; height: 38px;">
+                                            <div class="rounded-2 bg-white border d-flex align-items-center justify-content-center flex-shrink-0 text-muted" style="width: 40px; height: 40px;">
                                                 <i class="bi bi-box-seam fs-6"></i>
                                             </div>
                                         @endif
                                         <div class="min-w-0 flex-grow-1">
-                                            <h6 class="mb-0.5 fw-bold text-dark text-truncate" style="font-size: 0.8rem;" title="{{ $item->product->name ?? 'Product' }}">
+                                            <h6 class="mb-0.5 fw-bold text-dark text-truncate" style="font-size: 0.82rem;" title="{{ $item->product->name ?? 'Product' }}">
                                                 {{ $item->product->name ?? 'Product' }}
                                             </h6>
-                                            <span class="badge bg-light text-secondary border px-1.5 py-0.5 rounded-pill" style="font-size: 0.65rem;">
-                                                Qty: {{ $item->quantity }}
-                                            </span>
+                                            <div class="text-secondary small" style="font-size: 0.72rem;">Qty: {{ $item->quantity }}</div>
                                         </div>
                                     </div>
-                                    <div class="text-end flex-shrink-0 font-monospace fw-bold text-dark" style="font-size: 0.82rem;">
-                                        ₹{{ number_format($lineTotal, 2) }}
+                                    <div class="text-end flex-shrink-0 ps-2">
+                                        <span class="font-monospace fw-bold text-dark" style="font-size: 0.86rem; white-space: nowrap;">
+                                            ₹{{ number_format($lineTotal, 2) }}
+                                        </span>
                                     </div>
                                 </div>
                                 @endforeach
@@ -1534,7 +1534,7 @@
 
 <!-- Modal for selecting/changing saved address -->
 <div class="modal fade" id="addressSelectorModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content rounded-4 border-0 shadow">
             <div class="modal-header border-bottom py-3 px-3.5 px-md-4 d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2.5">
@@ -1595,7 +1595,7 @@
                     @endforeach
                 </div>
             </div>
-            <div class="modal-footer border-top bg-light py-3 px-3.5 px-md-4 d-flex justify-content-between align-items-center">
+            <div class="modal-footer border-top bg-light py-3 px-3.5 px-md-4 d-flex justify-content-between align-items-center" style="position: sticky; bottom: 0; z-index: 10; background: #ffffff !important;">
                 <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 py-2 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs" onclick="openNewAddressFromModal()" style="background: #4f46e5; border: none; font-size: 0.82rem;">
                     <i class="bi bi-plus-lg"></i> Add New Address
                 </button>

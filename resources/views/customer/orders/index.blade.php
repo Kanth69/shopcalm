@@ -306,7 +306,7 @@
 
 <!-- ── Cancellation & Refund Modal ── -->
 <div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
             <div class="modal-header border-bottom py-3 px-4 bg-light">
                 <h6 class="modal-title fw-bold text-dark" id="modalOrderTitle">
@@ -388,7 +388,7 @@
                             </div>
                         </div>
 
-                        <div class="d-flex gap-2 justify-content-end mt-4 pt-2 border-top">
+                        <div class="d-flex gap-2 justify-content-end mt-4 pt-3 border-top sticky-bottom bg-white" style="position: sticky; bottom: -1.5rem; margin: 1.5rem -1.5rem -1.5rem -1.5rem; padding: 1rem 1.5rem; z-index: 10; border-top: 1px solid #e2e8f0 !important; box-shadow: 0 -4px 12px rgba(0,0,0,0.04);">
                             <button type="button" class="btn btn-sm btn-light border rounded-pill px-4" data-bs-dismiss="modal">Keep Order</button>
                             <button type="submit" class="btn btn-sm btn-danger rounded-pill px-4 fw-bold" id="confirmCancelBtn">
                                 Confirm Cancellation

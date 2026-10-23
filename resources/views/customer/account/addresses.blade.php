@@ -89,13 +89,66 @@
     ])
 </div>
 
-{{-- ── Modern Popup Modal for Address Creation & Editing ────────── --}}
+{{-- ── Modern Popup Modal for Address Creation & Editing (Mobile Scroll & Sticky Save Button) ────────── --}}
+<style>
+    #addressModal .modal-dialog {
+        max-width: 560px;
+        margin: 0.75rem auto;
+        height: calc(100% - 1.5rem);
+        max-height: calc(100dvh - 1.5rem);
+        display: flex;
+        align-items: center;
+    }
+    #addressModal .modal-content {
+        max-height: 100%;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        width: 100%;
+    }
+    #addressModal .modal-header {
+        flex-shrink: 0;
+    }
+    #addressModal .modal-body {
+        flex: 1 1 auto;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+    }
+    #addressModal .modal-footer {
+        flex-shrink: 0;
+        position: sticky;
+        bottom: 0;
+        background: #ffffff !important;
+        z-index: 1055;
+        box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.06);
+    }
+    @media (max-width: 576px) {
+        #addressModal .modal-dialog {
+            margin: 0.5rem auto;
+            width: calc(100% - 1rem);
+            max-width: 100%;
+            height: calc(100% - 1rem);
+            max-height: calc(100dvh - 1rem);
+        }
+        #addressModal .modal-body {
+            padding: 1rem !important;
+        }
+        #addressModal .modal-footer {
+            padding: 0.75rem 1rem !important;
+        }
+    }
+</style>
+
 <div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 560px;">
-        <div class="modal-content rounded-4 border-0 shadow">
-            
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <form id="addressForm" class="modal-content rounded-4 border-0 shadow" onsubmit="handleAddressFormSubmit(event)" novalidate>
+            @csrf
+            <input type="hidden" id="modal_address_id" value="">
+            <input type="hidden" id="modal_http_method" value="POST">
+
             {{-- Modal Header --}}
-            <div class="modal-header border-bottom py-3 px-3.5 px-sm-4 bg-light bg-opacity-50">
+            <div class="modal-header border-bottom py-3 px-3.5 px-sm-4 bg-light bg-opacity-75">
                 <div class="d-flex align-items-center gap-2.5">
                     <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" id="addressModalIconBox"
                          style="width: 40px; height: 40px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff;">
@@ -108,12 +161,6 @@
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-
-            {{-- Modal Form --}}
-            <form id="addressForm" onsubmit="handleAddressFormSubmit(event)" novalidate>
-                @csrf
-                <input type="hidden" id="modal_address_id" value="">
-                <input type="hidden" id="modal_http_method" value="POST">
 
                 <div class="modal-body p-3.5 p-sm-4">
                     {{-- Alert for global errors --}}
@@ -206,8 +253,8 @@
                     </div>
                 </div>
 
-                {{-- Modal Footer --}}
-                <div class="modal-footer border-top py-2.5 px-3.5 px-sm-4 bg-light bg-opacity-25 d-flex align-items-center justify-content-between gap-2">
+                {{-- Modal Footer (Sticky Bottom with Save Button Always in View) --}}
+                <div class="modal-footer border-top py-2.5 px-3.5 px-sm-4 bg-white d-flex align-items-center justify-content-between gap-2">
                     <button type="button" class="btn btn-light border rounded-pill px-3.5 py-2 fw-semibold btn-sm" data-bs-dismiss="modal" style="font-size: 0.82rem;">
                         Cancel
                     </button>
@@ -218,8 +265,6 @@
                     </button>
                 </div>
             </form>
-
-        </div>
     </div>
 </div>
 

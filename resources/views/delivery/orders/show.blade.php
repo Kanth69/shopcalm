@@ -353,7 +353,7 @@
 
 <!-- Modal: Doorstep UPI Live QR Collection & Auto-Detection -->
 <div class="modal fade" id="modalDoorstepUpi" tabindex="-1" aria-labelledby="modalDoorstepUpiLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-dialog modal-dialog-centered modal-sm modal-dialog-scrollable">
         <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
             <div class="modal-header py-3 px-3.5 border-bottom text-white" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);">
                 <div class="d-flex align-items-center gap-2">
@@ -426,7 +426,7 @@
 
 <!-- Native Mobile Bottom Sheet Modal for Reporting Issues -->
 <div class="modal fade" id="modalReportIssue" tabindex="-1" aria-labelledby="modalReportIssueLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-dialog modal-dialog-centered modal-sm modal-dialog-scrollable">
         <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
             <div class="modal-header bg-light py-3 px-3.5 border-bottom">
                 <div class="d-flex align-items-center gap-2">
@@ -440,7 +440,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.75rem;"></button>
             </div>
 
-            <form id="formReportIssue" action="{{ route('delivery.orders.report-issue', $order) }}" method="POST">
+            <form id="formReportIssue" action="{{ route('delivery.orders.report-issue', $order) }}" method="POST" class="d-flex flex-column h-100" style="min-height: 0; overflow: hidden; flex: 1 1 auto;">
                 @csrf
                 <div class="modal-body p-3.5">
                     <p class="text-secondary small mb-3" style="font-size: 0.78rem;">
@@ -481,7 +481,7 @@
                     </div>
                 </div>
 
-                <div class="modal-footer bg-light py-2.5 px-3.5 border-top d-flex gap-2">
+                <div class="modal-footer bg-light py-2.5 px-3.5 border-top d-flex gap-2" style="flex-shrink: 0; position: sticky; bottom: 0; z-index: 10; background: #ffffff !important;">
                     <button type="button" class="btn btn-light border bg-white flex-grow-1 fw-bold" data-bs-dismiss="modal" style="font-size: 0.85rem; height: 42px;">
                         Cancel
                     </button>
