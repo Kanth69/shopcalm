@@ -74,15 +74,17 @@
             </div>
             <div class="card-body p-4">
                 @if(session('error'))
-                    <div class="alert alert-danger py-2.5 px-3 rounded-3 small mb-3 border-0 d-flex align-items-start gap-2 shadow-xs" style="background: #fef2f2; color: #991b1b; border-left: 4px solid #ef4444 !important;">
+                    <div class="alert alert-danger py-2.5 px-3 rounded-3 small mb-3 border-0 d-flex align-items-start gap-2 shadow-xs alert-auto-dismiss" style="background: #fef2f2; color: #991b1b; border-left: 4px solid #ef4444 !important; transition: opacity 0.35s ease, transform 0.35s ease;">
                         <i class="bi bi-x-circle-fill fs-6 flex-shrink-0 mt-0.5"></i>
-                        <div>{{ session('error') }}</div>
+                        <div class="flex-grow-1">{{ session('error') }}</div>
+                        <button type="button" class="btn-close flex-shrink-0 ms-1 mt-0.5" aria-label="Close" style="font-size: 0.65rem;" onclick="dismissAlertElement(this.closest('.alert'))"></button>
                     </div>
                 @endif
                 @if(session('success'))
-                    <div class="alert alert-success py-2.5 px-3 rounded-3 small mb-3 border-0 d-flex align-items-start gap-2 shadow-xs" style="background: #f0fdf4; color: #166534; border-left: 4px solid #22c55e !important;">
+                    <div class="alert alert-success py-2.5 px-3 rounded-3 small mb-3 border-0 d-flex align-items-start gap-2 shadow-xs alert-auto-dismiss" style="background: #f0fdf4; color: #166534; border-left: 4px solid #22c55e !important; transition: opacity 0.35s ease, transform 0.35s ease;">
                         <i class="bi bi-check-circle-fill fs-6 flex-shrink-0 mt-0.5"></i>
-                        <div>{{ session('success') }}</div>
+                        <div class="flex-grow-1">{{ session('success') }}</div>
+                        <button type="button" class="btn-close flex-shrink-0 ms-1 mt-0.5" aria-label="Close" style="font-size: 0.65rem;" onclick="dismissAlertElement(this.closest('.alert'))"></button>
                     </div>
                 @endif
 
@@ -259,6 +261,50 @@ function toggleTokenVisibility() {
     }
 }
 
+// Auto-dismiss helper with smooth fade-out and close button
+function showAutoDismissAlert(alertEl, type, htmlContent, duration = 5000) {
+    if (!alertEl) return;
+
+    if (alertEl._timer) {
+        clearTimeout(alertEl._timer);
+        alertEl._timer = null;
+    }
+
+    alertEl.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+    alertEl.style.opacity = '1';
+    alertEl.style.transform = 'translateY(0)';
+    alertEl.classList.remove('d-none');
+    alertEl.className = `alert alert-${type} py-2.5 px-3 small rounded-3 mb-3 d-flex align-items-start gap-2 shadow-xs position-relative`;
+
+    alertEl.innerHTML = `
+        <div class="flex-grow-1">${htmlContent}</div>
+        <button type="button" class="btn-close flex-shrink-0 ms-1 mt-0.5" aria-label="Close" style="font-size: 0.65rem;" onclick="dismissAlertElement(this.closest('.alert'))"></button>
+    `;
+
+    if (duration > 0) {
+        alertEl._timer = setTimeout(() => {
+            dismissAlertElement(alertEl);
+        }, duration);
+    }
+}
+
+function dismissAlertElement(alertEl) {
+    if (!alertEl) return;
+    if (alertEl._timer) {
+        clearTimeout(alertEl._timer);
+        alertEl._timer = null;
+    }
+    alertEl.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+    alertEl.style.opacity = '0';
+    alertEl.style.transform = 'translateY(-4px)';
+    setTimeout(() => {
+        alertEl.classList.add('d-none');
+        alertEl.innerHTML = '';
+        alertEl.style.opacity = '1';
+        alertEl.style.transform = 'translateY(0)';
+    }, 350);
+}
+
 function handleSaveToken(e) {
     e.preventDefault();
 
@@ -271,17 +317,13 @@ function handleSaveToken(e) {
     // Quick client-side check if non-empty
     if (token !== '') {
         if (!token.startsWith('pk.')) {
-            alertBox.className = 'alert alert-danger py-2.5 px-3 small rounded-3 mb-3 shadow-xs';
-            alertBox.classList.remove('d-none');
-            alertBox.innerHTML = '<strong><i class="bi bi-x-circle-fill me-1"></i> Invalid Token Format:</strong> LocationIQ public access tokens must start with <code>pk.</code> (e.g. <code>pk.8fcbbfbdafcf2d840b41ffd3c60e443f</code>). The token was NOT saved.';
+            showAutoDismissAlert(alertBox, 'danger', '<strong><i class="bi bi-x-circle-fill me-1"></i> Invalid Token Format:</strong> LocationIQ public access tokens must start with <code>pk.</code> (e.g. <code>pk.8fcbbfbdafcf2d840b41ffd3c60e443f</code>). The token was NOT saved.', 7000);
             input.focus();
             return false;
         }
 
         if (token.length < 20) {
-            alertBox.className = 'alert alert-danger py-2.5 px-3 small rounded-3 mb-3 shadow-xs';
-            alertBox.classList.remove('d-none');
-            alertBox.innerHTML = '<strong><i class="bi bi-x-circle-fill me-1"></i> Token Too Short:</strong> Please enter a complete LocationIQ access token.';
+            showAutoDismissAlert(alertBox, 'danger', '<strong><i class="bi bi-x-circle-fill me-1"></i> Token Too Short:</strong> Please enter a complete LocationIQ access token.', 6000);
             input.focus();
             return false;
         }
@@ -291,7 +333,8 @@ function handleSaveToken(e) {
     const origBtnHtml = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Validating with LocationIQ...';
-    alertBox.className = 'alert d-none py-2 px-3 small rounded-3 mb-3';
+    if (alertBox._timer) clearTimeout(alertBox._timer);
+    alertBox.classList.add('d-none');
 
     fetch("{{ route('admin.integrations.locationiq.update') }}", {
         method: 'POST',
@@ -306,12 +349,12 @@ function handleSaveToken(e) {
     .then(({ status, body }) => {
         btn.disabled = false;
         btn.innerHTML = origBtnHtml;
-        alertBox.classList.remove('d-none');
 
         if (status === 200 && body.success) {
-            alertBox.className = 'alert alert-success py-2.5 px-3 small rounded-3 mb-3 shadow-xs';
-            alertBox.innerHTML = '<strong><i class="bi bi-check-circle-fill me-1"></i> ' + (body.message || 'Token verified and saved!') + '</strong>' + 
-                (body.display_name ? '<br><span class="text-dark small"><i class="bi bi-geo-alt me-1 text-danger"></i> Verified location: ' + body.display_name + '</span>' : '');
+            const locDetails = body.display_name 
+                ? `<div class="text-dark small mt-1 text-truncate" style="max-width: 360px;" title="${body.display_name}"><i class="bi bi-geo-alt me-1 text-danger"></i>${body.display_name}</div>` 
+                : '';
+            showAutoDismissAlert(alertBox, 'success', `<strong><i class="bi bi-check-circle-fill me-1"></i> ${body.message || 'Token verified and saved!'}</strong>${locDetails}`, 5000);
 
             if (statusBadge) {
                 if (token !== '') {
@@ -328,17 +371,13 @@ function handleSaveToken(e) {
                 if (geoText) geoText.textContent = body.display_name;
             }
         } else {
-            alertBox.className = 'alert alert-danger py-2.5 px-3 small rounded-3 mb-3 shadow-xs';
-            alertBox.innerHTML = '<strong><i class="bi bi-x-circle-fill me-1"></i> Verification Failed:</strong> ' + 
-                (body.message || 'LocationIQ rejected this access token. The token was NOT saved.');
+            showAutoDismissAlert(alertBox, 'danger', `<strong><i class="bi bi-x-circle-fill me-1"></i> Verification Failed:</strong> ${body.message || 'LocationIQ rejected this access token. The token was NOT saved.'}`, 8000);
         }
     })
     .catch(err => {
         btn.disabled = false;
         btn.innerHTML = origBtnHtml;
-        alertBox.classList.remove('d-none');
-        alertBox.className = 'alert alert-danger py-2.5 px-3 small rounded-3 mb-3 shadow-xs';
-        alertBox.innerHTML = '<strong><i class="bi bi-x-circle-fill me-1"></i> Connection Error:</strong> ' + err.message;
+        showAutoDismissAlert(alertBox, 'danger', `<strong><i class="bi bi-x-circle-fill me-1"></i> Connection Error:</strong> ${err.message}`, 8000);
     });
 
     return false;
@@ -351,7 +390,8 @@ function testConnection() {
 
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Testing...';
-    alertBox.className = 'alert d-none py-2 px-3 small rounded-3 mb-3';
+    if (alertBox._timer) clearTimeout(alertBox._timer);
+    alertBox.classList.add('d-none');
 
     fetch("{{ route('admin.integrations.locationiq.test') }}", {
         method: 'POST',
@@ -365,23 +405,23 @@ function testConnection() {
     .then(data => {
         btn.disabled = false;
         btn.innerHTML = '<i class="bi bi-broadcast me-1"></i> Test Connection';
-        alertBox.classList.remove('d-none');
         if (data.success) {
-            alertBox.className = 'alert alert-success py-2 px-3 small rounded-3 mb-3';
-            alertBox.innerHTML = '<strong><i class="bi bi-check-circle-fill me-1"></i>' + data.message + '</strong><br><span class="text-dark">' + (data.display_name || '') + '</span>';
-            // Also test map geocoding output
-            document.getElementById('geocodedText').textContent = data.display_name || 'Bengaluru, Karnataka';
+            const locDetails = data.display_name 
+                ? `<div class="text-muted mt-1 text-truncate" style="font-size: 0.72rem; max-width: 360px;" title="${data.display_name}"><i class="bi bi-geo-alt text-danger me-1"></i>${data.display_name}</div>` 
+                : '';
+            showAutoDismissAlert(alertBox, 'success', `<div class="fw-bold"><i class="bi bi-check-circle-fill text-success me-1"></i>${data.message}</div>${locDetails}`, 5000);
+
+            // Also update map geocoding preview output
+            const geoText = document.getElementById('geocodedText');
+            if (geoText) geoText.textContent = data.display_name || 'Bengaluru, Karnataka';
         } else {
-            alertBox.className = 'alert alert-danger py-2 px-3 small rounded-3 mb-3';
-            alertBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> ' + (data.message || 'Connection test failed');
+            showAutoDismissAlert(alertBox, 'danger', `<div><i class="bi bi-exclamation-triangle-fill me-1"></i><strong>LocationIQ Test Failed:</strong> ${data.message || 'Connection test failed'}</div>`, 8000);
         }
     })
     .catch(err => {
         btn.disabled = false;
         btn.innerHTML = '<i class="bi bi-broadcast me-1"></i> Test Connection';
-        alertBox.classList.remove('d-none');
-        alertBox.className = 'alert alert-danger py-2 px-3 small rounded-3 mb-3';
-        alertBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Error: ' + err.message;
+        showAutoDismissAlert(alertBox, 'danger', `<div><i class="bi bi-exclamation-triangle-fill me-1"></i><strong>Error:</strong> ${err.message}</div>`, 8000);
     });
 }
 
@@ -391,7 +431,8 @@ function testOsmConnection() {
 
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Pinging OSM...';
-    alertBox.className = 'alert d-none py-2 px-3 small rounded-3 mb-2';
+    if (alertBox._timer) clearTimeout(alertBox._timer);
+    alertBox.classList.add('d-none');
 
     fetch("{{ route('admin.integrations.locationiq.test-osm') }}", {
         method: 'POST',
@@ -404,26 +445,31 @@ function testOsmConnection() {
     .then(data => {
         btn.disabled = false;
         btn.innerHTML = '<i class="bi bi-shield-check me-1"></i> Test OpenStreetMap Fallback Ping';
-        alertBox.classList.remove('d-none');
         if (data.success) {
-            alertBox.className = 'alert alert-success py-2 px-3 small rounded-3 mb-2';
-            alertBox.innerHTML = '<strong><i class="bi bi-check-circle-fill me-1"></i>' + data.message + '</strong><br><span class="text-dark">' + (data.display_name || '') + '</span>';
+            const locDetails = data.display_name 
+                ? `<div class="text-muted mt-1 text-truncate" style="font-size: 0.72rem; max-width: 360px;" title="${data.display_name}"><i class="bi bi-geo-alt text-danger me-1"></i>${data.display_name}</div>` 
+                : '';
+            showAutoDismissAlert(alertBox, 'success', `<div class="fw-bold"><i class="bi bi-check-circle-fill text-success me-1"></i>${data.message}</div>${locDetails}`, 5000);
         } else {
-            alertBox.className = 'alert alert-danger py-2 px-3 small rounded-3 mb-2';
-            alertBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> ' + (data.message || 'OSM test failed');
+            showAutoDismissAlert(alertBox, 'danger', `<div><i class="bi bi-exclamation-triangle-fill me-1"></i><strong>OSM Fallback Test Failed:</strong> ${data.message || 'OSM test failed'}</div>`, 8000);
         }
     })
     .catch(err => {
         btn.disabled = false;
         btn.innerHTML = '<i class="bi bi-shield-check me-1"></i> Test OpenStreetMap Fallback Ping';
-        alertBox.classList.remove('d-none');
-        alertBox.className = 'alert alert-danger py-2 px-3 small rounded-3 mb-2';
-        alertBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Error: ' + err.message;
+        showAutoDismissAlert(alertBox, 'danger', `<div><i class="bi bi-exclamation-triangle-fill me-1"></i><strong>Error:</strong> ${err.message}</div>`, 8000);
     });
 }
 
 // Initialize Leaflet Map in Admin Preview
 document.addEventListener('DOMContentLoaded', function() {
+    // Auto-dismiss session alerts after 6 seconds
+    document.querySelectorAll('.alert-auto-dismiss').forEach(function(el) {
+        el._timer = setTimeout(function() {
+            dismissAlertElement(el);
+        }, 6000);
+    });
+
     try {
         const defaultLat = 12.9716;
         const defaultLng = 77.5946;
