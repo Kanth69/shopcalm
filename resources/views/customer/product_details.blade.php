@@ -608,7 +608,7 @@
                 <h5 class="fw-bold text-dark mb-0" style="font-size: 1.1rem; letter-spacing: -0.01em;">
                     Ratings & Reviews
                 </h5>
-                <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2.5 py-1" style="font-size: 0.76rem;">
+                <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2.5 py-1" id="pdp-review-count-badge" style="font-size: 0.76rem;">
                     {{ $totalReviewsCount ?? $product->approvedReviews->count() }}
                 </span>
             </div>
@@ -1368,15 +1368,23 @@ function confirmDeleteUserReview(id, deleteUrl, btnElement) {
 }
 
 function executeUserReviewDelete(id, deleteUrl, btnElement) {
-    btnElement.disabled = true;
+    if (btnElement) {
+        btnElement.disabled = true;
+        btnElement.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Deleting...';
+    }
+
+    const formData = new FormData();
+    formData.append('_token', '{{ csrf_token() }}');
+    formData.append('_method', 'DELETE');
+
     fetch(deleteUrl, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'X-HTTP-Method-Override': 'DELETE',
-            'Accept': 'application/json'
-        }
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: formData
     })
     .then(async res => {
         const data = await res.json();
@@ -1384,17 +1392,64 @@ function executeUserReviewDelete(id, deleteUrl, btnElement) {
         return data;
     })
     .then(data => {
-        const card = document.getElementById('user-review-card-' + id);
-        if (card) {
-            card.style.transition = 'all 0.3s ease';
+        // 1. Remove all instances of this review card across the page
+        const cards = document.querySelectorAll(`[data-review-id="${id}"], .review-card-item-${id}, #user-review-card-${id}`);
+        cards.forEach(card => {
+            card.style.transition = 'all 0.35s ease';
             card.style.opacity = '0';
-            setTimeout(() => card.remove(), 300);
+            card.style.transform = 'translateY(-10px)';
+            setTimeout(() => card.remove(), 350);
+        });
+
+        // 2. If the user review was shown inside #write-review-container, restore the write review form!
+        const statusWrapper = document.getElementById('user-review-status-wrapper');
+        const formWrapper = document.getElementById('write-review-form-wrapper');
+        if (statusWrapper) {
+            statusWrapper.style.transition = 'all 0.3s ease';
+            statusWrapper.style.opacity = '0';
+            setTimeout(() => {
+                statusWrapper.style.display = 'none';
+                if (formWrapper) {
+                    formWrapper.style.display = 'block';
+                    formWrapper.style.opacity = '0';
+                    formWrapper.style.transition = 'opacity 0.3s ease';
+                    setTimeout(() => formWrapper.style.opacity = '1', 50);
+                }
+            }, 300);
         }
+
+        // 3. Decrement review count badge
+        const countBadge = document.getElementById('pdp-review-count-badge');
+        if (countBadge) {
+            let current = parseInt(countBadge.textContent.trim(), 10) || 0;
+            if (current > 0) countBadge.textContent = current - 1;
+        }
+        const reviewsRemaining = document.getElementById('reviewsRemainingCount');
+        if (reviewsRemaining) {
+            let current = parseInt(reviewsRemaining.textContent.trim(), 10) || 0;
+            if (current > 0) reviewsRemaining.textContent = current - 1;
+        }
+
+        // 4. If reviews container has no items remaining, show empty state
+        setTimeout(() => {
+            const listContainer = document.getElementById('pdp-reviews-container');
+            if (listContainer && listContainer.querySelectorAll('.review-card-item').length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-5 w-100 bg-white rounded-3 border p-4">
+                        <i class="bi bi-chat-square-heart display-4 text-muted opacity-25"></i>
+                        <h6 class="mt-3 fw-bold text-dark">No Reviews Yet</h6>
+                        <p class="text-muted small mb-0">Be the first verified customer to rate and review this product!</p>
+                    </div>
+                `;
+            }
+        }, 400);
+
+        // 5. Toast notification (no page reload)
         if (typeof Swal !== 'undefined') {
             Swal.fire({
                 icon: 'success',
-                title: 'Deleted!',
-                text: data.message || 'Review deleted successfully.',
+                title: 'Review Deleted',
+                text: data.message || 'Your review has been deleted successfully.',
                 toast: true,
                 position: 'top-end',
                 showConfirmButton: false,
@@ -1403,7 +1458,10 @@ function executeUserReviewDelete(id, deleteUrl, btnElement) {
         }
     })
     .catch(err => {
-        btnElement.disabled = false;
+        if (btnElement) {
+            btnElement.disabled = false;
+            btnElement.innerHTML = '<i class="bi bi-trash3"></i> Delete';
+        }
         if (typeof Swal !== 'undefined') {
             Swal.fire({ icon: 'error', title: 'Error', text: err.message });
         } else {

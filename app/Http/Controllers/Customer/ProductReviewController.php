@@ -16,6 +16,10 @@ class ProductReviewController extends Controller
             'rating' => 'required|integer|min:1|max:5',
             'title' => 'nullable|string|max:255',
             'review' => 'nullable|string',
+        ], [
+            'rating.required' => 'Please select a star rating (1 to 5 stars).',
+            'rating.min' => 'Please select at least 1 star.',
+            'rating.max' => 'Rating cannot exceed 5 stars.',
         ]);
 
         $product->reviews()->updateOrCreate(

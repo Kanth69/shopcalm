@@ -12,10 +12,11 @@ class NewsletterController extends Controller
     public function subscribe(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'email' => ['required', 'string', 'email:rfc,dns', 'max:255'],
+            'email' => ['required', 'string', 'email:rfc,filter', 'max:255'],
         ], [
             'email.required' => 'Please enter your email address.',
-            'email.email' => 'Please enter a valid email address.',
+            'email.email' => 'Please enter a valid email address (e.g. name@example.com).',
+            'email.max' => 'Email address cannot exceed 255 characters.',
         ]);
 
         if ($validator->fails()) {

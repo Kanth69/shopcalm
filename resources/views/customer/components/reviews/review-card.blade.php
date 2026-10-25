@@ -1,4 +1,4 @@
-<div class="review-card-item py-3 border-bottom" id="user-review-card-{{ $review->id }}" style="border-color: #f1f5f9 !important;">
+<div class="review-card-item review-card-item-{{ $review->id }} py-3 border-bottom" data-review-id="{{ $review->id }}" id="user-review-card-{{ $review->id }}" style="border-color: #f1f5f9 !important;">
     {{-- Rating Pill & Headline --}}
     <div class="d-flex align-items-center gap-2 mb-1.5 flex-wrap">
         <span class="badge d-inline-flex align-items-center gap-1 text-white fw-bold px-2 py-1 rounded" 
@@ -11,8 +11,8 @@
         @endif
 
         {{-- Author Delete Option --}}
-        @auth('customer')
-            @if(Auth::id() == $review->user_id && $review->status === 'Approved')
+        @auth
+            @if(Auth::id() == $review->user_id)
                 <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none p-0 ms-auto small" style="font-size: 0.72rem;" 
                         onclick="confirmDeleteUserReview({{ $review->id }}, '{{ route('reviews.destroy', $review) }}', this)">
                     <i class="bi bi-trash3"></i> Delete
@@ -45,6 +45,3 @@
         </div>
     </div>
 </div>
-
-
-

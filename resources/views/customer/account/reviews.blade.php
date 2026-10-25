@@ -90,18 +90,19 @@
 
                     {{-- Delete Action --}}
                     <div class="flex-shrink-0 ms-auto">
-                        @if($review->status === 'Approved')
+                        <div class="d-flex align-items-center gap-2">
+                            @if($review->status !== 'Approved')
+                                <span class="text-muted small d-none d-sm-inline-flex align-items-center gap-1" style="font-size:0.75rem;">
+                                    <i class="bi bi-hourglass-split"></i> Awaiting approval
+                                </span>
+                            @endif
                             <button type="button"
                                     class="btn btn-sm btn-light text-danger border rounded-pill px-3 fw-semibold"
                                     style="font-size:0.78rem;"
                                     onclick="confirmDeleteAccountReview({{ $review->id }}, '{{ route('reviews.destroy', $review) }}', this)">
                                 <i class="bi bi-trash me-1"></i>Delete
                             </button>
-                        @else
-                            <span class="text-muted small d-flex align-items-center gap-1" style="font-size:0.75rem;">
-                                <i class="bi bi-hourglass-split"></i> Awaiting approval
-                            </span>
-                        @endif
+                        </div>
                     </div>
 
                 </div>
@@ -148,14 +149,18 @@ function executeAccountReviewDelete(id, deleteUrl, btnElement) {
     btnElement.disabled = true;
     btnElement.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>';
 
+    const formData = new FormData();
+    formData.append('_token', '{{ csrf_token() }}');
+    formData.append('_method', 'DELETE');
+
     fetch(deleteUrl, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'X-HTTP-Method-Override': 'DELETE',
-            'Accept': 'application/json'
-        }
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: formData
     })
     .then(async res => {
         const data = await res.json();
@@ -165,9 +170,25 @@ function executeAccountReviewDelete(id, deleteUrl, btnElement) {
     .then(data => {
         const row = document.getElementById('account-review-row-' + id);
         if (row) {
+            row.style.transition = 'all 0.35s ease';
             row.style.opacity   = '0';
             row.style.transform = 'translateX(20px)';
-            setTimeout(() => row.remove(), 300);
+            setTimeout(() => {
+                row.remove();
+                const list = document.getElementById('reviews-list');
+                if (list && list.querySelectorAll('[id^="account-review-row-"]').length === 0) {
+                    list.innerHTML = `
+                        <div class="card border-0 shadow-sm rounded-4 text-center py-5 p-4 bg-white">
+                            <i class="bi bi-star display-4 text-muted opacity-25"></i>
+                            <h6 class="mt-3 fw-bold text-dark">No Reviews Yet</h6>
+                            <p class="text-muted small mb-3">You have no reviews at this time.</p>
+                            <div>
+                                <a href="{{ route('shop') }}" class="btn btn-primary rounded-pill px-4 btn-sm fw-semibold">Review a Product</a>
+                            </div>
+                        </div>
+                    `;
+                }
+            }, 350);
         }
         Swal.fire({ icon: 'success', title: 'Deleted!', text: data.message || 'Review deleted.', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
     })
