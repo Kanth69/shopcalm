@@ -229,13 +229,17 @@ class WhatsAppService
      */
     public function sendOrderConfirmation(Order $order): bool
     {
-        $phone = $order->shipping_phone ?: ($order->user?->mobile_number ?: null);
+        // Prioritize the user's main registration mobile number (given & verified via OTP during registration)
+        $phone = $order->user?->mobile_number 
+            ?: ($order->user?->phone 
+            ?: ($order->shipping_phone ?: null));
+
         if (empty($phone)) {
             Log::info("[WhatsAppService] Order #{$order->order_number} has no mobile phone. Skipping WhatsApp.");
             return false;
         }
 
-        $customerName = trim($order->shipping_name ?: ($order->user?->name ?: 'Customer'));
+        $customerName = trim($order->user?->name ?: ($order->shipping_name ?: 'Customer'));
         $orderNumber  = (string) $order->order_number;
 
         // Parameters matching approved Meta Utility Order Confirmation template (2 variables):
