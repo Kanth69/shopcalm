@@ -93,7 +93,7 @@
                         <div class="d-flex align-items-center gap-2">
                             @if($review->status !== 'Approved')
                                 <span class="text-muted small d-none d-sm-inline-flex align-items-center gap-1" style="font-size:0.75rem;">
-                                    <i class="bi bi-hourglass-split"></i> Awaiting approval
+                                    <i class="bi bi-clock-history"></i> Submitted
                                 </span>
                             @endif
                             <button type="button"

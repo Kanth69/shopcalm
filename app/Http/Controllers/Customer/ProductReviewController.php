@@ -35,11 +35,11 @@ class ProductReviewController extends Controller
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Your review will be posted soon after administrator approval!'
+                'message' => 'Thank you! Your review has been submitted successfully.'
             ]);
         }
 
-        return back()->with('review_submitted_swal', 'Your review will be posted soon!');
+        return back()->with('review_submitted_swal', 'Thank you! Your review has been submitted successfully.');
     }
 
     public function destroy(Request $request, ProductReview $review)

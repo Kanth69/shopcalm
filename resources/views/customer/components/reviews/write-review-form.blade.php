@@ -13,10 +13,9 @@
                             <div class="mx-auto mb-3" style="width: 56px; height: 56px; border-radius: 50%; background: #fef3c7; display: flex; align-items: center; justify-content: center;">
                                 <i class="bi bi-clock-history fs-3" style="color: #d97706;"></i>
                             </div>
-                            <h6 class="fw-bold text-dark mb-1 fs-5">Review Submitted</h6>
+                            <h6 class="fw-bold text-dark mb-1 fs-5">Thank You for Your Feedback!</h6>
                             <p class="text-muted small mb-3" style="max-width: 460px; margin: 0 auto;">
-                                Your review for <strong>{{ $product->name }}</strong> has been submitted. 
-                                It will be posted soon after administrator approval.
+                                Your review for <strong>{{ $product->name }}</strong> has been submitted successfully.
                             </p>
                             <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" 
                                     onclick="confirmDeleteUserReview({{ $userReview->id }}, '{{ route('reviews.destroy', $userReview) }}', this)">
@@ -221,15 +220,15 @@ function handleReviewSubmit(e, form) {
         if (typeof Swal !== 'undefined') {
             Swal.fire({
                 icon: 'success',
-                title: 'Review Submitted!',
-                text: data.message || 'Your review will be posted soon after approval!',
+                title: 'Thank You!',
+                text: data.message || 'Your review has been submitted successfully.',
                 confirmButtonColor: '#6366f1',
                 confirmButtonText: 'OK'
             }).then(() => {
                 location.reload();
             });
         } else {
-            alert(data.message || 'Your review will be posted soon after approval!');
+            alert(data.message || 'Your review has been submitted successfully.');
             location.reload();
         }
     })
