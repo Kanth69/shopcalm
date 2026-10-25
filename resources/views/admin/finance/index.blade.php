@@ -258,71 +258,71 @@
     </div>
 </div>
 
-{{-- 3. Revenue & Price Reconciliation Breakdown Banner (Original Price, Cart Subtotal, Deductions, Net In-Hand) --}}
+{{-- 3. Profit Breakdown Flow (Customer Paid -> Wholesale Cost -> Delivery -> SMS & Gateway -> Real Net Profit) --}}
 <div class="card border-0 shadow-sm rounded-4 p-4 mb-4" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #e2e8f0 !important;">
     <div class="row g-3 align-items-center">
         <div class="col-md-2">
             <h6 class="fw-bold text-dark mb-1">
-                <i class="bi bi-calculator text-primary me-1.5"></i>Price Breakdown
+                <i class="bi bi-calculator text-primary me-1.5"></i>Profit Flow
             </h6>
-            <p class="text-muted small mb-0" style="font-size: 0.74rem;">Original MRP &rarr; Cart Subtotal &rarr; Deductions &rarr; Net In-Hand.</p>
+            <p class="text-muted small mb-0" style="font-size: 0.74rem;">Customer Paid &rarr; Expenses &rarr; Real Net Profit.</p>
         </div>
         <div class="col-md-10">
             <div class="row g-2 text-center text-md-start">
                 {{-- 1. Original Price (MRP) --}}
                 <div class="col-6 col-md-2 p-2.5 bg-white rounded-3 border shadow-2xs">
-                    <span class="text-muted small d-block fw-semibold" style="font-size: 0.7rem;">Original Price (MRP)</span>
+                    <span class="text-muted small d-block fw-semibold" style="font-size: 0.7rem;">Original MRP</span>
                     <strong class="text-dark small font-monospace" style="font-size: 0.92rem;">₹{{ number_format($totalOriginalPrice, 2) }}</strong>
-                    <span class="text-muted d-block" style="font-size: 0.65rem;">Base Listed Value</span>
+                    <span class="text-muted d-block" style="font-size: 0.65rem;">Catalog Value</span>
                 </div>
 
-                {{-- 2. Cart Items Subtotal --}}
+                {{-- 2. Customer Paid --}}
                 <div class="col-6 col-md-2 p-2.5 bg-white rounded-3 border shadow-2xs">
-                    <span class="text-muted small d-block fw-semibold" style="font-size: 0.7rem;">Cart Subtotal</span>
-                    <strong class="text-primary small font-monospace" style="font-size: 0.92rem;">₹{{ number_format($totalItemsSubtotal, 2) }}</strong>
-                    <span class="text-muted d-block text-truncate" style="font-size: 0.65rem;" title="Offer Discount: -₹{{ number_format($totalOfferDiscount, 2) }}">
+                    <span class="text-muted small d-block fw-semibold" style="font-size: 0.7rem;">Customer Paid</span>
+                    <strong class="text-primary small font-monospace" style="font-size: 0.92rem;">₹{{ number_format($totalRevenue, 2) }}</strong>
+                    <span class="text-muted d-block text-truncate" style="font-size: 0.65rem;" title="Offers Discount: -₹{{ number_format($totalOfferDiscount, 2) }}">
                         Offers: -₹{{ number_format($totalOfferDiscount, 2) }}
                     </span>
                 </div>
 
-                {{-- 3. Coupon Discounts --}}
+                {{-- 3. Wholesale Cost (COGS) --}}
                 <div class="col-6 col-md-2 p-2.5 bg-white rounded-3 border shadow-2xs">
-                    <span class="text-muted small d-block fw-semibold" style="font-size: 0.7rem;">Coupons Applied</span>
-                    <strong class="text-warning small font-monospace" style="font-size: 0.92rem;">
-                        {{ $totalCouponDiscount > 0 ? '-' : '' }}₹{{ number_format($totalCouponDiscount, 2) }}
+                    <span class="text-muted small d-block fw-semibold" style="font-size: 0.7rem;">Wholesale Cost</span>
+                    <strong class="text-danger small font-monospace" style="font-size: 0.92rem;">
+                        -₹{{ number_format($totalCost, 2) }}
                     </strong>
-                    <span class="text-muted d-block" style="font-size: 0.65rem;">Promo Discounts</span>
+                    <span class="text-muted d-block" style="font-size: 0.65rem;">Product Purchase</span>
                 </div>
 
-                {{-- 4. Wallet Used --}}
-                <div class="col-6 col-md-2 p-2.5 bg-white rounded-3 border shadow-2xs">
-                    <span class="text-muted small d-block fw-semibold" style="font-size: 0.7rem;">Wallet Used</span>
-                    <strong class="text-info small font-monospace" style="font-size: 0.92rem;">
-                        {{ $totalWalletUsed > 0 ? '-' : '' }}₹{{ number_format($totalWalletUsed, 2) }}
-                    </strong>
-                    <span class="text-muted d-block" style="font-size: 0.65rem;">Credits Redeemed</span>
-                </div>
-
-                {{-- 5. Delivery Charge (₹45 Fixed) --}}
+                {{-- 4. Delivery Charge (₹45 Fixed) --}}
                 <div class="col-6 col-md-2 p-2.5 bg-white rounded-3 border shadow-2xs">
                     <span class="text-muted small d-block fw-semibold" style="font-size: 0.7rem;">Delivery (₹45 Fixed)</span>
                     <strong class="text-danger small font-monospace" style="font-size: 0.92rem;">
-                        {{ $totalFixedDelivery > 0 ? '-' : '' }}₹{{ number_format($totalFixedDelivery, 2) }}
+                        -₹{{ number_format($totalFixedDelivery, 2) }}
                     </strong>
                     <span class="text-muted d-block" style="font-size: 0.65rem;">₹45 &times; {{ $ordersCount }} {{ Str::plural('ord', $ordersCount) }}</span>
                 </div>
 
-                {{-- 6. Net In-Hand (Display) --}}
+                {{-- 5. SMS & Gateway (₹5 + 2%) --}}
                 @php
-                    $totalDeductions = $totalOfferDiscount + $totalCouponDiscount + $totalWalletUsed + $totalFixedDelivery;
+                    $smsAndGateway = $totalFixedMessage + $estimatedGatewayFees;
                 @endphp
-                <div class="col-6 col-md-2 p-2.5 bg-white rounded-3 border border-success border-opacity-50 shadow-2xs" style="background: rgba(16, 185, 129, 0.05) !important;">
-                    <span class="text-success small d-block fw-bold" style="font-size: 0.7rem;">6. Net Realized In-Hand</span>
-                    <strong class="text-success small font-monospace" style="font-size: 0.92rem;">
-                        {{ $netDisplayAmount >= 0 ? '' : '-' }}₹{{ number_format(abs($netDisplayAmount), 2) }}
+                <div class="col-6 col-md-2 p-2.5 bg-white rounded-3 border shadow-2xs">
+                    <span class="text-muted small d-block fw-semibold" style="font-size: 0.7rem;">SMS & Gateway</span>
+                    <strong class="text-danger small font-monospace" style="font-size: 0.92rem;">
+                        -₹{{ number_format($smsAndGateway, 2) }}
                     </strong>
-                    <span class="text-success text-opacity-75 d-block text-truncate" style="font-size: 0.63rem;" title="MRP (₹{{ number_format($totalOriginalPrice, 0) }}) &minus; Total Deductions (₹{{ number_format($totalDeductions, 0) }})">
-                        MRP &minus; Deductions (₹{{ number_format($totalDeductions, 0) }})
+                    <span class="text-muted d-block" style="font-size: 0.65rem;">₹5 SMS + 2% Prepaid</span>
+                </div>
+
+                {{-- 6. Real In-Hand Net Profit --}}
+                <div class="col-6 col-md-2 p-2.5 bg-white rounded-3 border border-success border-opacity-50 shadow-2xs" style="background: rgba(16, 185, 129, 0.08) !important;">
+                    <span class="text-success small d-block fw-bold" style="font-size: 0.7rem;">6. REAL NET PROFIT</span>
+                    <strong class="text-success small font-monospace" style="font-size: 0.92rem;">
+                        {{ $netInHandProfit >= 0 ? '+' : '-' }}₹{{ number_format(abs($netInHandProfit), 2) }}
+                    </strong>
+                    <span class="text-success text-opacity-75 d-block text-truncate" style="font-size: 0.63rem;" title="Customer Paid − Wholesale Cost − Delivery − SMS − Gateway">
+                        Pure In-Hand Profit
                     </span>
                 </div>
             </div>
