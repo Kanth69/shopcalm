@@ -34,7 +34,7 @@
                         <span class="badge bg-warning text-dark px-2.5 py-1 fw-bolder rounded-pill" style="font-size: 0.68rem; letter-spacing: 0.06em;">
                             SUPER ADMIN EXCLUSIVE
                         </span>
-                        <span class="text-white-50 small">• Real-Time Unit Economics & P&L Analysis</span>
+                        <span class="text-white-50 small">&bull; Real-Time Unit Economics & P&L Analysis</span>
                     </div>
                     <h4 class="mb-0 fw-bolder text-white" style="letter-spacing: -0.02em;">Financial Health & Profitability Ledger</h4>
                 </div>
@@ -126,26 +126,57 @@
             </form>
         </div>
 
-        {{-- Order Status Scope Filter Bar --}}
+        {{-- Order Status Scope Filter Bar with Exact Counts --}}
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-3 border-top border-secondary border-opacity-25" style="font-size: 0.8rem;">
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <span class="text-white-50 fw-bold small text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Order Scope:</span>
+                
+                {{-- 1. All Orders (Matches Dashboard & Lifetime Orders Count) --}}
+                <a href="{{ route('admin.finance.index', array_merge(['range' => $range, 'status_scope' => 'all'], $range === 'custom' ? ['start_date' => $start->toDateString(), 'end_date' => $end->toDateString()] : [])) }}" 
+                   class="badge text-decoration-none rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 {{ $statusScope == 'all' ? 'bg-primary text-white shadow-xs' : 'bg-secondary bg-opacity-25 text-white-50 border border-secondary border-opacity-25' }}">
+                    <span>All Orders</span>
+                    <span class="badge {{ $statusScope == 'all' ? 'bg-white text-primary' : 'bg-dark text-white-50' }} rounded-pill px-1.5 py-0.5 fw-bold" style="font-size: 0.68rem;">{{ $scopeCounts['all'] }}</span>
+                </a>
+
+                {{-- 2. Realized / Active Sales (Confirmed, In-Transit, Delivered) --}}
                 <a href="{{ route('admin.finance.index', array_merge(['range' => $range, 'status_scope' => 'realized'], $range === 'custom' ? ['start_date' => $start->toDateString(), 'end_date' => $end->toDateString()] : [])) }}" 
-                   class="badge text-decoration-none rounded-pill px-3 py-1.5 {{ $statusScope == 'realized' ? 'bg-primary text-white' : 'bg-secondary bg-opacity-25 text-white-50 border border-secondary border-opacity-25' }}">
-                    Active Fulfillments (Delivered & In-Transit)
+                   class="badge text-decoration-none rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 {{ $statusScope == 'realized' ? 'bg-primary text-white shadow-xs' : 'bg-secondary bg-opacity-25 text-white-50 border border-secondary border-opacity-25' }}">
+                    <span>Realized & Active Sales</span>
+                    <span class="badge {{ $statusScope == 'realized' ? 'bg-white text-primary' : 'bg-dark text-white-50' }} rounded-pill px-1.5 py-0.5 fw-bold" style="font-size: 0.68rem;">{{ $scopeCounts['realized'] }}</span>
                 </a>
+
+                {{-- 3. Delivered & Completed Only --}}
                 <a href="{{ route('admin.finance.index', array_merge(['range' => $range, 'status_scope' => 'delivered'], $range === 'custom' ? ['start_date' => $start->toDateString(), 'end_date' => $end->toDateString()] : [])) }}" 
-                   class="badge text-decoration-none rounded-pill px-3 py-1.5 {{ $statusScope == 'delivered' ? 'bg-primary text-white' : 'bg-secondary bg-opacity-25 text-white-50 border border-secondary border-opacity-25' }}">
-                    Delivered & Completed Only
+                   class="badge text-decoration-none rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 {{ $statusScope == 'delivered' ? 'bg-primary text-white shadow-xs' : 'bg-secondary bg-opacity-25 text-white-50 border border-secondary border-opacity-25' }}">
+                    <span>Delivered Only</span>
+                    <span class="badge {{ $statusScope == 'delivered' ? 'bg-white text-primary' : 'bg-dark text-white-50' }} rounded-pill px-1.5 py-0.5 fw-bold" style="font-size: 0.68rem;">{{ $scopeCounts['delivered'] }}</span>
                 </a>
+
+                {{-- 4. Paid Status Verified --}}
                 <a href="{{ route('admin.finance.index', array_merge(['range' => $range, 'status_scope' => 'paid'], $range === 'custom' ? ['start_date' => $start->toDateString(), 'end_date' => $end->toDateString()] : [])) }}" 
-                   class="badge text-decoration-none rounded-pill px-3 py-1.5 {{ $statusScope == 'paid' ? 'bg-primary text-white' : 'bg-secondary bg-opacity-25 text-white-50 border border-secondary border-opacity-25' }}">
-                    Paid Status Verified
+                   class="badge text-decoration-none rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 {{ $statusScope == 'paid' ? 'bg-primary text-white shadow-xs' : 'bg-secondary bg-opacity-25 text-white-50 border border-secondary border-opacity-25' }}">
+                    <span>Paid Verified</span>
+                    <span class="badge {{ $statusScope == 'paid' ? 'bg-white text-primary' : 'bg-dark text-white-50' }} rounded-pill px-1.5 py-0.5 fw-bold" style="font-size: 0.68rem;">{{ $scopeCounts['paid'] }}</span>
                 </a>
+
+                {{-- 5. Cancelled / Failed Attempts --}}
+                @if($scopeCounts['cancelled'] > 0)
+                <a href="{{ route('admin.finance.index', array_merge(['range' => $range, 'status_scope' => 'cancelled'], $range === 'custom' ? ['start_date' => $start->toDateString(), 'end_date' => $end->toDateString()] : [])) }}" 
+                   class="badge text-decoration-none rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 {{ $statusScope == 'cancelled' ? 'bg-danger text-white shadow-xs' : 'bg-secondary bg-opacity-25 text-white-50 border border-secondary border-opacity-25' }}">
+                    <span>Cancelled / Failed</span>
+                    <span class="badge {{ $statusScope == 'cancelled' ? 'bg-white text-danger' : 'bg-dark text-white-50' }} rounded-pill px-1.5 py-0.5 fw-bold" style="font-size: 0.68rem;">{{ $scopeCounts['cancelled'] }}</span>
+                </a>
+                @endif
             </div>
-            <span class="text-white-50 small">
-                Showing data for <strong class="text-white">{{ $ordersCount }} orders</strong> ({{ $totalItemsCount }} items)
-            </span>
+
+            <div class="text-white-50 small d-flex align-items-center gap-2">
+                <span>Showing <strong>{{ $ordersCount }}</strong> of <strong>{{ $scopeCounts['all'] }} total orders</strong> ({{ $totalItemsCount }} items)</span>
+                @if($scopeCounts['cancelled'] > 0)
+                    <span class="badge bg-secondary bg-opacity-50 text-white-50 rounded-pill px-2 py-0.5" style="font-size: 0.7rem;">
+                        {{ $scopeCounts['realized'] }} Realized &bull; {{ $scopeCounts['cancelled'] }} Cancelled
+                    </span>
+                @endif
+            </div>
         </div>
     </div>
 </div>
@@ -161,7 +192,7 @@
                 </div>
                 <div>
                     <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Gross Revenue</div>
-                    <div class="fs-4 fw-bolder text-dark">₹{{ number_format($totalRevenue, 2) }}</div>
+                    <div class="fs-4 fw-bolder text-dark font-monospace">₹{{ number_format($totalRevenue, 2) }}</div>
                     <span class="text-muted small" style="font-size: 0.74rem;">Avg Ticket: ₹{{ number_format($avgTicketSize, 2) }}</span>
                 </div>
             </div>
@@ -178,7 +209,7 @@
                 </div>
                 <div>
                     <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Product Cost (COGS)</div>
-                    <div class="fs-4 fw-bolder text-danger">₹{{ number_format($totalCost, 2) }}</div>
+                    <div class="fs-4 fw-bolder text-danger font-monospace">₹{{ number_format($totalCost, 2) }}</div>
                     <span class="text-muted small" style="font-size: 0.74rem;">Wholesale Acquisition</span>
                 </div>
             </div>
@@ -195,7 +226,7 @@
                 </div>
                 <div>
                     <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Gross Margin Profit</div>
-                    <div class="fs-4 fw-bolder {{ $totalGrossProfit >= 0 ? 'text-success' : 'text-danger' }}">
+                    <div class="fs-4 fw-bolder font-monospace {{ $totalGrossProfit >= 0 ? 'text-success' : 'text-danger' }}">
                         {{ $totalGrossProfit >= 0 ? '+' : '' }}₹{{ number_format($totalGrossProfit, 2) }}
                     </div>
                     <span class="badge rounded-pill px-2.5 py-0.5 fw-bold {{ $overallMargin >= 20 ? 'bg-success text-white' : 'bg-warning text-dark' }}" style="font-size: 0.72rem;">
@@ -216,7 +247,7 @@
                 </div>
                 <div>
                     <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Real In-Hand Net</div>
-                    <div class="fs-4 fw-bolder {{ $netInHandProfit >= 0 ? 'text-success' : 'text-danger' }}">
+                    <div class="fs-4 fw-bolder font-monospace {{ $netInHandProfit >= 0 ? 'text-success' : 'text-danger' }}">
                         {{ $netInHandProfit >= 0 ? '+' : '' }}₹{{ number_format($netInHandProfit, 2) }}
                     </div>
                     <span class="text-muted small" style="font-size: 0.74rem;">After Courier & 2% Fees</span>
@@ -227,32 +258,40 @@
     </div>
 </div>
 
-{{-- 3. Unit Economics Breakdown Banner --}}
+{{-- 3. Revenue & Fee Reconciliation Breakdown Banner (Reflecting recent delivery/COD/wallet additions) --}}
 <div class="card border-0 shadow-sm rounded-4 p-4 mb-4" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #e2e8f0 !important;">
     <div class="row g-3 align-items-center">
         <div class="col-md-3">
             <h6 class="fw-bold text-dark mb-1">
-                <i class="bi bi-calculator text-primary me-1.5"></i>Unit Economics P&L
+                <i class="bi bi-calculator text-primary me-1.5"></i>Revenue & Fee Breakdown
             </h6>
-            <p class="text-muted small mb-0" style="font-size: 0.78rem;">Estimated deduction breakdown per realized order.</p>
+            <p class="text-muted small mb-0" style="font-size: 0.78rem;">Detailed price component breakdown including delivery, COD fees & wallet deductions.</p>
         </div>
         <div class="col-md-9">
             <div class="row g-2 text-center text-md-start">
-                <div class="col-6 col-md-3 p-2 bg-white rounded-3 border">
-                    <span class="text-muted small d-block" style="font-size: 0.7rem;">COGS (Products)</span>
-                    <strong class="text-danger small">₹{{ number_format($totalCost, 2) }}</strong>
+                <div class="col-6 col-md-2 p-2 bg-white rounded-3 border">
+                    <span class="text-muted small d-block" style="font-size: 0.7rem;">Cart Items Subtotal</span>
+                    <strong class="text-dark small font-monospace">₹{{ number_format($totalItemsSubtotal, 2) }}</strong>
                 </div>
-                <div class="col-6 col-md-3 p-2 bg-white rounded-3 border">
-                    <span class="text-muted small d-block" style="font-size: 0.7rem;">Courier (₹60/ord)</span>
-                    <strong class="text-muted small">₹{{ number_format($estimatedShippingCosts, 2) }}</strong>
+                <div class="col-6 col-md-2 p-2 bg-white rounded-3 border">
+                    <span class="text-muted small d-block" style="font-size: 0.7rem;">Delivery Charges</span>
+                    <strong class="text-primary small font-monospace">+₹{{ number_format($totalShippingCollected, 2) }}</strong>
                 </div>
-                <div class="col-6 col-md-3 p-2 bg-white rounded-3 border">
-                    <span class="text-muted small d-block" style="font-size: 0.7rem;">Gateway Fee (2%)</span>
-                    <strong class="text-muted small">₹{{ number_format($estimatedGatewayFees, 2) }}</strong>
+                <div class="col-6 col-md-2 p-2 bg-white rounded-3 border">
+                    <span class="text-muted small d-block" style="font-size: 0.7rem;">COD Handling Fees</span>
+                    <strong class="text-primary small font-monospace">+₹{{ number_format($totalCodFeesCollected, 2) }}</strong>
                 </div>
-                <div class="col-6 col-md-3 p-2 bg-white rounded-3 border">
-                    <span class="text-muted small d-block" style="font-size: 0.7rem;">Net Clean In-Hand</span>
-                    <strong class="text-success small">₹{{ number_format($netInHandProfit, 2) }} ({{ $netInHandMargin }}%)</strong>
+                <div class="col-6 col-md-2 p-2 bg-white rounded-3 border">
+                    <span class="text-muted small d-block" style="font-size: 0.7rem;">Wallet Balance Used</span>
+                    <strong class="text-info small font-monospace">₹{{ number_format($totalWalletUsed, 2) }}</strong>
+                </div>
+                <div class="col-6 col-md-2 p-2 bg-white rounded-3 border">
+                    <span class="text-muted small d-block" style="font-size: 0.7rem;">COGS (Wholesale)</span>
+                    <strong class="text-danger small font-monospace">-₹{{ number_format($totalCost, 2) }}</strong>
+                </div>
+                <div class="col-6 col-md-2 p-2 bg-white rounded-3 border">
+                    <span class="text-muted small d-block" style="font-size: 0.7rem;">Net In-Hand Clean</span>
+                    <strong class="text-success small font-monospace">₹{{ number_format($netInHandProfit, 2) }} ({{ $netInHandMargin }}%)</strong>
                 </div>
             </div>
         </div>
@@ -294,8 +333,8 @@
             <div class="d-flex flex-column gap-2 border-top pt-3">
                 @forelse($paymentMethods as $pm)
                 <div class="d-flex align-items-center justify-content-between small">
-                    <span class="fw-semibold text-dark">{{ $pm['name'] }} ({{ $pm['count'] }} orders)</span>
-                    <span class="fw-bold text-success">₹{{ number_format($pm['profit'], 2) }} ({{ $pm['margin'] }}%)</span>
+                    <span class="fw-semibold text-dark">{{ $pm['name'] }} ({{ $pm['count'] }} {{ Str::plural('order', $pm['count']) }})</span>
+                    <span class="fw-bold text-success font-monospace">₹{{ number_format($pm['profit'], 2) }} ({{ $pm['margin'] }}%)</span>
                 </div>
                 @empty
                 <span class="text-muted small text-center">No payment data in this range</span>
@@ -346,7 +385,7 @@
                             <td class="text-center">
                                 <span class="badge bg-light text-dark border font-monospace px-2 py-0.5" style="font-size: 0.72rem;">{{ $tp['qty'] }}</span>
                             </td>
-                            <td class="text-end fw-bold text-success" style="font-size: 0.85rem;">
+                            <td class="text-end fw-bold text-success font-monospace" style="font-size: 0.85rem;">
                                 ₹{{ number_format($tp['profit'], 2) }}
                             </td>
                             <td class="pe-2 text-end">
@@ -366,12 +405,12 @@
         </div>
     </div>
 
-    {{-- Recent Profitable Orders --}}
+    {{-- Recent Orders Ledger Table --}}
     <div class="col-lg-7">
         <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <h6 class="fw-bold text-dark mb-0">
-                    <i class="bi bi-clock-history text-primary me-2"></i>Recent Profitable Orders
+                    <i class="bi bi-clock-history text-primary me-2"></i>Recent Orders Ledger
                 </h6>
                 <a href="{{ route('admin.reports.index', ['type' => 'profit_loss']) }}" class="small fw-bold text-primary text-decoration-none">
                     View Full P&L Ledger &rarr;
@@ -383,6 +422,7 @@
                         <tr>
                             <th class="ps-2">Order #</th>
                             <th>Customer</th>
+                            <th>Status & Payment</th>
                             <th class="text-end">Revenue</th>
                             <th class="text-end">COGS</th>
                             <th class="text-end">Gross Profit</th>
@@ -393,18 +433,26 @@
                         @forelse($recentOrders as $ro)
                         <tr>
                             <td class="ps-2">
-                                <a href="{{ route('admin.orders.show', $ro) }}" class="fw-bold text-primary text-decoration-none" style="font-size: 0.85rem;">
+                                <a href="{{ route('admin.orders.show', $ro) }}" class="fw-bold text-primary text-decoration-none font-monospace" style="font-size: 0.85rem;">
                                     #{{ $ro->order_number }}
                                 </a>
                             </td>
                             <td class="small text-dark fw-medium">{{ $ro->user?->name ?? ($ro->shipping_name ?? 'Guest') }}</td>
-                            <td class="text-end fw-semibold text-dark" style="font-size: 0.85rem;">
+                            <td>
+                                <span class="badge rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.68rem; background: {{ match($ro->status) { 'confirmed' => '#e0e7ff', 'delivered' => '#d1fae5', 'cancelled' => '#fee2e2', default => '#fef3c7' } }}; color: {{ match($ro->status) { 'confirmed' => '#3730a3', 'delivered' => '#065f46', 'cancelled' => '#991b1b', default => '#92400e' } }};">
+                                    {{ ucfirst(str_replace('_', ' ', $ro->status)) }}
+                                </span>
+                                <div class="text-muted small" style="font-size: 0.65rem;">
+                                    {{ strtoupper($ro->payment_method ?? 'COD') }} &bull; <span class="{{ $ro->payment_status === 'paid' ? 'text-success' : 'text-warning' }}">{{ $ro->payment_status }}</span>
+                                </div>
+                            </td>
+                            <td class="text-end fw-semibold text-dark font-monospace" style="font-size: 0.85rem;">
                                 ₹{{ number_format($ro->total_amount, 2) }}
                             </td>
-                            <td class="text-end text-muted small">
+                            <td class="text-end text-muted font-monospace small">
                                 ₹{{ number_format($ro->total_cost, 2) }}
                             </td>
-                            <td class="text-end fw-bold {{ $ro->gross_profit >= 0 ? 'text-success' : 'text-danger' }}" style="font-size: 0.85rem;">
+                            <td class="text-end fw-bold font-monospace {{ $ro->gross_profit >= 0 ? 'text-success' : 'text-danger' }}" style="font-size: 0.85rem;">
                                 {{ $ro->gross_profit >= 0 ? '+' : '' }}₹{{ number_format($ro->gross_profit, 2) }}
                             </td>
                             <td class="pe-2 text-center">
@@ -415,7 +463,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="text-center text-muted py-4 small">No orders recorded in this range</td>
+                            <td colspan="7" class="text-center text-muted py-4 small">No orders recorded in this range</td>
                         </tr>
                         @endforelse
                     </tbody>

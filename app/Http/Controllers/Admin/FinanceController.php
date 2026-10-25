@@ -65,44 +65,87 @@ class FinanceController extends Controller
                 break;
         }
 
-        // Query Builder based on Status Scope
+        // 1. Compute Scope Counts for the active date range (ensures exact count matching across tabs & dashboard)
+        $baseRangeQuery = Order::whereBetween('created_at', [$start, $end]);
+        $scopeCounts = [
+            'all'       => (clone $baseRangeQuery)->count(),
+            'realized'  => (clone $baseRangeQuery)->whereIn('status', Order::INCOME_STATUSES)->count(),
+            'delivered' => (clone $baseRangeQuery)->where('status', 'delivered')->count(),
+            'paid'      => (clone $baseRangeQuery)->where('payment_status', 'paid')->count(),
+            'cancelled' => (clone $baseRangeQuery)->whereIn('status', ['cancelled', 'returned'])->count(),
+            'pending'   => (clone $baseRangeQuery)->where('status', 'pending')->count(),
+        ];
+
+        // 2. Query Builder based on Status Scope
         $query = Order::with(['user', 'items.product'])
             ->whereBetween('created_at', [$start, $end]);
 
-        if ($statusScope === 'delivered') {
+        if ($statusScope === 'all') {
+            // Include all orders (matches Total Orders on Dashboard and Admin Orders page)
+        } elseif ($statusScope === 'delivered') {
             $query->where('status', 'delivered');
         } elseif ($statusScope === 'paid') {
-            $query->where('payment_status', 'paid')->whereIn('status', Order::INCOME_STATUSES);
-        } elseif ($statusScope === 'all_active') {
-            $query->whereIn('status', Order::INCOME_STATUSES);
+            $query->where('payment_status', 'paid');
+        } elseif ($statusScope === 'cancelled') {
+            $query->whereIn('status', ['cancelled', 'returned']);
+        } elseif ($statusScope === 'pending') {
+            $query->where('status', 'pending');
         } else {
             // 'realized' default: Confirmed until Delivered (excludes pending, failed, cancelled, returned)
+            $statusScope = 'realized';
             $query->whereIn('status', Order::INCOME_STATUSES);
         }
 
         $orders = $query->latest()->get();
 
-        // 1. Core Financial Metrics (Gross Level)
-        $totalRevenue = (float) $orders->sum('total_amount');
-        $totalCost = (float) $orders->sum('total_cost');
+        // 3. Core Financial Metrics incorporating recent changes (shipping charges, COD fees, wallet deductions)
+        $realizedOrders = $orders->filter(fn($o) => in_array($o->status, Order::INCOME_STATUSES));
+        
+        $totalItemsSubtotal = (float) $orders->sum('subtotal_amount');
+        $totalShippingCollected = (float) $orders->sum('shipping_charge');
+        $totalCodFeesCollected = (float) $orders->sum('cod_fee');
+        $totalCouponDiscount = (float) $orders->sum('coupon_discount_amount');
+        $totalWalletUsed = (float) $orders->sum('wallet_amount_used');
+
+        if ($statusScope === 'all') {
+            // When viewing All Orders, Revenue represents Realized Income + Wallet Credit
+            $totalRevenue = (float) $realizedOrders->sum(fn($o) => (float)$o->total_amount + (float)$o->wallet_amount_used);
+            $totalCost = (float) $realizedOrders->sum('total_cost');
+            $bookedPipelineValue = (float) $orders->sum('total_amount');
+            $cancelledValue = (float) $orders->whereIn('status', ['cancelled', 'returned'])->sum('total_amount');
+        } elseif ($statusScope === 'cancelled') {
+            $totalRevenue = 0.0;
+            $totalCost = 0.0;
+            $bookedPipelineValue = (float) $orders->sum('total_amount');
+            $cancelledValue = (float) $orders->sum('total_amount');
+        } else {
+            $totalRevenue = (float) $orders->sum(fn($o) => (float)$o->total_amount + (float)$o->wallet_amount_used);
+            $totalCost = (float) $orders->sum('total_cost');
+            $bookedPipelineValue = $totalRevenue;
+            $cancelledValue = 0.0;
+        }
+
         $totalGrossProfit = $totalRevenue - $totalCost;
         $overallMargin = $totalRevenue > 0 ? round(($totalGrossProfit / $totalRevenue) * 100, 1) : 0.0;
         $ordersCount = $orders->count();
-        $avgTicketSize = $ordersCount > 0 ? round($totalRevenue / $ordersCount, 2) : 0.0;
-        $avgProfitPerOrder = $ordersCount > 0 ? round($totalGrossProfit / $ordersCount, 2) : 0.0;
+        $realizedCount = $realizedOrders->count();
+        $calcCount = ($statusScope === 'all') ? max(1, $realizedCount) : max(1, $ordersCount);
+        $avgTicketSize = $totalRevenue > 0 ? round($totalRevenue / $calcCount, 2) : 0.0;
+        $avgProfitPerOrder = $totalGrossProfit != 0 ? round($totalGrossProfit / $calcCount, 2) : 0.0;
 
-        // 2. Unit Economics & Hidden Expenses Breakdown
+        // 4. Unit Economics & Hidden Expenses Breakdown
         $totalItemsCount = $orders->sum(fn($o) => $o->items->sum('quantity'));
         $estimatedGatewayFees = (float) $orders->sum(function ($o) {
-            return ($o->payment_method === 'cod') ? 0.0 : round($o->total_amount * 0.02, 2); // 2% gateway fee
+            return in_array($o->payment_method, ['online', 'doorstep_upi']) ? round($o->total_amount * 0.02, 2) : 0.0; // 2% gateway fee
         });
-        $estimatedShippingCosts = $ordersCount * 60.0; // ₹60 avg courier cost
-        $estimatedPackagingCosts = $ordersCount * 15.0; // ₹15 packaging box/materials
-        $totalOperatingExpenses = $estimatedGatewayFees + $estimatedShippingCosts + $estimatedPackagingCosts;
+        $estimatedShippingCosts = $ordersCount * 50.0; // ₹50 avg logistics courier fulfillment
+        $netShippingCost = max(0.0, $estimatedShippingCosts - $totalShippingCollected);
+        $estimatedPackagingCosts = $ordersCount * 12.0; // ₹12 packaging materials
+        $totalOperatingExpenses = $estimatedGatewayFees + $netShippingCost + $estimatedPackagingCosts;
         $netInHandProfit = $totalGrossProfit - $totalOperatingExpenses;
         $netInHandMargin = $totalRevenue > 0 ? round(($netInHandProfit / $totalRevenue) * 100, 1) : 0.0;
 
-        // 3. Trajectory Trend Chart Data
+        // 5. Trajectory Trend Chart Data
         $trendLabels = [];
         $trendRevenue = [];
         $trendCost = [];
@@ -118,7 +161,7 @@ class FinanceController extends Controller
                     return $o->created_at >= $mStart && $o->created_at <= $mEnd;
                 });
 
-                $rev = (float) $mOrders->sum('total_amount');
+                $rev = (float) $mOrders->sum(fn($o) => (float)$o->total_amount + (float)$o->wallet_amount_used);
                 $cost = (float) $mOrders->sum('total_cost');
 
                 $trendLabels[] = $monthDate->format('M Y');
@@ -137,7 +180,7 @@ class FinanceController extends Controller
                     return $o->created_at >= $dStart && $o->created_at <= $dEnd;
                 });
 
-                $rev = (float) $dOrders->sum('total_amount');
+                $rev = (float) $dOrders->sum(fn($o) => (float)$o->total_amount + (float)$o->wallet_amount_used);
                 $cost = (float) $dOrders->sum('total_cost');
 
                 $trendLabels[] = $date->format('d M');
@@ -147,23 +190,35 @@ class FinanceController extends Controller
             }
         }
 
-        // 4. Payment Channels Split
+        // 6. Payment Channels Split (User-friendly labels and accurate fees/wallet recognition)
         $paymentMethods = [];
-        foreach ($orders->groupBy('payment_method') as $method => $methodOrders) {
-            $mRev = (float) $methodOrders->sum('total_amount');
+        foreach ($orders->groupBy(fn($o) => strtolower($o->payment_method ?: 'cod')) as $method => $methodOrders) {
+            $mRev = (float) $methodOrders->sum(fn($o) => (float)$o->total_amount + (float)$o->wallet_amount_used);
             $mCost = (float) $methodOrders->sum('total_cost');
+            $mProfit = round($mRev - $mCost, 2);
+
+            $methodName = match($method) {
+                'cod'          => 'Cash on Delivery (COD)',
+                'online'       => 'Prepaid Online (Razorpay)',
+                'doorstep_upi' => 'Doorstep UPI (Razorpay QR)',
+                'wallet'       => 'ShopCalm Wallet (100% Paid)',
+                default        => strtoupper($method),
+            };
+
             $paymentMethods[] = [
-                'name' => strtoupper($method ?: 'COD'),
-                'count' => $methodOrders->count(),
+                'method'  => $method,
+                'name'    => $methodName,
+                'count'   => $methodOrders->count(),
                 'revenue' => $mRev,
-                'profit' => round($mRev - $mCost, 2),
-                'margin' => $mRev > 0 ? round((($mRev - $mCost) / $mRev) * 100, 1) : 0,
+                'profit'  => $mProfit,
+                'margin'  => $mRev > 0 ? round(($mProfit / $mRev) * 100, 1) : 0,
             ];
         }
 
-        // 5. Top High-Profit Products
+        // 7. Top High-Profit Products
         $productProfits = [];
-        foreach ($orders as $order) {
+        $ordersForProductProfit = ($statusScope === 'all') ? $realizedOrders : $orders;
+        foreach ($ordersForProductProfit as $order) {
             foreach ($order->items as $item) {
                 $prodId = $item->product_id;
                 if (!isset($productProfits[$prodId])) {
@@ -191,14 +246,22 @@ class FinanceController extends Controller
         usort($productProfits, fn($a, $b) => $b['profit'] <=> $a['profit']);
         $topProducts = array_slice($productProfits, 0, 5);
 
-        // 6. Recent Orders
-        $recentOrders = $orders->take(8);
+        // 8. Recent Orders
+        $recentOrders = $orders->take(10);
 
         return view('admin.finance.index', compact(
             'range',
             'statusScope',
             'start',
             'end',
+            'scopeCounts',
+            'totalItemsSubtotal',
+            'totalShippingCollected',
+            'totalCodFeesCollected',
+            'totalCouponDiscount',
+            'totalWalletUsed',
+            'bookedPipelineValue',
+            'cancelledValue',
             'totalRevenue',
             'totalCost',
             'totalGrossProfit',
@@ -209,6 +272,7 @@ class FinanceController extends Controller
             'totalItemsCount',
             'estimatedGatewayFees',
             'estimatedShippingCosts',
+            'netShippingCost',
             'estimatedPackagingCosts',
             'totalOperatingExpenses',
             'netInHandProfit',
