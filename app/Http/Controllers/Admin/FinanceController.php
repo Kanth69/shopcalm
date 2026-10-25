@@ -198,8 +198,33 @@ class FinanceController extends Controller
                 $trendCost[] = $cost;
                 $trendProfit[] = round($rev - $cost, 2);
             }
+        } elseif ($start->isSameDay($end)) {
+            // Single-day hourly breakdown (4-hour intervals) so chart always renders a full day timeline
+            $dayStart = $start->copy()->startOfDay();
+            $intervals = [
+                ['label' => '12 AM', 'start' => $dayStart->copy(), 'end' => $dayStart->copy()->addHours(4)],
+                ['label' => '4 AM',  'start' => $dayStart->copy()->addHours(4), 'end' => $dayStart->copy()->addHours(8)],
+                ['label' => '8 AM',  'start' => $dayStart->copy()->addHours(8), 'end' => $dayStart->copy()->addHours(12)],
+                ['label' => '12 PM', 'start' => $dayStart->copy()->addHours(12), 'end' => $dayStart->copy()->addHours(16)],
+                ['label' => '4 PM',  'start' => $dayStart->copy()->addHours(16), 'end' => $dayStart->copy()->addHours(20)],
+                ['label' => '8 PM',  'start' => $dayStart->copy()->addHours(20), 'end' => $dayStart->copy()->endOfDay()],
+            ];
+
+            foreach ($intervals as $slot) {
+                $sOrders = $orders->filter(function ($o) use ($slot) {
+                    return $o->created_at >= $slot['start'] && $o->created_at <= $slot['end'];
+                });
+
+                $rev = (float) $sOrders->sum($computeOrderRevenue);
+                $cost = (float) $sOrders->sum('total_cost');
+
+                $trendLabels[] = $slot['label'];
+                $trendRevenue[] = $rev;
+                $trendCost[] = $cost;
+                $trendProfit[] = round($rev - $cost, 2);
+            }
         } else {
-            // Day-by-Day (up to 31 days)
+            // Day-by-Day (up to 45 days)
             $period = \Carbon\CarbonPeriod::create($start, $end);
             foreach ($period as $date) {
                 $dStart = $date->copy()->startOfDay();

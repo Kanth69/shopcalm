@@ -88,7 +88,7 @@
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-dark border-secondary border-opacity-50 text-white-50 px-2.5" style="font-size: 0.75rem;">From</span>
                             <input type="date" name="start_date" 
-                                   value="{{ request('start_date', $start->format('Y-m-d')) }}" 
+                                   value="{{ request('start_date', ($start->isSameDay($end) && $range !== 'custom' ? $start->copy()->subDays(6)->format('Y-m-d') : $start->format('Y-m-d'))) }}" 
                                    class="form-control form-control-sm bg-dark text-white border-secondary border-opacity-50" 
                                    max="{{ now()->format('Y-m-d') }}" 
                                    required 
@@ -180,6 +180,28 @@
         </div>
     </div>
 </div>
+
+@if($ordersCount === 0)
+<div class="alert alert-warning border-0 rounded-4 shadow-sm p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3" style="background: rgba(245, 158, 11, 0.12); border-left: 4px solid #f59e0b !important;">
+    <div class="d-flex align-items-center gap-2.5">
+        <div class="rounded-circle bg-warning bg-opacity-20 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px;">
+            <i class="bi bi-calendar-x fs-5"></i>
+        </div>
+        <div>
+            <strong class="text-dark d-block">No orders recorded for this date window ({{ $start->format('d M Y') }} &rarr; {{ $end->format('d M Y') }}).</strong>
+            <span class="text-muted small">All active realized store orders were placed between <strong>21 Oct & 23 Oct</strong>. Reset date filter to view full metrics and charts.</span>
+        </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{{ route('admin.finance.index', ['range' => 'this_month', 'status_scope' => $statusScope]) }}" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold shadow-xs">
+            <i class="bi bi-calendar-check me-1"></i> View This Month (All Orders)
+        </a>
+        <a href="{{ route('admin.finance.index', ['range' => 'custom', 'status_scope' => $statusScope, 'start_date' => '2026-10-21', 'end_date' => now()->format('Y-m-d')]) }}" class="btn btn-sm btn-outline-dark rounded-pill px-3 fw-bold">
+            <i class="bi bi-arrow-repeat me-1"></i> 21 Oct &rarr; Today
+        </a>
+    </div>
+</div>
+@endif
 
 {{-- 2. Top 4 High-Impact KPI Metrics --}}
 <div class="row g-3 mb-4">
