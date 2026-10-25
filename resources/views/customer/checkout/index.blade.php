@@ -214,6 +214,14 @@
         transform: none !important;
         box-shadow: none !important;
     }
+    .wallet-payment-blocked {
+        position: relative !important;
+        cursor: not-allowed !important;
+    }
+    .wallet-payment-blocked,
+    .wallet-payment-blocked * {
+        cursor: not-allowed !important;
+    }
     .payment-tile .form-check-input {
         width: 1.3rem;
         height: 1.3rem;
@@ -992,9 +1000,20 @@
                             </div>
                         </div>
 
-                        <div class="card-body p-3 p-sm-3.5">
+                        <div class="card-body p-3 p-sm-3.5 position-relative" id="payment-card-body">
+                            <!-- Disabled Overlay for 100% Wallet Payment with disabled cursor -->
+                            <div id="payment-wallet-disabled-overlay" 
+                                 class="position-absolute top-0 start-0 w-100 h-100 rounded-4 {{ ($useWallet && $grandTotal <= 0) ? '' : 'd-none' }}"
+                                 style="cursor: not-allowed !important; z-index: 10; background: rgba(248, 250, 252, 0.45); backdrop-filter: blur(1px); display: flex; align-items: center; justify-content: center;"
+                                 title="100% covered by ShopCalm Wallet. Additional payment method not required.">
+                                <div class="badge bg-white text-dark border shadow-xs rounded-pill px-3.5 py-2 fw-semibold d-inline-flex align-items-center gap-2" style="pointer-events: none; font-size: 0.82rem; cursor: not-allowed !important;">
+                                    <i class="bi bi-slash-circle text-danger fs-6"></i>
+                                    <span>Payment Method Disabled &bull; 100% Covered by Wallet</span>
+                                </div>
+                            </div>
+
                             <!-- Payment Tiles Container -->
-                            <div id="payment-tiles-container" style="{{ ($useWallet && $grandTotal <= 0) ? 'opacity: 0.45; pointer-events: none; filter: grayscale(1);' : '' }}">
+                            <div id="payment-tiles-container" style="{{ ($useWallet && $grandTotal <= 0) ? 'opacity: 0.45; filter: grayscale(1); cursor: not-allowed !important;' : '' }}">
                                 
                                 <!-- Option 1: Razorpay Online Payment (Default) -->
                                 <div class="payment-tile active-tile" onclick="document.getElementById('pay_online').checked = true; document.getElementById('pay_online').dispatchEvent(new Event('change'));">
@@ -2493,22 +2512,28 @@ document.addEventListener('DOMContentLoaded', function() {
         const fullWalletNotice = document.getElementById('full-wallet-pay-notice');
         const step3WalletNotice = document.getElementById('step-3-wallet-full-notice');
         const paymentContainer = document.getElementById('payment-tiles-container');
+        const paymentOverlay = document.getElementById('payment-wallet-disabled-overlay');
+        const paymentCardBody = document.getElementById('payment-card-body');
 
         if (isFullyCoveredByWallet || calculatedGrandTotal <= 0) {
             if (fullWalletNotice) fullWalletNotice.classList.remove('d-none');
             if (step3WalletNotice) step3WalletNotice.classList.remove('d-none');
+            if (paymentOverlay) paymentOverlay.classList.remove('d-none');
+            if (paymentCardBody) paymentCardBody.classList.add('wallet-payment-blocked');
             if (paymentContainer) {
                 paymentContainer.style.opacity = '0.45';
-                paymentContainer.style.pointerEvents = 'none';
                 paymentContainer.style.filter = 'grayscale(1)';
+                paymentContainer.style.cursor = 'not-allowed';
             }
         } else {
             if (fullWalletNotice) fullWalletNotice.classList.add('d-none');
             if (step3WalletNotice) step3WalletNotice.classList.add('d-none');
+            if (paymentOverlay) paymentOverlay.classList.add('d-none');
+            if (paymentCardBody) paymentCardBody.classList.remove('wallet-payment-blocked');
             if (paymentContainer) {
                 paymentContainer.style.opacity = '1';
-                paymentContainer.style.pointerEvents = 'auto';
                 paymentContainer.style.filter = 'none';
+                paymentContainer.style.cursor = 'default';
             }
         }
 
