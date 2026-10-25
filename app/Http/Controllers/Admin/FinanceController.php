@@ -130,9 +130,9 @@ class FinanceController extends Controller
         // = Cart Subtotal - Coupon Discounts - Wallet Used - Delivery (Fixed ₹45/order)
         $netDisplayAmount = (float) ($totalItemsSubtotal - $totalCouponDiscount - $totalWalletUsed - $totalFixedDelivery);
 
-        // Revenue computation strictly excluding COD handling fee (courier collection, not store revenue)
+        // Revenue computation: strictly what customer paid out of pocket (excluding COD fee & promotional wallet)
         $computeOrderRevenue = function ($order) {
-            $base = (float)$order->total_amount - (float)$order->cod_fee + (float)$order->wallet_amount_used;
+            $base = (float)$order->total_amount - (float)$order->cod_fee;
             return max(0.0, $base);
         };
 
