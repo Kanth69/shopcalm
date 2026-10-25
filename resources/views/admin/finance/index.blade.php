@@ -313,12 +313,17 @@
                 </div>
 
                 {{-- 6. Net In-Hand (Display) --}}
+                @php
+                    $totalDeductions = $totalOfferDiscount + $totalCouponDiscount + $totalWalletUsed + $totalFixedDelivery;
+                @endphp
                 <div class="col-6 col-md-2 p-2.5 bg-white rounded-3 border border-success border-opacity-50 shadow-2xs" style="background: rgba(16, 185, 129, 0.05) !important;">
-                    <span class="text-success small d-block fw-bold" style="font-size: 0.7rem;">Net In-Hand</span>
+                    <span class="text-success small d-block fw-bold" style="font-size: 0.7rem;">6. Net Realized In-Hand</span>
                     <strong class="text-success small font-monospace" style="font-size: 0.92rem;">
                         {{ $netDisplayAmount >= 0 ? '' : '-' }}₹{{ number_format(abs($netDisplayAmount), 2) }}
                     </strong>
-                    <span class="text-success text-opacity-75 d-block" style="font-size: 0.65rem;">Original &minus; Deductions</span>
+                    <span class="text-success text-opacity-75 d-block text-truncate" style="font-size: 0.63rem;" title="MRP (₹{{ number_format($totalOriginalPrice, 0) }}) &minus; Total Deductions (₹{{ number_format($totalDeductions, 0) }})">
+                        MRP &minus; Deductions (₹{{ number_format($totalDeductions, 0) }})
+                    </span>
                 </div>
             </div>
         </div>
