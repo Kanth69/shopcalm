@@ -302,8 +302,8 @@
                 <div class="col-6 col-md-2 p-2.5 bg-white rounded-3 border shadow-2xs">
                     <span class="text-muted small d-block fw-semibold" style="font-size: 0.7rem;">Customer Paid</span>
                     <strong class="text-primary small font-monospace" style="font-size: 0.92rem;">₹{{ number_format($totalRevenue, 2) }}</strong>
-                    <span class="text-muted d-block text-truncate" style="font-size: 0.65rem;" title="Offers Discount: -₹{{ number_format($totalOfferDiscount, 2) }}">
-                        Offers: -₹{{ number_format($totalOfferDiscount, 2) }}
+                    <span class="text-muted d-block text-truncate" style="font-size: 0.65rem;" title="Includes COD, shipping and product price paid by customer">
+                        Order Total (Inc. COD)
                     </span>
                 </div>
 

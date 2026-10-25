@@ -118,22 +118,19 @@ class FinanceController extends Controller
         $totalCouponDiscount = (float) $orders->sum('coupon_discount_amount');
         $totalWalletUsed = (float) $orders->sum('wallet_amount_used');
 
-        // Fixed delivery charge at ₹45 per order (as requested: "delivery chnage as 45(fixed chey as of now next weill see")
+        // Fixed delivery charge at ₹45 per order
         $fixedDeliveryRate = 45.0;
         $totalFixedDelivery = (float) ($ordersCount * $fixedDeliveryRate);
 
-        // COD handling fee is excluded ("cod handling fee dont add here ,,,,")
-        $totalCodFeesCollected = 0.0;
+        // Total COD handling fees collected from customers (included in Customer Paid)
+        $totalCodFeesCollected = (float) $orders->sum('cod_fee');
 
         // Clean Net in-hand display calculation:
-        // Original Price - Offer Discounts - Coupon Discounts - Wallet Used - Delivery (Fixed ₹45/order)
-        // = Cart Subtotal - Coupon Discounts - Wallet Used - Delivery (Fixed ₹45/order)
         $netDisplayAmount = (float) ($totalItemsSubtotal - $totalCouponDiscount - $totalWalletUsed - $totalFixedDelivery);
 
-        // Revenue computation: strictly what customer paid out of pocket (excluding COD fee & promotional wallet)
+        // Revenue computation: full amount customer pays (including COD confirmed orders, shipping, & COD fees)
         $computeOrderRevenue = function ($order) {
-            $base = (float)$order->total_amount - (float)$order->cod_fee;
-            return max(0.0, $base);
+            return max(0.0, (float)$order->total_amount);
         };
 
         if ($statusScope === 'all') {
