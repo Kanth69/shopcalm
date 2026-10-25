@@ -274,7 +274,7 @@
 <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.20/dist/sweetalert2.all.min.js"></script>
 
-@include('components.staff-live-poller', ['endpoint' => route('admin.live-orders'), 'portal' => 'delivery'])
+@include('components.staff-live-poller', ['endpoint' => route('delivery.live-alerts'), 'portal' => 'delivery'])
 
 @stack('scripts')
 </body>

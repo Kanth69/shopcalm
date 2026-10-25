@@ -344,7 +344,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.20/dist/sweetalert2.all.min.js"></script>
 
-@include('components.staff-live-poller', ['endpoint' => route('order-manager.live-orders'), 'portal' => 'order_manager'])
+@include('components.staff-live-poller', ['endpoint' => route('support.live-alerts'), 'portal' => 'support'])
 
 @stack('scripts')
 </body>

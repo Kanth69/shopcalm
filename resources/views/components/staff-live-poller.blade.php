@@ -261,13 +261,35 @@
                 return;
             }
 
-            // If new orders detected (Order Manager & Admin)
-            if (data.has_new && data.new_orders && data.new_orders.length > 0) {
+            // If new orders detected (Order Manager & Admin ONLY)
+            if ((portal === 'order_manager' || portal === 'admin') && data.has_new && data.new_orders && data.new_orders.length > 0) {
                 lastKnownOrderId = data.latest_id;
                 playOrderChime();
 
-                // Find table body on page (Dashboard priority table or Orders list table)
-                const tbody = document.querySelector('tbody.divide-y') || document.querySelector('tbody');
+                // ONLY insert into live orders table on order-specific views
+                const isOrderView = (
+                    window.location.pathname.includes('/orders') || 
+                    window.location.pathname.endsWith('/dashboard') ||
+                    window.location.pathname.endsWith('/order-manager') ||
+                    window.location.pathname.endsWith('/admin')
+                ) && !window.location.pathname.includes('/products');
+
+                let tbody = null;
+                if (isOrderView) {
+                    tbody = document.querySelector('#liveOrdersTableBody')
+                        || document.querySelector('[data-live-orders-table] tbody')
+                        || document.querySelector('table[data-table="orders"] tbody')
+                        || document.querySelector('tbody.divide-y');
+                }
+
+                // Extra safety: Never insert an order row into a products, categories, or reviews table
+                if (tbody) {
+                    const firstHeader = tbody.closest('table')?.querySelector('th:first-child')?.textContent || '';
+                    if (firstHeader.includes('Product') || tbody.closest('#productsTable') || tbody.closest('[data-products-table]')) {
+                        tbody = null;
+                    }
+                }
+
                 const emptyRow = tbody ? tbody.querySelector('td[colspan]') : null;
                 if (emptyRow && emptyRow.parentElement) {
                     emptyRow.parentElement.remove();
@@ -279,7 +301,7 @@
                         tbody.insertBefore(newTr, tbody.firstChild);
                     }
 
-                    // Display SweetAlert2 Live Notification Toast
+                    // Display SweetAlert2 Live Notification Toast (ONLY for Order Manager and Admin)
                     if (window.Swal) {
                         Swal.fire({
                             toast: true,
@@ -295,8 +317,8 @@
                 });
             }
 
-            // If new pending products submitted by Product Manager (for Admin review)
-            if (data.has_new_products && data.new_pending_products && data.new_pending_products.length > 0) {
+            // If new pending products submitted by Product Manager (for Admin review ONLY)
+            if (portal === 'admin' && data.has_new_products && data.new_pending_products && data.new_pending_products.length > 0) {
                 lastKnownProductId = data.latest_product_id;
                 playOrderChime();
 
@@ -316,8 +338,8 @@
                 });
             }
 
-            // If product rejected by Admin (alert for Product Manager)
-            if (data.has_new_rejected && data.new_rejected_products && data.new_rejected_products.length > 0) {
+            // If product rejected by Admin (alert for Product Manager ONLY)
+            if (portal === 'product_manager' && data.has_new_rejected && data.new_rejected_products && data.new_rejected_products.length > 0) {
                 lastKnownRejectedId = data.latest_rejected_id;
                 playOrderChime();
 
@@ -337,8 +359,8 @@
                 });
             }
 
-            // If new delivery assigned (alert for Delivery Partner)
-            if (data.has_new_assigned && data.new_assigned_orders && data.new_assigned_orders.length > 0) {
+            // If new delivery assigned (alert for Delivery Partner ONLY)
+            if (portal === 'delivery' && data.has_new_assigned && data.new_assigned_orders && data.new_assigned_orders.length > 0) {
                 lastKnownAssignedId = data.latest_assigned_order_id;
                 playOrderChime();
 

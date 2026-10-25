@@ -518,7 +518,7 @@
     <script src="{{ asset('js/ui-interactions.js') }}?v={{ time() }}"></script>
     <script src="{{ asset('js/admin-filters.js') }}?v={{ time() }}"></script>
 
-    @include('components.staff-live-poller', ['endpoint' => route('admin.live-orders'), 'portal' => 'product_manager'])
+    @include('components.staff-live-poller', ['endpoint' => route('product-manager.live-alerts'), 'portal' => 'product_manager'])
 
     @stack('scripts')
 </body>

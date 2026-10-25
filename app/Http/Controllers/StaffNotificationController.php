@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Auth;
 class StaffNotificationController extends Controller
 {
     /**
-     * Fetch live order updates and queue metrics for staff dashboards.
+     * Fetch live order updates, rejected product alerts, and metrics for staff dashboards.
      */
     public function liveOrders(Request $request): JsonResponse
     {
@@ -19,15 +19,17 @@ class StaffNotificationController extends Controller
         $sinceProductId = (int) $request->query('since_product_id', 0);
         $sinceRejectedId = (int) $request->query('since_rejected_id', 0);
         $sinceAssignedId = (int) $request->query('since_assigned_id', 0);
-        $portal = $request->query('portal', 'order_manager'); // 'order_manager', 'admin', 'product_manager', 'delivery'
+        $portal = $request->query('portal', 'order_manager'); // 'order_manager', 'admin', 'product_manager', 'delivery', 'support'
 
         $maxId = Order::max('id') ?? 0;
         $maxProductId = Product::where('status', 'Pending_Approval')->max('id') ?? 0;
         $maxRejectedId = Product::where('status', 'Rejected')->max('id') ?? 0;
         $pendingProductsCount = Product::where('status', 'Pending_Approval')->count();
 
+        // 1. Only Order Manager and Admin portals should receive store order notifications & rows.
+        // Product Managers, Support, and Delivery Partners should NEVER receive incoming store orders!
         $newOrders = [];
-        if ($sinceId > 0 && $maxId > $sinceId) {
+        if (in_array($portal, ['order_manager', 'admin']) && $sinceId > 0 && $maxId > $sinceId) {
             $rawOrders = Order::with(['items.product', 'fulfillment'])
                 ->where('id', '>', $sinceId)
                 ->orderBy('id', 'desc')
@@ -61,9 +63,9 @@ class StaffNotificationController extends Controller
             }
         }
 
-        // Real-time pending product submissions tracking for Admin
+        // 2. Real-time pending product submissions tracking for Admin ONLY
         $newPendingProducts = [];
-        if ($sinceProductId > 0 && $maxProductId > $sinceProductId) {
+        if ($portal === 'admin' && $sinceProductId > 0 && $maxProductId > $sinceProductId) {
             $rawProducts = Product::with('submitter')
                 ->where('status', 'Pending_Approval')
                 ->where('id', '>', $sinceProductId)
@@ -73,20 +75,20 @@ class StaffNotificationController extends Controller
 
             foreach ($rawProducts as $prod) {
                 $newPendingProducts[] = [
-                    'id'             => $prod->id,
-                    'name'           => $prod->name,
-                    'sku'            => $prod->sku,
-                    'submitter'      => $prod->submitter->name ?? 'Product Manager',
+                    'id'               => $prod->id,
+                    'name'             => $prod->name,
+                    'sku'              => $prod->sku,
+                    'submitter'        => $prod->submitter->name ?? 'Product Manager',
                     'created_at_human' => $prod->created_at->diffForHumans(),
-                    'image_url'      => $prod->main_image ? asset('storage/' . $prod->main_image) : null,
-                    'url'            => route('admin.products.show', $prod),
+                    'image_url'        => $prod->main_image ? asset('storage/' . $prod->main_image) : null,
+                    'url'              => route('admin.products.show', $prod),
                 ];
             }
         }
 
-        // Real-time rejected product alerts for Product Manager
+        // 3. Real-time rejected product alerts for Product Manager ONLY
         $newRejectedProducts = [];
-        if ($sinceRejectedId > 0 && $maxRejectedId > $sinceRejectedId) {
+        if ($portal === 'product_manager' && $sinceRejectedId > 0 && $maxRejectedId > $sinceRejectedId) {
             $rawRejected = Product::where('status', 'Rejected')
                 ->where('id', '>', $sinceRejectedId)
                 ->orderBy('id', 'desc')
@@ -103,47 +105,53 @@ class StaffNotificationController extends Controller
             }
         }
 
-        // Real-time order assignment alerts for Delivery Partner
-        $deliveryUser = (config('auth.guards.delivery_partner') ? Auth::guard('delivery_partner')->user() : null)
-            ?? (config('auth.guards.delivery') ? Auth::guard('delivery')->user() : null)
-            ?? Auth::user();
+        // 4. Real-time order assignment alerts for Delivery Partner ONLY
         $maxAssignedOrderId = 0;
         $newAssignedOrders = [];
-        if ($deliveryUser) {
-            $maxAssignedOrderId = Order::whereHas('fulfillment', fn($q) => $q->where('rider_id', $deliveryUser->id))->max('id') ?? 0;
-            if ($sinceAssignedId > 0 && $maxAssignedOrderId > $sinceAssignedId) {
-                $rawAssigned = Order::whereHas('fulfillment', fn($q) => $q->where('rider_id', $deliveryUser->id))
-                    ->where('id', '>', $sinceAssignedId)
-                    ->orderBy('id', 'desc')
-                    ->take(10)
-                    ->get();
+        if ($portal === 'delivery') {
+            $deliveryUser = (config('auth.guards.delivery_partner') ? Auth::guard('delivery_partner')->user() : null)
+                ?? (config('auth.guards.delivery') ? Auth::guard('delivery')->user() : null)
+                ?? Auth::user();
+            if ($deliveryUser) {
+                $maxAssignedOrderId = Order::whereHas('fulfillment', fn($q) => $q->where('rider_id', $deliveryUser->id))->max('id') ?? 0;
+                if ($sinceAssignedId > 0 && $maxAssignedOrderId > $sinceAssignedId) {
+                    $rawAssigned = Order::whereHas('fulfillment', fn($q) => $q->where('rider_id', $deliveryUser->id))
+                        ->where('id', '>', $sinceAssignedId)
+                        ->orderBy('id', 'desc')
+                        ->take(10)
+                        ->get();
 
-                foreach ($rawAssigned as $ord) {
-                    $newAssignedOrders[] = [
-                        'id'           => $ord->id,
-                        'order_number' => $ord->order_number,
-                        'city'         => $ord->shipping_city,
-                        'url'          => route('delivery.orders.show', $ord->id),
-                    ];
+                    foreach ($rawAssigned as $ord) {
+                        $newAssignedOrders[] = [
+                            'id'           => $ord->id,
+                            'order_number' => $ord->order_number,
+                            'city'         => $ord->shipping_city,
+                            'url'          => route('delivery.orders.show', $ord->id),
+                        ];
+                    }
                 }
             }
         }
 
-        $todayRealizedRevenue = (float) Order::whereDate('created_at', today())->whereIn('status', Order::INCOME_STATUSES)->sum('total_amount');
-        $stats = [
-            'total_orders'           => Order::count(),
-            'needs_processing'       => Order::whereIn('status', ['pending', 'confirmed'])->count(),
-            'packing_queue'          => Order::whereIn('status', ['processing', 'packed'])->count(),
-            'in_transit'             => Order::whereIn('status', ['shipped', 'out for delivery'])->count(),
-            'delivered'              => Order::where('status', 'delivered')->count(),
-            'today_orders'           => Order::whereDate('created_at', today())->count(),
-            'today_revenue'          => $todayRealizedRevenue,
-            'today_revenue_fmt'      => '₹' . number_format($todayRealizedRevenue, 2),
-            'pending_products_count' => $pendingProductsCount,
-        ];
+        // 5. Aggregate metrics based on portal role
+        $stats = [];
+        if (in_array($portal, ['order_manager', 'admin'])) {
+            $todayRealizedRevenue = (float) Order::whereDate('created_at', today())->whereIn('status', Order::INCOME_STATUSES)->sum('total_amount');
+            $stats = [
+                'total_orders'           => Order::count(),
+                'needs_processing'       => Order::whereIn('status', ['pending', 'confirmed'])->count(),
+                'packing_queue'          => Order::whereIn('status', ['processing', 'packed'])->count(),
+                'in_transit'             => Order::whereIn('status', ['shipped', 'out for delivery'])->count(),
+                'delivered'              => Order::where('status', 'delivered')->count(),
+                'today_orders'           => Order::whereDate('created_at', today())->count(),
+                'today_revenue'          => $todayRealizedRevenue,
+                'today_revenue_fmt'      => '₹' . number_format($todayRealizedRevenue, 2),
+                'pending_products_count' => $pendingProductsCount,
+            ];
+        }
 
         return response()->json([
-            'latest_id'                => $maxId,
+            'latest_id'                => in_array($portal, ['order_manager', 'admin']) ? $maxId : 0,
             'latest_product_id'        => $maxProductId,
             'latest_rejected_id'       => $maxRejectedId,
             'latest_assigned_order_id' => $maxAssignedOrderId,

@@ -188,6 +188,9 @@ $registerStaffRoutes = function () {
 
             // Inventory & Product Reports
             Route::get('reports', [\App\Http\Controllers\ProductManager\ReportController::class, 'index'])->name('reports.index');
+
+            // Live Alerts Poller Heartbeat (Product rejection alerts)
+            Route::get('live-alerts', [\App\Http\Controllers\StaffNotificationController::class, 'liveOrders'])->name('live-alerts');
         });
     });
 
@@ -278,6 +281,9 @@ $registerStaffRoutes = function () {
             Route::post('subscribers/bulk-action', [\App\Http\Controllers\Support\SubscriberController::class, 'bulkAction'])->name('subscribers.bulk-action');
             Route::patch('subscribers/{subscriber}/toggle', [\App\Http\Controllers\Support\SubscriberController::class, 'toggleStatus'])->name('subscribers.toggle');
             Route::resource('subscribers', \App\Http\Controllers\Support\SubscriberController::class)->only(['index', 'destroy']);
+
+            // Live Alerts Poller Heartbeat
+            Route::get('live-alerts', [\App\Http\Controllers\StaffNotificationController::class, 'liveOrders'])->name('live-alerts');
         });
     });
 
@@ -301,6 +307,9 @@ $registerStaffRoutes = function () {
             Route::post('orders/{order}/send-otp-whatsapp', [\App\Http\Controllers\Delivery\DeliveryDashboardController::class, 'sendOtpWhatsApp'])->name('orders.send-otp-whatsapp');
             Route::post('orders/{order}/complete', [\App\Http\Controllers\Delivery\DeliveryDashboardController::class, 'completeDelivery'])->name('orders.complete');
             Route::post('orders/{order}/report-issue', [\App\Http\Controllers\Delivery\DeliveryDashboardController::class, 'reportIssue'])->name('orders.report-issue');
+
+            // Live Alerts Poller Heartbeat (Order assignment alerts)
+            Route::get('live-alerts', [\App\Http\Controllers\StaffNotificationController::class, 'liveOrders'])->name('live-alerts');
         });
     });
 };
