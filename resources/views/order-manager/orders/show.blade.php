@@ -740,14 +740,27 @@
                         @endif
 
                         <div class="d-flex justify-content-between mb-1.5 small text-secondary">
-                            <span>Shipping Charge:</span>
-                            <span class="text-success fw-bold">FREE</span>
+                            <span>Delivery Charges:</span>
+                            @if((float) $order->shipping_charge > 0)
+                                <span class="fw-bold text-dark font-monospace">+₹{{ number_format($order->shipping_charge, 2) }}</span>
+                            @else
+                                <span class="badge bg-success bg-opacity-10 text-success fw-bold rounded-pill px-2">FREE</span>
+                            @endif
                         </div>
+
+                        @if((float) $order->cod_fee > 0)
+                            <div class="d-flex justify-content-between mb-1.5 small text-secondary">
+                                <span><i class="bi bi-cash-stack me-1"></i>COD Handling Fee:</span>
+                                <span class="fw-bold text-dark font-monospace">+₹{{ number_format($order->cod_fee, 2) }}</span>
+                            </div>
+                        @endif
 
                         <hr class="my-2 border-secondary-subtle">
 
                         <div class="d-flex justify-content-between align-items-center">
-                            <span class="fw-bold text-dark" style="font-size: 0.95rem;">Grand Total:</span>
+                            <span class="fw-bold text-dark" style="font-size: 0.95rem;">
+                                {{ $order->payment_status === 'paid' ? 'Grand Total Paid:' : 'Grand Total Payable:' }}
+                            </span>
                             <span class="h4 fw-extrabold text-primary mb-0 font-monospace" style="font-size: 1.25rem;">
                                 ₹{{ number_format($order->total_amount, 2) }}
                             </span>

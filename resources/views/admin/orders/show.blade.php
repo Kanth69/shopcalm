@@ -378,26 +378,64 @@
             <div class="row justify-content-end">
                 <div class="col-md-7 col-xl-5">
                     <div class="d-flex justify-content-between mb-2" style="font-size: 0.84rem;">
-                        <span class="text-muted">Cart Subtotal:</span>
-                        <span class="fw-semibold text-dark">₹{{ number_format($order->subtotal_amount, 2) }}</span>
+                        <span class="text-muted">Items Subtotal:</span>
+                        <span class="fw-semibold text-dark font-monospace">₹{{ number_format($order->subtotal_amount, 2) }}</span>
                     </div>
-                    @if($order->coupon_discount_amount > 0)
+
+                    @if((float) $order->coupon_discount_amount > 0)
                     <div class="d-flex justify-content-between mb-2" style="font-size: 0.84rem;">
                         <span class="text-success fw-medium">
                             <i class="bi bi-tag-fill me-1"></i>Coupon Discount @if($order->coupon)({{ $order->coupon->code }})@endif:
                         </span>
-                        <span class="fw-bold text-success">-₹{{ number_format($order->coupon_discount_amount, 2) }}</span>
+                        <span class="fw-bold text-success font-monospace">-₹{{ number_format($order->coupon_discount_amount, 2) }}</span>
                     </div>
                     @endif
+
+                    @if((float) $order->wallet_amount_used > 0)
+                    <div class="d-flex justify-content-between mb-2" style="font-size: 0.84rem;">
+                        <span class="text-primary fw-medium">
+                            <i class="bi bi-wallet2 me-1"></i>ShopCalm Wallet Applied:
+                        </span>
+                        <span class="fw-bold text-primary font-monospace">-₹{{ number_format($order->wallet_amount_used, 2) }}</span>
+                    </div>
+                    @endif
+
                     <div class="d-flex justify-content-between mb-2" style="font-size: 0.84rem;">
                         <span class="text-muted">Delivery Charges:</span>
-                        <span class="fw-semibold text-success">FREE</span>
+                        @if((float) $order->shipping_charge > 0)
+                            <span class="fw-bold text-dark font-monospace">+₹{{ number_format($order->shipping_charge, 2) }}</span>
+                        @else
+                            <span class="badge bg-success bg-opacity-10 text-success fw-bold rounded-pill px-2">FREE</span>
+                        @endif
                     </div>
+
+                    @if((float) $order->cod_fee > 0)
+                    <div class="d-flex justify-content-between mb-2" style="font-size: 0.84rem;">
+                        <span class="text-muted">
+                            <i class="bi bi-cash-stack me-1"></i>COD Handling Fee:
+                        </span>
+                        <span class="fw-bold text-dark font-monospace">+₹{{ number_format($order->cod_fee, 2) }}</span>
+                    </div>
+                    @endif
+
                     <hr class="my-2.5" style="border-color: #e2e8f0;">
+
                     <div class="d-flex justify-content-between align-items-center pt-1">
-                        <span class="fw-bold text-dark" style="font-size: 0.95rem;">Grand Total Paid:</span>
-                        <span class="fw-bolder fs-4" style="color: #6366f1;">₹{{ number_format($order->total_amount, 2) }}</span>
+                        <span class="fw-bold text-dark" style="font-size: 0.95rem;">
+                            {{ $order->payment_status === 'paid' ? 'Grand Total Paid:' : 'Grand Total Payable:' }}
+                        </span>
+                        <span class="fw-bolder fs-4 font-monospace" style="color: #6366f1;">₹{{ number_format($order->total_amount, 2) }}</span>
                     </div>
+
+                    @if($order->payment_status === 'paid')
+                        <div class="text-end text-success small fw-medium mt-1" style="font-size: 0.75rem;">
+                            <i class="bi bi-check-circle-fill me-1"></i>Paid via {{ strtoupper($order->payment_method ?? 'Online') }}
+                        </div>
+                    @else
+                        <div class="text-end text-warning-emphasis small fw-medium mt-1" style="font-size: 0.75rem;">
+                            <i class="bi bi-hourglass-split me-1"></i>To be collected via {{ strtoupper($order->payment_method ?? 'COD') }}
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

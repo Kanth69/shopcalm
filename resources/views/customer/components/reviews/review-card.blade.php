@@ -37,11 +37,5 @@
             @endif
             <span class="text-muted">{{ $review->created_at->format('d M, Y') }}</span>
         </div>
-
-        <div class="d-flex align-items-center gap-3 text-muted">
-            <span class="d-inline-flex align-items-center gap-1 cursor-pointer hover-primary">
-                <i class="bi bi-hand-thumbs-up"></i> <span class="small">Helpful</span>
-            </span>
-        </div>
     </div>
 </div>
