@@ -1,59 +1,69 @@
 @extends('layouts.customer')
 
 @section('title', $brand->name . ' - ' . \App\Models\Setting::get('store_name', 'ShopCalm'))
-@section('meta_description', 'Explore genuine ' . $brand->name . ' products at ' . \App\Models\Setting::get('store_name', 'ShopCalm') . '. Official brand warranty, best prices, and quick delivery.')
+@section('meta_description', 'Shop authentic ' . $brand->name . ' products at ' . \App\Models\Setting::get('store_name', 'ShopCalm') . '. Best deals, verified warranty, and express delivery.')
 
 @section('content')
-<div class="container my-2 my-md-4 px-2 px-md-3">
+<div class="container my-2 my-md-4 px-2 px-md-3 overflow-hidden">
     
     {{-- Brand Top Header (Clean Vibrant Gradient Banner) --}}
     <div class="card border-0 shadow-sm rounded-4 mb-3 mb-md-4 overflow-hidden" 
-         style="background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #7c3aed 100%); box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25) !important;">
+         style="background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 50%, #4f46e5 100%); box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25) !important;">
         <div class="card-body p-2.5 p-sm-3 p-md-4">
-            <div class="d-flex align-items-center justify-content-between gap-2">
-                {{-- Left: Back Arrow + Logo/Icon + Title + Count --}}
+            <div class="d-flex align-items-center justify-content-between gap-2 overflow-hidden">
+                {{-- Left: Back Arrow + Brand Logo/Name + Item Count --}}
                 <div class="d-flex align-items-center min-w-0 flex-grow-1 pe-1">
-                    <a href="{{ route('brands.index') }}" class="btn rounded-circle p-0 d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs me-2" 
-                       style="width: 36px; height: 36px; color: #ffffff; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.35); backdrop-filter: blur(6px);" 
+                    <a href="{{ route('brands.index') }}" class="btn rounded-circle p-0 d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs me-2 me-sm-3" 
+                       style="width: 34px; height: 34px; color: #ffffff; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.35); backdrop-filter: blur(6px);" 
                        title="All Brands">
                         <i class="bi bi-arrow-left fs-6"></i>
                     </a>
+                    
                     @if($brand->logo)
-                        <img src="{{ asset('storage/' . $brand->logo) }}" alt="{{ $brand->name }}" 
-                             class="rounded-3 shadow-xs border p-1 bg-white flex-shrink-0 me-2" style="width: 36px; height: 36px; object-fit: contain;">
+                        <div class="bg-white rounded-3 p-1 me-2 me-sm-3 flex-shrink-0 shadow-xs d-flex align-items-center justify-content-center" 
+                             style="width: 36px; height: 36px;">
+                            <img src="{{ asset('storage/' . $brand->logo) }}" alt="{{ $brand->name }}" 
+                                 class="img-fluid object-fit-contain" style="max-height: 28px; max-width: 28px;">
+                        </div>
                     @endif
-                    <div class="min-w-0 flex-grow-1">
-                        <div class="d-flex align-items-center gap-1.5 gap-sm-2 flex-wrap">
-                            <h1 class="h5 fw-bold text-white mb-0 text-truncate" style="font-size: clamp(1rem, 2.5vw, 1.35rem); letter-spacing: -0.01em;">
+
+                    <div class="min-w-0 flex-grow-1 overflow-hidden">
+                        <div class="d-flex align-items-center gap-1.5 gap-sm-2 flex-nowrap">
+                            <h1 class="h5 fw-bold text-white mb-0 text-truncate" style="font-size: clamp(0.95rem, 3vw, 1.35rem); letter-spacing: -0.01em;">
                                 {{ $brand->name }}
                             </h1>
-                            <span class="badge rounded-pill fw-bold text-nowrap" 
-                                  style="background: rgba(255, 255, 255, 0.22); color: #ffffff; font-size: 0.7rem; border: 1px solid rgba(255, 255, 255, 0.4); backdrop-filter: blur(4px);">
+                            <span class="badge rounded-pill fw-bold text-nowrap flex-shrink-0" 
+                                  style="background: rgba(255, 255, 255, 0.22); color: #ffffff; font-size: 0.68rem; border: 1px solid rgba(255, 255, 255, 0.4); backdrop-filter: blur(4px);">
                                 {{ number_format($products->total()) }} {{ Str::plural('Item', $products->total()) }}
                             </span>
                         </div>
-                        <p class="small mb-0 d-none d-md-block mt-0.5" style="color: rgba(255, 255, 255, 0.9); font-size: 0.8rem;">
+                        <p class="small mb-0 d-none d-md-block mt-0.5 text-truncate" style="color: rgba(255, 255, 255, 0.9); font-size: 0.8rem;">
                             100% Genuine {{ $brand->name }} catalog with verified brand warranty.
                         </p>
                     </div>
                 </div>
 
-                {{-- Right: Quick Action Button --}}
+                {{-- Right: Quick Action Button (Desktop: Full pill button, Mobile: Compact round icon button to prevent overflow) --}}
                 <div class="d-flex align-items-center flex-shrink-0 ms-auto">
-                    <a href="{{ route('shop') }}" class="btn btn-sm rounded-pill px-2.5 px-sm-3 py-1.5 fw-bold shadow-xs transition-all hover-elevate d-inline-flex align-items-center gap-1.5 text-decoration-none" 
-                       style="font-size: 0.82rem; background: #ffffff; color: #4f46e5; border: none;"
+                    <a href="{{ route('shop') }}" class="btn btn-sm rounded-pill px-2.5 px-sm-3 py-1.5 fw-bold shadow-xs transition-all hover-elevate d-none d-sm-inline-flex align-items-center gap-1.5 text-decoration-none" 
+                       style="font-size: 0.82rem; background: #ffffff; color: #0284c7; border: none;"
                        title="Browse Shop">
                         <i class="bi bi-shop fs-6"></i> <span>Shop</span>
+                    </a>
+                    <a href="{{ route('shop') }}" class="btn btn-sm rounded-circle p-0 d-inline-flex d-sm-none align-items-center justify-content-center shadow-xs text-decoration-none flex-shrink-0" 
+                       style="width: 32px; height: 32px; background: #ffffff; color: #0284c7; border: none;"
+                       title="Browse Shop">
+                        <i class="bi bi-shop fs-6"></i>
                     </a>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- 3. Skeleton Loading State --}}
+    {{-- Skeleton Loading State --}}
     @include('components.skeleton-loader', ['count' => 8, 'type' => 'card'])
 
-    {{-- 4. 2-Column Mobile & 4-Column Desktop Product Grid --}}
+    {{-- Product Grid --}}
     <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-2 g-md-3 content-loaded d-none">
         @forelse($products as $product)
             <div class="col d-flex">
@@ -63,7 +73,7 @@
             <div class="col-12 text-center py-5 bg-white rounded-4 border p-4">
                 <i class="bi bi-box-seam display-3 text-muted opacity-25"></i>
                 <h4 class="mt-3 fw-bold text-dark">No Products Found</h4>
-                <p class="text-muted small mb-3">We are currently restocking {{ $brand->name }} products. Please check back shortly!</p>
+                <p class="text-muted small mb-3">We are currently restocking {{ $brand->name }} inventory. Please check back shortly!</p>
                 <a href="{{ route('shop') }}" class="btn btn-primary rounded-pill px-4 fw-semibold btn-sm">
                     <i class="bi bi-arrow-left me-1"></i> Explore All Products
                 </a>
@@ -71,7 +81,7 @@
         @endforelse
     </div>
 
-    {{-- 5. Pagination --}}
+    {{-- Pagination --}}
     @if($products->hasPages())
         <div class="mt-4 mt-md-5 d-flex justify-content-center content-loaded d-none">
             {{ $products->links('pagination::bootstrap-5') }}

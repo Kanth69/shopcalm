@@ -4,42 +4,47 @@
 @section('meta_description', 'Explore top-rated ' . $category->name . ' at ' . \App\Models\Setting::get('store_name', 'ShopCalm') . '. Best prices, authentic brands, and fast doorstep delivery.')
 
 @section('content')
-<div class="container my-2 my-md-4 px-2 px-md-3">
+<div class="container my-2 my-md-4 px-2 px-md-3 overflow-hidden">
     
     {{-- Category Top Header (Clean Vibrant Gradient Banner) --}}
     <div class="card border-0 shadow-sm rounded-4 mb-3 mb-md-4 overflow-hidden" 
          style="background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #7c3aed 100%); box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25) !important;">
         <div class="card-body p-2.5 p-sm-3 p-md-4">
-            <div class="d-flex align-items-center justify-content-between gap-2">
+            <div class="d-flex align-items-center justify-content-between gap-2 overflow-hidden">
                 {{-- Left: Back Arrow + Title + Count --}}
                 <div class="d-flex align-items-center min-w-0 flex-grow-1 pe-1">
                     <a href="{{ route('categories.index') }}" class="btn rounded-circle p-0 d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs me-2 me-sm-3" 
-                       style="width: 36px; height: 36px; color: #ffffff; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.35); backdrop-filter: blur(6px);" 
+                       style="width: 34px; height: 34px; color: #ffffff; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.35); backdrop-filter: blur(6px);" 
                        title="All Categories">
                         <i class="bi bi-arrow-left fs-6"></i>
                     </a>
-                    <div class="min-w-0 flex-grow-1">
-                        <div class="d-flex align-items-center gap-1.5 gap-sm-2 flex-wrap">
-                            <h1 class="h5 fw-bold text-white mb-0 text-truncate" style="font-size: clamp(1rem, 2.5vw, 1.35rem); letter-spacing: -0.01em;">
+                    <div class="min-w-0 flex-grow-1 overflow-hidden">
+                        <div class="d-flex align-items-center gap-1.5 gap-sm-2 flex-nowrap">
+                            <h1 class="h5 fw-bold text-white mb-0 text-truncate" style="font-size: clamp(0.95rem, 3vw, 1.35rem); letter-spacing: -0.01em;">
                                 {{ $category->name }}
                             </h1>
-                            <span class="badge rounded-pill fw-bold text-nowrap" 
-                                  style="background: rgba(255, 255, 255, 0.22); color: #ffffff; font-size: 0.7rem; border: 1px solid rgba(255, 255, 255, 0.4); backdrop-filter: blur(4px);">
+                            <span class="badge rounded-pill fw-bold text-nowrap flex-shrink-0" 
+                                  style="background: rgba(255, 255, 255, 0.22); color: #ffffff; font-size: 0.68rem; border: 1px solid rgba(255, 255, 255, 0.4); backdrop-filter: blur(4px);">
                                 {{ number_format($products->total()) }} {{ Str::plural('Item', $products->total()) }}
                             </span>
                         </div>
-                        <p class="small mb-0 d-none d-md-block mt-0.5" style="color: rgba(255, 255, 255, 0.9); font-size: 0.8rem;">
+                        <p class="small mb-0 d-none d-md-block mt-0.5 text-truncate" style="color: rgba(255, 255, 255, 0.9); font-size: 0.8rem;">
                             Browse verified {{ strtolower($category->name) }} with authentic brand warranty & fast doorstep delivery.
                         </p>
                     </div>
                 </div>
 
-                {{-- Right: Quick Action Button --}}
+                {{-- Right: Quick Action Button (Desktop: Full pill button, Mobile: Compact round icon button to prevent overflow) --}}
                 <div class="d-flex align-items-center flex-shrink-0 ms-auto">
-                    <a href="{{ route('shop') }}" class="btn btn-sm rounded-pill px-2.5 px-sm-3 py-1.5 fw-bold shadow-xs transition-all hover-elevate d-inline-flex align-items-center gap-1.5 text-decoration-none" 
+                    <a href="{{ route('shop') }}" class="btn btn-sm rounded-pill px-2.5 px-sm-3 py-1.5 fw-bold shadow-xs transition-all hover-elevate d-none d-sm-inline-flex align-items-center gap-1.5 text-decoration-none" 
                        style="font-size: 0.82rem; background: #ffffff; color: #4f46e5; border: none;"
                        title="Browse Shop">
                         <i class="bi bi-shop fs-6"></i> <span>Shop</span>
+                    </a>
+                    <a href="{{ route('shop') }}" class="btn btn-sm rounded-circle p-0 d-inline-flex d-sm-none align-items-center justify-content-center shadow-xs text-decoration-none flex-shrink-0" 
+                       style="width: 32px; height: 32px; background: #ffffff; color: #4f46e5; border: none;"
+                       title="Browse Shop">
+                        <i class="bi bi-shop fs-6"></i>
                     </a>
                 </div>
             </div>
