@@ -146,13 +146,13 @@
 
 <!-- 2. HIGH-IMPACT MOBILE & DESKTOP OFFERS SHOWCASE (ALL LIVE DEALS DECK) -->
 @if($allOffers->count() > 0)
-<div class="mb-3 mb-md-4">
-    <div class="d-flex align-items-center justify-content-between mb-2 px-0.5">
+<div class="mb-4 mb-md-5">
+    <div class="d-flex align-items-center justify-content-between mb-2.5 mb-md-3 px-0.5">
         <div class="d-flex align-items-center gap-1.5">
-            <span class="d-inline-flex align-items-center justify-content-center rounded-circle text-primary" style="width: 22px; height: 22px; background: rgba(99, 102, 241, 0.12); font-size: 0.78rem;">
+            <span class="d-inline-flex align-items-center justify-content-center rounded-circle text-primary" style="width: 24px; height: 24px; background: rgba(99, 102, 241, 0.12); font-size: 0.8rem;">
                 <i class="bi bi-lightning-charge-fill"></i>
             </span>
-            <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.9rem; letter-spacing: -0.01em;">
+            <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.92rem; letter-spacing: -0.01em;">
                 Exclusive Deals Zone
             </h6>
             <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.65rem;">
@@ -160,7 +160,7 @@
             </span>
         </div>
         @if(request('offer_id'))
-            <a href="{{ route('offers.index') }}" class="offer-ajax-link text-danger small fw-bold text-decoration-none d-inline-flex align-items-center gap-1" style="font-size: 0.75rem;">
+            <a href="{{ route('offers.index') }}" class="offer-ajax-link text-danger small fw-bold text-decoration-none d-inline-flex align-items-center gap-1 px-2.5 py-1 rounded-pill transition-all" style="font-size: 0.74rem; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2);">
                 <i class="bi bi-x-circle-fill"></i> <span>Reset Filter</span>
             </a>
         @endif
@@ -287,7 +287,7 @@
 @endif
 
 <!-- 3. DEAL PRODUCTS GRID -->
-<div id="offers-products-heading" class="d-flex justify-content-between align-items-center mb-2.5 mb-md-3.5 flex-wrap gap-2">
+<div id="offers-products-heading" class="d-flex justify-content-between align-items-center pt-2 pt-md-3 mb-3 mb-md-4 flex-wrap gap-2">
     <div class="d-flex align-items-center gap-2">
         <h4 class="fw-bold mb-0 text-dark" style="letter-spacing: -0.02em; font-size: clamp(1.05rem, 2.5vw, 1.3rem);">
             @if($selectedOffer)
@@ -303,7 +303,7 @@
     
     @if($selectedOffer)
         <div>
-            <a href="{{ route('offers.index') }}" class="offer-ajax-link btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center gap-1" style="font-size: 0.74rem;">
+            <a href="{{ route('offers.index') }}" class="offer-ajax-link btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fw-semibold d-inline-flex align-items-center gap-1 shadow-2xs" style="font-size: 0.76rem;">
                 <i class="bi bi-arrow-left"></i> View All Deals
             </a>
         </div>
@@ -311,7 +311,7 @@
 </div>
 
 @if($products->count() > 0)
-    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-2 g-md-3">
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-2.5 g-md-3">
         @foreach($products as $product)
             <div class="col d-flex align-items-stretch">
                 @include('customer.components.product-card', ['product' => $product])
