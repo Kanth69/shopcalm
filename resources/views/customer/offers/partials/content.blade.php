@@ -172,25 +172,30 @@
         @php $isAllActive = !request('offer_id'); @endphp
         <a href="{{ route('offers.index') }}" 
            class="offer-ajax-link card border-0 rounded-4 text-decoration-none flex-shrink-0 scroll-snap-align-start transition-all hover-elevate p-2.5 d-flex flex-column justify-content-between position-relative overflow-hidden shadow-xs" 
-           style="width: 135px; min-width: 135px; height: 105px; background: {{ $isAllActive ? 'linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%)' : '#ffffff' }}; border: {{ $isAllActive ? '2.5px solid #6366f1' : '1px solid #e2e8f0' }} !important; color: {{ $isAllActive ? '#ffffff' : '#1e293b' }};"
-           data-offer-id="">
+           style="width: 135px; min-width: 135px; height: 105px; background: {{ $isAllActive ? 'linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%)' : 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}; border: {{ $isAllActive ? '2.5px solid #34d399' : '1px solid rgba(255, 255, 255, 0.18)' }} !important; box-shadow: {{ $isAllActive ? '0 4px 15px rgba(52, 211, 153, 0.35)' : 'none' }}; color: #ffffff;"
+           data-offer-id=""
+           title="Show all offers and products">
             <div class="d-flex align-items-center justify-content-between">
-                <span class="badge rounded-circle p-1.5 d-inline-flex align-items-center justify-content-center {{ $isAllActive ? 'bg-warning text-dark' : 'bg-primary bg-opacity-10 text-primary' }}" style="width: 28px; height: 28px;">
+                <span class="badge rounded-circle p-1.5 d-inline-flex align-items-center justify-content-center {{ $isAllActive ? 'bg-warning text-dark' : 'bg-white bg-opacity-10 text-white' }}" style="width: 26px; height: 26px;">
                     <i class="bi bi-stars fs-6"></i>
                 </span>
                 @if($isAllActive)
-                    <span class="badge bg-success bg-opacity-25 text-success rounded-pill px-1.5 py-0.5 fw-bold" style="font-size: 0.6rem;">
-                        <i class="bi bi-check2"></i>
+                    <span class="badge bg-success text-white rounded-pill px-1.5 py-0.5 fw-bold" style="font-size: 0.6rem;">
+                        <i class="bi bi-check2"></i> ACTIVE
+                    </span>
+                @else
+                    <span class="badge rounded-pill px-1.5 py-0.5 fw-semibold" style="background: rgba(255, 255, 255, 0.12); color: #94a3b8; font-size: 0.58rem;">
+                        <i class="bi bi-arrow-repeat"></i> ALL
                     </span>
                 @endif
             </div>
 
             <div>
-                <div class="fw-bold mb-0 text-truncate" style="font-size: 0.85rem;">
+                <div class="fw-bold mb-0 text-truncate text-white" style="font-size: 0.85rem;">
                     All Deals
                 </div>
-                <div class="small {{ $isAllActive ? 'text-white text-opacity-75' : 'text-muted' }}" style="font-size: 0.68rem;">
-                    All Products
+                <div class="small text-white text-opacity-70" style="font-size: 0.68rem;">
+                    {{ $isAllActive ? 'Entire Catalog' : 'Show All Items' }}
                 </div>
             </div>
         </a>
