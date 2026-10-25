@@ -33,8 +33,8 @@ class ContactController extends Controller
                 'string',
                 function ($attribute, $value, $fail) {
                     $wordCount = count(preg_split('/\s+/', trim($value), -1, PREG_SPLIT_NO_EMPTY));
-                    if ($wordCount > 250) {
-                        $fail("The message must not exceed 250 words (currently {$wordCount} words).");
+                    if ($wordCount > 50) {
+                        $fail("The message must not exceed 50 words (currently {$wordCount} words).");
                     }
                 },
             ],
@@ -43,12 +43,18 @@ class ContactController extends Controller
             'mobile.required' => 'Please enter your 10-digit mobile number.',
             'mobile.regex' => 'Please enter a valid 10-digit mobile number.',
             'email.email' => 'Please enter a valid email address.',
-            'subject.required' => 'Please select an inquiry subject.',
-            'message.required' => 'Please enter your message.',
+            'subject.required' => 'Please select an issue category.',
+            'message.required' => 'Please enter your message (maximum 50 words).',
         ]);
 
         // Save enquiry directly to Customer Support portal table (contact_enquiries)
         ContactEnquiry::create($validated);
+
+        // If logged-in user profile lacks email, update it with provided email
+        $authUser = auth('customer')->user() ?? auth()->user();
+        if ($authUser && empty($authUser->email) && !empty($validated['email'])) {
+            $authUser->update(['email' => strtolower(trim($validated['email']))]);
+        }
 
         if ($request->ajax() || $request->wantsJson() || $request->is('api/*')) {
             return response()->json([

@@ -271,6 +271,10 @@
 
                 @php
                     $authUser = Auth::guard('customer')->user() ?? Auth::user();
+                    $hasAuthName = !empty($authUser?->name);
+                    $authMobile = $authUser?->mobile_number ?? ($authUser?->phone ?? '');
+                    $hasAuthMobile = !empty($authMobile);
+                    $hasAuthEmail = !empty($authUser?->email);
                 @endphp
 
                 <form action="{{ route('page.contact.submit') }}" method="POST" id="customerContactForm">
@@ -278,23 +282,44 @@
                     <div class="row g-3 g-md-4">
                         <div class="col-md-6">
                             <label for="contact_name" class="form-label fw-bold small" style="color: #0f172a;">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control contact-input @error('name') is-invalid @enderror" id="contact_name" name="name" value="{{ old('name', $authUser->name ?? '') }}" placeholder="e.g. Rahul Sharma" required>
+                            <input type="text" class="form-control contact-input @error('name') is-invalid @enderror" id="contact_name" name="name" 
+                                   value="{{ old('name', $authUser->name ?? '') }}" placeholder="e.g. Rahul Sharma" required
+                                   style="{{ $hasAuthName ? 'background-color: #f1f5f9; cursor: not-allowed;' : '' }}"
+                                   @if($hasAuthName) readonly @endif>
                             @error('name')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="col-md-6">
-                            <label for="contact_mobile" class="form-label fw-bold small" style="color: #0f172a;">Mobile Number <span class="text-danger">*</span></label>
-                            <input type="tel" class="form-control contact-input @error('mobile') is-invalid @enderror" id="contact_mobile" name="mobile" value="{{ old('mobile', $authUser->mobile_number ?? ($authUser->phone ?? '')) }}" placeholder="10-digit mobile number" pattern="[0-9]{10}" maxlength="10" minlength="10" inputmode="numeric" required>
+                            <label for="contact_mobile" class="form-label fw-bold small" style="color: #0f172a;">
+                                Mobile Number <span class="text-danger">*</span>
+                                @if($hasAuthMobile)<small class="text-success fw-semibold"><i class="bi bi-shield-check"></i> Verified</small>@endif
+                            </label>
+                            <input type="tel" class="form-control contact-input @error('mobile') is-invalid @enderror" id="contact_mobile" name="mobile" 
+                                   value="{{ old('mobile', $authMobile) }}" placeholder="10-digit mobile number" pattern="[0-9]{10}" maxlength="10" minlength="10" inputmode="numeric" required
+                                   style="{{ $hasAuthMobile ? 'background-color: #f1f5f9; cursor: not-allowed;' : '' }}"
+                                   @if($hasAuthMobile) readonly @endif>
                             @error('mobile')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="col-md-6">
-                            <label for="contact_email" class="form-label fw-bold small" style="color: #0f172a;">Email Address <small class="text-muted fw-normal">(Optional)</small></label>
-                            <input type="email" class="form-control contact-input @error('email') is-invalid @enderror" id="contact_email" name="email" value="{{ old('email', $authUser->email ?? '') }}" placeholder="name@example.com (Optional)">
+                            <label for="contact_email" class="form-label fw-bold small" style="color: #0f172a;">
+                                Email Address
+                                @if($hasAuthEmail)
+                                    <small class="text-success fw-semibold"><i class="bi bi-shield-check"></i> Verified</small>
+                                @elseif($authUser)
+                                    <small class="text-primary fw-semibold"><i class="bi bi-pencil-square"></i> Please enter your email</small>
+                                @else
+                                    <small class="text-muted fw-normal">(Optional)</small>
+                                @endif
+                            </label>
+                            <input type="email" class="form-control contact-input @error('email') is-invalid @enderror" id="contact_email" name="email" 
+                                   value="{{ old('email', $authUser->email ?? '') }}" placeholder="{{ $hasAuthEmail ? 'name@example.com' : 'Enter your email address' }}"
+                                   style="{{ $hasAuthEmail ? 'background-color: #f1f5f9; cursor: not-allowed;' : '' }}"
+                                   @if($hasAuthEmail) readonly @endif>
                             @error('email')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -303,11 +328,13 @@
                         <div class="col-md-6">
                             <label for="contact_subject" class="form-label fw-bold small" style="color: #0f172a;">Inquiry Subject <span class="text-danger">*</span></label>
                             <select class="form-select contact-input @error('subject') is-invalid @enderror" id="contact_subject" name="subject" required>
-                                <option value="" selected disabled>Select inquiry type</option>
+                                <option value="" selected disabled>-- Select an issue category --</option>
                                 <option value="Order & Delivery Tracking" {{ old('subject') === 'Order & Delivery Tracking' ? 'selected' : '' }}>Order & Delivery Tracking</option>
-                                <option value="Returns & Refunds Request" {{ old('subject') === 'Returns & Refunds Request' ? 'selected' : '' }}>Returns & Refunds Request</option>
-                                <option value="Product Details & Stock" {{ old('subject') === 'Product Details & Stock' ? 'selected' : '' }}>Product Details & Stock</option>
+                                <option value="Wrong or Damaged Item Received" {{ old('subject') === 'Wrong or Damaged Item Received' ? 'selected' : '' }}>Wrong or Damaged Item Received</option>
+                                <option value="Cancellation & Refund Request" {{ old('subject') === 'Cancellation & Refund Request' ? 'selected' : '' }}>Cancellation & Refund Request</option>
                                 <option value="Payment & Discount Coupons" {{ old('subject') === 'Payment & Discount Coupons' ? 'selected' : '' }}>Payment & Discount Coupons</option>
+                                <option value="Product Details & Quality Inquiry" {{ old('subject') === 'Product Details & Quality Inquiry' ? 'selected' : '' }}>Product Details & Quality Inquiry</option>
+                                <option value="Account & Profile Assistance" {{ old('subject') === 'Account & Profile Assistance' ? 'selected' : '' }}>Account & Profile Assistance</option>
                                 <option value="Other Assistance" {{ old('subject') === 'Other Assistance' ? 'selected' : '' }}>Other Assistance</option>
                             </select>
                             @error('subject')
@@ -319,10 +346,10 @@
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <label for="contact_message" class="form-label fw-bold small mb-0" style="color: #0f172a;">Detailed Message <span class="text-danger">*</span></label>
                                 <span id="wordCountBadge" class="badge bg-light text-muted border font-monospace" style="font-size: 0.75rem;">
-                                    <span id="wordCount">0</span> / 250 words
+                                    <span id="wordCount">0</span> / 50 words
                                 </span>
                             </div>
-                            <textarea class="form-control contact-input @error('message') is-invalid @enderror" id="contact_message" name="message" rows="5" placeholder="Please describe how our team can help you (Maximum 250 words)..." required>{{ old('message') }}</textarea>
+                            <textarea class="form-control contact-input @error('message') is-invalid @enderror" id="contact_message" name="message" rows="4" placeholder="Please describe how our team can help you (Maximum 50 words)..." required>{{ old('message') }}</textarea>
                             <div class="d-flex justify-content-between align-items-center mt-1">
                                 <small class="text-muted" style="font-size: 0.76rem;">Brief and clear descriptions help us resolve your issue faster.</small>
                                 <small id="wordCountStatus" class="small" style="font-size: 0.76rem;"></small>
@@ -392,7 +419,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const wordCountSpan = document.getElementById('wordCount');
     const wordCountBadge = document.getElementById('wordCountBadge');
     const wordCountStatus = document.getElementById('wordCountStatus');
-    const maxWords = 250;
+    const maxWords = 50;
 
     if (!form) return;
 
@@ -419,10 +446,10 @@ document.addEventListener('DOMContentLoaded', function() {
             messageInput.value = trimmed;
             count = maxWords;
             if (wordCountStatus) {
-                wordCountStatus.textContent = 'Maximum 250 words limit reached';
+                wordCountStatus.textContent = 'Maximum 50 words limit reached';
                 wordCountStatus.className = 'text-danger small fw-semibold';
             }
-        } else if (count >= maxWords - 20) {
+        } else if (count >= maxWords - 5) {
             if (wordCountStatus) {
                 wordCountStatus.textContent = `${maxWords - count} words remaining`;
                 wordCountStatus.className = 'text-warning small fw-semibold';
@@ -438,7 +465,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (count >= maxWords) {
             wordCountBadge.className = 'badge bg-danger text-white border font-monospace';
-        } else if (count >= maxWords - 20) {
+        } else if (count >= maxWords - 5) {
             wordCountBadge.className = 'badge bg-warning text-dark border font-monospace';
         } else if (count > 0) {
             wordCountBadge.className = 'badge bg-primary-subtle text-primary border border-primary-subtle font-monospace';

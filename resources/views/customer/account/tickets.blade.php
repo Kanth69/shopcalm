@@ -277,35 +277,62 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <form action="{{ route('page.contact.submit') }}" method="POST" class="d-flex flex-column" style="max-height: 100%; min-height: 0; overflow: hidden; flex: 1 1 auto;">
+            @php
+                $hasName = !empty($user?->name);
+                $userMobile = $user?->mobile_number ?? ($user?->phone ?? '');
+                $hasMobile = !empty($userMobile);
+                $hasEmail = !empty($user?->email);
+            @endphp
+
+            <form action="{{ route('page.contact.submit') }}" method="POST" id="newTicketForm" class="d-flex flex-column" style="max-height: 100%; min-height: 0; overflow: hidden; flex: 1 1 auto;">
                 @csrf
                 <div class="modal-body p-3 p-md-4">
                     <div class="row g-2">
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-bold text-dark mb-1" style="font-size: 0.78rem;">Your Name <span class="text-danger">*</span></label>
-                            <input type="text" name="name" class="form-control rounded-3" value="{{ old('name', $user->name) }}" required style="font-size: 0.85rem;">
+                            <input type="text" name="name" class="form-control rounded-3" value="{{ old('name', $user->name) }}" required style="font-size: 0.85rem; {{ $hasName ? 'background-color: #f1f5f9; cursor: not-allowed;' : '' }}" @if($hasName) readonly @endif>
                         </div>
                         <div class="col-12 col-sm-6">
-                            <label class="form-label small fw-bold text-dark mb-1" style="font-size: 0.78rem;">Mobile Number <span class="text-danger">*</span></label>
-                            <input type="tel" name="mobile" class="form-control rounded-3" value="{{ old('mobile', $user->mobile_number ?? ($user->phone ?? '')) }}" required pattern="[0-9]{10}" maxlength="10" minlength="10" inputmode="numeric" placeholder="10-digit mobile number" style="font-size: 0.85rem;">
+                            <label class="form-label small fw-bold text-dark mb-1" style="font-size: 0.78rem;">
+                                Mobile Number <span class="text-danger">*</span>
+                                @if($hasMobile)<small class="text-success fw-semibold"><i class="bi bi-shield-check"></i> Verified</small>@endif
+                            </label>
+                            <input type="tel" name="mobile" class="form-control rounded-3" value="{{ old('mobile', $userMobile) }}" required pattern="[0-9]{10}" maxlength="10" minlength="10" inputmode="numeric" placeholder="10-digit mobile number" style="font-size: 0.85rem; {{ $hasMobile ? 'background-color: #f1f5f9; cursor: not-allowed;' : '' }}" @if($hasMobile) readonly @endif>
                         </div>
                         <div class="col-12">
-                            <label class="form-label small fw-bold text-dark mb-1" style="font-size: 0.78rem;">Email Address <small class="text-muted fw-normal">(Optional)</small></label>
-                            <input type="email" name="email" class="form-control rounded-3" value="{{ old('email', $user->email) }}" placeholder="name@example.com (Optional)" style="font-size: 0.85rem;">
+                            <label class="form-label small fw-bold text-dark mb-1" style="font-size: 0.78rem;">
+                                Email Address 
+                                @if($hasEmail)
+                                    <small class="text-success fw-semibold"><i class="bi bi-shield-check"></i> Verified</small>
+                                @else
+                                    <small class="text-primary fw-semibold"><i class="bi bi-pencil-square"></i> Please enter your email</small>
+                                @endif
+                            </label>
+                            <input type="email" name="email" class="form-control rounded-3" value="{{ old('email', $user->email) }}" placeholder="{{ $hasEmail ? 'name@example.com' : 'Enter your email address' }}" style="font-size: 0.85rem; {{ $hasEmail ? 'background-color: #f1f5f9; cursor: not-allowed;' : '' }}" @if($hasEmail) readonly @endif>
                         </div>
                         <div class="col-12">
-                            <label class="form-label small fw-bold text-dark mb-1" style="font-size: 0.78rem;">Subject / Issue Category <span class="text-danger">*</span></label>
-                            <input type="text" name="subject" class="form-control rounded-3" value="{{ old('subject') }}" placeholder="e.g., Order Delivery Delay / Wrong Item / Refund status" required style="font-size: 0.85rem;">
+                            <label class="form-label small fw-bold text-dark mb-1" style="font-size: 0.78rem;">Select Issue / Category <span class="text-danger">*</span></label>
+                            <select class="form-select rounded-3" name="subject" required style="font-size: 0.85rem;">
+                                <option value="" disabled selected>-- Select an issue category --</option>
+                                <option value="Order & Delivery Tracking" {{ old('subject') === 'Order & Delivery Tracking' ? 'selected' : '' }}>Order & Delivery Tracking</option>
+                                <option value="Wrong or Damaged Item Received" {{ old('subject') === 'Wrong or Damaged Item Received' ? 'selected' : '' }}>Wrong or Damaged Item Received</option>
+                                <option value="Cancellation & Refund Request" {{ old('subject') === 'Cancellation & Refund Request' ? 'selected' : '' }}>Cancellation & Refund Request</option>
+                                <option value="Payment & Discount Coupons" {{ old('subject') === 'Payment & Discount Coupons' ? 'selected' : '' }}>Payment & Discount Coupons</option>
+                                <option value="Product Details & Quality Inquiry" {{ old('subject') === 'Product Details & Quality Inquiry' ? 'selected' : '' }}>Product Details & Quality Inquiry</option>
+                                <option value="Account & Profile Assistance" {{ old('subject') === 'Account & Profile Assistance' ? 'selected' : '' }}>Account & Profile Assistance</option>
+                                <option value="Other Assistance" {{ old('subject') === 'Other Assistance' ? 'selected' : '' }}>Other Assistance</option>
+                            </select>
                         </div>
                         <div class="col-12">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <label class="form-label small fw-bold text-dark mb-0" style="font-size: 0.78rem;">Message Details <span class="text-danger">*</span></label>
                                 <span id="modalWordCountBadge" class="badge bg-light text-muted border font-monospace" style="font-size: 0.7rem;">
-                                    <span id="modalWordCount">0</span> / 250 words
+                                    <span id="modalWordCount">0</span> / 50 words
                                 </span>
                             </div>
-                            <textarea id="modalTicketMessage" name="message" class="form-control rounded-3" rows="4" placeholder="Please explain your question or issue (Maximum 250 words)..." required style="font-size: 0.85rem;">{{ old('message') }}</textarea>
-                            <div class="d-flex justify-content-end mt-1">
+                            <textarea id="modalTicketMessage" name="message" class="form-control rounded-3" rows="3" placeholder="Please describe your issue (Maximum 50 words)..." required style="font-size: 0.85rem;">{{ old('message') }}</textarea>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <small class="text-muted" style="font-size: 0.72rem;">Brief and clear descriptions help us resolve your issue faster.</small>
                                 <small id="modalWordCountStatus" class="small" style="font-size: 0.72rem;"></small>
                             </div>
                         </div>
@@ -314,7 +341,7 @@
 
                 <div class="modal-footer bg-light py-2 px-3 px-md-4 border-top d-flex justify-content-between align-items-center" style="flex-shrink: 0; position: sticky; bottom: 0; z-index: 10; background: #ffffff !important;">
                     <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 fw-semibold" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 py-1.5 fw-bold shadow-xs d-inline-flex align-items-center gap-2"
+                    <button type="submit" id="btnSubmitTicket" class="btn btn-sm btn-primary rounded-pill px-4 py-1.5 fw-bold shadow-xs d-inline-flex align-items-center gap-2"
                             style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border: none;">
                         <i class="bi bi-send-fill me-1"></i> <span>Submit Ticket</span>
                     </button>
@@ -344,9 +371,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalWordSpan = document.getElementById('modalWordCount');
     const modalBadge = document.getElementById('modalWordCountBadge');
     const modalStatus = document.getElementById('modalWordCountStatus');
-    const maxWords = 250;
+    const ticketForm = document.getElementById('newTicketForm');
+    const maxWords = 50;
 
     if (!modalMsg) return;
+
+    function countWords(str) {
+        if (!str || !str.trim()) return 0;
+        return str.trim().split(/\s+/).filter(Boolean).length;
+    }
 
     function updateModalWordCount() {
         const text = modalMsg.value;
@@ -357,10 +390,10 @@ document.addEventListener('DOMContentLoaded', function() {
             modalMsg.value = words.slice(0, maxWords).join(' ');
             count = maxWords;
             if (modalStatus) {
-                modalStatus.textContent = 'Maximum 250 words reached';
+                modalStatus.textContent = 'Maximum 50 words reached';
                 modalStatus.className = 'text-danger small fw-semibold';
             }
-        } else if (count >= maxWords - 20) {
+        } else if (count >= maxWords - 5) {
             if (modalStatus) {
                 modalStatus.textContent = `${maxWords - count} words remaining`;
                 modalStatus.className = 'text-warning small fw-semibold';
@@ -377,7 +410,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (modalBadge) {
             if (count >= maxWords) {
                 modalBadge.className = 'badge bg-danger text-white border font-monospace';
-            } else if (count >= maxWords - 20) {
+            } else if (count >= maxWords - 5) {
                 modalBadge.className = 'badge bg-warning text-dark border font-monospace';
             } else if (count > 0) {
                 modalBadge.className = 'badge bg-primary-subtle text-primary border border-primary-subtle font-monospace';
@@ -392,6 +425,17 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(updateModalWordCount, 20);
     });
     updateModalWordCount();
+
+    if (ticketForm) {
+        ticketForm.addEventListener('submit', function(e) {
+            if (countWords(modalMsg.value) > maxWords) {
+                e.preventDefault();
+                alert('Please shorten your message to 50 words or less.');
+                modalMsg.focus();
+                return false;
+            }
+        });
+    }
 });
 </script>
 
