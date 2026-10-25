@@ -52,7 +52,7 @@
                         <a href="{{ route('offers.index', ['offer_id' => $offer->id]) }}" class="text-decoration-none text-white d-block">
                             <div class="w-100 position-relative d-flex align-items-center offers-slide-item" style="background: {{ $colorGradient }}; cursor: pointer;">
                                 @if($hasImage)
-                                    {{-- Full Graphic Image Only: Edge-to-edge, zero clutter --}}
+                                    {{-- Full Graphic Image Only: Edge-to-edge, zero text clutter --}}
                                     <img src="{{ $imgPath }}" class="w-100 h-100 object-fit-cover position-absolute" alt="{{ $offer->title }}" style="inset: 0;">
                                 @else
                                     {{-- Vibrant Color Gradient with Decorative Watermark --}}
@@ -103,8 +103,21 @@
 </section>
 
 <style>
-    .offers-slide-item { min-height: 200px !important; }
-    @media (min-width: 768px) { .offers-slide-item { min-height: 300px !important; } }
+    .offers-slide-item {
+        min-height: 200px !important;
+    }
+    @media (max-width: 767.98px) {
+        .offers-slide-item {
+            min-height: 140px !important;
+            max-height: 200px !important;
+            aspect-ratio: 16 / 7;
+        }
+    }
+    @media (min-width: 768px) {
+        .offers-slide-item {
+            min-height: 300px !important;
+        }
+    }
     .offers-section .object-fit-cover { object-fit: cover; }
     .carousel-indicators .active.offer-indicator { background-color: var(--bs-primary) !important; opacity: 1 !important; }
 </style>

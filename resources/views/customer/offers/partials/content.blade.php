@@ -1,6 +1,14 @@
-<!-- 1. HERO CAMPAIGN BANNER (RESPONSIVE IMAGE BANNER OR TYPOGRAPHIC CARD) -->
+<!-- 1. HERO CAMPAIGN BANNER (RESPONSIVE IMAGE BANNER OR TYPOGRAPHIC FALLBACK) -->
 @php
-    $heroOffer = $selectedOffer ?: $liveMegaSale;
+    $heroOffer = $selectedOffer;
+    if (!$heroOffer) {
+        if ($liveMegaSale && !empty($liveMegaSale->banner_image)) {
+            $heroOffer = $liveMegaSale;
+        } else {
+            $heroOffer = $allOffers->first(fn($o) => !empty($o->banner_image)) ?: $liveMegaSale ?: $allOffers->first();
+        }
+    }
+
     $bannerImgUrl = null;
     if ($heroOffer && !empty($heroOffer->banner_image)) {
         $rawBanner = trim($heroOffer->banner_image);
@@ -12,7 +20,7 @@
 
 @if($heroOffer && $bannerImgUrl)
     {{-- ================================================================= --}}
-    {{-- CASE 1: FULL HERO GRAPHIC BANNER (UNOBSTRUCTED, EDGE-TO-EDGE)    --}}
+    {{-- CASE 1: FULL HERO GRAPHIC BANNER (UNOBSTRUCTED, ZERO TEXT OVERLAY)--}}
     {{-- ================================================================= --}}
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3 mb-md-4 position-relative bg-light offers-page-hero">
         <img src="{{ $bannerImgUrl }}" 
@@ -163,34 +171,27 @@
         {{-- Card 0: "All Deals" Reset Card --}}
         @php $isAllActive = !request('offer_id'); @endphp
         <a href="{{ route('offers.index') }}" 
-           class="offer-ajax-link card border-0 rounded-4 text-decoration-none flex-shrink-0 scroll-snap-align-start transition-all hover-elevate p-3 d-flex flex-column justify-content-between position-relative overflow-hidden shadow-xs" 
-           style="width: 220px; min-width: 220px; height: 130px; background: {{ $isAllActive ? 'linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%)' : '#ffffff' }}; border: {{ $isAllActive ? '2px solid #6366f1' : '1px solid #e2e8f0' }} !important; color: {{ $isAllActive ? '#ffffff' : '#1e293b' }};"
+           class="offer-ajax-link card border-0 rounded-4 text-decoration-none flex-shrink-0 scroll-snap-align-start transition-all hover-elevate p-2.5 d-flex flex-column justify-content-between position-relative overflow-hidden shadow-xs" 
+           style="width: 135px; min-width: 135px; height: 105px; background: {{ $isAllActive ? 'linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%)' : '#ffffff' }}; border: {{ $isAllActive ? '2.5px solid #6366f1' : '1px solid #e2e8f0' }} !important; color: {{ $isAllActive ? '#ffffff' : '#1e293b' }};"
            data-offer-id="">
             <div class="d-flex align-items-center justify-content-between">
-                <span class="badge rounded-pill px-2 py-0.5 fw-bold {{ $isAllActive ? 'bg-warning text-dark' : 'bg-light text-secondary border' }}" style="font-size: 0.65rem;">
-                    <i class="bi bi-stars me-0.5"></i> ALL CATALOG
+                <span class="badge rounded-circle p-1.5 d-inline-flex align-items-center justify-content-center {{ $isAllActive ? 'bg-warning text-dark' : 'bg-primary bg-opacity-10 text-primary' }}" style="width: 28px; height: 28px;">
+                    <i class="bi bi-stars fs-6"></i>
                 </span>
                 @if($isAllActive)
-                    <span class="badge bg-success bg-opacity-25 text-success rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.62rem;">
-                        <i class="bi bi-check2"></i> ACTIVE
+                    <span class="badge bg-success bg-opacity-25 text-success rounded-pill px-1.5 py-0.5 fw-bold" style="font-size: 0.6rem;">
+                        <i class="bi bi-check2"></i>
                     </span>
                 @endif
             </div>
 
             <div>
-                <div class="fw-bold mb-0.5 text-truncate" style="font-size: 0.92rem;">
-                    All Discounted Deals
+                <div class="fw-bold mb-0 text-truncate" style="font-size: 0.85rem;">
+                    All Deals
                 </div>
-                <div class="small {{ $isAllActive ? 'text-white text-opacity-75' : 'text-muted' }}" style="font-size: 0.72rem;">
-                    Browse entire sale catalog
+                <div class="small {{ $isAllActive ? 'text-white text-opacity-75' : 'text-muted' }}" style="font-size: 0.68rem;">
+                    All Products
                 </div>
-            </div>
-
-            <div class="d-flex align-items-center justify-content-between pt-1 border-top {{ $isAllActive ? 'border-white border-opacity-15' : 'border-light' }}">
-                <span class="small fw-semibold {{ $isAllActive ? 'text-white' : 'text-primary' }}" style="font-size: 0.72rem;">
-                    View Products &rarr;
-                </span>
-                <i class="bi bi-arrow-right-circle-fill {{ $isAllActive ? 'text-warning' : 'text-primary' }}"></i>
             </div>
         </a>
 
@@ -198,91 +199,83 @@
         @foreach($allOffers as $offer)
         @php
             $isSelected = request('offer_id') == $offer->id;
-            $discountFormatted = $offer->discount_type === 'PERCENTAGE' 
-                ? (floatval($offer->discount_value) == intval($offer->discount_value) ? intval($offer->discount_value) : number_format($offer->discount_value, 1)) . '% OFF'
-                : 'FLAT ₹' . number_format($offer->discount_value) . ' OFF';
+            $hasCardImage = !empty($offer->banner_image);
+            $cardImgUrl = null;
+            if ($hasCardImage) {
+                $rawCard = trim($offer->banner_image);
+                $cardImgUrl = (str_starts_with($rawCard, 'http://') || str_starts_with($rawCard, 'https://'))
+                    ? $rawCard
+                    : asset('storage/' . $rawCard);
+            }
             $cardTheme = $offer->theme_color ?: '#4f46e5';
-            $badgeIcon = match($offer->type) {
-                'FLASH_DEAL' => '⚡',
-                'MEGA_SALE'  => '🔥',
-                default      => '🏷️'
-            };
         @endphp
-        <a href="{{ $isSelected ? route('offers.index') : route('offers.index', ['offer_id' => $offer->id]) }}" 
-           class="offer-ajax-link card border-0 rounded-4 text-decoration-none flex-shrink-0 scroll-snap-align-start transition-all hover-elevate p-3 d-flex flex-column justify-content-between position-relative overflow-hidden shadow-xs" 
-           style="width: 235px; min-width: 235px; height: 130px; background: linear-gradient(135deg, {{ $cardTheme }} 0%, #1e1b4b 100%); color: #ffffff; border: {{ $isSelected ? '2.5px solid #34d399' : '1px solid rgba(255,255,255,0.15)' }} !important; box-shadow: {{ $isSelected ? '0 8px 20px rgba(16, 185, 129, 0.35)' : 'none' }};"
-           data-offer-id="{{ $offer->id }}">
-            
-            {{-- Top Badge Row --}}
-            <div class="d-flex align-items-center justify-content-between position-relative z-1">
-                <span class="badge rounded-pill px-2 py-0.5 fw-bold" style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(4px); font-size: 0.65rem;">
-                    {{ $badgeIcon }} {{ $offer->badge_text ?: ($offer->type === 'FLASH_DEAL' ? 'FLASH DROP' : 'MEGA DEAL') }}
-                </span>
+
+        @if($hasCardImage)
+            {{-- CASE A: OFFER HAS IMAGE - DISPLAY CLEAN GRAPHIC BANNER CARD WITH ZERO TEXT CLUTTER --}}
+            <a href="{{ $isSelected ? route('offers.index') : route('offers.index', ['offer_id' => $offer->id]) }}" 
+               class="offer-ajax-link card border-0 rounded-4 text-decoration-none flex-shrink-0 scroll-snap-align-start transition-all hover-elevate position-relative overflow-hidden shadow-xs bg-light" 
+               style="width: 200px; min-width: 200px; height: 105px; border: {{ $isSelected ? '3px solid #10b981' : '1px solid #e2e8f0' }} !important; box-shadow: {{ $isSelected ? '0 8px 20px rgba(16, 185, 129, 0.4)' : 'none' }};"
+               data-offer-id="{{ $offer->id }}"
+               title="{{ $offer->title }}">
+                
+                <img src="{{ $cardImgUrl }}" alt="{{ $offer->title }}" class="w-100 h-100 object-fit-cover d-block" style="border-radius: inherit;">
+                
                 @if($isSelected)
-                    <span class="badge rounded-pill px-2 py-0.5 fw-bold text-white shadow-xs" style="background: #10b981; font-size: 0.62rem;">
-                        <i class="bi bi-check-circle-fill me-0.5"></i> ACTIVE
-                    </span>
-                @else
-                    <span class="badge bg-warning text-dark rounded-pill px-2 py-0.5 fw-bolder font-monospace" style="font-size: 0.68rem;">
-                        {{ $discountFormatted }}
-                    </span>
+                    <div class="position-absolute top-0 end-0 m-1.5 z-2">
+                        <span class="badge bg-success text-white rounded-pill px-2 py-0.5 shadow-sm fw-bold d-inline-flex align-items-center gap-1" style="font-size: 0.62rem; backdrop-filter: blur(4px);">
+                            <i class="bi bi-check-circle-fill"></i> ACTIVE
+                        </span>
+                    </div>
                 @endif
-            </div>
+            </a>
 
-            {{-- Offer Title & Discount Tag --}}
-            <div class="position-relative z-1 my-0.5">
-                <div class="fw-bold mb-0.5 text-white text-truncate" style="font-size: 0.92rem;" title="{{ $offer->title }}">
-                    {{ $offer->title }}
-                </div>
-                <div class="d-flex align-items-center gap-1.5 small text-white text-opacity-80" style="font-size: 0.72rem;">
+        @else
+            {{-- CASE B: OFFER HAS NO IMAGE - CLEAN TYPOGRAPHIC GRADIENT CARD FALLBACK --}}
+            @php
+                $discountFormatted = $offer->discount_type === 'PERCENTAGE' 
+                    ? (floatval($offer->discount_value) == intval($offer->discount_value) ? intval($offer->discount_value) : number_format($offer->discount_value, 1)) . '% OFF'
+                    : 'FLAT ₹' . number_format($offer->discount_value) . ' OFF';
+                $badgeIcon = match($offer->type) {
+                    'FLASH_DEAL' => '⚡',
+                    'MEGA_SALE'  => '🔥',
+                    default      => '🏷️'
+                };
+            @endphp
+            <a href="{{ $isSelected ? route('offers.index') : route('offers.index', ['offer_id' => $offer->id]) }}" 
+               class="offer-ajax-link card border-0 rounded-4 text-decoration-none flex-shrink-0 scroll-snap-align-start transition-all hover-elevate p-2.5 d-flex flex-column justify-content-between position-relative overflow-hidden shadow-xs" 
+               style="width: 200px; min-width: 200px; height: 105px; background: linear-gradient(135deg, {{ $cardTheme }} 0%, #1e1b4b 100%); color: #ffffff; border: {{ $isSelected ? '3px solid #10b981' : '1px solid rgba(255,255,255,0.15)' }} !important; box-shadow: {{ $isSelected ? '0 8px 20px rgba(16, 185, 129, 0.35)' : 'none' }};"
+               data-offer-id="{{ $offer->id }}"
+               title="{{ $offer->title }}">
+                
+                <div class="d-flex align-items-center justify-content-between position-relative z-1">
+                    <span class="badge rounded-pill px-2 py-0.5 fw-bold" style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(4px); font-size: 0.62rem;">
+                        {{ $badgeIcon }} {{ $offer->badge_text ?: 'SPECIAL DEAL' }}
+                    </span>
                     @if($isSelected)
-                        <span class="fw-bold text-warning">{{ $discountFormatted }}</span> &bull; 
+                        <span class="badge rounded-pill px-1.5 py-0.5 fw-bold text-white shadow-xs" style="background: #10b981; font-size: 0.6rem;">
+                            <i class="bi bi-check-circle-fill me-0.5"></i> ACTIVE
+                        </span>
+                    @else
+                        <span class="badge bg-warning text-dark rounded-pill px-1.5 py-0.5 fw-bolder font-monospace" style="font-size: 0.65rem;">
+                            {{ $discountFormatted }}
+                        </span>
                     @endif
-                    <span class="text-truncate">Tap to view collection</span>
                 </div>
-            </div>
 
-            {{-- Bottom Action Row --}}
-            <div class="d-flex align-items-center justify-content-between pt-1 border-top border-white border-opacity-15 position-relative z-1">
-                <span class="small fw-bold text-white text-opacity-90" style="font-size: 0.72rem;">
-                    {{ $isSelected ? 'Viewing Deals' : 'Explore Offer' }} &rarr;
-                </span>
-                <i class="bi {{ $isSelected ? 'bi-check-circle-fill text-success' : 'bi-arrow-right-circle text-white' }} fs-6"></i>
-            </div>
-        </a>
-        @endforeach
-    </div>
+                <div class="position-relative z-1">
+                    <div class="fw-bold text-white text-truncate" style="font-size: 0.86rem;">
+                        {{ $offer->title }}
+                    </div>
+                </div>
 
-    {{-- Fast Filter Chips Row --}}
-    <div class="d-flex align-items-center gap-1.5 overflow-x-auto pt-1 pb-1 text-nowrap no-scrollbar" style="scrollbar-width: none; -ms-overflow-style: none;">
-        {{-- All Deals Chip --}}
-        <a href="{{ route('offers.index') }}" 
-           class="offer-ajax-link btn btn-sm rounded-pill px-2.5 py-1 fw-bold d-inline-flex align-items-center gap-1 text-decoration-none shadow-2xs {{ !request('offer_id') ? 'text-white' : 'bg-white border text-dark' }}" 
-           style="font-size: 0.75rem; {{ !request('offer_id') ? 'background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none;' : 'border-color: #e2e8f0 !important;' }}"
-           data-offer-id="">
-            <i class="bi bi-stars {{ !request('offer_id') ? 'text-warning' : 'text-primary' }}" style="font-size: 0.75rem;"></i>
-            <span>All Deals</span>
-        </a>
-
-        @foreach($allOffers as $offer)
-        @php 
-            $isSelected = request('offer_id') == $offer->id; 
-            $discountFormatted = $offer->discount_type === 'PERCENTAGE' 
-                ? (floatval($offer->discount_value) == intval($offer->discount_value) ? intval($offer->discount_value) : number_format($offer->discount_value, 1)) . '% OFF'
-                : '₹' . number_format($offer->discount_value) . ' OFF';
-        @endphp
-        <a href="{{ $isSelected ? route('offers.index') : route('offers.index', ['offer_id' => $offer->id]) }}" 
-           class="offer-ajax-link btn btn-sm rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center gap-1 text-decoration-none shadow-2xs {{ $isSelected ? 'text-white' : 'bg-white border text-dark' }}" 
-           style="font-size: 0.75rem; {{ $isSelected ? 'background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);' : 'border-color: #e2e8f0 !important;' }}"
-           data-offer-id="{{ $offer->id }}">
-            <span class="badge rounded-pill px-1.5 py-0.5 fw-bolder font-monospace" style="background: {{ $isSelected ? '#34d399' : '#dcfce7' }}; color: {{ $isSelected ? '#064e3b' : '#15803d' }}; font-size: 0.65rem;">
-                {{ $discountFormatted }}
-            </span>
-            <span class="text-truncate" style="max-width: 140px;">{{ $offer->title }}</span>
-            @if($isSelected)
-                <i class="bi bi-check-circle-fill text-white ms-0.5" style="font-size: 0.72rem;"></i>
-            @endif
-        </a>
+                <div class="d-flex align-items-center justify-content-between pt-1 border-top border-white border-opacity-15 position-relative z-1">
+                    <span class="small fw-semibold text-white text-opacity-90" style="font-size: 0.68rem;">
+                        {{ $isSelected ? 'Viewing Deals' : 'Explore Offer' }} &rarr;
+                    </span>
+                    <i class="bi {{ $isSelected ? 'bi-check-circle-fill text-success' : 'bi-arrow-right-circle text-white' }}" style="font-size: 0.75rem;"></i>
+                </div>
+            </a>
+        @endif
         @endforeach
     </div>
 </div>
@@ -371,8 +364,8 @@
 }
 @media (max-width: 767.98px) {
     .offers-page-hero {
-        min-height: 150px;
-        max-height: 220px;
+        min-height: 140px;
+        max-height: 200px;
     }
     .offers-hero-img {
         height: auto !important;
