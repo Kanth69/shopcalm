@@ -250,7 +250,7 @@
                     <div class="fs-4 fw-bolder font-monospace {{ $netInHandProfit >= 0 ? 'text-success' : 'text-danger' }}">
                         {{ $netInHandProfit >= 0 ? '+' : '' }}₹{{ number_format($netInHandProfit, 2) }}
                     </div>
-                    <span class="text-muted small" style="font-size: 0.74rem;">After Courier & 2% Fees</span>
+                    <span class="text-muted small" style="font-size: 0.74rem;">After ₹45 Del, ₹5 SMS & 2% Fees</span>
                 </div>
             </div>
             <div class="position-absolute bottom-0 start-0 end-0" style="height: 4px; background: #f59e0b;"></div>

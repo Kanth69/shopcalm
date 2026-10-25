@@ -160,16 +160,17 @@ class FinanceController extends Controller
         $avgTicketSize = $totalRevenue > 0 ? round($totalRevenue / $calcCount, 2) : 0.0;
         $avgProfitPerOrder = $totalGrossProfit != 0 ? round($totalGrossProfit / $calcCount, 2) : 0.0;
 
-        // 4. Unit Economics & Hidden Expenses Breakdown (Using ₹45 fixed courier fulfillment rate)
+        // 4. Unit Economics Breakdown (₹45 Courier, ₹5 SMS/Message, 2% Razorpay prepaid)
         $totalItemsCount = $orders->sum(fn($o) => $o->items->sum('quantity'));
         $estimatedGatewayFees = (float) $orders->sum(function ($o) {
-            return in_array($o->payment_method, ['online', 'doorstep_upi']) ? round($o->total_amount * 0.02, 2) : 0.0; // 2% gateway fee
+            return in_array($o->payment_method, ['online', 'doorstep_upi', 'prepaid']) ? round($o->total_amount * 0.02, 2) : 0.0; // 2% gateway fee
         });
-        $estimatedShippingCosts = $totalFixedDelivery; // ₹45 courier fulfillment fixed as requested
+        $estimatedShippingCosts = $totalFixedDelivery; // ₹45 courier delivery fixed per order
         $totalShippingCollected = (float) $orders->sum('shipping_charge');
         $netShippingCost = max(0.0, $estimatedShippingCosts - $totalShippingCollected);
-        $estimatedPackagingCosts = $ordersCount * 12.0; // ₹12 packaging materials
-        $totalOperatingExpenses = $estimatedGatewayFees + $netShippingCost + $estimatedPackagingCosts;
+        $totalFixedMessage = (float) ($ordersCount * 5.0); // ₹5 fixed message/SMS charge per order
+        $estimatedPackagingCosts = $totalFixedMessage; // Backward compatibility alias
+        $totalOperatingExpenses = $estimatedGatewayFees + $totalFixedDelivery + $totalFixedMessage;
         $netInHandProfit = $totalGrossProfit - $totalOperatingExpenses;
         $netInHandMargin = $totalRevenue > 0 ? round(($netInHandProfit / $totalRevenue) * 100, 1) : 0.0;
 
@@ -306,6 +307,7 @@ class FinanceController extends Controller
             'estimatedGatewayFees',
             'estimatedShippingCosts',
             'netShippingCost',
+            'totalFixedMessage',
             'estimatedPackagingCosts',
             'totalOperatingExpenses',
             'netInHandProfit',
