@@ -258,40 +258,67 @@
     </div>
 </div>
 
-{{-- 3. Revenue & Fee Reconciliation Breakdown Banner (Reflecting recent delivery/COD/wallet additions) --}}
+{{-- 3. Revenue & Price Reconciliation Breakdown Banner (Original Price, Cart Subtotal, Deductions, Net In-Hand) --}}
 <div class="card border-0 shadow-sm rounded-4 p-4 mb-4" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #e2e8f0 !important;">
     <div class="row g-3 align-items-center">
-        <div class="col-md-3">
+        <div class="col-md-2">
             <h6 class="fw-bold text-dark mb-1">
-                <i class="bi bi-calculator text-primary me-1.5"></i>Revenue & Fee Breakdown
+                <i class="bi bi-calculator text-primary me-1.5"></i>Price Breakdown
             </h6>
-            <p class="text-muted small mb-0" style="font-size: 0.78rem;">Detailed price component breakdown including delivery, COD fees & wallet deductions.</p>
+            <p class="text-muted small mb-0" style="font-size: 0.74rem;">Original MRP &rarr; Cart Subtotal &rarr; Deductions &rarr; Net In-Hand.</p>
         </div>
-        <div class="col-md-9">
+        <div class="col-md-10">
             <div class="row g-2 text-center text-md-start">
-                <div class="col-6 col-md-2 p-2 bg-white rounded-3 border">
-                    <span class="text-muted small d-block" style="font-size: 0.7rem;">Cart Items Subtotal</span>
-                    <strong class="text-dark small font-monospace">₹{{ number_format($totalItemsSubtotal, 2) }}</strong>
+                {{-- 1. Original Price (MRP) --}}
+                <div class="col-6 col-md-2 p-2.5 bg-white rounded-3 border shadow-2xs">
+                    <span class="text-muted small d-block fw-semibold" style="font-size: 0.7rem;">Original Price (MRP)</span>
+                    <strong class="text-dark small font-monospace" style="font-size: 0.92rem;">₹{{ number_format($totalOriginalPrice, 2) }}</strong>
+                    <span class="text-muted d-block" style="font-size: 0.65rem;">Base Listed Value</span>
                 </div>
-                <div class="col-6 col-md-2 p-2 bg-white rounded-3 border">
-                    <span class="text-muted small d-block" style="font-size: 0.7rem;">Delivery Charges</span>
-                    <strong class="text-primary small font-monospace">+₹{{ number_format($totalShippingCollected, 2) }}</strong>
+
+                {{-- 2. Cart Items Subtotal --}}
+                <div class="col-6 col-md-2 p-2.5 bg-white rounded-3 border shadow-2xs">
+                    <span class="text-muted small d-block fw-semibold" style="font-size: 0.7rem;">Cart Subtotal</span>
+                    <strong class="text-primary small font-monospace" style="font-size: 0.92rem;">₹{{ number_format($totalItemsSubtotal, 2) }}</strong>
+                    <span class="text-muted d-block text-truncate" style="font-size: 0.65rem;" title="Offer Discount: -₹{{ number_format($totalOfferDiscount, 2) }}">
+                        Offers: -₹{{ number_format($totalOfferDiscount, 2) }}
+                    </span>
                 </div>
-                <div class="col-6 col-md-2 p-2 bg-white rounded-3 border">
-                    <span class="text-muted small d-block" style="font-size: 0.7rem;">COD Handling Fees</span>
-                    <strong class="text-primary small font-monospace">+₹{{ number_format($totalCodFeesCollected, 2) }}</strong>
+
+                {{-- 3. Coupon Discounts --}}
+                <div class="col-6 col-md-2 p-2.5 bg-white rounded-3 border shadow-2xs">
+                    <span class="text-muted small d-block fw-semibold" style="font-size: 0.7rem;">Coupons Applied</span>
+                    <strong class="text-warning small font-monospace" style="font-size: 0.92rem;">
+                        {{ $totalCouponDiscount > 0 ? '-' : '' }}₹{{ number_format($totalCouponDiscount, 2) }}
+                    </strong>
+                    <span class="text-muted d-block" style="font-size: 0.65rem;">Promo Discounts</span>
                 </div>
-                <div class="col-6 col-md-2 p-2 bg-white rounded-3 border">
-                    <span class="text-muted small d-block" style="font-size: 0.7rem;">Wallet Balance Used</span>
-                    <strong class="text-info small font-monospace">₹{{ number_format($totalWalletUsed, 2) }}</strong>
+
+                {{-- 4. Wallet Used --}}
+                <div class="col-6 col-md-2 p-2.5 bg-white rounded-3 border shadow-2xs">
+                    <span class="text-muted small d-block fw-semibold" style="font-size: 0.7rem;">Wallet Used</span>
+                    <strong class="text-info small font-monospace" style="font-size: 0.92rem;">
+                        {{ $totalWalletUsed > 0 ? '-' : '' }}₹{{ number_format($totalWalletUsed, 2) }}
+                    </strong>
+                    <span class="text-muted d-block" style="font-size: 0.65rem;">Credits Redeemed</span>
                 </div>
-                <div class="col-6 col-md-2 p-2 bg-white rounded-3 border">
-                    <span class="text-muted small d-block" style="font-size: 0.7rem;">COGS (Wholesale)</span>
-                    <strong class="text-danger small font-monospace">-₹{{ number_format($totalCost, 2) }}</strong>
+
+                {{-- 5. Delivery Charge (₹45 Fixed) --}}
+                <div class="col-6 col-md-2 p-2.5 bg-white rounded-3 border shadow-2xs">
+                    <span class="text-muted small d-block fw-semibold" style="font-size: 0.7rem;">Delivery (₹45 Fixed)</span>
+                    <strong class="text-danger small font-monospace" style="font-size: 0.92rem;">
+                        {{ $totalFixedDelivery > 0 ? '-' : '' }}₹{{ number_format($totalFixedDelivery, 2) }}
+                    </strong>
+                    <span class="text-muted d-block" style="font-size: 0.65rem;">₹45 &times; {{ $ordersCount }} {{ Str::plural('ord', $ordersCount) }}</span>
                 </div>
-                <div class="col-6 col-md-2 p-2 bg-white rounded-3 border">
-                    <span class="text-muted small d-block" style="font-size: 0.7rem;">Net In-Hand Clean</span>
-                    <strong class="text-success small font-monospace">₹{{ number_format($netInHandProfit, 2) }} ({{ $netInHandMargin }}%)</strong>
+
+                {{-- 6. Net In-Hand (Display) --}}
+                <div class="col-6 col-md-2 p-2.5 bg-white rounded-3 border border-success border-opacity-50 shadow-2xs" style="background: rgba(16, 185, 129, 0.05) !important;">
+                    <span class="text-success small d-block fw-bold" style="font-size: 0.7rem;">Net In-Hand</span>
+                    <strong class="text-success small font-monospace" style="font-size: 0.92rem;">
+                        {{ $netDisplayAmount >= 0 ? '' : '-' }}₹{{ number_format(abs($netDisplayAmount), 2) }}
+                    </strong>
+                    <span class="text-success text-opacity-75 d-block" style="font-size: 0.65rem;">Original &minus; Deductions</span>
                 </div>
             </div>
         </div>
