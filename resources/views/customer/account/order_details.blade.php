@@ -220,7 +220,10 @@
                             }
                         }
 
-                        $isCodNoRefund = ($cancellation && $cancellation->refund_method === 'none') || ($order->payment_method === 'cod' && $order->payment_status !== 'paid' && $walletRefundVal == 0 && $onlineRefundVal == 0);
+                        $isCod = strtolower($order->payment_method ?? 'cod') === 'cod';
+                        $hasNoRefund = ($walletRefundVal == 0 && $onlineRefundVal == 0 && $recordedRefundAmount == 0) || ($cancellation?->refund_method === 'none');
+                        $isCodNoRefund = $isCod && $hasNoRefund;
+                        $isOnlineNoRefund = !$isCod && $hasNoRefund;
                         $ticketNo = 'CNL-' . ($order->order_number ?? $order->id);
                     @endphp
 
@@ -232,6 +235,16 @@
                             </div>
                             <div class="text-muted small mt-1" style="font-size: 0.73rem;">
                                 No cash was collected for this order. Order delivery has been cancelled with zero charges.
+                            </div>
+                        </div>
+                    @elseif($isOnlineNoRefund)
+                        <div class="p-2.5 rounded-3 bg-white border">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5 mb-1">
+                                <span class="fw-bold text-dark" style="font-size: 0.88rem;"><i class="bi bi-credit-card text-secondary me-1.5"></i> Online Payment (Unpaid / Cancelled)</span>
+                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.7rem;">✓ 100% Free Cancellation</span>
+                            </div>
+                            <div class="text-muted small mt-1" style="font-size: 0.73rem;">
+                                No payment was collected for this order. The pending online transaction has been cancelled with zero charges.
                             </div>
                         </div>
                     @else
@@ -323,7 +336,7 @@
             
             @php
                 $netRefundTotal = $walletRefundVal + $onlineRefundVal;
-                if ($netRefundTotal == 0 && !$isCodNoRefund) {
+                if ($netRefundTotal == 0 && !$hasNoRefund) {
                     $netRefundTotal = $recordedRefundAmount;
                 }
             @endphp
@@ -342,9 +355,9 @@
 
             <hr class="my-2 border-secondary-subtle">
 
-            <div class="d-flex align-items-center justify-content-between pt-1 fw-bold {{ $isCodNoRefund ? 'text-secondary' : 'text-success' }} flex-wrap gap-1">
+            <div class="d-flex align-items-center justify-content-between pt-1 fw-bold {{ $hasNoRefund ? 'text-secondary' : 'text-success' }} flex-wrap gap-1">
                 <span class="fs-6" style="font-size: 0.92rem !important;">Net Refund Amount:</span>
-                <span class="font-monospace fs-5 {{ $isCodNoRefund ? 'text-secondary' : 'text-success' }}">₹{{ number_format($netRefundTotal, 2) }}</span>
+                <span class="font-monospace fs-5 {{ $hasNoRefund ? 'text-secondary' : 'text-success' }}">₹{{ number_format($netRefundTotal, 2) }}</span>
             </div>
         </div>
     </div>
