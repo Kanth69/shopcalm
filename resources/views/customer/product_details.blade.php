@@ -112,8 +112,8 @@
 
                             <div class="pdp-uniform-image-box d-flex align-items-center justify-content-center cursor-pointer"
                                  id="pdp-main-image-box"
-                                 ondblclick="openProductLightbox()" 
-                                 title="Double-click to expand" 
+                                 onclick="openProductLightbox()" 
+                                 title="Click to view full screen" 
                                  style="cursor: zoom-in;">
                                 <img src="{{ $allProductImages[0] }}" id="main-product-img" 
                                      class="main-pdp-image" alt="{{ $product->name }}">
@@ -1005,24 +1005,37 @@
         }
     }
 
-    /* White Transparent Frosted Lightbox */
+    /* Amazon-style Clean Fullscreen Lightbox */
     #productLightboxModal {
-        background: rgba(255, 255, 255, 0.45) !important;
-        backdrop-filter: blur(14px) !important;
-        -webkit-backdrop-filter: blur(14px) !important;
+        background: #ffffff !important;
     }
-    .lightbox-white-backdrop {
-        background-color: rgba(255, 255, 255, 0.72) !important;
-        backdrop-filter: blur(12px) !important;
-        -webkit-backdrop-filter: blur(12px) !important;
-        opacity: 1 !important;
+    #productLightboxModal .modal-dialog {
+        max-width: 100% !important;
+        margin: 0 !important;
     }
     #productLightboxModal .modal-content {
-        background: rgba(255, 255, 255, 0.94) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.85) !important;
-        box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+        background: #ffffff !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+        max-height: 100vh !important;
+    }
+    .lightbox-thumb-item {
+        background: #ffffff;
+        border: 1px solid #d5d9d9;
+        outline: none;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+    }
+    .lightbox-thumb-item.active {
+        border: 2px solid #007185 !important;
+        box-shadow: 0 0 0 1px #007185 !important;
+        transform: scale(1.05);
+        opacity: 1 !important;
+    }
+    #lightbox-thumb-container::-webkit-scrollbar {
+        display: none;
     }
 </style>
 
@@ -1866,19 +1879,20 @@ function setLightboxIndex(idx) {
     // Keep page gallery in sync
     selectProductGalleryIndex(idx);
 
-    // Update lightbox indicator dots (sideways horizontal pill)
-    const dots = document.querySelectorAll('.lightbox-dot-btn');
-    dots.forEach((dot, i) => {
+    // Update Amazon-style gallery thumbnails
+    const thumbs = document.querySelectorAll('.lightbox-thumb-item');
+    thumbs.forEach((thumb, i) => {
         if (i === idx) {
-            dot.classList.add('active');
-            dot.style.width = '24px';
-            dot.style.background = '#4f46e5';
-            dot.style.opacity = '1';
+            thumb.classList.add('active');
+            thumb.style.borderColor = '#007185';
+            thumb.style.boxShadow = '0 0 0 1.5px #007185';
+            thumb.style.opacity = '1';
+            thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         } else {
-            dot.classList.remove('active');
-            dot.style.width = '8px';
-            dot.style.background = '#cbd5e1';
-            dot.style.opacity = '0.7';
+            thumb.classList.remove('active');
+            thumb.style.borderColor = '#d5d9d9';
+            thumb.style.boxShadow = 'none';
+            thumb.style.opacity = '0.75';
         }
     });
 }
@@ -1998,63 +2012,74 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 @endif
 
-{{-- Simple Product Image Preview Modal --}}
+{{-- Amazon-Style Clean Fullscreen Product Image Gallery Modal --}}
 @if(count($allProductImages) > 0)
 <div class="modal fade" id="productLightboxModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg mx-3 mx-sm-auto">
-        <div class="modal-content border-0 rounded-4 overflow-hidden position-relative" 
-             style="background: rgba(255, 255, 255, 0.94) !important; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.85) !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15) !important;">
+    <div class="modal-dialog modal-fullscreen m-0 p-0 border-0">
+        <div class="modal-content border-0 rounded-0 bg-white d-flex flex-column h-100 min-vh-100" style="background: #ffffff !important;">
             
-            {{-- Close Button (Right on the top-right corner of the image card) --}}
-            <button type="button" class="btn btn-light rounded-circle shadow-sm position-absolute top-0 end-0 m-2.5 p-0 d-flex align-items-center justify-content-center border" 
-                    style="width: 36px; height: 36px; z-index: 30; background: rgba(255, 255, 255, 0.95);" 
-                    data-bs-dismiss="modal" 
-                    aria-label="Close">
-                <i class="bi bi-x-lg text-dark" style="font-size: 1rem;"></i>
-            </button>
+            {{-- Top Bar: Amazon-Style "Back" Button --}}
+            <div class="px-3 pt-3 pb-2 bg-white d-flex align-items-center justify-content-between border-0" style="z-index: 30;">
+                <button type="button" 
+                        class="btn btn-light bg-white border rounded-pill px-3.5 py-1 fw-medium text-dark shadow-2xs d-inline-flex align-items-center" 
+                        data-bs-dismiss="modal" 
+                        aria-label="Back"
+                        style="border-color: #d5d9d9 !important; font-size: 0.92rem; min-width: 68px; background: #ffffff !important; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
+                    Back
+                </button>
+                <button type="button" class="btn-close d-md-none" data-bs-dismiss="modal" aria-label="Close" style="opacity: 0.55;"></button>
+            </div>
 
-            {{-- Main Image Stage (Clean translucent white card, perfectly centered) --}}
-            <div class="modal-body p-3 p-sm-4 d-flex flex-column align-items-center justify-content-center position-relative" 
-                 id="lightbox-stage" style="background: transparent; min-height: 320px;">
+            {{-- Centered Main Image Stage --}}
+            <div class="flex-grow-1 d-flex align-items-center justify-content-center p-2 p-sm-4 position-relative overflow-hidden bg-white" 
+                 id="lightbox-stage" 
+                 style="touch-action: pan-y pinch-zoom; background: #ffffff !important; min-height: 0;">
                 
                 {{-- Previous Arrow (Desktop Only) --}}
                 @if(count($allProductImages) > 1)
                 <button type="button" onclick="stepLightboxGallery(-1)" aria-label="Previous image"
-                        class="btn btn-light shadow-sm rounded-circle position-absolute start-0 ms-2 ms-sm-3 d-none d-md-flex align-items-center justify-content-center border"
-                        style="width: 38px; height: 38px; top: 50%; transform: translateY(-50%); z-index: 20; background: rgba(255, 255, 255, 0.95);">
-                    <i class="bi bi-chevron-left text-dark fs-6"></i>
+                        class="btn btn-light shadow-sm rounded-circle position-absolute start-0 ms-3 d-none d-md-flex align-items-center justify-content-center border"
+                        style="width: 42px; height: 42px; top: 50%; transform: translateY(-50%); z-index: 20; background: rgba(255, 255, 255, 0.95); border-color: #d5d9d9 !important;">
+                    <i class="bi bi-chevron-left text-dark fs-5"></i>
                 </button>
                 @endif
 
                 {{-- The Product Image --}}
-                <div class="d-flex align-items-center justify-content-center w-100" style="max-height: 70vh;">
+                <div class="d-flex align-items-center justify-content-center w-100 h-100">
                     <img id="lightbox-img" src="{{ $allProductImages[0] ?? '' }}" alt="{{ $product->name }}" 
                          class="img-fluid" 
-                         style="max-height: 65vh; max-width: 100%; object-fit: contain; border-radius: 12px; transition: opacity 0.15s ease;">
+                         style="max-height: 72vh; max-width: 100%; object-fit: contain; transition: opacity 0.15s ease;">
                 </div>
 
                 {{-- Next Arrow (Desktop Only) --}}
                 @if(count($allProductImages) > 1)
                 <button type="button" onclick="stepLightboxGallery(1)" aria-label="Next image"
-                        class="btn btn-light shadow-sm rounded-circle position-absolute end-0 me-2 me-sm-3 d-none d-md-flex align-items-center justify-content-center border"
-                        style="width: 38px; height: 38px; top: 50%; transform: translateY(-50%); z-index: 20; background: rgba(255, 255, 255, 0.95);">
-                    <i class="bi bi-chevron-right text-dark fs-6"></i>
+                        class="btn btn-light shadow-sm rounded-circle position-absolute end-0 me-3 d-none d-md-flex align-items-center justify-content-center border"
+                        style="width: 42px; height: 42px; top: 50%; transform: translateY(-50%); z-index: 20; background: rgba(255, 255, 255, 0.95); border-color: #d5d9d9 !important;">
+                    <i class="bi bi-chevron-right text-dark fs-5"></i>
                 </button>
                 @endif
+            </div>
 
-                {{-- Sideways Horizontal Navigation Dots --}}
-                @if(count($allProductImages) > 1)
-                <div class="pt-3 w-100" style="display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; justify-content: center !important; gap: 8px !important; z-index: 20;">
+            {{-- Bottom Horizontal Thumbnail Carousel (Amazon-Style) --}}
+            @if(count($allProductImages) > 1)
+            <div class="px-3 py-2.5 bg-white border-top border-light-subtle" 
+                 id="lightbox-thumb-container"
+                 style="overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; z-index: 30;">
+                <div class="d-flex align-items-center justify-content-start justify-content-sm-center gap-2 flex-nowrap" 
+                     style="min-width: min-content; padding: 2px 4px;">
                     @foreach($allProductImages as $lIdx => $lUrl)
                         <button type="button" onclick="setLightboxIndex({{ $lIdx }})"
-                                class="border-0 p-0 lightbox-dot-btn {{ $lIdx === 0 ? 'active' : '' }}"
-                                data-lightbox-dot="{{ $lIdx }}"
-                                aria-label="Slide {{ $lIdx + 1 }}"
-                                style="width: {{ $lIdx === 0 ? '24px' : '8px' }}; height: 8px; border-radius: 999px; background: {{ $lIdx === 0 ? '#4f46e5' : '#cbd5e1' }}; opacity: {{ $lIdx === 0 ? '1' : '0.7' }}; transition: all 0.25s ease; cursor: pointer; flex-shrink: 0; display: inline-block;"></button>
+                                class="lightbox-thumb-item rounded-2 p-1 bg-white {{ $lIdx === 0 ? 'active' : '' }}"
+                                data-lightbox-thumb="{{ $lIdx }}"
+                                aria-label="View thumbnail {{ $lIdx + 1 }}"
+                                style="width: 58px; height: 58px; flex-shrink: 0; cursor: pointer; transition: all 0.2s ease; border: {{ $lIdx === 0 ? '2px solid #007185' : '1px solid #d5d9d9' }};">
+                            <img src="{{ $lUrl }}" alt="Thumb {{ $lIdx + 1 }}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 2px;">
+                        </button>
                     @endforeach
                 </div>
-                @endif
             </div>
+            @endif
 
         </div>
     </div>
