@@ -111,8 +111,9 @@
                             </button>
 
                             <div class="pdp-uniform-image-box d-flex align-items-center justify-content-center cursor-pointer"
-                                 onclick="openProductLightbox()" 
-                                 title="Click to view full screen" 
+                                 id="pdp-main-image-box"
+                                 ondblclick="openProductLightbox()" 
+                                 title="Double-click to expand" 
                                  style="cursor: zoom-in;">
                                 <img src="{{ $allProductImages[0] }}" id="main-product-img" 
                                      class="main-pdp-image" alt="{{ $product->name }}">
@@ -1002,6 +1003,26 @@
             font-size: 0.8rem !important;
             padding: 0.5rem 0.65rem !important;
         }
+    }
+
+    /* White Transparent Frosted Lightbox */
+    #productLightboxModal {
+        background: rgba(255, 255, 255, 0.45) !important;
+        backdrop-filter: blur(14px) !important;
+        -webkit-backdrop-filter: blur(14px) !important;
+    }
+    .lightbox-white-backdrop {
+        background-color: rgba(255, 255, 255, 0.72) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        opacity: 1 !important;
+    }
+    #productLightboxModal .modal-content {
+        background: rgba(255, 255, 255, 0.94) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.85) !important;
+        box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
     }
 </style>
 
@@ -1902,6 +1923,36 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // Double-tap on mobile touch to open lightbox
+    const mainImgBox = document.getElementById('pdp-main-image-box');
+    if (mainImgBox) {
+        let lastTap = 0;
+        mainImgBox.addEventListener('touchend', function(e) {
+            const currentTime = new Date().getTime();
+            const tapGap = currentTime - lastTap;
+            if (tapGap > 0 && tapGap < 350) {
+                // Double tap!
+                e.preventDefault();
+                openProductLightbox();
+                lastTap = 0;
+            } else {
+                lastTap = currentTime;
+            }
+        });
+    }
+
+    // White transparent frosted backdrop when lightbox opens
+    const lbModalEl = document.getElementById('productLightboxModal');
+    if (lbModalEl) {
+        lbModalEl.addEventListener('show.bs.modal', function() {
+            setTimeout(() => {
+                document.querySelectorAll('.modal-backdrop').forEach(b => {
+                    b.classList.add('lightbox-white-backdrop');
+                });
+            }, 10);
+        });
+    }
 });
 </script>
 
@@ -1949,9 +2000,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 {{-- Simple Product Image Preview Modal --}}
 @if(count($allProductImages) > 0)
-<div class="modal fade" id="productLightboxModal" tabindex="-1" aria-hidden="true" style="backdrop-filter: blur(5px);">
+<div class="modal fade" id="productLightboxModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg mx-3 mx-sm-auto">
-        <div class="modal-content border-0 rounded-4 overflow-hidden shadow-2xl position-relative bg-white">
+        <div class="modal-content border-0 rounded-4 overflow-hidden position-relative" 
+             style="background: rgba(255, 255, 255, 0.94) !important; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.85) !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15) !important;">
             
             {{-- Close Button (Right on the top-right corner of the image card) --}}
             <button type="button" class="btn btn-light rounded-circle shadow-sm position-absolute top-0 end-0 m-2.5 p-0 d-flex align-items-center justify-content-center border" 
@@ -1961,9 +2013,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 <i class="bi bi-x-lg text-dark" style="font-size: 1rem;"></i>
             </button>
 
-            {{-- Main Image Stage (Clean white card, perfectly centered) --}}
+            {{-- Main Image Stage (Clean translucent white card, perfectly centered) --}}
             <div class="modal-body p-3 p-sm-4 d-flex flex-column align-items-center justify-content-center position-relative" 
-                 id="lightbox-stage" style="background: #ffffff; min-height: 320px;">
+                 id="lightbox-stage" style="background: transparent; min-height: 320px;">
                 
                 {{-- Previous Arrow (Desktop Only) --}}
                 @if(count($allProductImages) > 1)
