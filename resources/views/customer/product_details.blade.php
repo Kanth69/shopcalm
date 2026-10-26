@@ -1008,9 +1008,12 @@
     /* Amazon-style Clean Fullscreen Lightbox */
     #productLightboxModal {
         background: #ffffff !important;
+        padding: 0 !important;
     }
     #productLightboxModal .modal-dialog {
         max-width: 100% !important;
+        width: 100% !important;
+        height: 100% !important;
         margin: 0 !important;
     }
     #productLightboxModal .modal-content {
@@ -1018,9 +1021,40 @@
         border: none !important;
         border-radius: 0 !important;
         box-shadow: none !important;
-        height: 100vh !important;
-        min-height: 100vh !important;
-        max-height: 100vh !important;
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+        max-height: 100dvh !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    #productLightboxModal .modal-header {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-shrink: 0 !important;
+        border: none !important;
+        background: #ffffff !important;
+        padding: 0.75rem 1rem !important;
+    }
+    #productLightboxModal .modal-body {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0.5rem !important;
+        background: #ffffff !important;
+    }
+    #productLightboxModal .modal-footer {
+        flex-shrink: 0 !important;
+        background: #ffffff !important;
+        border-top: 1px solid #e2e8f0 !important;
+        padding: 0.6rem 0.8rem !important;
+        padding-bottom: calc(0.6rem + env(safe-area-inset-bottom, 0px)) !important;
+        position: static !important;
+        box-shadow: none !important;
     }
     .lightbox-thumb-item {
         background: #ffffff;
@@ -1034,7 +1068,8 @@
         transform: scale(1.05);
         opacity: 1 !important;
     }
-    #lightbox-thumb-container::-webkit-scrollbar {
+    #lightbox-thumb-container::-webkit-scrollbar,
+    .lightbox-thumb-scroll::-webkit-scrollbar {
         display: none;
     }
 </style>
@@ -2016,24 +2051,31 @@ document.addEventListener('DOMContentLoaded', function() {
 @if(count($allProductImages) > 0)
 <div class="modal fade" id="productLightboxModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-fullscreen m-0 p-0 border-0">
-        <div class="modal-content border-0 rounded-0 bg-white d-flex flex-column h-100 min-vh-100" style="background: #ffffff !important;">
+        <div class="modal-content border-0 rounded-0 bg-white">
             
-            {{-- Top Bar: Amazon-Style "Back" Button --}}
-            <div class="px-3 pt-3 pb-2 bg-white d-flex align-items-center justify-content-between border-0" style="z-index: 30;">
+            {{-- Top Header: Perfectly Aligned "Back" Button (Left) and "✕" Close Button (Right) --}}
+            <div class="modal-header border-0 bg-white px-3 py-2.5 d-flex align-items-center justify-content-between" style="z-index: 30;">
                 <button type="button" 
-                        class="btn btn-light bg-white border rounded-pill px-3.5 py-1 fw-medium text-dark shadow-2xs d-inline-flex align-items-center" 
+                        class="btn btn-light bg-white border rounded-pill px-3 py-1 fw-medium text-dark shadow-2xs d-inline-flex align-items-center gap-1.5" 
                         data-bs-dismiss="modal" 
                         aria-label="Back"
-                        style="border-color: #d5d9d9 !important; font-size: 0.92rem; min-width: 68px; background: #ffffff !important; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
-                    Back
+                        style="border-color: #d5d9d9 !important; font-size: 0.88rem; min-width: 68px; background: #ffffff !important; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
+                    <i class="bi bi-chevron-left" style="font-size: 0.82rem;"></i>
+                    <span>Back</span>
                 </button>
-                <button type="button" class="btn-close d-md-none" data-bs-dismiss="modal" aria-label="Close" style="opacity: 0.55;"></button>
+                <button type="button" 
+                        class="btn btn-light rounded-circle border shadow-2xs d-inline-flex align-items-center justify-content-center p-0" 
+                        data-bs-dismiss="modal" 
+                        aria-label="Close" 
+                        style="width: 34px; height: 34px; border-color: #d5d9d9 !important; background: #ffffff !important;">
+                    <i class="bi bi-x-lg text-dark" style="font-size: 0.9rem;"></i>
+                </button>
             </div>
 
             {{-- Centered Main Image Stage --}}
-            <div class="flex-grow-1 d-flex align-items-center justify-content-center p-2 p-sm-4 position-relative overflow-hidden bg-white" 
+            <div class="modal-body p-2 p-sm-4 d-flex align-items-center justify-content-center position-relative overflow-hidden bg-white" 
                  id="lightbox-stage" 
-                 style="touch-action: pan-y pinch-zoom; background: #ffffff !important; min-height: 0;">
+                 style="touch-action: pan-y pinch-zoom;">
                 
                 {{-- Previous Arrow (Desktop Only) --}}
                 @if(count($allProductImages) > 1)
@@ -2063,17 +2105,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
             {{-- Bottom Horizontal Thumbnail Carousel (Amazon-Style) --}}
             @if(count($allProductImages) > 1)
-            <div class="px-3 py-2.5 bg-white border-top border-light-subtle" 
-                 id="lightbox-thumb-container"
-                 style="overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; z-index: 30;">
-                <div class="d-flex align-items-center justify-content-start justify-content-sm-center gap-2 flex-nowrap" 
-                     style="min-width: min-content; padding: 2px 4px;">
+            <div class="modal-footer p-2 bg-white border-top border-light-subtle d-block w-100" 
+                 id="lightbox-thumb-container">
+                <div class="d-flex align-items-center justify-content-start justify-content-sm-center gap-2 flex-nowrap lightbox-thumb-scroll" 
+                     style="overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 2px 4px;">
                     @foreach($allProductImages as $lIdx => $lUrl)
                         <button type="button" onclick="setLightboxIndex({{ $lIdx }})"
                                 class="lightbox-thumb-item rounded-2 p-1 bg-white {{ $lIdx === 0 ? 'active' : '' }}"
                                 data-lightbox-thumb="{{ $lIdx }}"
                                 aria-label="View thumbnail {{ $lIdx + 1 }}"
-                                style="width: 58px; height: 58px; flex-shrink: 0; cursor: pointer; transition: all 0.2s ease; border: {{ $lIdx === 0 ? '2px solid #007185' : '1px solid #d5d9d9' }};">
+                                style="width: 56px; height: 56px; flex-shrink: 0; cursor: pointer; transition: all 0.2s ease; border: {{ $lIdx === 0 ? '2px solid #007185' : '1px solid #d5d9d9' }};">
                             <img src="{{ $lUrl }}" alt="Thumb {{ $lIdx + 1 }}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 2px;">
                         </button>
                     @endforeach
