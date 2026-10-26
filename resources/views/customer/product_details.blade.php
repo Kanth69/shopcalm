@@ -1835,30 +1835,27 @@ function setLightboxIndex(idx) {
 
     currentLightboxIdx = idx;
     const imgEl = document.getElementById('lightbox-img');
-    const counterEl = document.getElementById('lightbox-counter');
     
     if (imgEl) {
         imgEl.style.opacity = '0.35';
         imgEl.src = pdpGalleryImages[idx];
         setTimeout(() => { imgEl.style.opacity = '1'; }, 70);
     }
-    if (counterEl) {
-        counterEl.textContent = (idx + 1) + ' / ' + pdpGalleryImages.length;
-    }
 
     // Keep page gallery in sync
     selectProductGalleryIndex(idx);
 
-    // Update lightbox thumbs
-    const thumbs = document.querySelectorAll('.lightbox-thumb-btn');
-    thumbs.forEach((thumb, i) => {
+    // Update lightbox indicator dots
+    const dots = document.querySelectorAll('.lightbox-dot-btn');
+    dots.forEach((dot, i) => {
         if (i === idx) {
-            thumb.classList.add('border-primary', 'border-2', 'shadow');
-            thumb.classList.remove('opacity-50');
-            thumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            dot.classList.remove('bg-opacity-25');
+            dot.classList.add('bg-white');
+            dot.style.transform = 'scale(1.4)';
         } else {
-            thumb.classList.remove('border-primary', 'border-2', 'shadow');
-            thumb.classList.add('opacity-50');
+            dot.classList.add('bg-opacity-25');
+            dot.classList.remove('bg-white');
+            dot.style.transform = 'scale(1)';
         }
     });
 }
@@ -1950,67 +1947,62 @@ document.addEventListener('DOMContentLoaded', function() {
 
 {{-- Fullscreen Product Image Lightbox Modal --}}
 @if(count($allProductImages) > 0)
-<div class="modal fade" id="productLightboxModal" tabindex="-1" aria-hidden="true" style="backdrop-filter: blur(8px);">
-    <div class="modal-dialog modal-fullscreen m-0 p-0">
-        <div class="modal-content border-0 rounded-0 d-flex flex-column" style="background: rgba(10, 15, 29, 0.96) !important;">
+<div class="modal fade" id="productLightboxModal" tabindex="-1" aria-hidden="true" style="backdrop-filter: blur(10px);">
+    <div class="modal-dialog modal-fullscreen m-0 p-0 border-0">
+        <div class="modal-content border-0 rounded-0 position-relative" style="background: #000000 !important; height: 100vh !important; min-height: 100vh !important;">
             
-            {{-- Lightbox Header --}}
-            <div class="d-flex align-items-center justify-content-between px-3 py-2.5 border-bottom border-secondary border-opacity-25" style="z-index: 10;">
-                <div class="text-white small fw-bold d-flex align-items-center gap-2">
-                    <span id="lightbox-counter" class="badge bg-dark bg-opacity-75 border border-secondary border-opacity-50 rounded-pill px-3 py-1 font-monospace" style="font-size: 0.8rem;">1 / {{ count($allProductImages) }}</span>
-                    <span class="d-none d-sm-inline text-white-50 small text-truncate" style="max-width: 320px;">{{ $product->name }}</span>
-                </div>
-                <button type="button" class="btn btn-sm btn-outline-light rounded-circle p-0 d-flex align-items-center justify-content-center" 
-                        style="width: 38px; height: 38px;" 
-                        data-bs-dismiss="modal" 
-                        aria-label="Close">
-                    <i class="bi bi-x-lg" style="font-size: 1.1rem;"></i>
-                </button>
-            </div>
+            {{-- Floating Close Button (Top Right) --}}
+            <button type="button" class="btn text-white rounded-circle position-absolute top-0 end-0 m-3 p-0 d-flex align-items-center justify-content-center shadow-lg" 
+                    style="width: 42px; height: 42px; background: rgba(255, 255, 255, 0.18); backdrop-filter: blur(8px); z-index: 1060; border: 0 !important;" 
+                    data-bs-dismiss="modal" 
+                    aria-label="Close">
+                <i class="bi bi-x-lg" style="font-size: 1.25rem;"></i>
+            </button>
 
-            {{-- Lightbox Body (Centered Full Image with Touch Swipe) --}}
-            <div class="modal-body p-0 d-flex align-items-center justify-content-center position-relative flex-grow-1 overflow-hidden" 
-                 id="lightbox-stage" style="touch-action: pan-y pinch-zoom;">
+            {{-- Centered Lightbox Stage (No borders, perfectly centered in viewport) --}}
+            <div class="modal-body p-0 d-flex align-items-center justify-content-center w-100 h-100 position-relative border-0" 
+                 id="lightbox-stage" 
+                 style="touch-action: pan-y pinch-zoom; background: #000000; border: 0 !important;">
                 
                 {{-- Previous Arrow (Desktop & Mobile) --}}
                 @if(count($allProductImages) > 1)
                 <button type="button" onclick="stepLightboxGallery(-1)" aria-label="Previous image"
-                        class="btn btn-dark bg-opacity-75 shadow-lg rounded-circle position-absolute start-0 ms-2 ms-md-4 d-flex align-items-center justify-content-center border border-white border-opacity-25"
-                        style="width: 44px; height: 44px; top: 50%; transform: translateY(-50%); z-index: 20;">
-                    <i class="bi bi-chevron-left text-white fs-5"></i>
+                        class="btn text-white rounded-circle position-absolute start-0 ms-2 ms-md-4 d-flex align-items-center justify-content-center shadow"
+                        style="width: 44px; height: 44px; top: 50%; transform: translateY(-50%); z-index: 20; background: rgba(255, 255, 255, 0.18); backdrop-filter: blur(8px); border: 0 !important;">
+                    <i class="bi bi-chevron-left text-white fs-4"></i>
                 </button>
                 @endif
 
-                {{-- Fullscreen Image --}}
-                <div class="d-flex align-items-center justify-content-center w-100 h-100 p-2 p-md-4">
+                {{-- Fullscreen Image: 100% Centered --}}
+                <div class="d-flex align-items-center justify-content-center w-100 h-100 p-2 p-md-3">
                     <img id="lightbox-img" src="{{ $allProductImages[0] ?? '' }}" alt="{{ $product->name }}" 
                          class="img-fluid" 
-                         style="max-height: 85vh; max-width: 95vw; object-fit: contain; transition: opacity 0.15s ease; user-select: none;">
+                         style="max-height: 88vh; max-width: 95vw; width: auto; height: auto; object-fit: contain; margin: auto; transition: opacity 0.15s ease; user-select: none; border: 0 !important; box-shadow: none !important;">
                 </div>
 
                 {{-- Next Arrow (Desktop & Mobile) --}}
                 @if(count($allProductImages) > 1)
                 <button type="button" onclick="stepLightboxGallery(1)" aria-label="Next image"
-                        class="btn btn-dark bg-opacity-75 shadow-lg rounded-circle position-absolute end-0 me-2 me-md-4 d-flex align-items-center justify-content-center border border-white border-opacity-25"
-                        style="width: 44px; height: 44px; top: 50%; transform: translateY(-50%); z-index: 20;">
-                    <i class="bi bi-chevron-right text-white fs-5"></i>
+                        class="btn text-white rounded-circle position-absolute end-0 me-2 me-md-4 d-flex align-items-center justify-content-center shadow"
+                        style="width: 44px; height: 44px; top: 50%; transform: translateY(-50%); z-index: 20; background: rgba(255, 255, 255, 0.18); backdrop-filter: blur(8px); border: 0 !important;">
+                    <i class="bi bi-chevron-right text-white fs-4"></i>
                 </button>
                 @endif
-            </div>
 
-            {{-- Lightbox Thumbnails Strip (Bottom) --}}
-            @if(count($allProductImages) > 1)
-            <div class="py-2.5 px-3 border-top border-secondary border-opacity-25 d-flex align-items-center justify-content-center gap-2 overflow-x-auto" style="z-index: 10;">
-                @foreach($allProductImages as $lIdx => $lUrl)
-                    <button type="button" onclick="setLightboxIndex({{ $lIdx }})"
-                            class="btn p-0 rounded-2 border overflow-hidden lightbox-thumb-btn {{ $lIdx === 0 ? 'border-primary border-2 shadow' : 'border-secondary border-opacity-50 opacity-50' }}"
-                            data-lightbox-thumb="{{ $lIdx }}"
-                            style="width: 48px; height: 48px; background: #ffffff; flex-shrink: 0;">
-                        <img src="{{ $lUrl }}" alt="" class="w-100 h-100" style="object-fit: contain; padding: 2px;">
-                    </button>
-                @endforeach
+                {{-- Minimal Bottom Indicator Dots --}}
+                @if(count($allProductImages) > 1)
+                <div class="position-absolute bottom-0 start-50 translate-middle-x mb-3 d-flex align-items-center gap-2" style="z-index: 20;">
+                    @foreach($allProductImages as $lIdx => $lUrl)
+                        <button type="button" onclick="setLightboxIndex({{ $lIdx }})"
+                                class="rounded-circle p-0 border-0 lightbox-dot-btn {{ $lIdx === 0 ? 'bg-white' : 'bg-white bg-opacity-25' }}"
+                                data-lightbox-dot="{{ $lIdx }}"
+                                aria-label="Slide {{ $lIdx + 1 }}"
+                                style="width: 7px; height: 7px; transition: all 0.2s ease; cursor: pointer; border: 0 !important;"></button>
+                    @endforeach
+                </div>
+                @endif
+
             </div>
-            @endif
 
         </div>
     </div>
