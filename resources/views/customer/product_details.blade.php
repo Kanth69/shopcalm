@@ -1963,10 +1963,10 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="modal-body p-3 p-sm-4 d-flex align-items-center justify-content-center position-relative" 
                  id="lightbox-stage" style="background: #ffffff; min-height: 320px;">
                 
-                {{-- Previous Arrow --}}
+                {{-- Previous Arrow (Desktop Only) --}}
                 @if(count($allProductImages) > 1)
                 <button type="button" onclick="stepLightboxGallery(-1)" aria-label="Previous image"
-                        class="btn btn-light shadow-sm rounded-circle position-absolute start-0 ms-2 ms-sm-3 d-flex align-items-center justify-content-center border"
+                        class="btn btn-light shadow-sm rounded-circle position-absolute start-0 ms-2 ms-sm-3 d-none d-md-flex align-items-center justify-content-center border"
                         style="width: 38px; height: 38px; top: 50%; transform: translateY(-50%); z-index: 20; background: rgba(255, 255, 255, 0.95);">
                     <i class="bi bi-chevron-left text-dark fs-6"></i>
                 </button>
@@ -1979,10 +1979,10 @@ document.addEventListener('DOMContentLoaded', function() {
                          style="max-height: 68vh; max-width: 100%; object-fit: contain; border-radius: 12px; transition: opacity 0.15s ease;">
                 </div>
 
-                {{-- Next Arrow --}}
+                {{-- Next Arrow (Desktop Only) --}}
                 @if(count($allProductImages) > 1)
                 <button type="button" onclick="stepLightboxGallery(1)" aria-label="Next image"
-                        class="btn btn-light shadow-sm rounded-circle position-absolute end-0 me-2 me-sm-3 d-flex align-items-center justify-content-center border"
+                        class="btn btn-light shadow-sm rounded-circle position-absolute end-0 me-2 me-sm-3 d-none d-md-flex align-items-center justify-content-center border"
                         style="width: 38px; height: 38px; top: 50%; transform: translateY(-50%); z-index: 20; background: rgba(255, 255, 255, 0.95);">
                     <i class="bi bi-chevron-right text-dark fs-6"></i>
                 </button>
