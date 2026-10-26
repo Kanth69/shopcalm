@@ -102,7 +102,18 @@
                     {{-- Main Image Area (Fixed Uniform 1:1 Square Frame) --}}
                     <div class="p-3 p-md-4 d-flex align-items-center justify-content-center position-relative pdp-main-image-stage">
                         @if(count($allProductImages) > 0)
-                            <div class="pdp-uniform-image-box d-flex align-items-center justify-content-center">
+                            {{-- Expand / Fullscreen Hint Button (Top Left) --}}
+                            <button type="button" class="btn btn-light bg-white bg-opacity-90 shadow-2xs rounded-circle position-absolute top-0 start-0 m-2.5 p-0 d-flex align-items-center justify-content-center border"
+                                    style="width: 34px; height: 34px; z-index: 5;" 
+                                    onclick="openProductLightbox()" 
+                                    title="View full screen" aria-label="Expand image">
+                                <i class="bi bi-arrows-fullscreen text-secondary" style="font-size: 0.82rem;"></i>
+                            </button>
+
+                            <div class="pdp-uniform-image-box d-flex align-items-center justify-content-center cursor-pointer"
+                                 onclick="openProductLightbox()" 
+                                 title="Click to view full screen" 
+                                 style="cursor: zoom-in;">
                                 <img src="{{ $allProductImages[0] }}" id="main-product-img" 
                                      class="main-pdp-image" alt="{{ $product->name }}">
                             </div>
@@ -1283,25 +1294,39 @@ function stepProductGallery(delta) {
     selectProductGalleryIndex(currentProductGalleryIdx + delta);
 }
 
-// Touch swipe support on main image for mobile
+// Touch swipe & tap support on main image for mobile
 document.addEventListener('DOMContentLoaded', function() {
     const stage = document.querySelector('.pdp-main-image-stage');
     if (stage) {
         let startX = 0;
+        let startY = 0;
+        let isMoving = false;
         stage.addEventListener('touchstart', function(e) {
             if (e.touches && e.touches.length === 1) {
                 startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                isMoving = false;
             }
+        }, { passive: true });
+
+        stage.addEventListener('touchmove', function(e) {
+            isMoving = true;
         }, { passive: true });
 
         stage.addEventListener('touchend', function(e) {
             if (e.changedTouches && e.changedTouches.length === 1) {
                 const diffX = e.changedTouches[0].clientX - startX;
+                const diffY = e.changedTouches[0].clientY - startY;
                 if (Math.abs(diffX) > 40) {
                     if (diffX < 0) {
                         stepProductGallery(1); // Swipe left -> Next
                     } else {
                         stepProductGallery(-1); // Swipe right -> Prev
+                    }
+                } else if (!isMoving || (Math.abs(diffX) < 10 && Math.abs(diffY) < 10)) {
+                    // Tap on image without drag -> Open full screen lightbox!
+                    if (!e.target.closest('.pdp-video-btn-wrap') && !e.target.closest('button')) {
+                        openProductLightbox();
                     }
                 }
             }
@@ -1317,7 +1342,7 @@ function shareProduct() {
     if (navigator.share) {
         navigator.share({
             title: title,
-            text: 'Check out ' + title + ' on WiseKart!',
+            text: 'Check out ' + title + ' on ShopCalm!',
             url: url
         }).catch(() => {});
     } else {
@@ -1786,6 +1811,99 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Product Fullscreen Lightbox Controls
+let currentLightboxIdx = 0;
+function openProductLightbox(idx) {
+    if (typeof idx !== 'number') {
+        idx = (typeof currentProductGalleryIdx === 'number') ? currentProductGalleryIdx : 0;
+    }
+    if (!pdpGalleryImages || !pdpGalleryImages.length) return;
+    setLightboxIndex(idx);
+    
+    const modalEl = document.getElementById('productLightboxModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    }
+}
+
+function setLightboxIndex(idx) {
+    if (!pdpGalleryImages || !pdpGalleryImages.length) return;
+    if (idx < 0) idx = pdpGalleryImages.length - 1;
+    if (idx >= pdpGalleryImages.length) idx = 0;
+
+    currentLightboxIdx = idx;
+    const imgEl = document.getElementById('lightbox-img');
+    const counterEl = document.getElementById('lightbox-counter');
+    
+    if (imgEl) {
+        imgEl.style.opacity = '0.35';
+        imgEl.src = pdpGalleryImages[idx];
+        setTimeout(() => { imgEl.style.opacity = '1'; }, 70);
+    }
+    if (counterEl) {
+        counterEl.textContent = (idx + 1) + ' / ' + pdpGalleryImages.length;
+    }
+
+    // Keep page gallery in sync
+    selectProductGalleryIndex(idx);
+
+    // Update lightbox thumbs
+    const thumbs = document.querySelectorAll('.lightbox-thumb-btn');
+    thumbs.forEach((thumb, i) => {
+        if (i === idx) {
+            thumb.classList.add('border-primary', 'border-2', 'shadow');
+            thumb.classList.remove('opacity-50');
+            thumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        } else {
+            thumb.classList.remove('border-primary', 'border-2', 'shadow');
+            thumb.classList.add('opacity-50');
+        }
+    });
+}
+
+function stepLightboxGallery(delta) {
+    setLightboxIndex(currentLightboxIdx + delta);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Lightbox Touch Swipe on mobile
+    const lbStage = document.getElementById('lightbox-stage');
+    if (lbStage) {
+        let lbStartX = 0;
+        lbStage.addEventListener('touchstart', function(e) {
+            if (e.touches && e.touches.length === 1) {
+                lbStartX = e.touches[0].clientX;
+            }
+        }, { passive: true });
+
+        lbStage.addEventListener('touchend', function(e) {
+            if (e.changedTouches && e.changedTouches.length === 1) {
+                const diffX = e.changedTouches[0].clientX - lbStartX;
+                if (Math.abs(diffX) > 40) {
+                    if (diffX < 0) {
+                        stepLightboxGallery(1); // Swipe left -> Next
+                    } else {
+                        stepLightboxGallery(-1); // Swipe right -> Prev
+                    }
+                }
+            }
+        }, { passive: true });
+    }
+
+    // Keyboard navigation (Arrow keys & Esc)
+    document.addEventListener('keydown', function(e) {
+        const lbModal = document.getElementById('productLightboxModal');
+        if (lbModal && lbModal.classList.contains('show')) {
+            if (e.key === 'ArrowRight') {
+                stepLightboxGallery(1);
+            } else if (e.key === 'ArrowLeft') {
+                stepLightboxGallery(-1);
+            }
+        }
+    });
+});
 </script>
 
 {{-- YouTube Video Responsive Modal --}}
@@ -1825,6 +1943,75 @@ document.addEventListener('DOMContentLoaded', function() {
                             style="border: 0; width: 100%; height: 100%;"></iframe>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+@endif
+
+{{-- Fullscreen Product Image Lightbox Modal --}}
+@if(count($allProductImages) > 0)
+<div class="modal fade" id="productLightboxModal" tabindex="-1" aria-hidden="true" style="backdrop-filter: blur(8px);">
+    <div class="modal-dialog modal-fullscreen m-0 p-0">
+        <div class="modal-content border-0 rounded-0 d-flex flex-column" style="background: rgba(10, 15, 29, 0.96) !important;">
+            
+            {{-- Lightbox Header --}}
+            <div class="d-flex align-items-center justify-content-between px-3 py-2.5 border-bottom border-secondary border-opacity-25" style="z-index: 10;">
+                <div class="text-white small fw-bold d-flex align-items-center gap-2">
+                    <span id="lightbox-counter" class="badge bg-dark bg-opacity-75 border border-secondary border-opacity-50 rounded-pill px-3 py-1 font-monospace" style="font-size: 0.8rem;">1 / {{ count($allProductImages) }}</span>
+                    <span class="d-none d-sm-inline text-white-50 small text-truncate" style="max-width: 320px;">{{ $product->name }}</span>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-light rounded-circle p-0 d-flex align-items-center justify-content-center" 
+                        style="width: 38px; height: 38px;" 
+                        data-bs-dismiss="modal" 
+                        aria-label="Close">
+                    <i class="bi bi-x-lg" style="font-size: 1.1rem;"></i>
+                </button>
+            </div>
+
+            {{-- Lightbox Body (Centered Full Image with Touch Swipe) --}}
+            <div class="modal-body p-0 d-flex align-items-center justify-content-center position-relative flex-grow-1 overflow-hidden" 
+                 id="lightbox-stage" style="touch-action: pan-y pinch-zoom;">
+                
+                {{-- Previous Arrow (Desktop & Mobile) --}}
+                @if(count($allProductImages) > 1)
+                <button type="button" onclick="stepLightboxGallery(-1)" aria-label="Previous image"
+                        class="btn btn-dark bg-opacity-75 shadow-lg rounded-circle position-absolute start-0 ms-2 ms-md-4 d-flex align-items-center justify-content-center border border-white border-opacity-25"
+                        style="width: 44px; height: 44px; top: 50%; transform: translateY(-50%); z-index: 20;">
+                    <i class="bi bi-chevron-left text-white fs-5"></i>
+                </button>
+                @endif
+
+                {{-- Fullscreen Image --}}
+                <div class="d-flex align-items-center justify-content-center w-100 h-100 p-2 p-md-4">
+                    <img id="lightbox-img" src="{{ $allProductImages[0] ?? '' }}" alt="{{ $product->name }}" 
+                         class="img-fluid" 
+                         style="max-height: 85vh; max-width: 95vw; object-fit: contain; transition: opacity 0.15s ease; user-select: none;">
+                </div>
+
+                {{-- Next Arrow (Desktop & Mobile) --}}
+                @if(count($allProductImages) > 1)
+                <button type="button" onclick="stepLightboxGallery(1)" aria-label="Next image"
+                        class="btn btn-dark bg-opacity-75 shadow-lg rounded-circle position-absolute end-0 me-2 me-md-4 d-flex align-items-center justify-content-center border border-white border-opacity-25"
+                        style="width: 44px; height: 44px; top: 50%; transform: translateY(-50%); z-index: 20;">
+                    <i class="bi bi-chevron-right text-white fs-5"></i>
+                </button>
+                @endif
+            </div>
+
+            {{-- Lightbox Thumbnails Strip (Bottom) --}}
+            @if(count($allProductImages) > 1)
+            <div class="py-2.5 px-3 border-top border-secondary border-opacity-25 d-flex align-items-center justify-content-center gap-2 overflow-x-auto" style="z-index: 10;">
+                @foreach($allProductImages as $lIdx => $lUrl)
+                    <button type="button" onclick="setLightboxIndex({{ $lIdx }})"
+                            class="btn p-0 rounded-2 border overflow-hidden lightbox-thumb-btn {{ $lIdx === 0 ? 'border-primary border-2 shadow' : 'border-secondary border-opacity-50 opacity-50' }}"
+                            data-lightbox-thumb="{{ $lIdx }}"
+                            style="width: 48px; height: 48px; background: #ffffff; flex-shrink: 0;">
+                        <img src="{{ $lUrl }}" alt="" class="w-100 h-100" style="object-fit: contain; padding: 2px;">
+                    </button>
+                @endforeach
+            </div>
+            @endif
+
         </div>
     </div>
 </div>
