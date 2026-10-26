@@ -1845,17 +1845,19 @@ function setLightboxIndex(idx) {
     // Keep page gallery in sync
     selectProductGalleryIndex(idx);
 
-    // Update lightbox indicator dots
+    // Update lightbox indicator dots (sideways horizontal pill)
     const dots = document.querySelectorAll('.lightbox-dot-btn');
     dots.forEach((dot, i) => {
         if (i === idx) {
-            dot.classList.remove('bg-secondary', 'bg-opacity-25');
-            dot.classList.add('bg-primary');
-            dot.style.transform = 'scale(1.35)';
+            dot.classList.add('active');
+            dot.style.width = '24px';
+            dot.style.background = '#4f46e5';
+            dot.style.opacity = '1';
         } else {
-            dot.classList.add('bg-secondary', 'bg-opacity-25');
-            dot.classList.remove('bg-primary');
-            dot.style.transform = 'scale(1)';
+            dot.classList.remove('active');
+            dot.style.width = '8px';
+            dot.style.background = '#cbd5e1';
+            dot.style.opacity = '0.7';
         }
     });
 }
@@ -1960,7 +1962,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </button>
 
             {{-- Main Image Stage (Clean white card, perfectly centered) --}}
-            <div class="modal-body p-3 p-sm-4 d-flex align-items-center justify-content-center position-relative" 
+            <div class="modal-body p-3 p-sm-4 d-flex flex-column align-items-center justify-content-center position-relative" 
                  id="lightbox-stage" style="background: #ffffff; min-height: 320px;">
                 
                 {{-- Previous Arrow (Desktop Only) --}}
@@ -1976,7 +1978,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="d-flex align-items-center justify-content-center w-100" style="max-height: 70vh;">
                     <img id="lightbox-img" src="{{ $allProductImages[0] ?? '' }}" alt="{{ $product->name }}" 
                          class="img-fluid" 
-                         style="max-height: 68vh; max-width: 100%; object-fit: contain; border-radius: 12px; transition: opacity 0.15s ease;">
+                         style="max-height: 65vh; max-width: 100%; object-fit: contain; border-radius: 12px; transition: opacity 0.15s ease;">
                 </div>
 
                 {{-- Next Arrow (Desktop Only) --}}
@@ -1987,20 +1989,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     <i class="bi bi-chevron-right text-dark fs-6"></i>
                 </button>
                 @endif
-            </div>
 
-            {{-- Bottom Navigation Dots (if multiple images) --}}
-            @if(count($allProductImages) > 1)
-            <div class="py-2.5 bg-light border-top d-flex align-items-center justify-content-center gap-2">
-                @foreach($allProductImages as $lIdx => $lUrl)
-                    <button type="button" onclick="setLightboxIndex({{ $lIdx }})"
-                            class="rounded-circle p-0 border-0 lightbox-dot-btn {{ $lIdx === 0 ? 'bg-primary' : 'bg-secondary bg-opacity-25' }}"
-                            data-lightbox-dot="{{ $lIdx }}"
-                            aria-label="Slide {{ $lIdx + 1 }}"
-                            style="width: 8px; height: 8px; transition: all 0.2s ease; cursor: pointer;"></button>
-                @endforeach
+                {{-- Sideways Horizontal Navigation Dots --}}
+                @if(count($allProductImages) > 1)
+                <div class="pt-3 w-100" style="display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; justify-content: center !important; gap: 8px !important; z-index: 20;">
+                    @foreach($allProductImages as $lIdx => $lUrl)
+                        <button type="button" onclick="setLightboxIndex({{ $lIdx }})"
+                                class="border-0 p-0 lightbox-dot-btn {{ $lIdx === 0 ? 'active' : '' }}"
+                                data-lightbox-dot="{{ $lIdx }}"
+                                aria-label="Slide {{ $lIdx + 1 }}"
+                                style="width: {{ $lIdx === 0 ? '24px' : '8px' }}; height: 8px; border-radius: 999px; background: {{ $lIdx === 0 ? '#4f46e5' : '#cbd5e1' }}; opacity: {{ $lIdx === 0 ? '1' : '0.7' }}; transition: all 0.25s ease; cursor: pointer; flex-shrink: 0; display: inline-block;"></button>
+                    @endforeach
+                </div>
+                @endif
             </div>
-            @endif
 
         </div>
     </div>
