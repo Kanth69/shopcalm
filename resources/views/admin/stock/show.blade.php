@@ -17,7 +17,9 @@
                 <p class="text-muted small mb-3">SKU: {{ $product->sku }}</p>
                 <div class="d-flex justify-content-center gap-2 mb-4">
                     <span class="badge bg-light text-dark border">{{ $product->category->name }}</span>
-                    <span class="badge bg-light text-dark border">{{ $product->brand->name }}</span>
+                    @if($product->brand)
+                        <span class="badge bg-light text-dark border">{{ $product->brand->name }}</span>
+                    @endif
                 </div>
 
                 <div class="row g-2">

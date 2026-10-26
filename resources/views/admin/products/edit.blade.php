@@ -150,9 +150,10 @@
                         <table class="table table-hover align-middle mb-0" id="options_table">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="ps-3" id="option_col_header" style="width: 55%;">Variant Value (Size / Color)</th>
-                                    <th style="width: 35%;">Stock Available</th>
-                                    <th class="text-center" style="width: 10%;">Action</th>
+                                    <th class="ps-3" id="option_col_header" style="width: 40%;">Variant Value (Size / Color)</th>
+                                    <th style="width: 34%;">Photo / Color Image</th>
+                                    <th style="width: 18%;">Stock</th>
+                                    <th class="text-center" style="width: 8%;">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="options_rows">
@@ -164,26 +165,100 @@
                                         $existingOptions = array_keys($stocksMap);
                                         $existingValues = array_values($stocksMap);
                                     }
+                                    $existingImagesMap = is_array($product->option_images) ? $product->option_images : (json_decode($product->option_images ?? '{}', true) ?: []);
                                     $isDoubleOpt = in_array(old('option_type', $product->option_type), ['size_color', 'waist_color']);
+                                    $isColorType = old('option_type', $product->option_type) === 'color';
+
+                                    $adminPalette = [
+                                        'Black' => '#18181b', 'White' => '#ffffff', 'Blue' => '#2563eb', 'Navy Blue' => '#0f172a',
+                                        'Sky Blue' => '#38bdf8', 'Royal Blue' => '#1d4ed8', 'Red' => '#ef4444', 'Maroon' => '#800000',
+                                        'Crimson' => '#dc143c', 'Green' => '#16a34a', 'Dark Green' => '#14532d', 'Olive' => '#808000',
+                                        'Teal' => '#0d9488', 'Lime' => '#84cc16', 'Mint' => '#10b981', 'Yellow' => '#eab308',
+                                        'Mustard' => '#ca8a04', 'Orange' => '#ea580c', 'Coral' => '#fb7185', 'Peach' => '#fed7aa',
+                                        'Pink' => '#ec4899', 'Rose' => '#f43f5e', 'Purple' => '#9333ea', 'Lavender' => '#c084fc',
+                                        'Violet' => '#7c3aed', 'Brown' => '#78350f', 'Tan' => '#d2b48c', 'Khaki' => '#f0e68c',
+                                        'Beige' => '#f5f5dc', 'Cream' => '#fef3c7', 'Grey' => '#64748b', 'Silver' => '#c0c0c0',
+                                        'Gold' => '#ffd700', 'Burgundy' => '#800020'
+                                    ];
+                                    $getBladeHex = function($name) use ($adminPalette) {
+                                        if (!$name) return '#cbd5e1';
+                                        $clean = strtolower(trim($name));
+                                        foreach ($adminPalette as $k => $h) {
+                                            if (strtolower($k) === $clean) return $h;
+                                        }
+                                        return $name;
+                                    };
                                 @endphp
                                 @forelse($existingOptions as $idx => $optKey)
                                     @php
                                         $parts = explode(' - ', $optKey, 2);
                                         $cPart = $parts[0] ?? '';
                                         $sPart = $parts[1] ?? '';
+                                        $curImg = $existingImagesMap[$optKey] ?? ($existingImagesMap[$cPart] ?? '');
                                     @endphp
                                     <tr>
                                         <td class="ps-3">
                                             @if($isDoubleOpt || str_contains($optKey, ' - '))
                                                 <div class="d-flex align-items-center gap-2">
-                                                    <input type="text" class="form-control form-control-sm fw-bold opt-color-part" value="{{ $cPart }}" placeholder="Color (e.g. Blue)" required oninput="syncDoubleOptionRow(this)">
+                                                    <div style="flex: 1.2; min-width: 140px;">
+                                                        <div class="d-inline-flex align-items-center gap-1.5 w-100">
+                                                            <span class="opt-color-dot rounded-circle flex-shrink-0" 
+                                                                  style="width: 18px; height: 18px; background-color: {{ $getBladeHex($cPart) }}; border: 1px solid rgba(0,0,0,0.2) !important; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4);"></span>
+                                                            <select class="form-select form-select-sm fw-bold opt-color-part" onchange="onColorSelectChange(this)" required style="font-size: 0.8rem;">
+                                                                <option value="">-- Select Color --</option>
+                                                                @php $found = false; @endphp
+                                                                @foreach($adminPalette as $pColor => $pHex)
+                                                                    @php $isSel = (strcasecmp($cPart, $pColor) === 0); if($isSel) $found = true; @endphp
+                                                                    <option value="{{ $pColor }}" {{ $isSel ? 'selected' : '' }}>{{ $pColor }}</option>
+                                                                @endforeach
+                                                                @if(!empty($cPart) && !$found)
+                                                                    <option value="{{ $cPart }}" selected>{{ $cPart }}</option>
+                                                                @endif
+                                                                <option value="__custom__">➕ Custom Color...</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
                                                     <span class="text-muted fw-bold">-</span>
-                                                    <input type="text" class="form-control form-control-sm fw-bold opt-size-part" value="{{ $sPart }}" placeholder="Size (e.g. S)" required oninput="syncDoubleOptionRow(this)">
+                                                    <div style="flex: 1; min-width: 90px;">
+                                                        <input type="text" class="form-control form-control-sm fw-bold opt-size-part" value="{{ $sPart }}" placeholder="Size (e.g. S)" required oninput="syncDoubleOptionRow(this)">
+                                                    </div>
                                                     <input type="hidden" name="option_keys[]" class="opt-combined-key" value="{{ $optKey }}">
+                                                </div>
+                                            @elseif($isColorType)
+                                                <div style="max-width: 260px;">
+                                                    <div class="d-inline-flex align-items-center gap-1.5 w-100">
+                                                        <span class="opt-color-dot rounded-circle flex-shrink-0" 
+                                                              style="width: 18px; height: 18px; background-color: {{ $getBladeHex($optKey) }}; border: 1px solid rgba(0,0,0,0.2) !important; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4);"></span>
+                                                        <select name="option_keys[]" class="form-select form-select-sm fw-bold opt-color-select" onchange="onSingleColorSelectChange(this)" required style="font-size: 0.8rem;">
+                                                            <option value="">-- Select Color --</option>
+                                                            @php $found = false; @endphp
+                                                            @foreach($adminPalette as $pColor => $pHex)
+                                                                @php $isSel = (strcasecmp($optKey, $pColor) === 0); if($isSel) $found = true; @endphp
+                                                                <option value="{{ $pColor }}" {{ $isSel ? 'selected' : '' }}>{{ $pColor }}</option>
+                                                            @endforeach
+                                                            @if(!empty($optKey) && !$found)
+                                                                <option value="{{ $optKey }}" selected>{{ $optKey }}</option>
+                                                            @endif
+                                                            <option value="__custom__">➕ Custom Color...</option>
+                                                        </select>
+                                                    </div>
                                                 </div>
                                             @else
                                                 <input type="text" name="option_keys[]" class="form-control form-control-sm fw-bold" value="{{ $optKey }}" placeholder="e.g. Size M" required>
                                             @endif
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-1.5">
+                                                <div class="opt-img-preview-box rounded border bg-light d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0" style="width: 34px; height: 34px;">
+                                                    @if(!empty($curImg))
+                                                        <img src="{{ asset('storage/' . $curImg) }}" class="w-100 h-100" style="object-fit: cover;">
+                                                    @else
+                                                        <i class="bi bi-image text-muted" style="font-size: 0.8rem;"></i>
+                                                    @endif
+                                                </div>
+                                                <input type="file" name="option_image_files[]" class="form-control form-control-sm opt-img-file-input py-1 px-1.5" accept="image/*" style="font-size: 0.72rem;" onchange="previewOptionImg(this)">
+                                                <input type="hidden" name="option_existing_images[]" class="opt-existing-img" value="{{ $curImg }}">
+                                            </div>
                                         </td>
                                         <td>
                                             <input type="number" name="option_values[]" min="0" class="form-control form-control-sm fw-bold option-qty-input" value="{{ $existingValues[$idx] ?? 0 }}" required onchange="calculateTotalStockFromOptions()">
@@ -333,8 +408,9 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold text-dark small">Brand <span class="text-danger">*</span></label>
-                        <select name="brand_id" id="brand_id" class="form-select @error('brand_id') is-invalid @enderror" required>
+                        <label class="form-label fw-bold text-dark small">Brand <span class="text-muted fw-normal">(Optional)</span></label>
+                        <select name="brand_id" id="brand_id" class="form-select @error('brand_id') is-invalid @enderror">
+                            <option value="">-- No Brand / Generic (Optional) --</option>
                             @foreach($brands as $brand)
                                 <option value="{{ $brand->id }}" data-category-id="{{ $brand->category_id }}" {{ old('brand_id', $product->brand_id) == $brand->id ? 'selected' : '' }}>
                                     {{ $brand->name }}
@@ -387,6 +463,25 @@
                     <div class="mt-3 p-3 bg-light rounded-3 border text-center">
                         <img id="mainImagePreview" src="{{ asset('storage/' . $product->main_image) }}" alt="Preview" class="img-fluid rounded-2" style="width: 160px; height: 160px; object-fit: contain; background: #fff;">
                     </div>
+                </div>
+            </div>
+
+            <!-- Product Video (YouTube) -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-youtube text-danger me-2"></i>Product Video (Link or Embed)
+                    </h6>
+                    <span class="badge bg-light text-muted border rounded-pill" style="font-size: 0.68rem;">Optional</span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-danger border align-items-start pt-2"><i class="bi bi-play-circle-fill"></i></span>
+                        <textarea name="video_url" rows="2" class="form-control form-control-sm @error('video_url') is-invalid @enderror" 
+                                  placeholder="Paste YouTube Link or Embed Code (e.g. https://youtu.be/... or <iframe ...>)">{{ old('video_url', $product->video_url) }}</textarea>
+                    </div>
+                    <div class="form-text text-muted" style="font-size: 0.72rem;">Paste a YouTube Link (watch/youtu.be/shorts) or full <strong>Embed Code</strong> (&lt;iframe...&gt;).</div>
+                    @error('video_url') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                 </div>
             </div>
 
@@ -562,6 +657,131 @@
         }
     }
 
+    const ADMIN_COLOR_PALETTE = [
+        { name: 'Black', hex: '#18181b' },
+        { name: 'White', hex: '#ffffff' },
+        { name: 'Blue', hex: '#2563eb' },
+        { name: 'Navy Blue', hex: '#0f172a' },
+        { name: 'Sky Blue', hex: '#38bdf8' },
+        { name: 'Royal Blue', hex: '#1d4ed8' },
+        { name: 'Red', hex: '#ef4444' },
+        { name: 'Maroon', hex: '#800000' },
+        { name: 'Crimson', hex: '#dc143c' },
+        { name: 'Green', hex: '#16a34a' },
+        { name: 'Dark Green', hex: '#14532d' },
+        { name: 'Olive', hex: '#808000' },
+        { name: 'Teal', hex: '#0d9488' },
+        { name: 'Lime', hex: '#84cc16' },
+        { name: 'Mint', hex: '#10b981' },
+        { name: 'Yellow', hex: '#eab308' },
+        { name: 'Mustard', hex: '#ca8a04' },
+        { name: 'Orange', hex: '#ea580c' },
+        { name: 'Coral', hex: '#fb7185' },
+        { name: 'Peach', hex: '#fed7aa' },
+        { name: 'Pink', hex: '#ec4899' },
+        { name: 'Rose', hex: '#f43f5e' },
+        { name: 'Purple', hex: '#9333ea' },
+        { name: 'Lavender', hex: '#c084fc' },
+        { name: 'Violet', hex: '#7c3aed' },
+        { name: 'Brown', hex: '#78350f' },
+        { name: 'Tan', hex: '#d2b48c' },
+        { name: 'Khaki', hex: '#f0e68c' },
+        { name: 'Beige', hex: '#f5f5dc' },
+        { name: 'Cream', hex: '#fef3c7' },
+        { name: 'Grey', hex: '#64748b' },
+        { name: 'Silver', hex: '#c0c0c0' },
+        { name: 'Gold', hex: '#ffd700' },
+        { name: 'Burgundy', hex: '#800020' }
+    ];
+
+    function getAdminColorHex(name) {
+        if (!name) return '#cbd5e1';
+        const clean = name.trim().toLowerCase();
+        const found = ADMIN_COLOR_PALETTE.find(c => c.name.toLowerCase() === clean);
+        if (found) return found.hex;
+        return clean;
+    }
+
+    function buildColorSelectHtml(selectedColor, className, onChangeHandler, inputName = '') {
+        const currentColor = (selectedColor || '').trim();
+        let optionsHtml = `<option value="">-- Select Color --</option>`;
+        let isFound = false;
+
+        ADMIN_COLOR_PALETTE.forEach(c => {
+            const isSel = (currentColor && c.name.toLowerCase() === currentColor.toLowerCase());
+            if (isSel) isFound = true;
+            optionsHtml += `<option value="${c.name}" ${isSel ? 'selected' : ''}>${c.name}</option>`;
+        });
+
+        if (currentColor && !isFound) {
+            optionsHtml += `<option value="${currentColor}" selected>${currentColor}</option>`;
+        }
+
+        optionsHtml += `<option value="__custom__">➕ Custom Color...</option>`;
+
+        const hex = getAdminColorHex(currentColor);
+        const nameAttr = inputName ? `name="${inputName}"` : '';
+
+        return `
+            <div class="d-inline-flex align-items-center gap-1.5 w-100">
+                <span class="opt-color-dot rounded-circle flex-shrink-0" 
+                      style="width: 18px; height: 18px; background-color: ${hex}; border: 1px solid rgba(0,0,0,0.2) !important; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4);"></span>
+                <select ${nameAttr} class="form-select form-select-sm fw-bold ${className}" onchange="${onChangeHandler}" required style="font-size: 0.8rem;">
+                    ${optionsHtml}
+                </select>
+            </div>
+        `;
+    }
+
+    function onColorSelectChange(selectEl) {
+        if (selectEl.value === '__custom__') {
+            const customName = prompt('Enter custom color name (e.g. Rose Gold, Charcoal):');
+            if (customName && customName.trim()) {
+                const trimmed = customName.trim();
+                let opt = Array.from(selectEl.options).find(o => o.value.toLowerCase() === trimmed.toLowerCase());
+                if (!opt) {
+                    opt = new Option(trimmed, trimmed, true, true);
+                    selectEl.insertBefore(opt, selectEl.options[selectEl.options.length - 1]);
+                } else {
+                    opt.selected = true;
+                }
+                selectEl.value = trimmed;
+            } else {
+                selectEl.value = '';
+            }
+        }
+
+        const dot = selectEl.closest('.d-inline-flex')?.querySelector('.opt-color-dot');
+        if (dot) {
+            dot.style.backgroundColor = getAdminColorHex(selectEl.value);
+        }
+        syncDoubleOptionRow(selectEl);
+    }
+
+    function onSingleColorSelectChange(selectEl) {
+        if (selectEl.value === '__custom__') {
+            const customName = prompt('Enter custom color name (e.g. Rose Gold, Charcoal):');
+            if (customName && customName.trim()) {
+                const trimmed = customName.trim();
+                let opt = Array.from(selectEl.options).find(o => o.value.toLowerCase() === trimmed.toLowerCase());
+                if (!opt) {
+                    opt = new Option(trimmed, trimmed, true, true);
+                    selectEl.insertBefore(opt, selectEl.options[selectEl.options.length - 1]);
+                } else {
+                    opt.selected = true;
+                }
+                selectEl.value = trimmed;
+            } else {
+                selectEl.value = '';
+            }
+        }
+
+        const dot = selectEl.closest('.d-inline-flex')?.querySelector('.opt-color-dot');
+        if (dot) {
+            dot.style.backgroundColor = getAdminColorHex(selectEl.value);
+        }
+    }
+
     function isDoubleVariantType(type) {
         return type === 'size_color' || type === 'waist_color';
     }
@@ -577,22 +797,61 @@
         }
     }
 
-    function buildOptionRowHtml(type, key, qty) {
+    function previewOptionImg(input) {
+        const tr = input.closest('tr');
+        if (!tr) return;
+        const box = tr.querySelector('.opt-img-preview-box');
+        if (!box) return;
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                box.innerHTML = `<img src="${e.target.result}" class="w-100 h-100" style="object-fit: cover;">`;
+            };
+            reader.readAsDataURL(input.files[0]);
+        } else {
+            box.innerHTML = `<i class="bi bi-image text-muted" style="font-size: 0.8rem;"></i>`;
+        }
+    }
+
+    function buildOptionRowHtml(type, key, qty, existingImg = '') {
+        const imgPreview = existingImg 
+            ? `<img src="/storage/${existingImg}" class="w-100 h-100" style="object-fit: cover;">`
+            : `<i class="bi bi-image text-muted" style="font-size: 0.8rem;"></i>`;
+
+        const photoCell = `
+            <td>
+                <div class="d-flex align-items-center gap-1.5">
+                    <div class="opt-img-preview-box rounded border bg-light d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0" style="width: 34px; height: 34px;">
+                        ${imgPreview}
+                    </div>
+                    <input type="file" name="option_image_files[]" class="form-control form-control-sm opt-img-file-input py-1 px-1.5" accept="image/*" style="font-size: 0.72rem;" onchange="previewOptionImg(this)">
+                    <input type="hidden" name="option_existing_images[]" class="opt-existing-img" value="${existingImg}">
+                </div>
+            </td>
+        `;
+
         if (isDoubleVariantType(type)) {
             const parts = (key || '').split(' - ');
             const colorVal = parts[0] || '';
             const sizeVal = parts[1] || '';
             const sizePlaceholder = type === 'waist_color' ? 'Waist (e.g. 32)' : 'Size (e.g. M)';
             const combined = (colorVal && sizeVal) ? `${colorVal} - ${sizeVal}` : key;
+            const colorSelectHtml = buildColorSelectHtml(colorVal, 'opt-color-part', 'onColorSelectChange(this)');
             return `
                 <td class="ps-3">
                     <div class="d-flex align-items-center gap-2">
-                        <input type="text" class="form-control form-control-sm fw-bold opt-color-part" value="${colorVal}" placeholder="Color (e.g. Blue)" required oninput="syncDoubleOptionRow(this)">
+                        <div style="flex: 1.2; min-width: 140px;">
+                            ${colorSelectHtml}
+                        </div>
                         <span class="text-muted fw-bold">-</span>
-                        <input type="text" class="form-control form-control-sm fw-bold opt-size-part" value="${sizeVal}" placeholder="${sizePlaceholder}" required oninput="syncDoubleOptionRow(this)">
+                        <div style="flex: 1; min-width: 90px;">
+                            <input type="text" class="form-control form-control-sm fw-bold opt-size-part" value="${sizeVal}" placeholder="${sizePlaceholder}" required oninput="syncDoubleOptionRow(this)">
+                        </div>
                         <input type="hidden" name="option_keys[]" class="opt-combined-key" value="${combined}">
                     </div>
                 </td>
+                ${photoCell}
                 <td>
                     <input type="number" name="option_values[]" min="0" class="form-control form-control-sm fw-bold option-qty-input" value="${qty}" required onchange="calculateTotalStockFromOptions()">
                 </td>
@@ -601,10 +860,30 @@
                 </td>
             `;
         }
+
+        if (type === 'color') {
+            const colorSelectHtml = buildColorSelectHtml(key, 'opt-color-select', 'onSingleColorSelectChange(this)', 'option_keys[]');
+            return `
+                <td class="ps-3">
+                    <div style="max-width: 260px;">
+                        ${colorSelectHtml}
+                    </div>
+                </td>
+                ${photoCell}
+                <td>
+                    <input type="number" name="option_values[]" min="0" class="form-control form-control-sm fw-bold option-qty-input" value="${qty}" required onchange="calculateTotalStockFromOptions()">
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-danger border-0 rounded-circle p-1" onclick="removeOptionRow(this)"><i class="bi bi-trash-fill"></i></button>
+                </td>
+            `;
+        }
+
         return `
             <td class="ps-3">
                 <input type="text" name="option_keys[]" class="form-control form-control-sm fw-bold" value="${key}" placeholder="e.g. Size M" required>
             </td>
+            ${photoCell}
             <td>
                 <input type="number" name="option_values[]" min="0" class="form-control form-control-sm fw-bold option-qty-input" value="${qty}" required onchange="calculateTotalStockFromOptions()">
             </td>

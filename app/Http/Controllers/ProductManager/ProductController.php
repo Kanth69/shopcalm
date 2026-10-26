@@ -211,19 +211,50 @@ class ProductController extends Controller
         if ($validated['has_options'] && $request->filled('option_keys') && $request->filled('option_values')) {
             $keys = $request->input('option_keys', []);
             $values = $request->input('option_values', []);
+            $existingImages = $request->input('option_existing_images', []);
             $stocksMap = [];
+            $optionImagesMap = [];
+
             foreach ($keys as $idx => $keyName) {
                 $trimmedKey = trim($keyName);
                 if ($trimmedKey !== '') {
                     $stocksMap[$trimmedKey] = max(0, (int) ($values[$idx] ?? 0));
+                    if (!empty($existingImages[$idx])) {
+                        $optionImagesMap[$trimmedKey] = $existingImages[$idx];
+                    }
                 }
             }
+
+            if ($request->hasFile('option_image_files')) {
+                foreach ($request->file('option_image_files') as $idx => $file) {
+                    if ($file && $file->isValid()) {
+                        $trimmedKey = trim($keys[$idx] ?? '');
+                        if ($trimmedKey !== '') {
+                            $path = $file->store('products/variants', 'public');
+                            $optionImagesMap[$trimmedKey] = $path;
+                        }
+                    }
+                }
+            }
+
+            // Also map by primary color name for quick lookup
+            foreach ($optionImagesMap as $k => $imgPath) {
+                if (str_contains($k, ' - ')) {
+                    $colorPart = trim(explode(' - ', $k, 2)[0] ?? '');
+                    if ($colorPart !== '' && !isset($optionImagesMap[$colorPart])) {
+                        $optionImagesMap[$colorPart] = $imgPath;
+                    }
+                }
+            }
+
             $validated['option_stocks'] = $stocksMap;
+            $validated['option_images'] = !empty($optionImagesMap) ? $optionImagesMap : null;
             if (!empty($stocksMap)) {
                 $validated['stock'] = array_sum($stocksMap);
             }
         } elseif (!$validated['has_options']) {
             $validated['option_stocks'] = null;
+            $validated['option_images'] = null;
             $validated['option_type'] = null;
         }
 
@@ -321,19 +352,50 @@ class ProductController extends Controller
         if ($validated['has_options'] && $request->filled('option_keys') && $request->filled('option_values')) {
             $keys = $request->input('option_keys', []);
             $values = $request->input('option_values', []);
+            $existingImages = $request->input('option_existing_images', []);
             $stocksMap = [];
+            $optionImagesMap = [];
+
             foreach ($keys as $idx => $keyName) {
                 $trimmedKey = trim($keyName);
                 if ($trimmedKey !== '') {
                     $stocksMap[$trimmedKey] = max(0, (int) ($values[$idx] ?? 0));
+                    if (!empty($existingImages[$idx])) {
+                        $optionImagesMap[$trimmedKey] = $existingImages[$idx];
+                    }
                 }
             }
+
+            if ($request->hasFile('option_image_files')) {
+                foreach ($request->file('option_image_files') as $idx => $file) {
+                    if ($file && $file->isValid()) {
+                        $trimmedKey = trim($keys[$idx] ?? '');
+                        if ($trimmedKey !== '') {
+                            $path = $file->store('products/variants', 'public');
+                            $optionImagesMap[$trimmedKey] = $path;
+                        }
+                    }
+                }
+            }
+
+            // Also map by primary color name for quick lookup
+            foreach ($optionImagesMap as $k => $imgPath) {
+                if (str_contains($k, ' - ')) {
+                    $colorPart = trim(explode(' - ', $k, 2)[0] ?? '');
+                    if ($colorPart !== '' && !isset($optionImagesMap[$colorPart])) {
+                        $optionImagesMap[$colorPart] = $imgPath;
+                    }
+                }
+            }
+
             $validated['option_stocks'] = $stocksMap;
+            $validated['option_images'] = !empty($optionImagesMap) ? $optionImagesMap : null;
             if (!empty($stocksMap)) {
                 $validated['stock'] = array_sum($stocksMap);
             }
         } elseif (!$validated['has_options']) {
             $validated['option_stocks'] = null;
+            $validated['option_images'] = null;
             $validated['option_type'] = null;
         }
 

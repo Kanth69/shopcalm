@@ -329,6 +329,13 @@
                     <tr>
                         <td class="ps-4 py-3">
                             <div class="fw-semibold text-dark" style="font-size: 0.88rem;">{{ $item->product_name }}</div>
+                            @if(!empty($item->selected_option))
+                                <div class="mt-1">
+                                    <span class="badge bg-light text-primary border rounded-pill font-monospace" style="font-size: 0.72rem;">
+                                        <i class="bi bi-palette-fill me-1"></i>Variant: {{ $item->selected_option }}
+                                    </span>
+                                </div>
+                            @endif
                             @if(isset($item->sku) && $item->sku)
                                 <div class="text-muted font-monospace" style="font-size: 0.72rem;">SKU: {{ $item->sku }}</div>
                             @endif

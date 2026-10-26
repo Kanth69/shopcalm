@@ -372,41 +372,6 @@
     </div>
 </div>
 
-<!-- Attractive Contact Success Modal -->
-<div class="modal fade" id="contactSuccessModal" tabindex="-1" aria-labelledby="contactSuccessModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden text-center p-4 p-md-5" style="background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);">
-            <div class="modal-body p-0">
-                <!-- Glowing Success Icon Circle -->
-                <div class="mb-3.5 d-inline-flex align-items-center justify-content-center p-2 rounded-circle" style="background: rgba(16, 185, 129, 0.12); border: 2px dashed rgba(16, 185, 129, 0.35);">
-                    <div class="d-flex align-items-center justify-content-center rounded-circle text-white" style="width: 68px; height: 68px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35);">
-                        <i class="bi bi-check-lg fs-1 fw-bold"></i>
-                    </div>
-                </div>
-
-                <h3 class="fw-bolder mb-2 text-dark" id="contactSuccessModalLabel" style="letter-spacing: -0.02em; color: #0f172a;">
-                    Message Sent Successfully!
-                </h3>
-
-                <p class="text-muted mb-4 mx-auto" style="font-size: 0.95rem; line-height: 1.65; max-width: 360px;">
-                    Thank you for reaching out. Our support team has received your enquiry and will get back to you shortly (typically within 24 hours).
-                </p>
-
-                <div class="d-inline-flex align-items-center gap-2 bg-light px-3.5 py-1.5 rounded-pill border small fw-semibold text-dark mb-4" style="font-size: 0.8rem;">
-                    <i class="bi bi-headset text-primary"></i> 
-                    <span>Helpdesk Ticket Logged</span>
-                </div>
-
-                <div>
-                    <button type="button" class="btn btn-primary rounded-pill px-5 py-2.5 fw-bold shadow-sm" data-bs-dismiss="modal" style="font-size: 0.9rem;">
-                        Got it, Thanks!
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -414,7 +379,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitBtn = document.getElementById('contactSubmitBtn');
     const submitIcon = document.getElementById('submitIcon');
     const submitText = document.getElementById('submitText');
-    const successModal = new bootstrap.Modal(document.getElementById('contactSuccessModal'));
     const messageInput = document.getElementById('contact_message');
     const wordCountSpan = document.getElementById('wordCount');
     const wordCountBadge = document.getElementById('wordCountBadge');
@@ -531,8 +495,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     form.querySelector('[name="email"]').value = initialEmail;
                 }
                 updateWordCount();
-                // Show attractive modal popup
-                successModal.show();
+                // Show attractive modal popup via global helper
+                showCenterAlert({
+                    type: 'success',
+                    title: 'Message Sent Successfully!',
+                    message: 'Thank you for reaching out. Our support team has received your enquiry and will get back to you shortly (typically within 24 hours).',
+                    badge: '<i class="bi bi-headset text-primary"></i> <span>Helpdesk Ticket Logged</span>',
+                    buttonText: 'Got it, Thanks!'
+                });
             } else if (response.status === 422 && data.errors) {
                 // Display validation errors under fields
                 Object.keys(data.errors).forEach(fieldName => {

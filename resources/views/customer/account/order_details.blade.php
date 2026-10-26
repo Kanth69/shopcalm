@@ -722,9 +722,10 @@
                     {{-- 1. Thumbnail + Info (50%) --}}
                     <div class="d-flex align-items-center gap-3 min-w-0" style="flex: 1 1 50%;">
                         <div class="flex-shrink-0">
-                            @if($product && $product->main_image)
+                            @php $orderThumb = $item->display_image ?? $product?->main_image; @endphp
+                            @if($orderThumb)
                                 <a href="{{ route('product.show', $product->slug) }}">
-                                    <img src="{{ asset('storage/' . $product->main_image) }}"
+                                    <img src="{{ asset('storage/' . $orderThumb) }}"
                                          alt="{{ $item->product_name }}"
                                          class="rounded-3 border p-1 bg-white shadow-2xs"
                                          width="64" height="64" style="object-fit: contain;">
@@ -801,9 +802,10 @@
                 <div class="d-block d-md-none">
                     <div class="d-flex align-items-start gap-3 mb-3">
                         <div class="flex-shrink-0">
-                            @if($product && $product->main_image)
+                            @php $orderThumb = $item->display_image ?? $product?->main_image; @endphp
+                            @if($orderThumb)
                                 <a href="{{ route('product.show', $product->slug) }}">
-                                    <img src="{{ asset('storage/' . $product->main_image) }}"
+                                    <img src="{{ asset('storage/' . $orderThumb) }}"
                                          alt="{{ $item->product_name }}"
                                          class="rounded-3 border p-1 bg-white shadow-2xs"
                                          width="68" height="68" style="object-fit: contain;">

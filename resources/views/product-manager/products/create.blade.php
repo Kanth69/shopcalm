@@ -310,9 +310,9 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold text-dark small">Brand <span class="text-danger">*</span></label>
-                        <select name="brand_id" id="brand_id" class="form-select @error('brand_id') is-invalid @enderror" required>
-                            <option value="">Select Brand</option>
+                        <label class="form-label fw-bold text-dark small">Brand <span class="text-muted fw-normal">(Optional)</span></label>
+                        <select name="brand_id" id="brand_id" class="form-select @error('brand_id') is-invalid @enderror">
+                            <option value="">-- No Brand / Generic (Optional) --</option>
                             @foreach($brands as $brand)
                                 <option value="{{ $brand->id }}" data-category-id="{{ $brand->category_id }}" {{ old('brand_id') == $brand->id ? 'selected' : '' }}>
                                     {{ $brand->name }}
@@ -360,6 +360,25 @@
                             <span>No Main Image Selected</span>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Product Video (YouTube) -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-youtube text-danger me-2"></i>Product Video (Link or Embed)
+                    </h6>
+                    <span class="badge bg-light text-muted border rounded-pill" style="font-size: 0.68rem;">Optional</span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-danger border align-items-start pt-2"><i class="bi bi-play-circle-fill"></i></span>
+                        <textarea name="video_url" rows="2" class="form-control form-control-sm @error('video_url') is-invalid @enderror" 
+                                  placeholder="Paste YouTube Link or Embed Code (e.g. https://youtu.be/... or <iframe ...>)">{{ old('video_url') }}</textarea>
+                    </div>
+                    <div class="form-text text-muted" style="font-size: 0.72rem;">Paste a YouTube Link (watch/youtu.be/shorts) or full <strong>Embed Code</strong> (&lt;iframe...&gt;).</div>
+                    @error('video_url') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                 </div>
             </div>
 
@@ -486,6 +505,131 @@
         }
     }
 
+    const ADMIN_COLOR_PALETTE = [
+        { name: 'Black', hex: '#18181b' },
+        { name: 'White', hex: '#ffffff' },
+        { name: 'Blue', hex: '#2563eb' },
+        { name: 'Navy Blue', hex: '#0f172a' },
+        { name: 'Sky Blue', hex: '#38bdf8' },
+        { name: 'Royal Blue', hex: '#1d4ed8' },
+        { name: 'Red', hex: '#ef4444' },
+        { name: 'Maroon', hex: '#800000' },
+        { name: 'Crimson', hex: '#dc143c' },
+        { name: 'Green', hex: '#16a34a' },
+        { name: 'Dark Green', hex: '#14532d' },
+        { name: 'Olive', hex: '#808000' },
+        { name: 'Teal', hex: '#0d9488' },
+        { name: 'Lime', hex: '#84cc16' },
+        { name: 'Mint', hex: '#10b981' },
+        { name: 'Yellow', hex: '#eab308' },
+        { name: 'Mustard', hex: '#ca8a04' },
+        { name: 'Orange', hex: '#ea580c' },
+        { name: 'Coral', hex: '#fb7185' },
+        { name: 'Peach', hex: '#fed7aa' },
+        { name: 'Pink', hex: '#ec4899' },
+        { name: 'Rose', hex: '#f43f5e' },
+        { name: 'Purple', hex: '#9333ea' },
+        { name: 'Lavender', hex: '#c084fc' },
+        { name: 'Violet', hex: '#7c3aed' },
+        { name: 'Brown', hex: '#78350f' },
+        { name: 'Tan', hex: '#d2b48c' },
+        { name: 'Khaki', hex: '#f0e68c' },
+        { name: 'Beige', hex: '#f5f5dc' },
+        { name: 'Cream', hex: '#fef3c7' },
+        { name: 'Grey', hex: '#64748b' },
+        { name: 'Silver', hex: '#c0c0c0' },
+        { name: 'Gold', hex: '#ffd700' },
+        { name: 'Burgundy', hex: '#800020' }
+    ];
+
+    function getAdminColorHex(name) {
+        if (!name) return '#cbd5e1';
+        const clean = name.trim().toLowerCase();
+        const found = ADMIN_COLOR_PALETTE.find(c => c.name.toLowerCase() === clean);
+        if (found) return found.hex;
+        return clean;
+    }
+
+    function buildColorSelectHtml(selectedColor, className, onChangeHandler, inputName = '') {
+        const currentColor = (selectedColor || '').trim();
+        let optionsHtml = `<option value="">-- Select Color --</option>`;
+        let isFound = false;
+
+        ADMIN_COLOR_PALETTE.forEach(c => {
+            const isSel = (currentColor && c.name.toLowerCase() === currentColor.toLowerCase());
+            if (isSel) isFound = true;
+            optionsHtml += `<option value="${c.name}" ${isSel ? 'selected' : ''}>${c.name}</option>`;
+        });
+
+        if (currentColor && !isFound) {
+            optionsHtml += `<option value="${currentColor}" selected>${currentColor}</option>`;
+        }
+
+        optionsHtml += `<option value="__custom__">➕ Custom Color...</option>`;
+
+        const hex = getAdminColorHex(currentColor);
+        const nameAttr = inputName ? `name="${inputName}"` : '';
+
+        return `
+            <div class="d-inline-flex align-items-center gap-1.5 w-100">
+                <span class="opt-color-dot rounded-circle flex-shrink-0" 
+                      style="width: 18px; height: 18px; background-color: ${hex}; border: 1px solid rgba(0,0,0,0.2) !important; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4);"></span>
+                <select ${nameAttr} class="form-select form-select-sm fw-bold ${className}" onchange="${onChangeHandler}" required style="font-size: 0.8rem;">
+                    ${optionsHtml}
+                </select>
+            </div>
+        `;
+    }
+
+    function onColorSelectChange(selectEl) {
+        if (selectEl.value === '__custom__') {
+            const customName = prompt('Enter custom color name (e.g. Rose Gold, Charcoal):');
+            if (customName && customName.trim()) {
+                const trimmed = customName.trim();
+                let opt = Array.from(selectEl.options).find(o => o.value.toLowerCase() === trimmed.toLowerCase());
+                if (!opt) {
+                    opt = new Option(trimmed, trimmed, true, true);
+                    selectEl.insertBefore(opt, selectEl.options[selectEl.options.length - 1]);
+                } else {
+                    opt.selected = true;
+                }
+                selectEl.value = trimmed;
+            } else {
+                selectEl.value = '';
+            }
+        }
+
+        const dot = selectEl.closest('.d-inline-flex')?.querySelector('.opt-color-dot');
+        if (dot) {
+            dot.style.backgroundColor = getAdminColorHex(selectEl.value);
+        }
+        syncDoubleOptionRow(selectEl);
+    }
+
+    function onSingleColorSelectChange(selectEl) {
+        if (selectEl.value === '__custom__') {
+            const customName = prompt('Enter custom color name (e.g. Rose Gold, Charcoal):');
+            if (customName && customName.trim()) {
+                const trimmed = customName.trim();
+                let opt = Array.from(selectEl.options).find(o => o.value.toLowerCase() === trimmed.toLowerCase());
+                if (!opt) {
+                    opt = new Option(trimmed, trimmed, true, true);
+                    selectEl.insertBefore(opt, selectEl.options[selectEl.options.length - 1]);
+                } else {
+                    opt.selected = true;
+                }
+                selectEl.value = trimmed;
+            } else {
+                selectEl.value = '';
+            }
+        }
+
+        const dot = selectEl.closest('.d-inline-flex')?.querySelector('.opt-color-dot');
+        if (dot) {
+            dot.style.backgroundColor = getAdminColorHex(selectEl.value);
+        }
+    }
+
     function syncDoubleOptionRow(el) {
         const wrapper = el.closest('td');
         if (!wrapper) return;
@@ -507,12 +651,17 @@
             const sizeVal = parts[1] || '';
             const sizePlaceholder = type === 'waist_color' ? 'Waist (e.g. 32)' : 'Size (e.g. M)';
             const combined = (colorVal && sizeVal) ? `${colorVal} - ${sizeVal}` : (key || '');
+            const colorSelectHtml = buildColorSelectHtml(colorVal, 'opt-color-part', 'onColorSelectChange(this)');
             return `
                 <td class="ps-3">
                     <div class="d-flex gap-2 align-items-center">
-                        <input type="text" class="form-control form-control-sm fw-bold opt-color-part" value="${colorVal}" placeholder="Color (e.g. Blue)" oninput="syncDoubleOptionRow(this)" required>
+                        <div style="flex: 1.2; min-width: 140px;">
+                            ${colorSelectHtml}
+                        </div>
                         <span class="text-muted fw-bold">-</span>
-                        <input type="text" class="form-control form-control-sm fw-bold opt-size-part" value="${sizeVal}" placeholder="${sizePlaceholder}" oninput="syncDoubleOptionRow(this)" required>
+                        <div style="flex: 1; min-width: 90px;">
+                            <input type="text" class="form-control form-control-sm fw-bold opt-size-part" value="${sizeVal}" placeholder="${sizePlaceholder}" oninput="syncDoubleOptionRow(this)" required>
+                        </div>
                         <input type="hidden" name="option_keys[]" class="opt-combined-key" value="${combined}">
                     </div>
                 </td>
@@ -524,6 +673,24 @@
                 </td>
             `;
         }
+
+        if (type === 'color') {
+            const colorSelectHtml = buildColorSelectHtml(key, 'opt-color-select', 'onSingleColorSelectChange(this)', 'option_keys[]');
+            return `
+                <td class="ps-3">
+                    <div style="max-width: 260px;">
+                        ${colorSelectHtml}
+                    </div>
+                </td>
+                <td>
+                    <input type="number" name="option_values[]" min="0" class="form-control form-control-sm fw-bold option-qty-input" value="${qty}" required onchange="calculateTotalStockFromOptions()">
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-danger border-0 rounded-circle p-1" onclick="removeOptionRow(this)"><i class="bi bi-trash-fill"></i></button>
+                </td>
+            `;
+        }
+
         return `
             <td class="ps-3">
                 <input type="text" name="option_keys[]" class="form-control form-control-sm fw-bold" value="${key}" placeholder="e.g. Size M" required>

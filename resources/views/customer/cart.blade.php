@@ -183,8 +183,9 @@
                                         @endif
                                     </div>
                                     <a href="{{ route('product.show', $item->product->slug) }}" class="flex-shrink-0 position-relative">
-                                        @if($item->product->main_image)
-                                            <img src="{{ asset('storage/' . $item->product->main_image) }}" 
+                                        @php $cartThumb = $item->display_image ?? $item->product->main_image; @endphp
+                                        @if($cartThumb)
+                                            <img src="{{ asset('storage/' . $cartThumb) }}" 
                                                  class="rounded-3 border p-1 bg-white shadow-2xs cart-thumb" 
                                                  width="78" height="78" style="object-fit: contain;">
                                         @else

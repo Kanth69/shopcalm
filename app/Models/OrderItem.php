@@ -43,6 +43,11 @@ class OrderItem extends Model
         return $this->belongsTo(Product::class)->withTrashed();
     }
 
+    public function getDisplayImageAttribute(): ?string
+    {
+        return $this->product?->getOptionImage($this->selected_option);
+    }
+
     public function getCostPriceAttribute(): float
     {
         return (float) ($this->product?->cost_price ?? 0);

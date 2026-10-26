@@ -55,16 +55,28 @@
                         $discountPct = $product->offer_discount_percentage ?? ($hasDiscount && (float) $product->price > 0 ? round((((float) $product->price - (float) $product->sale_price) / (float) $product->price) * 100) : 0);
                     @endphp
 
-                    {{-- Wishlist Button (Top Right) --}}
+                    {{-- Wishlist & Share Action Buttons (Top Right) --}}
                     @php
                         $isWishlisted = in_array($product->id, $wishlistedProductIds ?? []);
                     @endphp
-                    <div class="position-absolute top-0 end-0 m-3 z-2">
+                    <div class="position-absolute top-0 end-0 m-2.5 m-sm-3 z-2 d-flex align-items-center gap-2">
+                        {{-- Share Button --}}
+                        <button type="button" 
+                                onclick="shareProduct()"
+                                class="btn btn-light shadow-xs rounded-circle p-0 d-flex align-items-center justify-content-center" 
+                                title="Share Product" 
+                                aria-label="Share product"
+                                style="width: 38px; height: 38px; background: rgba(255,255,255,0.95); border: 1px solid #e2e8f0; transition: transform 0.15s ease;">
+                            <i class="bi bi-share text-dark" style="font-size: 0.95rem;"></i>
+                        </button>
+
+                        {{-- Wishlist Button --}}
                         <button type="button" 
                                 class="btn btn-light shadow-xs rounded-circle p-0 d-flex align-items-center justify-content-center wishlist-toggle-btn pdp-wishlist-btn" 
                                 data-product-id="{{ $product->id }}"
                                 title="{{ $isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist' }}" 
-                                style="width: 38px; height: 38px; background: rgba(255,255,255,0.95); border: 1px solid #e2e8f0;">
+                                aria-label="Wishlist"
+                                style="width: 38px; height: 38px; background: rgba(255,255,255,0.95); border: 1px solid #e2e8f0; transition: transform 0.15s ease;">
                             <i class="bi {{ $isWishlisted ? 'bi-heart-fill text-danger' : 'bi-heart' }}" style="font-size: 1rem;"></i>
                         </button>
                     </div>
@@ -96,25 +108,17 @@
                             </div>
 
                             @if(count($allProductImages) > 1)
-                                {{-- Previous / Next Image Controls --}}
+                                {{-- Previous / Next Image Controls (Laptop / Desktop only, Hidden on Mobile) --}}
                                 <button type="button" onclick="stepProductGallery(-1)" aria-label="Previous image"
-                                        class="btn btn-light shadow-sm rounded-circle position-absolute start-0 ms-2 d-flex align-items-center justify-content-center z-2"
-                                        style="width: 36px; height: 36px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.92); border: 1px solid #e2e8f0;">
-                                    <i class="bi bi-chevron-left text-dark" style="font-size: 0.95rem;"></i>
+                                        class="btn btn-light shadow-sm rounded-circle position-absolute start-0 ms-2.5 d-none d-md-flex align-items-center justify-content-center z-2 pdp-arrow-nav"
+                                        style="width: 38px; height: 38px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.95); border: 1px solid #e2e8f0;">
+                                    <i class="bi bi-chevron-left text-dark" style="font-size: 1rem;"></i>
                                 </button>
                                 <button type="button" onclick="stepProductGallery(1)" aria-label="Next image"
-                                        class="btn btn-light shadow-sm rounded-circle position-absolute end-0 me-2 d-flex align-items-center justify-content-center z-2"
-                                        style="width: 36px; height: 36px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.92); border: 1px solid #e2e8f0;">
-                                    <i class="bi bi-chevron-right text-dark" style="font-size: 0.95rem;"></i>
+                                        class="btn btn-light shadow-sm rounded-circle position-absolute end-0 me-2.5 d-none d-md-flex align-items-center justify-content-center z-2 pdp-arrow-nav"
+                                        style="width: 38px; height: 38px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.95); border: 1px solid #e2e8f0;">
+                                    <i class="bi bi-chevron-right text-dark" style="font-size: 1rem;"></i>
                                 </button>
-
-                                {{-- Image Counter Pill --}}
-                                <div class="position-absolute bottom-0 end-0 m-3 z-2">
-                                    <span id="pdp-gallery-counter" class="badge rounded-pill px-2.5 py-1 fw-semibold"
-                                          style="background: rgba(15, 23, 42, 0.72); color: #ffffff; font-size: 0.72rem; backdrop-filter: blur(4px);">
-                                        1 / {{ count($allProductImages) }}
-                                    </span>
-                                </div>
                             @endif
                         @else
                             <div class="text-muted d-flex flex-column align-items-center justify-content-center py-5">
@@ -123,22 +127,36 @@
                             </div>
                         @endif
                     </div>
+
+                    {{-- Watch Video Button (Floating Bottom-Left on Main Image) --}}
+                    @if(!empty($product->getYoutubeEmbedUrl()))
+                        <div class="position-absolute bottom-0 start-0 m-2.5 m-sm-3 pdp-video-btn-wrap">
+                            <button type="button" 
+                                    class="btn pdp-video-floating-btn shadow-sm d-inline-flex align-items-center gap-2" 
+                                    onclick="openProductVideoModal(event)"
+                                    title="Watch Product Video" 
+                                    aria-label="Watch product video">
+                                <span class="pdp-video-play-icon d-inline-flex align-items-center justify-content-center rounded-circle">
+                                    <i class="bi bi-play-fill text-white"></i>
+                                </span>
+                                <span class="pdp-video-btn-text">Watch Video</span>
+                            </button>
+                        </div>
+                    @endif
                 </div>
 
-                {{-- Thumbnail Gallery Strip --}}
+                {{-- Slider Dots (Both Laptop & Mobile below main image) --}}
                 @if(count($allProductImages) > 1)
-                <div class="d-flex align-items-center gap-2 overflow-x-auto pb-2 pt-1 no-scrollbar" id="pdp-thumb-strip">
-                    @foreach($allProductImages as $idx => $imgUrl)
-                    <div class="gallery-thumb {{ $idx === 0 ? 'active' : '' }} rounded-3 overflow-hidden p-1 cursor-pointer flex-shrink-0" 
-                         data-index="{{ $idx }}"
-                         data-src="{{ $imgUrl }}"
-                         onclick="selectProductGalleryIndex({{ $idx }})"
-                         onmouseenter="selectProductGalleryIndex({{ $idx }})"
-                         style="width: 68px; height: 68px; background: #ffffff; border: 2px solid {{ $idx === 0 ? '#0284c7' : '#e2e8f0' }}; transition: all 0.2s ease; cursor: pointer;">
-                        <img src="{{ $imgUrl }}" alt="{{ $product->name }} view {{ $idx + 1 }}" class="w-100 h-100" style="object-fit: contain;">
+                    <div class="d-flex justify-content-center align-items-center gap-1.5 py-2.5" id="pdp-slider-dots">
+                        @foreach($allProductImages as $idx => $imgUrl)
+                            <button type="button" 
+                                    onclick="selectProductGalleryIndex({{ $idx }})"
+                                    class="pdp-slider-dot {{ $idx === 0 ? 'active' : '' }}" 
+                                    data-dot-idx="{{ $idx }}"
+                                    title="View image {{ $idx + 1 }}"
+                                    aria-label="Slide {{ $idx + 1 }}"></button>
+                        @endforeach
                     </div>
-                    @endforeach
-                </div>
                 @endif
             </div>
         </div>
@@ -282,6 +300,27 @@
                         default => 'Select Size',
                     };
                     $secondDimLabel = ($optType === 'waist_color') ? 'Select Waist Size' : 'Select Size';
+
+                    $colorHexMap = [
+                        'red' => '#ef4444', 'dark red' => '#991b1b', 'light red' => '#f87171', 'crimson' => '#dc143c', 'maroon' => '#800000',
+                        'blue' => '#2563eb', 'dark blue' => '#1e3a8a', 'light blue' => '#60a5fa', 'navy' => '#0f172a', 'navy blue' => '#0f172a',
+                        'sky blue' => '#38bdf8', 'royal blue' => '#1d4ed8', 'cyan' => '#06b6d4', 'teal' => '#0d9488',
+                        'green' => '#16a34a', 'dark green' => '#14532d', 'light green' => '#4ade80', 'lime' => '#84cc16', 'olive' => '#808000', 'mint' => '#10b981',
+                        'yellow' => '#eab308', 'gold' => '#ffd700', 'mustard' => '#ca8a04',
+                        'orange' => '#ea580c', 'dark orange' => '#c2410c', 'coral' => '#fb7185', 'peach' => '#fed7aa',
+                        'purple' => '#9333ea', 'dark purple' => '#581c87', 'violet' => '#7c3aed', 'lavender' => '#c084fc', 'indigo' => '#4f46e5',
+                        'pink' => '#ec4899', 'light pink' => '#fbcfe8', 'rose' => '#f43f5e', 'magenta' => '#d946ef',
+                        'white' => '#ffffff', 'off white' => '#f8fafc', 'ivory' => '#fffff0', 'cream' => '#fef3c7', 'beige' => '#f5f5dc',
+                        'black' => '#18181b', 'grey' => '#64748b', 'gray' => '#64748b', 'dark grey' => '#334155', 'dark gray' => '#334155',
+                        'light grey' => '#cbd5e1', 'light gray' => '#cbd5e1', 'silver' => '#c0c0c0',
+                        'brown' => '#78350f', 'coffee' => '#451a03', 'tan' => '#d2b48c', 'khaki' => '#f0e68c', 'burgundy' => '#800020'
+                    ];
+                    $getColorHex = function($color) use ($colorHexMap) {
+                        $c = strtolower(trim((string)$color));
+                        if (isset($colorHexMap[$c])) return $colorHexMap[$c];
+                        if (str_starts_with($c, '#')) return $c;
+                        return $c;
+                    };
                 @endphp
 
                 @if($hasDoubleVariants && count($uniqueColors) > 0 && count($uniqueSizes) > 0)
@@ -304,13 +343,15 @@
                                         $cAvail = $cStock > 0;
                                     @endphp
                                     <button type="button"
-                                            class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold double-color-pill {{ $cAvail ? 'btn-outline-secondary text-dark border-secondary border-opacity-50' : 'btn-light border text-muted opacity-50' }}"
+                                            class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold double-color-pill d-inline-flex align-items-center {{ $cAvail ? 'btn-outline-secondary text-dark border-secondary border-opacity-50' : 'btn-light border text-muted opacity-50' }}"
                                             data-color="{{ $colorName }}"
                                             {{ !$cAvail ? 'disabled' : '' }}
                                             onclick="selectDoubleVariantColor('{{ addslashes($colorName) }}')">
-                                        {{ $colorName }}
+                                        <span class="d-inline-block rounded-circle" 
+                                              style="width: 15px; height: 15px; background-color: {{ $getColorHex($colorName) }}; border: 1px solid rgba(0,0,0,0.25); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4); flex-shrink: 0; margin-right: 8px;"></span>
+                                        <span>{{ $colorName }}</span>
                                         @if(!$cAvail)
-                                            <span class="badge bg-danger text-white rounded-pill ms-1" style="font-size: 0.6rem;">Sold Out</span>
+                                            <span class="badge bg-danger text-white rounded-pill ms-2" style="font-size: 0.6rem;">Sold Out</span>
                                         @endif
                                     </button>
                                 @endforeach
@@ -326,11 +367,11 @@
                             <div class="d-flex flex-wrap gap-2">
                                 @foreach($uniqueSizes as $sizeName)
                                     <button type="button"
-                                            class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold double-size-pill btn-outline-secondary text-dark border-secondary border-opacity-50"
+                                            class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold double-size-pill d-inline-flex align-items-center btn-outline-secondary text-dark border-secondary border-opacity-50"
                                             data-size="{{ $sizeName }}"
                                             onclick="selectDoubleVariantSize('{{ addslashes($sizeName) }}')">
-                                        {{ $sizeName }}
-                                        <span class="badge bg-light text-muted border ms-1 font-monospace double-size-stock-badge" data-size-badge="{{ $sizeName }}" style="font-size: 0.65rem;">Pick color</span>
+                                        <span>{{ $sizeName }}</span>
+                                        <span class="badge bg-danger text-white rounded-pill ms-1.5 double-size-stock-badge" data-size-badge="{{ $sizeName }}" style="font-size: 0.6rem; display: none;">Sold Out</span>
                                     </button>
                                 @endforeach
                             </div>
@@ -349,18 +390,21 @@
                             @foreach($optionStocks as $optKey => $optQty)
                                 @php
                                     $isAvailable = $optQty > 0;
+                                    $isColorLike = ($optType === 'color') || isset($colorHexMap[strtolower(trim($optKey))]);
                                 @endphp
                                 <button type="button" 
-                                        class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold option-pill-btn {{ $isAvailable ? 'btn-outline-secondary text-dark border-secondary border-opacity-50' : 'btn-light border text-muted opacity-50' }}"
+                                        class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold option-pill-btn d-inline-flex align-items-center {{ $isAvailable ? 'btn-outline-secondary text-dark border-secondary border-opacity-50' : 'btn-light border text-muted opacity-50' }}"
                                         data-option="{{ $optKey }}"
                                         data-stock="{{ $optQty }}"
                                         {{ !$isAvailable ? 'disabled' : '' }}
                                         onclick="selectProductOption('{{ addslashes($optKey) }}', {{ $optQty }})">
-                                    {{ $optKey }}
-                                    @if($isAvailable)
-                                        <span class="badge bg-light text-dark border ms-1 font-monospace" style="font-size: 0.65rem;">{{ $optQty }} left</span>
-                                    @else
-                                        <span class="badge bg-danger text-white rounded-pill ms-1" style="font-size: 0.6rem;">Sold Out</span>
+                                    @if($isColorLike)
+                                        <span class="d-inline-block rounded-circle" 
+                                              style="width: 15px; height: 15px; background-color: {{ $getColorHex($optKey) }}; border: 1px solid rgba(0,0,0,0.25); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4); flex-shrink: 0; margin-right: 8px;"></span>
+                                    @endif
+                                    <span>{{ $optKey }}</span>
+                                    @if(!$isAvailable)
+                                        <span class="badge bg-danger text-white rounded-pill ms-2" style="font-size: 0.6rem;">Sold Out</span>
                                     @endif
                                 </button>
                             @endforeach
@@ -723,6 +767,68 @@
 
 
 <style>
+    /* Floating Watch Video Button */
+    .pdp-video-btn-wrap {
+        z-index: 25 !important;
+        pointer-events: auto !important;
+    }
+    .pdp-video-floating-btn {
+        background: rgba(15, 23, 42, 0.88) !important;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.22) !important;
+        color: #ffffff !important;
+        padding: 5px 13px 5px 6px !important;
+        border-radius: 9999px !important;
+        font-size: 0.78rem !important;
+        line-height: 1 !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+        cursor: pointer !important;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .pdp-video-floating-btn:hover,
+    .pdp-video-floating-btn:focus,
+    .pdp-video-floating-btn:active {
+        background: #0f172a !important;
+        border-color: rgba(239, 68, 68, 0.8) !important;
+        color: #ffffff !important;
+        transform: translateY(-1px) scale(1.03);
+        box-shadow: 0 6px 18px rgba(239, 68, 68, 0.35) !important;
+    }
+    .pdp-video-play-icon {
+        width: 22px;
+        height: 22px;
+        background: #ef4444;
+        box-shadow: 0 2px 6px rgba(239, 68, 68, 0.5);
+        font-size: 0.8rem;
+        padding-left: 1.5px;
+        flex-shrink: 0;
+    }
+    .pdp-video-btn-text {
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 767.98px) {
+        .pdp-video-btn-wrap {
+            margin: 8px !important;
+        }
+        .pdp-video-floating-btn {
+            padding: 4px 10px 4px 5px !important;
+            font-size: 0.72rem !important;
+            background: rgba(15, 23, 42, 0.92) !important;
+        }
+        .pdp-video-play-icon {
+            width: 20px;
+            height: 20px;
+            font-size: 0.75rem;
+        }
+    }
+
     .pdp-main-image-stage {
         width: 100%;
         max-width: 480px;
@@ -766,6 +872,28 @@
     }
     .main-pdp-image:hover {
         transform: scale(1.04);
+    }
+    .pdp-slider-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: #cbd5e1;
+        border: none;
+        padding: 0;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+    }
+    .pdp-slider-dot.active {
+        width: 24px;
+        background: #4f46e5;
+    }
+    .pdp-arrow-nav {
+        transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .pdp-arrow-nav:hover {
+        background: #ffffff !important;
+        transform: translateY(-50%) scale(1.08) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
     }
     .pdp-tab-btn {
         font-size: 0.88rem;
@@ -900,12 +1028,17 @@ function selectProductOption(optKey, optQty) {
             document.querySelectorAll('.hidden-qty').forEach(el => el.value = optQty);
         }
     }
+    // Switch main image if variant image exists
+    switchVariantImage(optKey);
 }
 
 function selectDoubleVariantColor(colorName) {
     selectedDoubleColor = colorName;
     const colorLabel = document.getElementById('selected-color-label');
     if (colorLabel) colorLabel.textContent = colorName;
+
+    // Switch main image if variant image exists for this color
+    switchVariantImage(colorName);
 
     document.querySelectorAll('.double-color-pill').forEach(btn => {
         if (btn.getAttribute('data-color') === colorName) {
@@ -936,16 +1069,17 @@ function selectDoubleVariantColor(colorName) {
                 btn.classList.add('btn-outline-secondary', 'text-dark');
             }
             if (badge) {
-                badge.textContent = `${stock} left`;
-                badge.className = 'badge bg-light text-dark border ms-1 font-monospace double-size-stock-badge';
+                badge.style.display = 'none';
+                badge.textContent = '';
             }
         } else {
             btn.disabled = true;
             btn.classList.remove('btn-primary', 'text-white', 'btn-outline-secondary', 'text-dark');
             btn.classList.add('btn-light', 'border', 'text-muted', 'opacity-50');
             if (badge) {
+                badge.style.display = 'inline-block';
                 badge.textContent = 'Sold Out';
-                badge.className = 'badge bg-danger text-white rounded-pill ms-1 double-size-stock-badge';
+                badge.className = 'badge bg-danger text-white rounded-pill ms-1.5 double-size-stock-badge';
             }
             if (selectedDoubleSize === sizeName) {
                 selectedDoubleSize = '';
@@ -1087,16 +1221,43 @@ function validateOptionSelected(formEl) {
 }
 
 let currentProductGalleryIdx = 0;
+const pdpGalleryImages = @json($allProductImages);
+const pdpVariantImages = @json($product->option_images ?? []);
+
+function switchVariantImage(key) {
+    if (!key || !pdpVariantImages || typeof pdpVariantImages !== 'object') return;
+    
+    let path = pdpVariantImages[key];
+    if (!path && key.includes(' - ')) {
+        const color = key.split(' - ')[0].trim();
+        path = pdpVariantImages[color];
+    }
+    
+    if (path) {
+        const fullUrl = path.startsWith('http') ? path : '/storage/' + path;
+        const mainImg = document.getElementById('main-product-img');
+        if (mainImg) {
+            const idx = pdpGalleryImages ? pdpGalleryImages.indexOf(fullUrl) : -1;
+            if (idx !== -1) {
+                selectProductGalleryIndex(idx);
+            } else {
+                mainImg.style.opacity = '0.35';
+                setTimeout(() => {
+                    mainImg.src = fullUrl;
+                    mainImg.style.opacity = '1';
+                }, 90);
+            }
+        }
+    }
+}
 
 function selectProductGalleryIndex(idx) {
-    const thumbs = document.querySelectorAll('.gallery-thumb');
-    if (!thumbs.length) return;
-    if (idx < 0) idx = thumbs.length - 1;
-    if (idx >= thumbs.length) idx = 0;
+    if (!pdpGalleryImages || !pdpGalleryImages.length) return;
+    if (idx < 0) idx = pdpGalleryImages.length - 1;
+    if (idx >= pdpGalleryImages.length) idx = 0;
 
     currentProductGalleryIdx = idx;
-    const targetThumb = thumbs[idx];
-    const src = targetThumb ? targetThumb.getAttribute('data-src') : null;
+    const src = pdpGalleryImages[idx];
     const mainImg = document.getElementById('main-product-img');
 
     if (mainImg && src && mainImg.src !== src) {
@@ -1107,24 +1268,81 @@ function selectProductGalleryIndex(idx) {
         }, 90);
     }
 
-    thumbs.forEach((t, i) => {
+    // Update slider dots
+    const dots = document.querySelectorAll('.pdp-slider-dot');
+    dots.forEach((dot, i) => {
         if (i === idx) {
-            t.classList.add('active');
-            t.style.borderColor = '#0284c7';
+            dot.classList.add('active');
         } else {
-            t.classList.remove('active');
-            t.style.borderColor = '#e2e8f0';
+            dot.classList.remove('active');
         }
     });
-
-    const counter = document.getElementById('pdp-gallery-counter');
-    if (counter) {
-        counter.textContent = `${idx + 1} / ${thumbs.length}`;
-    }
 }
 
 function stepProductGallery(delta) {
     selectProductGalleryIndex(currentProductGalleryIdx + delta);
+}
+
+// Touch swipe support on main image for mobile
+document.addEventListener('DOMContentLoaded', function() {
+    const stage = document.querySelector('.pdp-main-image-stage');
+    if (stage) {
+        let startX = 0;
+        stage.addEventListener('touchstart', function(e) {
+            if (e.touches && e.touches.length === 1) {
+                startX = e.touches[0].clientX;
+            }
+        }, { passive: true });
+
+        stage.addEventListener('touchend', function(e) {
+            if (e.changedTouches && e.changedTouches.length === 1) {
+                const diffX = e.changedTouches[0].clientX - startX;
+                if (Math.abs(diffX) > 40) {
+                    if (diffX < 0) {
+                        stepProductGallery(1); // Swipe left -> Next
+                    } else {
+                        stepProductGallery(-1); // Swipe right -> Prev
+                    }
+                }
+            }
+        }, { passive: true });
+    }
+});
+
+// Share Product Function
+function shareProduct() {
+    const title = @json($product->name);
+    const url = window.location.href;
+
+    if (navigator.share) {
+        navigator.share({
+            title: title,
+            text: 'Check out ' + title + ' on WiseKart!',
+            url: url
+        }).catch(() => {});
+    } else {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(() => {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Link Copied!',
+                        text: 'Product link copied to clipboard.',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 2500
+                    });
+                } else {
+                    alert('Product link copied to clipboard!');
+                }
+            }).catch(() => {
+                alert('Share URL: ' + url);
+            });
+        } else {
+            alert('Share URL: ' + url);
+        }
+    }
 }
 
 function updateMainImage(src, thumb) {
@@ -1528,6 +1746,88 @@ if (loadMoreReviewsBtn) {
         });
     });
 }
+
+// Product Video Modal Controls
+const pdpVideoEmbedUrl = @json($product->getYoutubeEmbedUrl());
+function openProductVideoModal(e) {
+    if (e) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    }
+    const iframe = document.getElementById('productVideoIframe');
+    if (iframe && pdpVideoEmbedUrl) {
+        if (!iframe.src || iframe.src === '' || iframe.src === 'about:blank' || iframe.src.indexOf('youtube') === -1) {
+            iframe.src = pdpVideoEmbedUrl;
+        }
+    }
+    const modalEl = document.getElementById('productVideoModal');
+    if (modalEl) {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+        } else {
+            modalEl.classList.add('show');
+            modalEl.style.display = 'block';
+            document.body.classList.add('modal-open');
+        }
+    }
+}
+function closeProductVideoModal() {
+    const iframe = document.getElementById('productVideoIframe');
+    if (iframe) {
+        iframe.src = '';
+    }
+}
+document.addEventListener('DOMContentLoaded', function() {
+    const modalEl = document.getElementById('productVideoModal');
+    if (modalEl) {
+        modalEl.addEventListener('hidden.bs.modal', function() {
+            closeProductVideoModal();
+        });
+    }
+});
 </script>
+
+{{-- YouTube Video Responsive Modal --}}
+@if(!empty($product->getYoutubeEmbedUrl()))
+<div class="modal fade" id="productVideoModal" tabindex="-1" aria-labelledby="productVideoModalLabel" aria-hidden="true" style="backdrop-filter: blur(5px);">
+    <div class="modal-dialog modal-dialog-centered modal-lg mx-2 mx-sm-auto">
+        <div class="modal-content text-white border-0 rounded-4 overflow-hidden shadow-lg" style="background-color: #0f172a !important;">
+            <div class="modal-header border-0 py-2.5 px-3 d-flex justify-content-between align-items-center" style="background-color: #1e293b;">
+                <h6 class="modal-title fw-bold text-white small mb-0 d-flex align-items-center gap-2" id="productVideoModalLabel">
+                    <i class="bi bi-youtube text-danger fs-5"></i>
+                    <span class="text-truncate" style="max-width: 220px;">{{ $product->name }}</span>
+                </h6>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ $product->getYoutubeWatchUrl() }}" target="_blank" rel="noopener noreferrer" 
+                       class="btn btn-sm btn-outline-danger text-white rounded-pill px-2.5 py-1 text-decoration-none d-inline-flex align-items-center gap-1.5" 
+                       style="font-size: 0.72rem; border-color: rgba(239, 68, 68, 0.45); background: rgba(239, 68, 68, 0.12);"
+                       title="Open directly on YouTube">
+                        <i class="bi bi-box-arrow-up-right text-danger"></i>
+                        <span class="d-none d-sm-inline">Open on YouTube</span>
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-light rounded-circle p-0 d-flex align-items-center justify-content-center" 
+                            style="width: 32px; height: 32px;" 
+                            data-bs-dismiss="modal" 
+                            onclick="closeProductVideoModal()" 
+                            aria-label="Close">
+                        <i class="bi bi-x-lg" style="font-size: 0.85rem;"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body p-2 p-sm-3 bg-black">
+                <div class="ratio ratio-16x9 rounded-3 overflow-hidden">
+                    <iframe id="productVideoIframe" 
+                            src="" 
+                            title="{{ $product->name }} Video" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            allowfullscreen 
+                            style="border: 0; width: 100%; height: 100%;"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 @endpush
 @endsection

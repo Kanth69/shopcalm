@@ -735,8 +735,9 @@
                                     <div class="d-flex align-items-center gap-2 pt-3 border-top mt-3 flex-wrap">
                                         @foreach($cart->items as $cartItem)
                                             <div class="d-flex align-items-center gap-2 bg-light rounded-3 px-2.5 py-1.5 border" style="font-size: 0.78rem; border-color: #e2e8f0 !important;">
-                                                @if($cartItem->product && $cartItem->product->main_image)
-                                                    <img src="{{ asset('storage/' . $cartItem->product->main_image) }}" alt="" aria-hidden="true" class="rounded-2 border flex-shrink-0 bg-white" style="width: 26px; height: 26px; object-fit: contain;">
+                                                @php $ciImg = $cartItem->display_image ?? $cartItem->product?->main_image; @endphp
+                                                @if($ciImg)
+                                                    <img src="{{ asset('storage/' . $ciImg) }}" alt="" aria-hidden="true" class="rounded-2 border flex-shrink-0 bg-white" style="width: 26px; height: 26px; object-fit: contain;">
                                                 @else
                                                     <div class="rounded-2 bg-white border d-flex align-items-center justify-content-center flex-shrink-0 text-muted" style="width: 26px; height: 26px;">
                                                         <i class="bi bi-box-seam" style="font-size: 0.75rem;"></i>
@@ -1091,8 +1092,9 @@
                                 @endphp
                                 <div class="p-2.5 p-sm-3 bg-light bg-opacity-75 rounded-3 border d-flex align-items-center justify-content-between gap-2 overflow-hidden" style="border-color: #e2e8f0 !important;">
                                     <div class="d-flex align-items-center gap-2.5 min-w-0 flex-grow-1 overflow-hidden">
-                                        @if($item->product && $item->product->main_image)
-                                            <img src="{{ asset('storage/' . $item->product->main_image) }}" alt="" aria-hidden="true" class="rounded-2 border flex-shrink-0 bg-white" style="width: 44px; height: 44px; object-fit: contain;">
+                                        @php $itemThumb = $item->display_image ?? $item->product?->main_image; @endphp
+                                        @if($itemThumb)
+                                            <img src="{{ asset('storage/' . $itemThumb) }}" alt="" aria-hidden="true" class="rounded-2 border flex-shrink-0 bg-white" style="width: 44px; height: 44px; object-fit: contain;">
                                         @else
                                             <div class="rounded-2 bg-white border d-flex align-items-center justify-content-center flex-shrink-0 text-muted" style="width: 44px; height: 44px;">
                                                 <i class="bi bi-box-seam fs-4"></i>
@@ -1102,7 +1104,12 @@
                                             <h6 class="mb-0.5 fw-bold text-dark text-truncate" style="font-size: 0.88rem;" title="{{ $item->product->name ?? 'Product' }}">
                                                 {{ $item->product->name ?? 'Product' }}
                                             </h6>
-                                            <div class="text-secondary small" style="font-size: 0.76rem;">Qty: {{ $item->quantity }}</div>
+                                            <div class="text-secondary small d-flex align-items-center gap-1.5 flex-wrap" style="font-size: 0.76rem;">
+                                                <span>Qty: {{ $item->quantity }}</span>
+                                                @if(!empty($item->selected_option))
+                                                    <span class="badge bg-white text-dark border font-monospace fw-normal" style="font-size: 0.68rem;">{{ $item->selected_option }}</span>
+                                                @endif
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="text-end flex-shrink-0 ps-2">
@@ -1151,8 +1158,9 @@
                                 @endphp
                                 <div class="p-2 mb-2 bg-light bg-opacity-50 rounded-3 border d-flex align-items-center justify-content-between gap-2 overflow-hidden" style="border-color: #e2e8f0 !important;">
                                     <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1 overflow-hidden">
-                                        @if($item->product && $item->product->main_image)
-                                            <img src="{{ asset('storage/' . $item->product->main_image) }}" alt="" aria-hidden="true" class="rounded-2 border flex-shrink-0 bg-white" style="width: 40px; height: 40px; object-fit: contain;">
+                                        @php $itemThumb2 = $item->display_image ?? $item->product?->main_image; @endphp
+                                        @if($itemThumb2)
+                                            <img src="{{ asset('storage/' . $itemThumb2) }}" alt="" aria-hidden="true" class="rounded-2 border flex-shrink-0 bg-white" style="width: 40px; height: 40px; object-fit: contain;">
                                         @else
                                             <div class="rounded-2 bg-white border d-flex align-items-center justify-content-center flex-shrink-0 text-muted" style="width: 40px; height: 40px;">
                                                 <i class="bi bi-box-seam fs-6"></i>
@@ -1162,7 +1170,12 @@
                                             <h6 class="mb-0.5 fw-bold text-dark text-truncate" style="font-size: 0.82rem;" title="{{ $item->product->name ?? 'Product' }}">
                                                 {{ $item->product->name ?? 'Product' }}
                                             </h6>
-                                            <div class="text-secondary small" style="font-size: 0.72rem;">Qty: {{ $item->quantity }}</div>
+                                            <div class="text-secondary small d-flex align-items-center gap-1.5 flex-wrap" style="font-size: 0.72rem;">
+                                                <span>Qty: {{ $item->quantity }}</span>
+                                                @if(!empty($item->selected_option))
+                                                    <span class="badge bg-white text-dark border font-monospace fw-normal" style="font-size: 0.65rem;">{{ $item->selected_option }}</span>
+                                                @endif
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="text-end flex-shrink-0 ps-2">

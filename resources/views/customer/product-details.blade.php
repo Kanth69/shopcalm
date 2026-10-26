@@ -58,8 +58,10 @@
                             <dt class="col-3">Category:</dt>
                             <dd class="col-9"><a href="{{ route('category.products', $product->category->slug) }}">{{ $product->category->name }}</a></dd>
 
-                            <dt class="col-3">Brand:</dt>
-                            <dd class="col-9"><a href="{{ route('brand.products', $product->brand->slug) }}">{{ $product->brand->name }}</a></dd>
+                            @if($product->brand)
+                                <dt class="col-3">Brand:</dt>
+                                <dd class="col-9"><a href="{{ route('brand.products', $product->brand->slug) }}">{{ $product->brand->name }}</a></dd>
+                            @endif
 
                             <dt class="col-3">SKU:</dt>
                             <dd class="col-9">{{ $product->sku }}</dd>

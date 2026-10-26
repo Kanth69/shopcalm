@@ -4,23 +4,6 @@
 
 @section('account_content')
 
-{{-- Success / Error Alerts --}}
-@if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show rounded-4 border-0 shadow-xs mb-3 d-flex align-items-center gap-2 p-3" role="alert" style="background: #ecfdf5; color: #065f46; border-left: 4px solid #10b981 !important;">
-        <i class="bi bi-check-circle-fill fs-5 text-success"></i>
-        <div class="small fw-semibold flex-grow-1">{{ session('success') }}</div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-@endif
-
-@if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show rounded-4 border-0 shadow-xs mb-3 d-flex align-items-center gap-2 p-3" role="alert" style="background: #fef2f2; color: #991b1b; border-left: 4px solid #ef4444 !important;">
-        <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
-        <div class="small fw-semibold flex-grow-1">{{ session('error') }}</div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-@endif
-
 {{-- Hero Banner --}}
 <div class="rounded-4 mb-4 p-3 p-sm-4 shadow-sm position-relative overflow-hidden ticket-hero"
      style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%);">
@@ -343,7 +326,7 @@
                     <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 fw-semibold" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" id="btnSubmitTicket" class="btn btn-sm btn-primary rounded-pill px-4 py-1.5 fw-bold shadow-xs d-inline-flex align-items-center gap-2"
                             style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border: none;">
-                        <i class="bi bi-send-fill me-1"></i> <span>Submit Ticket</span>
+                        <i class="bi bi-send-fill me-1" id="btnSubmitTicketIcon"></i> <span id="btnSubmitTicketText">Submit Ticket</span>
                     </button>
                 </div>
             </form>
@@ -372,6 +355,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalBadge = document.getElementById('modalWordCountBadge');
     const modalStatus = document.getElementById('modalWordCountStatus');
     const ticketForm = document.getElementById('newTicketForm');
+    const newTicketModalEl = document.getElementById('newTicketModal');
+    const submitBtn = document.getElementById('btnSubmitTicket');
+    const submitIcon = document.getElementById('btnSubmitTicketIcon');
+    const submitText = document.getElementById('btnSubmitTicketText');
     const maxWords = 50;
 
     if (!modalMsg) return;
@@ -428,12 +415,86 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (ticketForm) {
         ticketForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Clear previous errors
+            ticketForm.querySelectorAll('.invalid-feedback-ajax').forEach(el => el.remove());
+            ticketForm.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+
             if (countWords(modalMsg.value) > maxWords) {
-                e.preventDefault();
                 alert('Please shorten your message to 50 words or less.');
                 modalMsg.focus();
                 return false;
             }
+
+            // Set loading state on submit button
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                if (submitIcon) submitIcon.className = 'spinner-border spinner-border-sm me-1';
+                if (submitText) submitText.textContent = 'Submitting...';
+            }
+
+            const formData = new FormData(ticketForm);
+
+            fetch(ticketForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                }
+            })
+            .then(async response => {
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    // Close the form modal
+                    if (newTicketModalEl) {
+                        const bsModal = bootstrap.Modal.getInstance(newTicketModalEl);
+                        if (bsModal) {
+                            bsModal.hide();
+                        }
+                    }
+
+                    // Reset textarea
+                    modalMsg.value = '';
+                    updateModalWordCount();
+
+                    // Show centered alert using global helper
+                    showCenterAlert({
+                        type: 'success',
+                        title: 'Ticket Raised Successfully!',
+                        message: 'Thank you! Our support team has received your ticket and will respond within 2–4 hours.',
+                        badge: '<i class="bi bi-headset text-primary"></i> <span>Helpdesk Ticket Logged</span>',
+                        buttonText: 'Got it, Thanks!',
+                        onClose: () => window.location.reload()
+                    });
+                } else if (response.status === 422 && data.errors) {
+                    Object.keys(data.errors).forEach(fieldName => {
+                        const input = ticketForm.querySelector(`[name="${fieldName}"]`);
+                        if (input) {
+                            input.classList.add('is-invalid');
+                            const errorDiv = document.createElement('div');
+                            errorDiv.className = 'invalid-feedback invalid-feedback-ajax d-block';
+                            errorDiv.textContent = data.errors[fieldName][0];
+                            input.parentNode.appendChild(errorDiv);
+                        }
+                    });
+                } else {
+                    alert(data.message || 'Something went wrong. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Ticket submission error:', error);
+                alert('An unexpected error occurred. Please check your connection and try again.');
+            })
+            .finally(() => {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    if (submitIcon) submitIcon.className = 'bi bi-send-fill me-1';
+                    if (submitText) submitText.textContent = 'Submit Ticket';
+                }
+            });
         });
     }
 });

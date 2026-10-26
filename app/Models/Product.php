@@ -22,6 +22,7 @@ class Product extends Model
         'short_description',
         'description',
         'tags',
+        'video_url',
         'cost_price',
         'price',
         'stock',
@@ -223,6 +224,79 @@ class Product extends Model
 
         $stocks = is_array($this->option_stocks) ? $this->option_stocks : json_decode($this->option_stocks, true);
         return (int) ($stocks[$optionKey] ?? 0);
+    }
+
+    public function getOptionImage(?string $optionKey): ?string
+    {
+        if (!empty($optionKey) && !empty($this->option_images)) {
+            $images = is_array($this->option_images) ? $this->option_images : json_decode($this->option_images, true);
+            if (is_array($images)) {
+                if (!empty($images[$optionKey])) {
+                    return $images[$optionKey];
+                }
+                if (str_contains($optionKey, ' - ')) {
+                    $colorPart = trim(explode(' - ', $optionKey)[0]);
+                    if (!empty($images[$colorPart])) {
+                        return $images[$colorPart];
+                    }
+                }
+            }
+        }
+
+        return $this->main_image;
+    }
+
+    public function getYoutubeEmbedUrl(): ?string
+    {
+        if (empty($this->video_url)) {
+            return null;
+        }
+
+        $raw = trim($this->video_url);
+
+        // 1. If user entered an <iframe ... src="..."> embed snippet, extract the src URL
+        if (preg_match('/<iframe[^>]*\s+src=["\']([^"\']+)["\']/i', $raw, $matches)) {
+            $raw = trim($matches[1]);
+        }
+
+        // 2. If it's already an embed link (youtube.com/embed/ or youtube-nocookie.com/embed/)
+        if (preg_match('/https?:\/\/(?:www\.)?(?:youtube\.com|youtube-nocookie\.com)\/embed\/([a-zA-Z0-9_\-]+)/i', $raw, $matches)) {
+            $videoId = $matches[1];
+            return 'https://www.youtube-nocookie.com/embed/' . $videoId . '?rel=0';
+        }
+
+        // 3. Standard links: youtu.be, watch?v=, shorts
+        $videoId = null;
+        if (preg_match('/youtu\.be\/([a-zA-Z0-9_\-]+)/i', $raw, $matches)) {
+            $videoId = $matches[1];
+        } elseif (preg_match('/[?&]v=([a-zA-Z0-9_\-]+)/i', $raw, $matches)) {
+            $videoId = $matches[1];
+        } elseif (preg_match('/youtube\.com\/shorts\/([a-zA-Z0-9_\-]+)/i', $raw, $matches)) {
+            $videoId = $matches[1];
+        }
+
+        if ($videoId) {
+            return 'https://www.youtube-nocookie.com/embed/' . $videoId . '?rel=0';
+        }
+
+        // 4. If it starts with http/https and looks like a direct embed URL, fallback to it
+        if (preg_match('/^https?:\/\//i', $raw)) {
+            return $raw;
+        }
+
+        return null;
+    }
+
+    public function getYoutubeWatchUrl(): string
+    {
+        $embedUrl = $this->getYoutubeEmbedUrl();
+        if ($embedUrl && preg_match('/embed\/([a-zA-Z0-9_\-]+)/i', $embedUrl, $matches)) {
+            return 'https://www.youtube.com/watch?v=' . $matches[1];
+        }
+        if (!empty($this->video_url) && preg_match('/^https?:\/\/[^\s]+/i', trim($this->video_url), $matches)) {
+            return $matches[0];
+        }
+        return 'https://www.youtube.com';
     }
 
     public function reduceOptionStock(?string $optionKey, int $quantity = 1): void

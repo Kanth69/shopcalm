@@ -19,11 +19,12 @@ class ProductRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
-            'brand_id' => 'required|exists:brands,id',
+            'brand_id' => 'nullable|exists:brands,id',
             'sku' => 'required|string|max:100|unique:products,sku,' . $productId,
             'slug' => 'nullable|string|max:255|unique:products,slug,' . $productId,
             'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
+            'video_url' => 'nullable|string|max:3000',
             'cost_price' => 'nullable|numeric|min:0',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
@@ -40,6 +41,9 @@ class ProductRequest extends FormRequest
             'has_options'      => 'nullable|boolean',
             'option_type'      => 'nullable|string|max:50',
             'option_stocks'    => 'nullable|array',
+            'option_images'    => 'nullable|array',
+            'option_image_files'   => 'nullable|array',
+            'option_image_files.*' => 'nullable|file|mimes:jpeg,png,jpg,webp,gif,svg,bmp,jfif,avif|max:10240',
             'hsn_code'         => 'nullable|string|max:20',
             'tax_rate'         => 'nullable|numeric|min:0|max:100',
         ];

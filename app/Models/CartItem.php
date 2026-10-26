@@ -33,4 +33,9 @@ class CartItem extends Model
     {
         return $this->belongsTo(Product::class);
     }
+
+    public function getDisplayImageAttribute(): ?string
+    {
+        return $this->product?->getOptionImage($this->selected_option);
+    }
 }
