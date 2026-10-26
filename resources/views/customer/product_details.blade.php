@@ -1849,12 +1849,12 @@ function setLightboxIndex(idx) {
     const dots = document.querySelectorAll('.lightbox-dot-btn');
     dots.forEach((dot, i) => {
         if (i === idx) {
-            dot.classList.remove('bg-opacity-25');
-            dot.classList.add('bg-white');
-            dot.style.transform = 'scale(1.4)';
+            dot.classList.remove('bg-secondary', 'bg-opacity-25');
+            dot.classList.add('bg-primary');
+            dot.style.transform = 'scale(1.35)';
         } else {
-            dot.classList.add('bg-opacity-25');
-            dot.classList.remove('bg-white');
+            dot.classList.add('bg-secondary', 'bg-opacity-25');
+            dot.classList.remove('bg-primary');
             dot.style.transform = 'scale(1)';
         }
     });
@@ -1945,64 +1945,62 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 @endif
 
-{{-- Fullscreen Product Image Lightbox Modal --}}
+{{-- Simple Product Image Preview Modal --}}
 @if(count($allProductImages) > 0)
-<div class="modal fade" id="productLightboxModal" tabindex="-1" aria-hidden="true" style="backdrop-filter: blur(10px);">
-    <div class="modal-dialog modal-fullscreen m-0 p-0 border-0">
-        <div class="modal-content border-0 rounded-0 position-relative" style="background: #000000 !important; height: 100vh !important; min-height: 100vh !important;">
+<div class="modal fade" id="productLightboxModal" tabindex="-1" aria-hidden="true" style="backdrop-filter: blur(5px);">
+    <div class="modal-dialog modal-dialog-centered modal-lg mx-3 mx-sm-auto">
+        <div class="modal-content border-0 rounded-4 overflow-hidden shadow-2xl position-relative bg-white">
             
-            {{-- Floating Close Button (Top Right) --}}
-            <button type="button" class="btn text-white rounded-circle position-absolute top-0 end-0 m-3 p-0 d-flex align-items-center justify-content-center shadow-lg" 
-                    style="width: 42px; height: 42px; background: rgba(255, 255, 255, 0.18); backdrop-filter: blur(8px); z-index: 1060; border: 0 !important;" 
+            {{-- Close Button (Right on the top-right corner of the image card) --}}
+            <button type="button" class="btn btn-light rounded-circle shadow-sm position-absolute top-0 end-0 m-2.5 p-0 d-flex align-items-center justify-content-center border" 
+                    style="width: 36px; height: 36px; z-index: 30; background: rgba(255, 255, 255, 0.95);" 
                     data-bs-dismiss="modal" 
                     aria-label="Close">
-                <i class="bi bi-x-lg" style="font-size: 1.25rem;"></i>
+                <i class="bi bi-x-lg text-dark" style="font-size: 1rem;"></i>
             </button>
 
-            {{-- Centered Lightbox Stage (No borders, perfectly centered in viewport) --}}
-            <div class="modal-body p-0 d-flex align-items-center justify-content-center w-100 h-100 position-relative border-0" 
-                 id="lightbox-stage" 
-                 style="touch-action: pan-y pinch-zoom; background: #000000; border: 0 !important;">
+            {{-- Main Image Stage (Clean white card, perfectly centered) --}}
+            <div class="modal-body p-3 p-sm-4 d-flex align-items-center justify-content-center position-relative" 
+                 id="lightbox-stage" style="background: #ffffff; min-height: 320px;">
                 
-                {{-- Previous Arrow (Desktop & Mobile) --}}
+                {{-- Previous Arrow --}}
                 @if(count($allProductImages) > 1)
                 <button type="button" onclick="stepLightboxGallery(-1)" aria-label="Previous image"
-                        class="btn text-white rounded-circle position-absolute start-0 ms-2 ms-md-4 d-flex align-items-center justify-content-center shadow"
-                        style="width: 44px; height: 44px; top: 50%; transform: translateY(-50%); z-index: 20; background: rgba(255, 255, 255, 0.18); backdrop-filter: blur(8px); border: 0 !important;">
-                    <i class="bi bi-chevron-left text-white fs-4"></i>
+                        class="btn btn-light shadow-sm rounded-circle position-absolute start-0 ms-2 ms-sm-3 d-flex align-items-center justify-content-center border"
+                        style="width: 38px; height: 38px; top: 50%; transform: translateY(-50%); z-index: 20; background: rgba(255, 255, 255, 0.95);">
+                    <i class="bi bi-chevron-left text-dark fs-6"></i>
                 </button>
                 @endif
 
-                {{-- Fullscreen Image: 100% Centered --}}
-                <div class="d-flex align-items-center justify-content-center w-100 h-100 p-2 p-md-3">
+                {{-- The Product Image --}}
+                <div class="d-flex align-items-center justify-content-center w-100" style="max-height: 70vh;">
                     <img id="lightbox-img" src="{{ $allProductImages[0] ?? '' }}" alt="{{ $product->name }}" 
                          class="img-fluid" 
-                         style="max-height: 88vh; max-width: 95vw; width: auto; height: auto; object-fit: contain; margin: auto; transition: opacity 0.15s ease; user-select: none; border: 0 !important; box-shadow: none !important;">
+                         style="max-height: 68vh; max-width: 100%; object-fit: contain; border-radius: 12px; transition: opacity 0.15s ease;">
                 </div>
 
-                {{-- Next Arrow (Desktop & Mobile) --}}
+                {{-- Next Arrow --}}
                 @if(count($allProductImages) > 1)
                 <button type="button" onclick="stepLightboxGallery(1)" aria-label="Next image"
-                        class="btn text-white rounded-circle position-absolute end-0 me-2 me-md-4 d-flex align-items-center justify-content-center shadow"
-                        style="width: 44px; height: 44px; top: 50%; transform: translateY(-50%); z-index: 20; background: rgba(255, 255, 255, 0.18); backdrop-filter: blur(8px); border: 0 !important;">
-                    <i class="bi bi-chevron-right text-white fs-4"></i>
+                        class="btn btn-light shadow-sm rounded-circle position-absolute end-0 me-2 me-sm-3 d-flex align-items-center justify-content-center border"
+                        style="width: 38px; height: 38px; top: 50%; transform: translateY(-50%); z-index: 20; background: rgba(255, 255, 255, 0.95);">
+                    <i class="bi bi-chevron-right text-dark fs-6"></i>
                 </button>
                 @endif
-
-                {{-- Minimal Bottom Indicator Dots --}}
-                @if(count($allProductImages) > 1)
-                <div class="position-absolute bottom-0 start-50 translate-middle-x mb-3 d-flex align-items-center gap-2" style="z-index: 20;">
-                    @foreach($allProductImages as $lIdx => $lUrl)
-                        <button type="button" onclick="setLightboxIndex({{ $lIdx }})"
-                                class="rounded-circle p-0 border-0 lightbox-dot-btn {{ $lIdx === 0 ? 'bg-white' : 'bg-white bg-opacity-25' }}"
-                                data-lightbox-dot="{{ $lIdx }}"
-                                aria-label="Slide {{ $lIdx + 1 }}"
-                                style="width: 7px; height: 7px; transition: all 0.2s ease; cursor: pointer; border: 0 !important;"></button>
-                    @endforeach
-                </div>
-                @endif
-
             </div>
+
+            {{-- Bottom Navigation Dots (if multiple images) --}}
+            @if(count($allProductImages) > 1)
+            <div class="py-2.5 bg-light border-top d-flex align-items-center justify-content-center gap-2">
+                @foreach($allProductImages as $lIdx => $lUrl)
+                    <button type="button" onclick="setLightboxIndex({{ $lIdx }})"
+                            class="rounded-circle p-0 border-0 lightbox-dot-btn {{ $lIdx === 0 ? 'bg-primary' : 'bg-secondary bg-opacity-25' }}"
+                            data-lightbox-dot="{{ $lIdx }}"
+                            aria-label="Slide {{ $lIdx + 1 }}"
+                            style="width: 8px; height: 8px; transition: all 0.2s ease; cursor: pointer;"></button>
+                @endforeach
+            </div>
+            @endif
 
         </div>
     </div>
