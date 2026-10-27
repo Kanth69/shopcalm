@@ -1916,7 +1916,25 @@ window.addEventListener('scroll', function() {
     }
 }, { passive: true });
 
+// Proactive Background Preload:
+// While customer reads product title, specs, gallery at the top, prefetch next batch of reviews right away!
+function schedulePdpReviewsEarlyPreload() {
+    const wrap = document.getElementById('loadMoreReviewsWrap');
+    if (!wrap || wrap.getAttribute('data-has-more') !== '1') return;
+    const run = () => {
+        if (!isPdpReviewsLoading && wrap && wrap.getAttribute('data-has-more') === '1') {
+            triggerPdpReviewsLoad();
+        }
+    };
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(run, { timeout: 1500 });
+    } else {
+        setTimeout(run, 800);
+    }
+}
+
 initPdpReviewsInfiniteScroll();
+schedulePdpReviewsEarlyPreload();
 
 // Product Video Modal Controls
 const pdpVideoEmbedUrl = @json($product->getYoutubeEmbedUrl());

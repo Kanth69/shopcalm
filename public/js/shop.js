@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // --- Amazon-Style Auto Infinite Scroll Functions ---
-    function triggerShopLoadMore() {
+    function triggerShopLoadMore(updateHistory = true) {
         if (isShopLoading) return;
         const wrap = document.getElementById('shop-load-more-wrap');
         if (!wrap || wrap.getAttribute('data-has-more') !== '1') return;
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const loader = document.getElementById('shop-infinite-loader');
         if (loader) loader.classList.remove('d-none');
 
-        fetchProducts(urlObj.toString(), true);
+        fetchProducts(urlObj.toString(), true, updateHistory);
     }
 
     function initShopInfiniteScroll() {
@@ -144,6 +144,25 @@ document.addEventListener('DOMContentLoaded', function () {
             triggerShopLoadMore();
         }
     }, { passive: true });
+
+    // Proactive Background Preload:
+    // While customer looks at the starting items / filters at the top, prefetch next batch right away!
+    function scheduleShopEarlyPreload() {
+        const wrap = document.getElementById('shop-load-more-wrap');
+        if (!wrap || wrap.getAttribute('data-has-more') !== '1') return;
+
+        const runPreload = () => {
+            if (!isShopLoading && wrap && wrap.getAttribute('data-has-more') === '1') {
+                triggerShopLoadMore(false);
+            }
+        };
+
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(runPreload, { timeout: 1200 });
+        } else {
+            setTimeout(runPreload, 600);
+        }
+    }
 
     // --- Event Listeners ---
     document.body.addEventListener('submit', function(e) {
@@ -320,7 +339,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    async function fetchProducts(url, isAppend = false) {
+    async function fetchProducts(url, isAppend = false, updateHistory = true) {
         if (isShopLoading) return;
         isShopLoading = true;
 
@@ -352,7 +371,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 });
 
-                window.history.replaceState({ path: url }, '', url);
+                if (updateHistory) {
+                    window.history.replaceState({ path: url }, '', url);
+                }
             } else {
                 productGrid.innerHTML = data.product_grid_html;
                 if (window.scrollY > productContainer.offsetTop) {
@@ -419,11 +440,13 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!isAppend) {
                 setButtonsLoading(false);
                 productContainer.classList.remove('is-loading');
+                scheduleShopEarlyPreload();
             }
             initShopInfiniteScroll();
         }
     }
 
-    // Initialize Infinite Scroll on page load
+    // Initialize Infinite Scroll & Early Background Preload on page load
     initShopInfiniteScroll();
+    scheduleShopEarlyPreload();
 });

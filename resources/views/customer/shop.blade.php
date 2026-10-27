@@ -244,5 +244,5 @@
 @endsection
 
 @push('scripts')
-<script src="{{ asset('js/shop.js?v=2.5') }}" defer></script>
+<script src="{{ asset('js/shop.js?v=2.6') }}" defer></script>
 @endpush

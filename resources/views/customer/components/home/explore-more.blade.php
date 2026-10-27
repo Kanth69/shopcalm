@@ -190,7 +190,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, { passive: true });
 
+    // Proactive Background Preload:
+    // While customer is viewing the starting hero/deals at the top of the home page, prefetch next batch right away!
+    function scheduleHomeEarlyPreload() {
+        if (!wrap || wrap.getAttribute('data-has-more') !== '1') return;
+        const runPreload = () => {
+            if (!isHomeLoading && wrap && wrap.getAttribute('data-has-more') === '1') {
+                triggerHomeExploreLoad();
+            }
+        };
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(runPreload, { timeout: 1200 });
+        } else {
+            setTimeout(runPreload, 600);
+        }
+    }
+
     initHomeInfiniteScroll();
+    scheduleHomeEarlyPreload();
 });
 </script>
 @endpush
