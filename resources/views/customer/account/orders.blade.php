@@ -184,7 +184,7 @@
     $stepIdx = $stageRankMap[$s] ?? false;
 
     // First 3 product images
-    $thumbs = $order->items->take(3)->map(fn($i) => $i->product?->main_image)->filter();
+    $thumbs = $order->items->take(3)->map(fn($i) => $i->display_image ?? $i->product?->main_image)->filter();
     $extraCount = max(0, $order->items->count() - 3);
 @endphp
 

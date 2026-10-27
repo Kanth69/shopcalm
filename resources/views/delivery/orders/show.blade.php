@@ -285,8 +285,9 @@
         @foreach($order->items as $item)
             <div class="d-flex align-items-center justify-content-between py-2 {{ !$loop->last ? 'border-bottom' : '' }}">
                 <div class="d-flex align-items-center gap-2 overflow-hidden">
-                    @if($item->product && $item->product->main_image)
-                        <img src="{{ asset('storage/' . $item->product->main_image) }}" alt="{{ $item->product_name }}" 
+                    @php $riderThumb = $item->display_image ?? $item->product?->main_image; @endphp
+                    @if($riderThumb)
+                        <img src="{{ asset('storage/' . $riderThumb) }}" alt="{{ $item->product_name }}" 
                              class="rounded-2 border object-fit-cover flex-shrink-0" style="width: 36px; height: 36px;">
                     @else
                         <div class="rounded-2 bg-light border d-flex align-items-center justify-content-center text-secondary flex-shrink-0" style="width: 36px; height: 36px;">

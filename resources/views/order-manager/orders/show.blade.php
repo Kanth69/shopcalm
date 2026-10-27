@@ -663,8 +663,9 @@
                             <tr>
                                 <td class="ps-4 py-3">
                                     <div class="d-flex align-items-center gap-3">
-                                        @if($item->product && $item->product->main_image)
-                                            <img src="{{ asset('storage/' . $item->product->main_image) }}" alt="{{ $item->product_name }}" 
+                                        @php $omThumb = $item->display_image ?? $item->product?->main_image; @endphp
+                                        @if($omThumb)
+                                            <img src="{{ asset('storage/' . $omThumb) }}" alt="{{ $item->product_name }}" 
                                                  class="rounded-3 border object-fit-contain shadow-2xs p-1 bg-white flex-shrink-0" width="48" height="48">
                                         @else
                                             <div class="rounded-3 bg-light border d-flex align-items-center justify-content-center text-muted shadow-2xs flex-shrink-0" style="width: 48px; height: 48px;">

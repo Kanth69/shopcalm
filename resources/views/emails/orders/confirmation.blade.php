@@ -80,10 +80,22 @@
                                 @foreach($order->items as $item)
                                 <tr>
                                     <td align="left" style="font-size: 13px; color: #334155; border-bottom: 1px solid #e2e8f0;">
-                                        <strong>{{ $item->product_name ?? ($item->product->name ?? 'Product Item') }}</strong>
-                                        @if($item->selected_option)
-                                            <br><small style="color: #64748b;">Option: {{ $item->selected_option }}</small>
-                                        @endif
+                                        @php $emailThumb = $item->display_image ?? $item->product?->main_image; @endphp
+                                        <table border="0" cellspacing="0" cellpadding="0">
+                                            <tr>
+                                                @if($emailThumb)
+                                                <td style="padding-right: 10px; vertical-align: middle;">
+                                                    <img src="{{ asset('storage/' . $emailThumb) }}" width="42" height="42" style="border-radius: 6px; border: 1px solid #e2e8f0; object-fit: contain; display: block;" alt="{{ $item->product_name }}">
+                                                </td>
+                                                @endif
+                                                <td style="vertical-align: middle;">
+                                                    <strong>{{ $item->product_name ?? ($item->product->name ?? 'Product Item') }}</strong>
+                                                    @if($item->selected_option)
+                                                        <br><small style="color: #64748b;">Option / Color: <strong>{{ $item->selected_option }}</strong></small>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        </table>
                                     </td>
                                     <td align="center" style="font-size: 13px; color: #334155; border-bottom: 1px solid #e2e8f0;">{{ $item->quantity }}</td>
                                     <td align="right" style="font-size: 13px; color: #334155; border-bottom: 1px solid #e2e8f0;">₹{{ number_format((float)($item->unit_price ?? $item->original_price ?? 0), 2) }}</td>

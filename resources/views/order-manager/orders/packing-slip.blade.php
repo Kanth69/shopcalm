@@ -107,7 +107,20 @@
                             {{ $item->product?->sku ?? 'SKU-N/A' }}
                         </td>
                         <td>
-                            <div class="fw-bold text-dark small">{{ $item->product_name }}</div>
+                            @php $packThumb = $item->display_image ?? $item->product?->main_image; @endphp
+                            <div class="d-flex align-items-center gap-2">
+                                @if($packThumb)
+                                    <img src="{{ asset('storage/' . $packThumb) }}" alt="" style="width: 38px; height: 38px; object-fit: contain; border-radius: 4px; border: 1px solid #e2e8f0; flex-shrink: 0; background: #fff;">
+                                @endif
+                                <div>
+                                    <div class="fw-bold text-dark small">{{ $item->product_name }}</div>
+                                    @if($item->selected_option)
+                                        <div class="badge bg-light text-primary border fw-bold" style="font-size: 0.72rem; padding: 2px 6px; margin-top: 2px;">
+                                            Variant: {{ $item->selected_option }}
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
                         </td>
                         <td class="text-center h5 fw-bolder text-dark mb-0">
                             {{ $item->quantity }}
