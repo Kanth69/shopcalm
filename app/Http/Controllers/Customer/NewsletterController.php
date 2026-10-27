@@ -11,12 +11,6 @@ class NewsletterController extends Controller
 {
     public function subscribe(Request $request)
     {
-        $email = $request->input('email');
-        if (empty($email) && $request->user('sanctum')) {
-            $email = $request->user('sanctum')->email;
-            $request->merge(['email' => $email]);
-        }
-
         $validator = Validator::make($request->all(), [
             'email' => ['required', 'string', 'email:rfc,filter', 'max:255'],
         ], [
@@ -70,7 +64,7 @@ class NewsletterController extends Controller
 
     public function toggle(Request $request)
     {
-        $user = $request->user() ?: $request->user('sanctum');
+        $user = $request->user();
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 401);
         }
