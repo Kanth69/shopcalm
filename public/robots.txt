@@ -9,5 +9,11 @@ Disallow: /rider
 Disallow: /checkout
 Disallow: /account
 Disallow: /profile
+Disallow: /cart
+Disallow: /wishlist
+Disallow: /api/
+Disallow: /sanctum
+Disallow: /test-email
+Disallow: /up
 
 Sitemap: https://shopcalm.in/sitemap.xml

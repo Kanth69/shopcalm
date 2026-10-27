@@ -436,17 +436,19 @@ $registerCustomerRoutes = function () {
 $registerStaffRoutes();
 $registerCustomerRoutes();
 
-// ─── EMAIL TEST ROUTE ───────────────────────────────────────────
-Route::get('/test-email', function () {
-    $to      = config('services.brevo.sender_email');
-    $subject = 'ShopCalm Test Email';
-    $html    = '<h2 style="font-family:sans-serif;">Hello from ShopCalm 👋</h2><p style="font-family:sans-serif;">Brevo integration is working successfully.</p>';
-    $text    = "Hello from ShopCalm.\nBrevo integration is working successfully.";
+// ─── EMAIL TEST ROUTE (Local Development Only) ───────────────
+if (app()->environment('local')) {
+    Route::get('/test-email', function () {
+        $to      = config('services.brevo.sender_email');
+        $subject = 'ShopCalm Test Email';
+        $html    = '<h2 style="font-family:sans-serif;">Hello from ShopCalm 👋</h2><p style="font-family:sans-serif;">Brevo integration is working successfully.</p>';
+        $text    = "Hello from ShopCalm.\nBrevo integration is working successfully.";
 
-    app(\App\Services\EmailService::class)->sendEmail($to, $subject, $html, $text);
+        app(\App\Services\EmailService::class)->sendEmail($to, $subject, $html, $text);
 
-    return response()->json([
-        'status'  => 'sent',
-        'message' => "Test email dispatched to {$to}.",
-    ]);
-});
+        return response()->json([
+            'status'  => 'sent',
+            'message' => "Test email dispatched to {$to}.",
+        ]);
+    });
+}
