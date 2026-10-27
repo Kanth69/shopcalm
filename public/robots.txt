@@ -1,2 +1,10 @@
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /admin
+Disallow: /order-manager
+Disallow: /delivery
+Disallow: /rider
+Disallow: /checkout
+Disallow: /account
+
+Sitemap: https://shopcalm.in/sitemap.xml

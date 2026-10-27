@@ -474,6 +474,19 @@
                     </div>
                 </div>
             </div>
+            @else
+            <div class="mb-4">
+                <div class="p-3 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-3 d-flex align-items-center gap-2.5 text-danger mb-3">
+                    <i class="bi bi-exclamation-octagon-fill fs-5 flex-shrink-0"></i>
+                    <div>
+                        <div class="fw-bold" style="font-size: 0.92rem;">Currently Out of Stock</div>
+                        <div class="small text-danger text-opacity-75">This item is temporarily unavailable. We are restocking soon!</div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary w-100 rounded-3 text-white fw-bold py-3 text-uppercase shadow-none d-flex align-items-center justify-content-center gap-2" disabled style="opacity: 0.65; height: 50px; cursor: not-allowed;">
+                    <i class="bi bi-slash-circle fs-5"></i> <span>Sold Out / Out of Stock</span>
+                </button>
+            </div>
             @endif
 
             {{-- 8. 4 Buyer Guarantees Strip (Amazon Trust Bar) --}}

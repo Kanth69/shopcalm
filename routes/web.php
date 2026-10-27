@@ -327,6 +327,7 @@ $registerCustomerRoutes = function () {
     Route::get('/brands', [ShopController::class, 'brands'])->name('brands.index');
     Route::get('/category/{category:slug}', [ShopController::class, 'categoryProducts'])->name('category.products');
     Route::get('/brand/{brand:slug}', [ShopController::class, 'brandProducts'])->name('brand.products');
+    Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'index'])->name('sitemap');
 
     // Cart Routes
     Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
