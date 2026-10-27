@@ -50,6 +50,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/delivery/check-pincode', [CheckoutController::class, 'checkPincode']);
     Route::post('/contact', [\App\Http\Controllers\ContactController::class, 'submit']);
     Route::get('/tickets', [AccountController::class, 'tickets']);
+    Route::post('/newsletter/subscribe', [\App\Http\Controllers\Customer\NewsletterController::class, 'subscribe']);
 
     // ── 3. CART ENDPOINTS ──
     Route::prefix('cart')->group(function () {
@@ -92,6 +93,9 @@ Route::prefix('v1')->group(function () {
 
         // Reviews
         Route::post('/products/{product}/reviews', [\App\Http\Controllers\Customer\ProductReviewController::class, 'store']);
+
+        // Newsletter Preferences Toggle
+        Route::post('/newsletter/toggle', [\App\Http\Controllers\Customer\NewsletterController::class, 'toggle']);
     });
 
 });
