@@ -1,5 +1,18 @@
 @php
     $liveMegaSale = app(\App\Services\OfferService::class)->getLiveMegaSale();
+    $isCategoriesPage = request()->routeIs('categories.index');
+    $isBrandsPage = request()->routeIs('brands.index');
+    $isCheckoutFlow = request()->routeIs('checkout.*') || request()->is('checkout*') || request()->is('order-success*');
+
+    $headerSearchPlaceholder = 'Search products, brands, categories, tags...';
+    $headerSearchAction = route('shop');
+    if ($isCategoriesPage) {
+        $headerSearchPlaceholder = 'Search categories...';
+        $headerSearchAction = route('categories.index');
+    } elseif ($isBrandsPage) {
+        $headerSearchPlaceholder = 'Search brands...';
+        $headerSearchAction = route('brands.index');
+    }
 @endphp
 
 @if($liveMegaSale)
@@ -103,9 +116,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
             </div>
 
+            @if(!$isCheckoutFlow)
             <!-- Center: Desktop Clean Search Bar (App-Style Live Search) -->
             <div class="flex-grow-1 d-none d-md-block mx-2 mx-xl-4 position-relative" style="max-width: 520px;">
-                <form action="{{ route('shop') }}" method="GET" class="position-relative" id="mainSearchForm" autocomplete="off">
+                <form action="{{ $headerSearchAction }}" method="GET" class="position-relative" id="mainSearchForm" autocomplete="off">
                     <div class="input-group rounded-pill overflow-hidden border shadow-xs search-input-group position-relative" style="background: #f8fafc; border-color: #cbd5e1 !important; transition: border-color 0.2s ease, box-shadow 0.2s ease;">
                         <span class="input-group-text bg-transparent border-0 ps-3 text-muted">
                             <i class="bi bi-search text-primary" style="font-size: 0.9rem;"></i>
@@ -115,7 +129,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             name="q"
                             id="mainSearchInput"
                             class="form-control bg-transparent border-0 shadow-none ps-2 py-2"
-                            placeholder="Search products, brands, categories, tags..."
+                            placeholder="{{ $headerSearchPlaceholder }}"
                             value="{{ request('q') }}"
                             style="font-size: 0.88rem;"
                             autocomplete="off"
@@ -131,6 +145,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </form>
             </div>
+            @else
+            <!-- Checkout Header Badge (Distraction-Free) -->
+            <div class="flex-grow-1 d-none d-md-flex align-items-center justify-content-center text-muted">
+                <span class="d-inline-flex align-items-center gap-1.5 px-3 py-1 bg-light rounded-pill border text-secondary fw-semibold" style="font-size: 0.8rem; letter-spacing: 0.3px;">
+                    <i class="bi bi-shield-check text-success fs-6"></i> 100% SECURE ENCRYPTED CHECKOUT
+                </span>
+            </div>
+            @endif
 
             <!-- Right Actions: Wishlist + Cart + Profile Avatar -->
             <div class="d-flex align-items-center gap-1.5 gap-md-3 gap-lg-4 flex-shrink-0">
@@ -227,14 +249,15 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         </div>
 
+        @if(!$isCheckoutFlow)
         <!-- Mobile Search Bar (Clean Full Width App-Style Live Search) -->
         <div class="d-block d-md-none pt-1.5 pb-0.5 position-relative">
-            <form action="{{ route('shop') }}" method="GET" class="position-relative" id="mobileSearchForm" autocomplete="off">
+            <form action="{{ $headerSearchAction }}" method="GET" class="position-relative" id="mobileSearchForm" autocomplete="off">
                 <div class="input-group rounded-pill overflow-hidden border shadow-xs search-input-group position-relative" style="background: #f8fafc; border-color: #cbd5e1 !important;">
                     <span class="input-group-text bg-transparent border-0 ps-3 text-muted">
                         <i class="bi bi-search text-primary" style="font-size: 0.85rem;"></i>
                     </span>
-                    <input type="text" name="q" id="mobileSearchInput" class="form-control bg-transparent border-0 shadow-none ps-1 py-2" placeholder="Search products, brands, categories, tags..." value="{{ request('q') }}" style="font-size: 0.86rem;" autocomplete="off">
+                    <input type="text" name="q" id="mobileSearchInput" class="form-control bg-transparent border-0 shadow-none ps-1 py-2" placeholder="{{ $headerSearchPlaceholder }}" value="{{ request('q') }}" style="font-size: 0.86rem;" autocomplete="off">
                     <button type="button" class="btn btn-link text-muted p-0 pe-3 d-none btn-clear-search" aria-label="Clear search" style="text-decoration: none;">
                         <i class="bi bi-x-circle-fill"></i>
                     </button>
@@ -246,6 +269,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </form>
         </div>
+        @endif
     </div>
 </header>
 
@@ -680,18 +704,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 input.value = '';
                 updateClearBtn();
                 input.focus();
+                if (typeof window.onHeaderSearchInput === 'function') {
+                    window.onHeaderSearchInput('');
+                    box.classList.add('d-none');
+                    return;
+                }
                 renderEmptyState(box, input, form);
             });
         }
 
-        form.addEventListener('submit', function () {
-            saveRecentSearch(input.value.trim());
+        form.addEventListener('submit', function (e) {
+            const val = input.value.trim();
+            saveRecentSearch(val);
+            if (typeof window.onHeaderSearchSubmit === 'function') {
+                const handled = window.onHeaderSearchSubmit(val);
+                if (handled) {
+                    e.preventDefault();
+                    box.classList.add('d-none');
+                    return;
+                }
+            }
         });
 
         input.addEventListener('input', function () {
             clearTimeout(timer);
             updateClearBtn();
             const q = this.value.trim();
+
+            if (typeof window.onHeaderSearchInput === 'function') {
+                const handled = window.onHeaderSearchInput(q);
+                if (handled) {
+                    box.classList.add('d-none');
+                    return;
+                }
+            }
 
             if (q.length === 0) {
                 renderEmptyState(box, input, form);
@@ -827,6 +873,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         input.addEventListener('focus', function () {
+            if (typeof window.onHeaderSearchInput === 'function') {
+                box.classList.add('d-none');
+                return;
+            }
             if (this.value.trim().length === 0) {
                 renderEmptyState(box, input, form);
             } else if (this.value.trim().length >= 1) {

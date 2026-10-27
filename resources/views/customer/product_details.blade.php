@@ -208,6 +208,18 @@
                     {{ number_format($reviewCount) }} Verified Ratings & Reviews
                 </a>
                 <span class="text-muted small">•</span>
+                @auth('customer')
+                    <button type="button" class="btn btn-sm btn-outline-warning text-dark border-warning-subtle bg-warning bg-opacity-10 rounded-pill px-2.5 py-0.5 fw-semibold d-inline-flex align-items-center gap-1 shadow-2xs" 
+                            data-bs-toggle="modal" data-bs-target="#writeReviewModal" style="font-size: 0.78rem;" title="Rate this product">
+                        <i class="bi bi-star-fill text-warning"></i> <span>Rate Product</span>
+                    </button>
+                @else
+                    <a href="{{ route('login', ['redirect' => url()->current()]) }}" class="btn btn-sm btn-outline-warning text-dark border-warning-subtle bg-warning bg-opacity-10 rounded-pill px-2.5 py-0.5 fw-semibold d-inline-flex align-items-center gap-1 shadow-2xs" 
+                       style="font-size: 0.78rem;" title="Sign in to rate">
+                        <i class="bi bi-star-fill text-warning"></i> <span>Rate Product</span>
+                    </a>
+                @endauth
+                <span class="text-muted small">•</span>
                 <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1" style="font-size: 0.74rem;">
                     SKU: {{ $product->sku }}
                 </span>
@@ -682,13 +694,13 @@
                 </span>
             </div>
             @auth('customer')
-                <button class="btn btn-outline-secondary rounded-2 px-3 py-1.5 fw-semibold shadow-xs" 
-                        data-bs-toggle="collapse" data-bs-target="#reviewForm" style="font-size: 0.85rem;">
-                    <i class="bi bi-star-fill text-warning me-1"></i> Rate Product
+                <button type="button" class="btn btn-primary rounded-pill px-3.5 py-1.5 fw-semibold shadow-xs d-inline-flex align-items-center gap-1.5" 
+                        data-bs-toggle="modal" data-bs-target="#writeReviewModal" style="font-size: 0.85rem;">
+                    <i class="bi bi-star-fill text-warning"></i> <span>Rate Product</span>
                 </button>
             @else
-                <a href="{{ route('login') }}" class="btn btn-outline-secondary rounded-2 px-3 py-1.5 fw-semibold shadow-xs" style="font-size: 0.85rem;">
-                    <i class="bi bi-box-arrow-in-right me-1"></i> Sign In to Rate
+                <a href="{{ route('login', ['redirect' => url()->current()]) }}" class="btn btn-outline-primary rounded-pill px-3.5 py-1.5 fw-semibold shadow-xs d-inline-flex align-items-center gap-1.5" style="font-size: 0.85rem;">
+                    <i class="bi bi-box-arrow-in-right"></i> <span>Sign In to Rate</span>
                 </a>
             @endauth
         </div>
@@ -706,9 +718,19 @@
                             </span>
                             <i class="bi bi-star-fill text-success fs-3"></i>
                         </div>
-                        <div class="text-muted small" style="font-size: 0.82rem;">
+                        <div class="text-muted small mb-3" style="font-size: 0.82rem;">
                             {{ number_format($totalReviewsCount ?? $product->approvedReviews->count()) }} Ratings & {{ number_format($totalReviewsCount ?? $product->approvedReviews->count()) }} Reviews
                         </div>
+                        @auth('customer')
+                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3.5 py-1.5 fw-semibold shadow-xs d-inline-flex align-items-center gap-1.5" 
+                                    data-bs-toggle="modal" data-bs-target="#writeReviewModal" style="font-size: 0.82rem;">
+                                <i class="bi bi-pencil-square"></i> <span>Write a Review</span>
+                            </button>
+                        @else
+                            <a href="{{ route('login', ['redirect' => url()->current()]) }}" class="btn btn-sm btn-primary rounded-pill px-3.5 py-1.5 fw-semibold shadow-xs d-inline-flex align-items-center gap-1.5" style="font-size: 0.82rem;">
+                                <i class="bi bi-box-arrow-in-right"></i> <span>Write a Review</span>
+                            </a>
+                        @endauth
                     </div>
 
                     {{-- Star Distribution Progress Bars (Flipkart Green/Amber/Red) --}}
@@ -739,15 +761,6 @@
                 </div>
             </div>
 
-            {{-- 2. Write Review Form Collapse --}}
-            @auth('customer')
-            <div class="collapse mb-4" id="reviewForm">
-                <div class="p-3 p-sm-4 rounded-4 border mb-3 shadow-xs" style="background: #f8fafc; border-color: #e2e8f0 !important;">
-                    @include('customer.components.reviews.write-review-form', ['product' => $product])
-                </div>
-            </div>
-            @endauth
-
             {{-- 3. Verified Customer Reviews Stream (Flipkart Style List / Mobile Horizontal Carousel) --}}
             @php
                 $revCount = $totalReviewsCount ?? $product->approvedReviews->count();
@@ -767,7 +780,17 @@
                         <div class="text-center py-5 w-100 bg-white rounded-3 border p-4">
                             <i class="bi bi-chat-square-heart display-4 text-muted opacity-25"></i>
                             <h6 class="mt-3 fw-bold text-dark">No Reviews Yet</h6>
-                            <p class="text-muted small mb-0">Be the first verified customer to rate and review this product!</p>
+                            <p class="text-muted small mb-3">Be the first verified customer to rate and review this product!</p>
+                            @auth('customer')
+                                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3.5 py-1.5 fw-semibold shadow-xs d-inline-flex align-items-center gap-1.5" 
+                                        data-bs-toggle="modal" data-bs-target="#writeReviewModal">
+                                    <i class="bi bi-star-fill text-warning"></i> <span>Rate this Product</span>
+                                </button>
+                            @else
+                                <a href="{{ route('login', ['redirect' => url()->current()]) }}" class="btn btn-sm btn-primary rounded-pill px-3.5 py-1.5 fw-semibold shadow-xs d-inline-flex align-items-center gap-1.5">
+                                    <i class="bi bi-box-arrow-in-right"></i> <span>Sign In to Rate</span>
+                                </a>
+                            @endauth
                         </div>
                     @endforelse
                 </div>
@@ -2017,6 +2040,29 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+{{-- Product Rating & Review Modal Popup (Desktop & Mobile) --}}
+<div class="modal fade" id="writeReviewModal" tabindex="-1" aria-labelledby="writeReviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg mx-2 mx-sm-auto">
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+            <div class="modal-header border-bottom py-3 px-3 px-sm-4 bg-light">
+                <div class="d-flex align-items-center gap-2.5 min-w-0">
+                    <div class="rounded-circle bg-warning bg-opacity-15 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px;">
+                        <i class="bi bi-star-fill fs-5"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h5 class="modal-title fw-bold text-dark mb-0 fs-6" id="writeReviewModalLabel">Rate & Review Product</h5>
+                        <div class="text-muted small text-truncate" style="max-width: 300px; font-size: 0.78rem;">{{ $product->name }}</div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 p-sm-4 bg-white">
+                @include('customer.components.reviews.write-review-form', ['product' => $product])
+            </div>
+        </div>
+    </div>
+</div>
 
 {{-- YouTube Video Responsive Modal --}}
 @if(!empty($product->getYoutubeEmbedUrl()))

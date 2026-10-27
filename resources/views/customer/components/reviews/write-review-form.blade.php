@@ -1,92 +1,99 @@
-<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" id="write-review-container">
-    <div class="card-body p-4">
-        @auth
-            @php
-                $userReview = $product->reviews()->where('user_id', Auth::id())->first();
-            @endphp
+<div id="write-review-container">
+    @auth
+        @php
+            $userReview = $product->reviews()->where('user_id', Auth::id())->first();
+        @endphp
 
-            {{-- Wrapper if user already has a pending or approved review --}}
-            <div id="user-review-status-wrapper" @if(!$userReview) style="display: none;" @endif>
-                @if($userReview)
-                    @if($userReview->status === 'Pending')
-                        <div class="text-center py-4" id="user-pending-review-box">
-                            <div class="mx-auto mb-3" style="width: 56px; height: 56px; border-radius: 50%; background: #fef3c7; display: flex; align-items: center; justify-content: center;">
-                                <i class="bi bi-clock-history fs-3" style="color: #d97706;"></i>
-                            </div>
-                            <h6 class="fw-bold text-dark mb-1 fs-5">Thank You for Your Feedback!</h6>
-                            <p class="text-muted small mb-3" style="max-width: 460px; margin: 0 auto;">
-                                Your review for <strong>{{ $product->name }}</strong> has been submitted successfully.
-                            </p>
-                            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" 
-                                    onclick="confirmDeleteUserReview({{ $userReview->id }}, '{{ route('reviews.destroy', $userReview) }}', this)">
-                                <i class="bi bi-trash3 me-1"></i> Delete Review
-                            </button>
+        {{-- Wrapper if user already has a pending or approved review --}}
+        <div id="user-review-status-wrapper" @if(!$userReview) style="display: none;" @endif>
+            @if($userReview)
+                @if($userReview->status === 'Pending')
+                    <div class="text-center py-4" id="user-pending-review-box">
+                        <div class="mx-auto mb-3" style="width: 56px; height: 56px; border-radius: 50%; background: #fef3c7; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-clock-history fs-3" style="color: #d97706;"></i>
                         </div>
-                    @elseif($userReview->status === 'Approved')
-                        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
-                            <h6 class="fw-bold text-dark mb-0"><i class="bi bi-star-fill text-warning me-2"></i>Your Published Review</h6>
-                            <span class="badge rounded-pill px-3 py-1 fw-bold" style="background:#d1fae5; color:#065f46; border:1px solid #a7f3d0;">Active</span>
-                        </div>
-                        @include('customer.components.reviews.review-card', ['review' => $userReview])
-                    @endif
+                        <h6 class="fw-bold text-dark mb-1 fs-5">Thank You for Your Feedback!</h6>
+                        <p class="text-muted small mb-3" style="max-width: 460px; margin: 0 auto;">
+                            Your review for <strong>{{ $product->name }}</strong> has been submitted successfully and is pending approval.
+                        </p>
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" 
+                                onclick="confirmDeleteUserReview({{ $userReview->id }}, '{{ route('reviews.destroy', $userReview) }}', this)">
+                            <i class="bi bi-trash3 me-1"></i> Delete Review
+                        </button>
+                    </div>
+                @elseif($userReview->status === 'Approved')
+                    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                        <h6 class="fw-bold text-dark mb-0"><i class="bi bi-star-fill text-warning me-2"></i>Your Published Review</h6>
+                        <span class="badge rounded-pill px-3 py-1 fw-bold" style="background:#d1fae5; color:#065f46; border:1px solid #a7f3d0;">Active</span>
+                    </div>
+                    @include('customer.components.reviews.review-card', ['review' => $userReview])
                 @endif
+            @endif
+        </div>
+
+        {{-- Review Form: shown when no review exists or after deleting existing review --}}
+        <div id="write-review-form-wrapper" @if($userReview) style="display: none;" @endif>
+            <div class="border-bottom pb-2.5 mb-3">
+                <h6 class="fw-bold text-dark mb-1 fs-6"><i class="bi bi-pencil-square text-primary me-2"></i>How would you rate this product?</h6>
+                <p class="text-muted small mb-0">Share your genuine experience with other shoppers.</p>
             </div>
 
-            {{-- Review Form: shown when no review exists or after deleting existing review --}}
-            <div id="write-review-form-wrapper" @if($userReview) style="display: none;" @endif>
-                <div class="border-bottom pb-3 mb-3">
-                    <h6 class="fw-bold text-dark mb-1 fs-5"><i class="bi bi-pencil-square text-primary me-2"></i>Write a Customer Review</h6>
-                    <p class="text-muted small mb-0">Share your experience with other shoppers. Your feedback helps us improve!</p>
+            <form id="write-review-form" action="{{ route('reviews.store', $product) }}" method="POST" onsubmit="handleReviewSubmit(event, this)" novalidate>
+                @csrf
+                
+                {{-- Interactive Star Selector --}}
+                <div class="mb-3 p-3 rounded-3 bg-light border text-center">
+                    <label class="form-label fw-bold text-dark small mb-1 d-block">Overall Rating <span class="text-danger">*</span></label>
+                    <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">
+                        <div class="star-rating-picker d-inline-flex gap-1 p-1" id="star-picker" style="transition: border 0.2s ease;">
+                            @for($i = 1; $i <= 5; $i++)
+                                <input type="radio" id="star-{{ $i }}" name="rating" value="{{ $i }}" class="d-none">
+                                <label for="star-{{ $i }}" class="star-item cursor-pointer user-select-none" data-value="{{ $i }}" style="font-size: clamp(2rem, 5vw, 2.5rem); color: #cbd5e1; transition: color 0.15s ease, transform 0.15s ease; padding: 0 4px; display: inline-block;">
+                                    ★
+                                </label>
+                            @endfor
+                        </div>
+                    </div>
+                    <div id="star-label-text" class="fw-bold small text-muted mt-1" style="min-height: 20px;">Select Rating</div>
+                    <div id="rating-validation-feedback" class="text-danger small mt-1.5 fw-semibold d-none">
+                        <i class="bi bi-exclamation-circle-fill me-1"></i> Please tap a star to give a rating (1 to 5 stars).
+                    </div>
                 </div>
 
-                <form id="write-review-form" action="{{ route('reviews.store', $product) }}" method="POST" onsubmit="handleReviewSubmit(event, this)" novalidate>
-                    @csrf
-                    
-                    {{-- Interactive Star Selector --}}
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold text-dark small mb-1">Overall Rating <span class="text-danger">*</span></label>
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="star-rating-picker d-flex gap-1 p-1" id="star-picker" style="transition: border 0.2s ease;">
-                                @for($i = 1; $i <= 5; $i++)
-                                    <input type="radio" id="star-{{ $i }}" name="rating" value="{{ $i }}" class="d-none">
-                                    <label for="star-{{ $i }}" class="star-item cursor-pointer" data-value="{{ $i }}" style="font-size: 1.6rem; color: #cbd5e1; transition: color 0.15s ease;">
-                                        ★
-                                    </label>
-                                @endfor
-                            </div>
-                            <span id="star-label-text" class="fw-bold small text-muted" style="min-width: 90px;">Select Rating</span>
-                        </div>
-                        <div id="rating-validation-feedback" class="text-danger small mt-1.5 fw-semibold d-none">
-                            <i class="bi bi-exclamation-circle-fill me-1"></i> Please select a star rating (1 to 5 stars).
-                        </div>
-                    </div>
+                {{-- Review Title --}}
+                <div class="mb-3">
+                    <label for="review_title" class="form-label fw-semibold text-dark small mb-1">Review Headline</label>
+                    <input type="text" name="title" id="review_title" class="form-control rounded-3" placeholder="e.g., Excellent quality & fast shipping!" style="border-color: #cbd5e1; font-size:0.875rem;">
+                </div>
 
-                    {{-- Review Title --}}
-                    <div class="mb-3">
-                        <label for="review_title" class="form-label fw-semibold text-dark small mb-1">Review Headline</label>
-                        <input type="text" name="title" id="review_title" class="form-control rounded-3 border-slate" placeholder="e.g., Excellent quality & fast shipping!" style="border-color: #cbd5e1; font-size:0.875rem;">
-                    </div>
+                {{-- Review Body --}}
+                <div class="mb-3">
+                    <label for="review_body" class="form-label fw-semibold text-dark small mb-1">Detailed Feedback</label>
+                    <textarea name="review" id="review_body" rows="3" class="form-control rounded-3" placeholder="What did you like or dislike about this product? How was the build quality and performance?" style="border-color: #cbd5e1; font-size:0.875rem;"></textarea>
+                </div>
 
-                    {{-- Review Body --}}
-                    <div class="mb-3">
-                        <label for="review_body" class="form-label fw-semibold text-dark small mb-1">Detailed Feedback</label>
-                        <textarea name="review" id="review_body" rows="3" class="form-control rounded-3 border-slate" placeholder="What did you like or dislike about this product?" style="border-color: #cbd5e1; font-size:0.875rem;"></textarea>
-                    </div>
-
-                    <button type="submit" id="btn-submit-review" class="btn btn-primary rounded-pill px-4 fw-bold">
+                <div class="d-flex align-items-center justify-content-end gap-2 pt-2 border-top">
+                    <button type="button" class="btn btn-light rounded-pill px-3.5 fw-medium btn-sm" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <button type="submit" id="btn-submit-review" class="btn btn-primary rounded-pill px-4 fw-bold btn-sm shadow-xs">
                         <i class="bi bi-send-fill me-1"></i> Submit Review
                     </button>
-                </form>
+                </div>
+            </form>
+        </div>
+    @else
+        <div class="text-center py-4 bg-light rounded-4 p-3">
+            <div class="mx-auto mb-3 rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;">
+                <i class="bi bi-lock-fill fs-3"></i>
             </div>
-        @else
-            <div class="text-center py-4 bg-light rounded-4">
-                <i class="bi bi-lock-fill text-muted fs-3 d-block mb-2"></i>
-                <h6 class="fw-bold text-dark mb-1">Have you used this product?</h6>
-                <p class="text-muted small mb-3">Log in to your ShopCalm account to write a review.</p>
-                <a href="{{ route('login') }}" class="btn btn-primary rounded-pill px-4 btn-sm fw-semibold">Login to Review</a>
-            </div>
-        @endauth
-    </div>
+            <h6 class="fw-bold text-dark mb-1">Sign in to rate this product</h6>
+            <p class="text-muted small mb-3">Please log in to your account to share your verified review and feedback.</p>
+            <a href="{{ route('login', ['redirect' => url()->current()]) }}" class="btn btn-primary rounded-pill px-4 btn-sm fw-semibold shadow-xs">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Sign In to Review
+            </a>
+        </div>
+    @endauth
 </div>
 
 <style>
@@ -217,6 +224,12 @@ function handleReviewSubmit(e, form) {
         return data;
     })
     .then(data => {
+        const modalEl = document.getElementById('writeReviewModal');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            if (modalInstance) modalInstance.hide();
+        }
+
         if (typeof Swal !== 'undefined') {
             Swal.fire({
                 icon: 'success',
