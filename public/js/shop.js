@@ -5,9 +5,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const productCountText = document.getElementById('product-count');
     const sortSelect = document.querySelector('.filter-trigger[name="sort"]');
     const activeFiltersContainer = document.getElementById('active-filter-chips');
+    const footer = document.getElementById('site-main-footer');
 
     let isShopLoading = false;
     let shopObserver = null;
+
+    // Amazon Experience: Keep footer hidden while more products are streaming
+    const initialWrap = document.getElementById('shop-load-more-wrap');
+    if (initialWrap && initialWrap.getAttribute('data-has-more') === '1' && footer) {
+        footer.style.display = 'none';
+    }
 
     function setButtonsLoading(isLoading) {
         document.querySelectorAll('.filter-form button[type="submit"]').forEach(button => {
@@ -83,26 +90,27 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // --- Amazon-Style Infinite Scroll Functions ---
+    // --- Amazon-Style Auto Infinite Scroll Functions ---
     function triggerShopLoadMore() {
         if (isShopLoading) return;
-        const loadMoreBtn = document.getElementById('shopLoadMoreBtn');
-        if (!loadMoreBtn) return;
-        const nextPage = loadMoreBtn.getAttribute('data-next-page');
+        const wrap = document.getElementById('shop-load-more-wrap');
+        if (!wrap || wrap.getAttribute('data-has-more') !== '1') return;
+
+        const nextPage = wrap.getAttribute('data-next-page');
         if (!nextPage) return;
 
         const urlObj = new URL(window.location.href);
         urlObj.searchParams.set('page', nextPage);
 
-        loadMoreBtn.disabled = true;
-        loadMoreBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span> Loading more products...`;
+        const loader = document.getElementById('shop-infinite-loader');
+        if (loader) loader.classList.remove('d-none');
 
         fetchProducts(urlObj.toString(), true);
     }
 
     function initShopInfiniteScroll() {
         const wrap = document.getElementById('shop-load-more-wrap');
-        if (!wrap) return;
+        if (!wrap || wrap.getAttribute('data-has-more') !== '1') return;
 
         if (shopObserver) {
             shopObserver.disconnect();
@@ -113,15 +121,12 @@ document.addEventListener('DOMContentLoaded', function () {
             shopObserver = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting && !isShopLoading) {
-                        const btn = document.getElementById('shopLoadMoreBtn');
-                        if (btn && btn.getAttribute('data-next-page')) {
-                            triggerShopLoadMore();
-                        }
+                        triggerShopLoadMore();
                     }
                 });
             }, {
                 root: null,
-                rootMargin: '450px', // trigger 450px before reaching the bottom
+                rootMargin: '1000px', // trigger 1000px before reaching the bottom
                 threshold: 0.01
             });
             shopObserver.observe(wrap);
@@ -132,11 +137,10 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener('scroll', function () {
         if (isShopLoading) return;
         const wrap = document.getElementById('shop-load-more-wrap');
-        const btn = document.getElementById('shopLoadMoreBtn');
-        if (!wrap || !btn || !btn.getAttribute('data-next-page')) return;
+        if (!wrap || wrap.getAttribute('data-has-more') !== '1') return;
 
         const rect = wrap.getBoundingClientRect();
-        if (rect.top <= window.innerHeight + 350) {
+        if (rect.top <= window.innerHeight + 800) {
             triggerShopLoadMore();
         }
     }, { passive: true });
@@ -188,14 +192,6 @@ document.addEventListener('DOMContentLoaded', function () {
             syncFormsWithUrl(url);
             window.history.pushState({ path: url }, '', url);
             fetchProducts(url);
-        }
-
-        // Load More button click handler (as manual fallback)
-        const loadMoreBtn = e.target.closest('#shopLoadMoreBtn');
-        if (loadMoreBtn) {
-            e.preventDefault();
-            triggerShopLoadMore();
-            return;
         }
 
         // Pagination links
@@ -364,33 +360,44 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
 
-            // Update Load More controls
+            // Update Load More controls & Footer visibility (Amazon Experience)
             if (loadMoreWrap) {
                 if (data.has_more) {
+                    loadMoreWrap.setAttribute('data-has-more', '1');
+                    loadMoreWrap.setAttribute('data-next-page', data.next_page);
                     loadMoreWrap.innerHTML = `
-                        <div class="d-flex flex-column align-items-center gap-2">
-                            <button type="button" id="shopLoadMoreBtn" 
-                                    class="btn btn-outline-dark rounded-pill px-4 py-2.5 fw-bold shadow-xs hover-elevate d-inline-flex align-items-center gap-2 transition-all"
-                                    data-next-page="${data.next_page}"
-                                    style="font-size: 0.88rem; border-color: #cbd5e1; background: #ffffff;">
-                                <span class="btn-text">Load More Products</span>
-                                <i class="bi bi-chevron-down" style="font-size: 0.8rem;"></i>
-                            </button>
-                            <span class="text-muted small" id="shop-progress-text" style="font-size: 0.76rem;">
-                                Showing <span id="shop-showing-count">${data.loaded_count}</span> of <span id="shop-total-count">${data.total_count}</span> products
-                            </span>
+                        <div id="shop-infinite-loader" class="py-4 text-center">
+                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                            <span class="text-muted small fw-semibold">Loading more products...</span>
                         </div>
                     `;
-                } else if (data.total_count > 0) {
-                    loadMoreWrap.innerHTML = `
-                        <div class="text-muted small py-2" id="shop-all-loaded-text" style="font-size: 0.78rem;">
-                            <span class="badge bg-light text-secondary border px-3 py-1.5 rounded-pill">
-                                <i class="bi bi-check2-all text-success me-1"></i> You've viewed all ${data.total_count} products
-                            </span>
-                        </div>
-                    `;
+                    // Keep footer hidden while products are still streaming
+                    if (footer) footer.style.display = 'none';
                 } else {
-                    loadMoreWrap.innerHTML = '';
+                    loadMoreWrap.setAttribute('data-has-more', '0');
+                    if (shopObserver) {
+                        shopObserver.disconnect();
+                        shopObserver = null;
+                    }
+                    if (data.total_count > 0) {
+                        loadMoreWrap.innerHTML = `
+                            <div class="text-muted small py-3" id="shop-all-loaded-text" style="font-size: 0.78rem;">
+                                <span class="badge bg-light text-secondary border px-3 py-1.5 rounded-pill">
+                                    <i class="bi bi-check2-all text-success me-1"></i> You've viewed all ${data.total_count} products
+                                </span>
+                            </div>
+                        `;
+                    } else {
+                        loadMoreWrap.innerHTML = '';
+                    }
+
+                    // Reveal footer now that catalog is complete
+                    if (footer) {
+                        footer.style.display = '';
+                        footer.style.opacity = '0';
+                        footer.style.transition = 'opacity 0.4s ease';
+                        setTimeout(() => footer.style.opacity = '1', 50);
+                    }
                 }
             }
 

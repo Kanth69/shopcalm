@@ -34,22 +34,17 @@
         @php
             $initialCount = $exploreProducts->count();
             $totalCount = $totalExploreCount ?? $initialCount;
+            $hasMoreExplore = $totalCount > $initialCount;
         @endphp
 
-        <div id="home-load-more-wrap" class="mt-4 pt-2 text-center">
-            @if($totalCount > $initialCount)
-                <div class="d-flex flex-column align-items-center gap-2">
-                    <button type="button" id="homeLoadMoreBtn" 
-                            data-page="2" 
-                            data-url="{{ route('home.explore-more') }}"
-                            class="btn btn-outline-dark rounded-pill px-4 py-2.5 fw-bold shadow-xs hover-elevate d-inline-flex align-items-center gap-2 transition-all"
-                            style="font-size: 0.88rem; border-color: #cbd5e1; background: #ffffff;">
-                        <span class="btn-text">Load More Products</span>
-                        <i class="bi bi-chevron-down" style="font-size: 0.8rem;"></i>
-                    </button>
-                    <span class="text-muted small" id="home-progress-text" style="font-size: 0.76rem;">
-                        Showing <span id="home-showing-count">{{ $initialCount }}</span> of <span id="home-total-count">{{ $totalCount }}</span> products
-                    </span>
+        <div id="home-load-more-wrap" class="mt-3 pt-2 text-center" 
+             data-has-more="{{ $hasMoreExplore ? '1' : '0' }}" 
+             data-page="2" 
+             data-url="{{ route('home.explore-more') }}">
+            @if($hasMoreExplore)
+                <div id="home-infinite-loader" class="py-4 text-center">
+                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                    <span class="text-muted small fw-semibold">Loading more products...</span>
                 </div>
             @else
                 <div class="text-muted small py-2">
@@ -68,18 +63,28 @@
 document.addEventListener('DOMContentLoaded', function() {
     let isHomeLoading = false;
     let homeObserver = null;
+    const wrap = document.getElementById('home-load-more-wrap');
+    const footer = document.getElementById('site-main-footer');
+    const newsletter = document.getElementById('home-newsletter-section');
+
+    // Amazon Experience: Keep footer & newsletter hidden while more products are streaming
+    const hasMoreInitially = wrap && wrap.getAttribute('data-has-more') === '1';
+    if (hasMoreInitially) {
+        if (footer) footer.style.display = 'none';
+        if (newsletter) newsletter.style.display = 'none';
+    }
 
     function triggerHomeExploreLoad() {
-        const btn = document.getElementById('homeLoadMoreBtn');
-        if (!btn || isHomeLoading) return;
+        if (!wrap || isHomeLoading) return;
+        if (wrap.getAttribute('data-has-more') !== '1') return;
 
-        const page = parseInt(btn.getAttribute('data-page') || '2', 10);
-        const url = btn.getAttribute('data-url');
+        const page = parseInt(wrap.getAttribute('data-page') || '2', 10);
+        const url = wrap.getAttribute('data-url');
         if (!url) return;
 
         isHomeLoading = true;
-        btn.disabled = true;
-        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span> Loading more products...`;
+        const loader = document.getElementById('home-infinite-loader');
+        if (loader) loader.classList.remove('d-none');
 
         fetch(`${url}?page=${page}`, {
             headers: {
@@ -110,45 +115,48 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
 
-            const wrap = document.getElementById('home-load-more-wrap');
             if (data.hasMore) {
-                btn.setAttribute('data-page', data.nextPage);
-                btn.disabled = false;
-                btn.innerHTML = `<span class="btn-text">Load More Products</span> <i class="bi bi-chevron-down" style="font-size: 0.8rem;"></i>`;
-                const showingSpan = document.getElementById('home-showing-count');
-                if (showingSpan) showingSpan.textContent = data.loadedCount;
+                wrap.setAttribute('data-page', data.nextPage);
                 isHomeLoading = false;
             } else {
                 isHomeLoading = false;
+                wrap.setAttribute('data-has-more', '0');
                 if (homeObserver) {
                     homeObserver.disconnect();
                     homeObserver = null;
                 }
-                if (wrap) {
-                    wrap.innerHTML = `
-                        <div class="text-muted small py-2">
-                            <span class="badge bg-light text-secondary border px-3 py-1.5 rounded-pill" style="font-size: 0.78rem;">
-                                <i class="bi bi-check2-all text-success me-1"></i> You've explored all ${data.total} products
-                            </span>
-                        </div>
-                    `;
+                wrap.innerHTML = `
+                    <div class="text-muted small py-3">
+                        <span class="badge bg-light text-secondary border px-3 py-1.5 rounded-pill" style="font-size: 0.78rem;">
+                            <i class="bi bi-check2-all text-success me-1"></i> You've explored all ${data.total} products
+                        </span>
+                    </div>
+                `;
+
+                // All products explored: reveal newsletter and footer seamlessly
+                if (newsletter) {
+                    newsletter.style.display = '';
+                    newsletter.style.opacity = '0';
+                    newsletter.style.transition = 'opacity 0.4s ease';
+                    setTimeout(() => newsletter.style.opacity = '1', 50);
+                }
+                if (footer) {
+                    footer.style.display = '';
+                    footer.style.opacity = '0';
+                    footer.style.transition = 'opacity 0.4s ease';
+                    setTimeout(() => footer.style.opacity = '1', 50);
                 }
             }
         })
         .catch(err => {
             console.error('Error loading explore products:', err);
             isHomeLoading = false;
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = `<span class="btn-text">Load More Products</span> <i class="bi bi-chevron-down" style="font-size: 0.8rem;"></i>`;
-            }
         });
     }
 
-    // Initialize IntersectionObserver for Amazon-style auto infinite scroll
+    // Amazon-Style Auto Prefetch: triggers 1000px before user hits bottom so products load seamlessly
     function initHomeInfiniteScroll() {
-        const wrap = document.getElementById('home-load-more-wrap');
-        if (!wrap) return;
+        if (!wrap || wrap.getAttribute('data-has-more') !== '1') return;
 
         if (homeObserver) {
             homeObserver.disconnect();
@@ -159,41 +167,28 @@ document.addEventListener('DOMContentLoaded', function() {
             homeObserver = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting && !isHomeLoading) {
-                        const btn = document.getElementById('homeLoadMoreBtn');
-                        if (btn && btn.getAttribute('data-page')) {
-                            triggerHomeExploreLoad();
-                        }
+                        triggerHomeExploreLoad();
                     }
                 });
             }, {
                 root: null,
-                rootMargin: '450px',
+                rootMargin: '1000px',
                 threshold: 0.01
             });
             homeObserver.observe(wrap);
         }
     }
 
-    // Fallback scroll listener for auto-loading
+    // High-performance scroll listener fallback
     window.addEventListener('scroll', function() {
         if (isHomeLoading) return;
-        const wrap = document.getElementById('home-load-more-wrap');
-        const btn = document.getElementById('homeLoadMoreBtn');
-        if (!wrap || !btn || !btn.getAttribute('data-page')) return;
+        if (!wrap || wrap.getAttribute('data-has-more') !== '1') return;
 
         const rect = wrap.getBoundingClientRect();
-        if (rect.top <= window.innerHeight + 350) {
+        if (rect.top <= window.innerHeight + 800) {
             triggerHomeExploreLoad();
         }
     }, { passive: true });
-
-    // Click handler fallback
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('#homeLoadMoreBtn')) {
-            e.preventDefault();
-            triggerHomeExploreLoad();
-        }
-    });
 
     initHomeInfiniteScroll();
 });

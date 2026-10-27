@@ -796,14 +796,12 @@
                 </div>
 
                 @if($revCount > $reviewsList->count())
-                    <div class="text-center pt-3 mt-2 border-top" id="loadMoreReviewsWrap" style="border-color: #f1f5f9 !important;">
-                        <button type="button" id="loadMoreReviewsBtn" data-page="2" 
-                                data-url="{{ route('product.reviews.load-more', $product->slug) }}"
-                                class="btn btn-outline-dark rounded-pill px-4 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-xs transition-all hover-elevate"
-                                style="font-size: 0.84rem; border-color: #cbd5e1; background: #ffffff;">
-                            <span class="btn-text">Load More Reviews (<span id="reviewsRemainingCount">{{ $revCount - $reviewsList->count() }}</span> remaining)</span>
-                            <i class="bi bi-chevron-down" style="font-size: 0.75rem;"></i>
-                        </button>
+                    <div class="text-center pt-3 mt-2 border-top" id="loadMoreReviewsWrap" style="border-color: #f1f5f9 !important;"
+                         data-has-more="1" data-page="2" data-url="{{ route('product.reviews.load-more', $product->slug) }}">
+                        <div id="pdp-reviews-loader" class="py-3 text-center">
+                            <div class="spinner-border spinner-border-sm text-warning me-2" role="status"></div>
+                            <span class="text-muted small fw-semibold">Loading more verified reviews...</span>
+                        </div>
                     </div>
                 @endif
             </div>
@@ -1818,64 +1816,107 @@ function executeUserReviewDelete(id, deleteUrl, btnElement) {
     });
 }
 
-// --- AJAX Load More Reviews ---
-const loadMoreReviewsBtn = document.getElementById('loadMoreReviewsBtn');
-if (loadMoreReviewsBtn) {
-    loadMoreReviewsBtn.addEventListener('click', function() {
-        const btn = this;
-        const page = parseInt(btn.getAttribute('data-page') || '2', 10);
-        const url = btn.getAttribute('data-url');
-        const originalHtml = btn.innerHTML;
+// --- Amazon-Style Auto Infinite Scroll for Customer Reviews ---
+let isPdpReviewsLoading = false;
+let pdpReviewsObserver = null;
 
-        btn.disabled = true;
-        btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> <span>Loading reviews...</span>`;
+function triggerPdpReviewsLoad() {
+    const wrap = document.getElementById('loadMoreReviewsWrap');
+    if (!wrap || isPdpReviewsLoading) return;
+    if (wrap.getAttribute('data-has-more') !== '1') return;
 
-        fetch(`${url}?page=${page}`, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            }
-        })
-        .then(res => {
-            if (!res.ok) throw new Error('Failed to load reviews');
-            return res.json();
-        })
-        .then(data => {
-            const container = document.getElementById('pdp-reviews-container');
-            if (container && data.html) {
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = data.html;
-                const newCards = Array.from(tempDiv.children);
-                newCards.forEach(card => {
-                    card.style.opacity = '0';
-                    card.style.transform = 'translateY(10px)';
-                    card.style.transition = 'all 0.35s ease';
-                    container.appendChild(card);
-                    requestAnimationFrame(() => {
-                        card.style.opacity = '1';
-                        card.style.transform = 'translateY(0)';
-                    });
+    const page = parseInt(wrap.getAttribute('data-page') || '2', 10);
+    const url = wrap.getAttribute('data-url');
+    if (!url) return;
+
+    isPdpReviewsLoading = true;
+    const loader = document.getElementById('pdp-reviews-loader');
+    if (loader) loader.classList.remove('d-none');
+
+    fetch(`${url}?page=${page}`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Failed to load reviews');
+        return res.json();
+    })
+    .then(data => {
+        const container = document.getElementById('pdp-reviews-container');
+        if (container && data.html) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = data.html;
+            const newCards = Array.from(tempDiv.children);
+            newCards.forEach(card => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(10px)';
+                card.style.transition = 'all 0.35s ease';
+                container.appendChild(card);
+                requestAnimationFrame(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
                 });
-            }
+            });
+        }
 
-            if (data.hasMore) {
-                btn.setAttribute('data-page', data.nextPage);
-                btn.disabled = false;
-                btn.innerHTML = `<span class="btn-text">Load More Reviews (<span id="reviewsRemainingCount">${data.remaining}</span> remaining)</span> <i class="bi bi-chevron-down" style="font-size: 0.75rem;"></i>`;
-            } else {
-                const wrap = document.getElementById('loadMoreReviewsWrap');
-                if (wrap) {
-                    wrap.innerHTML = `<span class="badge bg-light text-muted border px-3 py-1.5 rounded-pill" style="font-size: 0.78rem;"><i class="bi bi-check2-all text-success me-1"></i> All ${data.total} reviews loaded</span>`;
-                }
+        if (data.hasMore) {
+            wrap.setAttribute('data-page', data.nextPage);
+            isPdpReviewsLoading = false;
+        } else {
+            isPdpReviewsLoading = false;
+            wrap.setAttribute('data-has-more', '0');
+            if (pdpReviewsObserver) {
+                pdpReviewsObserver.disconnect();
+                pdpReviewsObserver = null;
             }
-        })
-        .catch(err => {
-            console.error('Error loading reviews:', err);
-            btn.disabled = false;
-            btn.innerHTML = originalHtml;
-        });
+            wrap.innerHTML = `<span class="badge bg-light text-muted border px-3 py-1.5 rounded-pill" style="font-size: 0.78rem;"><i class="bi bi-check2-all text-success me-1"></i> All ${data.total} reviews loaded</span>`;
+        }
+    })
+    .catch(err => {
+        console.error('Error loading reviews:', err);
+        isPdpReviewsLoading = false;
     });
 }
+
+function initPdpReviewsInfiniteScroll() {
+    const wrap = document.getElementById('loadMoreReviewsWrap');
+    if (!wrap || wrap.getAttribute('data-has-more') !== '1') return;
+
+    if (pdpReviewsObserver) {
+        pdpReviewsObserver.disconnect();
+        pdpReviewsObserver = null;
+    }
+
+    if ('IntersectionObserver' in window) {
+        pdpReviewsObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !isPdpReviewsLoading) {
+                    triggerPdpReviewsLoad();
+                }
+            });
+        }, {
+            root: null,
+            rootMargin: '500px', // start fetching 500px before reaching the end of reviews
+            threshold: 0.01
+        });
+        pdpReviewsObserver.observe(wrap);
+    }
+}
+
+// Fallback scroll listener for instant auto-loading
+window.addEventListener('scroll', function() {
+    if (isPdpReviewsLoading) return;
+    const wrap = document.getElementById('loadMoreReviewsWrap');
+    if (!wrap || wrap.getAttribute('data-has-more') !== '1') return;
+    const rect = wrap.getBoundingClientRect();
+    if (rect.top <= window.innerHeight + 400) {
+        triggerPdpReviewsLoad();
+    }
+}, { passive: true });
+
+initPdpReviewsInfiniteScroll();
 
 // Product Video Modal Controls
 const pdpVideoEmbedUrl = @json($product->getYoutubeEmbedUrl());

@@ -10,7 +10,7 @@
     $youtubeUrl    = \App\Models\Setting::get('youtube_url');
     $whatsappNum   = \App\Models\Setting::get('whatsapp_number');
 @endphp
-<footer class="section-footer border-top bg-dark text-white footer-responsive-container">
+<footer id="site-main-footer" class="section-footer border-top bg-dark text-white footer-responsive-container">
     <div class="container px-3 px-md-4">
 
         {{-- ============================================================ --}}

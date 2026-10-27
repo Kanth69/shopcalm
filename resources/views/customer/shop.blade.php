@@ -188,32 +188,24 @@
         </div>
     @endif
 
-
-
     {{-- 5. Full Width Products Container & Grid (4 per row on Desktop, 3 on Tablet, 2 on Mobile) --}}
     <div id="products-container" class="position-relative min-vh-50">
         <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-2 g-md-3" id="product-grid-wrapper">
             @include('customer.components.shop.product-grid', ['products' => $products])
         </div>
 
-        {{-- Modern Load More Products Section --}}
-        <div id="shop-load-more-wrap" class="mt-4 mb-3 text-center">
+        {{-- Modern Load More Products Section (Amazon-Style Auto Loader) --}}
+        <div id="shop-load-more-wrap" class="mt-4 mb-3 text-center" 
+             data-has-more="{{ $products->hasMorePages() ? '1' : '0' }}" 
+             data-next-page="{{ $products->currentPage() + 1 }}">
             @if($products->hasMorePages())
-                <div class="d-flex flex-column align-items-center gap-2">
-                    <button type="button" id="shopLoadMoreBtn" 
-                            class="btn btn-outline-dark rounded-pill px-4 py-2.5 fw-bold shadow-xs hover-elevate d-inline-flex align-items-center gap-2 transition-all"
-                            data-next-page="{{ $products->currentPage() + 1 }}"
-                            style="font-size: 0.88rem; border-color: #cbd5e1; background: #ffffff;">
-                        <span class="btn-text">Load More Products</span>
-                        <i class="bi bi-chevron-down" style="font-size: 0.8rem;"></i>
-                    </button>
-                    <span class="text-muted small" id="shop-progress-text" style="font-size: 0.76rem;">
-                        Showing <span id="shop-showing-count">{{ min($products->total(), $products->perPage()) }}</span> of <span id="shop-total-count">{{ $products->total() }}</span> products
-                    </span>
+                <div id="shop-infinite-loader" class="py-4 text-center">
+                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                    <span class="text-muted small fw-semibold">Loading more products...</span>
                 </div>
             @else
                 @if($products->total() > 0)
-                    <div class="text-muted small py-2" id="shop-all-loaded-text" style="font-size: 0.78rem;">
+                    <div class="text-muted small py-3" id="shop-all-loaded-text" style="font-size: 0.78rem;">
                         <span class="badge bg-light text-secondary border px-3 py-1.5 rounded-pill">
                             <i class="bi bi-check2-all text-success me-1"></i> You've viewed all {{ $products->total() }} products
                         </span>
@@ -252,5 +244,5 @@
 @endsection
 
 @push('scripts')
-<script src="{{ asset('js/shop.js?v=2.2') }}" defer></script>
+<script src="{{ asset('js/shop.js?v=2.5') }}" defer></script>
 @endpush

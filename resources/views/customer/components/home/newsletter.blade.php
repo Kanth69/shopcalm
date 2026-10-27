@@ -1,4 +1,4 @@
-<section class="py-3 py-md-5 bg-white border-bottom">
+<section class="py-3 py-md-5 bg-white border-bottom" id="home-newsletter-section">
     <div class="container px-3 px-md-4">
         <div class="card border-0 shadow-sm overflow-hidden position-relative rounded-4" 
              style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%); color: #ffffff;">
