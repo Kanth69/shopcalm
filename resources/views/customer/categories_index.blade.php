@@ -149,30 +149,9 @@
 </style>
 
 <script>
-window.onHeaderSearchInput = function(query) {
-    const inPageInput = document.getElementById('catFilterInput');
-    if (inPageInput && inPageInput.value !== query) {
-        inPageInput.value = query;
-    }
-    filterCategories(query);
-    return true;
-};
-
-window.onHeaderSearchSubmit = function(query) {
-    filterCategories(query);
-    return true;
-};
-
 function filterCategories(customQuery) {
     const input = document.getElementById('catFilterInput');
     const query = (typeof customQuery === 'string' ? customQuery : (input ? input.value : '')).toLowerCase().trim();
-
-    // Sync header inputs
-    const mainInput = document.getElementById('mainSearchInput');
-    const mobInput = document.getElementById('mobileSearchInput');
-    if (mainInput && mainInput.value !== query) mainInput.value = query;
-    if (mobInput && mobInput.value !== query) mobInput.value = query;
-
     const clearBtn = document.getElementById('clearSearchBtn');
     const items = document.querySelectorAll('.category-item-col');
     let visibleCount = 0;
@@ -205,13 +184,11 @@ function filterCategories(customQuery) {
 
 function clearCatFilter() {
     const input = document.getElementById('catFilterInput');
-    if (input) input.value = '';
-    const mainInput = document.getElementById('mainSearchInput');
-    if (mainInput) mainInput.value = '';
-    const mobInput = document.getElementById('mobileSearchInput');
-    if (mobInput) mobInput.value = '';
-    filterCategories('');
-    if (input) input.focus();
+    if (input) {
+        input.value = '';
+        filterCategories('');
+        input.focus();
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -219,12 +196,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const initialQ = urlParams.get('q') || urlParams.get('search');
     if (initialQ) {
         const inPageInput = document.getElementById('catFilterInput');
-        if (inPageInput) inPageInput.value = initialQ;
-        const mainInput = document.getElementById('mainSearchInput');
-        if (mainInput) mainInput.value = initialQ;
-        const mobInput = document.getElementById('mobileSearchInput');
-        if (mobInput) mobInput.value = initialQ;
-        filterCategories(initialQ);
+        if (inPageInput) {
+            inPageInput.value = initialQ;
+            filterCategories(initialQ);
+        }
     }
 });
 </script>

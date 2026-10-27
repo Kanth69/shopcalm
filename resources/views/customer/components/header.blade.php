@@ -1,18 +1,12 @@
 @php
     $liveMegaSale = app(\App\Services\OfferService::class)->getLiveMegaSale();
-    $isCategoriesPage = request()->routeIs('categories.index');
-    $isBrandsPage = request()->routeIs('brands.index');
+    $isCategoriesPage = request()->routeIs('categories.*') || request()->is('categories*');
+    $isBrandsPage = request()->routeIs('brands.*') || request()->is('brands*');
     $isCheckoutFlow = request()->routeIs('checkout.*') || request()->is('checkout*') || request()->is('order-success*');
+    $hideHeaderSearch = $isCheckoutFlow || $isCategoriesPage || $isBrandsPage;
 
     $headerSearchPlaceholder = 'Search products, brands, categories, tags...';
     $headerSearchAction = route('shop');
-    if ($isCategoriesPage) {
-        $headerSearchPlaceholder = 'Search categories...';
-        $headerSearchAction = route('categories.index');
-    } elseif ($isBrandsPage) {
-        $headerSearchPlaceholder = 'Search brands...';
-        $headerSearchAction = route('brands.index');
-    }
 @endphp
 
 @if($liveMegaSale)
@@ -116,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
             </div>
 
-            @if(!$isCheckoutFlow)
+            @if(!$hideHeaderSearch)
             <!-- Center: Desktop Clean Search Bar (App-Style Live Search) -->
             <div class="flex-grow-1 d-none d-md-block mx-2 mx-xl-4 position-relative" style="max-width: 520px;">
                 <form action="{{ $headerSearchAction }}" method="GET" class="position-relative" id="mainSearchForm" autocomplete="off">
@@ -145,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </form>
             </div>
-            @else
+            @elseif($isCheckoutFlow)
             <!-- Checkout Header Badge (Distraction-Free) -->
             <div class="flex-grow-1 d-none d-md-flex align-items-center justify-content-center text-muted">
                 <span class="d-inline-flex align-items-center gap-1.5 px-3 py-1 bg-light rounded-pill border text-secondary fw-semibold" style="font-size: 0.8rem; letter-spacing: 0.3px;">
@@ -249,7 +243,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         </div>
 
-        @if(!$isCheckoutFlow)
+        @if(!$hideHeaderSearch)
         <!-- Mobile Search Bar (Clean Full Width App-Style Live Search) -->
         <div class="d-block d-md-none pt-1.5 pb-0.5 position-relative">
             <form action="{{ $headerSearchAction }}" method="GET" class="position-relative" id="mobileSearchForm" autocomplete="off">
