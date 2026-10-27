@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const sortSelect = document.querySelector('.filter-trigger[name="sort"]');
     const activeFiltersContainer = document.getElementById('active-filter-chips');
 
+    let isShopLoading = false;
+    let shopObserver = null;
+
     function setButtonsLoading(isLoading) {
         document.querySelectorAll('.filter-form button[type="submit"]').forEach(button => {
             if (isLoading) {
@@ -58,7 +61,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // 2. Check inputs based on URL
             urlParams.forEach((value, key) => {
-                // Key might be "category[]" or "category"
                 const input = form.querySelector(`[name="${key}"][value="${value}"]`) ||
                               form.querySelector(`[name="${key}"]`);
 
@@ -73,7 +75,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // 3. Trigger brand cascading for the new state
             updateBrandFilter(form).then(() => {
-                // After brands load, re-check any brand checkboxes from URL
                 urlParams.getAll('brand[]').forEach(val => {
                     const brandInput = form.querySelector(`input[name="brand[]"][value="${val}"]`);
                     if (brandInput) brandInput.checked = true;
@@ -81,6 +82,64 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     }
+
+    // --- Amazon-Style Infinite Scroll Functions ---
+    function triggerShopLoadMore() {
+        if (isShopLoading) return;
+        const loadMoreBtn = document.getElementById('shopLoadMoreBtn');
+        if (!loadMoreBtn) return;
+        const nextPage = loadMoreBtn.getAttribute('data-next-page');
+        if (!nextPage) return;
+
+        const urlObj = new URL(window.location.href);
+        urlObj.searchParams.set('page', nextPage);
+
+        loadMoreBtn.disabled = true;
+        loadMoreBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span> Loading more products...`;
+
+        fetchProducts(urlObj.toString(), true);
+    }
+
+    function initShopInfiniteScroll() {
+        const wrap = document.getElementById('shop-load-more-wrap');
+        if (!wrap) return;
+
+        if (shopObserver) {
+            shopObserver.disconnect();
+            shopObserver = null;
+        }
+
+        if ('IntersectionObserver' in window) {
+            shopObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !isShopLoading) {
+                        const btn = document.getElementById('shopLoadMoreBtn');
+                        if (btn && btn.getAttribute('data-next-page')) {
+                            triggerShopLoadMore();
+                        }
+                    }
+                });
+            }, {
+                root: null,
+                rootMargin: '450px', // trigger 450px before reaching the bottom
+                threshold: 0.01
+            });
+            shopObserver.observe(wrap);
+        }
+    }
+
+    // Fallback scroll listener for instant auto-loading
+    window.addEventListener('scroll', function () {
+        if (isShopLoading) return;
+        const wrap = document.getElementById('shop-load-more-wrap');
+        const btn = document.getElementById('shopLoadMoreBtn');
+        if (!wrap || !btn || !btn.getAttribute('data-next-page')) return;
+
+        const rect = wrap.getBoundingClientRect();
+        if (rect.top <= window.innerHeight + 350) {
+            triggerShopLoadMore();
+        }
+    }, { passive: true });
 
     // --- Event Listeners ---
     document.body.addEventListener('submit', function(e) {
@@ -131,20 +190,11 @@ document.addEventListener('DOMContentLoaded', function () {
             fetchProducts(url);
         }
 
-        // Load More button click handler
+        // Load More button click handler (as manual fallback)
         const loadMoreBtn = e.target.closest('#shopLoadMoreBtn');
         if (loadMoreBtn) {
             e.preventDefault();
-            const nextPage = loadMoreBtn.getAttribute('data-next-page');
-            if (!nextPage) return;
-
-            const urlObj = new URL(window.location.href);
-            urlObj.searchParams.set('page', nextPage);
-
-            loadMoreBtn.disabled = true;
-            loadMoreBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span> Loading products...`;
-
-            fetchProducts(urlObj.toString(), true);
+            triggerShopLoadMore();
             return;
         }
 
@@ -275,6 +325,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function fetchProducts(url, isAppend = false) {
+        if (isShopLoading) return;
+        isShopLoading = true;
+
         if (!isAppend) {
             setButtonsLoading(true);
             productContainer.classList.add('is-loading');
@@ -355,10 +408,15 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (error) {
             console.error('Error fetching products:', error);
         } finally {
+            isShopLoading = false;
             if (!isAppend) {
                 setButtonsLoading(false);
                 productContainer.classList.remove('is-loading');
             }
+            initShopInfiniteScroll();
         }
     }
+
+    // Initialize Infinite Scroll on page load
+    initShopInfiniteScroll();
 });

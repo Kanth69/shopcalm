@@ -66,72 +66,136 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const homeLoadMoreBtn = document.getElementById('homeLoadMoreBtn');
-    if (homeLoadMoreBtn) {
-        homeLoadMoreBtn.addEventListener('click', function() {
-            const btn = this;
-            const page = parseInt(btn.getAttribute('data-page') || '2', 10);
-            const url = btn.getAttribute('data-url');
-            const originalHtml = btn.innerHTML;
+    let isHomeLoading = false;
+    let homeObserver = null;
 
-            btn.disabled = true;
-            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span> Loading products...`;
+    function triggerHomeExploreLoad() {
+        const btn = document.getElementById('homeLoadMoreBtn');
+        if (!btn || isHomeLoading) return;
 
-            fetch(`${url}?page=${page}`, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                }
-            })
-            .then(res => {
-                if (!res.ok) throw new Error('Failed to load products');
-                return res.json();
-            })
-            .then(data => {
-                const grid = document.getElementById('home-explore-grid');
-                if (grid && data.html) {
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = data.html;
-                    const newCols = Array.from(tempDiv.children);
+        const page = parseInt(btn.getAttribute('data-page') || '2', 10);
+        const url = btn.getAttribute('data-url');
+        if (!url) return;
 
-                    newCols.forEach(col => {
-                        col.style.opacity = '0';
-                        col.style.transform = 'translateY(12px)';
-                        col.style.transition = 'all 0.35s ease';
-                        grid.appendChild(col);
-                        requestAnimationFrame(() => {
-                            col.style.opacity = '1';
-                            col.style.transform = 'translateY(0)';
-                        });
+        isHomeLoading = true;
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span> Loading more products...`;
+
+        fetch(`${url}?page=${page}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Failed to load products');
+            return res.json();
+        })
+        .then(data => {
+            const grid = document.getElementById('home-explore-grid');
+            if (grid && data.html) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = data.html;
+                const newCols = Array.from(tempDiv.children);
+
+                newCols.forEach(col => {
+                    col.style.opacity = '0';
+                    col.style.transform = 'translateY(12px)';
+                    col.style.transition = 'all 0.35s ease';
+                    grid.appendChild(col);
+                    requestAnimationFrame(() => {
+                        col.style.opacity = '1';
+                        col.style.transform = 'translateY(0)';
                     });
-                }
+                });
+            }
 
-                const wrap = document.getElementById('home-load-more-wrap');
-                if (data.hasMore) {
-                    btn.setAttribute('data-page', data.nextPage);
-                    btn.disabled = false;
-                    btn.innerHTML = `<span class="btn-text">Load More Products</span> <i class="bi bi-chevron-down" style="font-size: 0.8rem;"></i>`;
-                    const showingSpan = document.getElementById('home-showing-count');
-                    if (showingSpan) showingSpan.textContent = data.loadedCount;
-                } else {
-                    if (wrap) {
-                        wrap.innerHTML = `
-                            <div class="text-muted small py-2">
-                                <span class="badge bg-light text-secondary border px-3 py-1.5 rounded-pill" style="font-size: 0.78rem;">
-                                    <i class="bi bi-check2-all text-success me-1"></i> You've explored all ${data.total} products
-                                </span>
-                            </div>
-                        `;
-                    }
-                }
-            })
-            .catch(err => {
-                console.error('Error loading explore products:', err);
+            const wrap = document.getElementById('home-load-more-wrap');
+            if (data.hasMore) {
+                btn.setAttribute('data-page', data.nextPage);
                 btn.disabled = false;
-                btn.innerHTML = originalHtml;
-            });
+                btn.innerHTML = `<span class="btn-text">Load More Products</span> <i class="bi bi-chevron-down" style="font-size: 0.8rem;"></i>`;
+                const showingSpan = document.getElementById('home-showing-count');
+                if (showingSpan) showingSpan.textContent = data.loadedCount;
+                isHomeLoading = false;
+            } else {
+                isHomeLoading = false;
+                if (homeObserver) {
+                    homeObserver.disconnect();
+                    homeObserver = null;
+                }
+                if (wrap) {
+                    wrap.innerHTML = `
+                        <div class="text-muted small py-2">
+                            <span class="badge bg-light text-secondary border px-3 py-1.5 rounded-pill" style="font-size: 0.78rem;">
+                                <i class="bi bi-check2-all text-success me-1"></i> You've explored all ${data.total} products
+                            </span>
+                        </div>
+                    `;
+                }
+            }
+        })
+        .catch(err => {
+            console.error('Error loading explore products:', err);
+            isHomeLoading = false;
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<span class="btn-text">Load More Products</span> <i class="bi bi-chevron-down" style="font-size: 0.8rem;"></i>`;
+            }
         });
     }
+
+    // Initialize IntersectionObserver for Amazon-style auto infinite scroll
+    function initHomeInfiniteScroll() {
+        const wrap = document.getElementById('home-load-more-wrap');
+        if (!wrap) return;
+
+        if (homeObserver) {
+            homeObserver.disconnect();
+            homeObserver = null;
+        }
+
+        if ('IntersectionObserver' in window) {
+            homeObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !isHomeLoading) {
+                        const btn = document.getElementById('homeLoadMoreBtn');
+                        if (btn && btn.getAttribute('data-page')) {
+                            triggerHomeExploreLoad();
+                        }
+                    }
+                });
+            }, {
+                root: null,
+                rootMargin: '450px',
+                threshold: 0.01
+            });
+            homeObserver.observe(wrap);
+        }
+    }
+
+    // Fallback scroll listener for auto-loading
+    window.addEventListener('scroll', function() {
+        if (isHomeLoading) return;
+        const wrap = document.getElementById('home-load-more-wrap');
+        const btn = document.getElementById('homeLoadMoreBtn');
+        if (!wrap || !btn || !btn.getAttribute('data-page')) return;
+
+        const rect = wrap.getBoundingClientRect();
+        if (rect.top <= window.innerHeight + 350) {
+            triggerHomeExploreLoad();
+        }
+    }, { passive: true });
+
+    // Click handler fallback
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('#homeLoadMoreBtn')) {
+            e.preventDefault();
+            triggerHomeExploreLoad();
+        }
+    });
+
+    initHomeInfiniteScroll();
 });
 </script>
 @endpush

@@ -252,5 +252,5 @@
 @endsection
 
 @push('scripts')
-<script src="{{ asset('js/shop.js?v=2.0') }}" defer></script>
+<script src="{{ asset('js/shop.js?v=2.2') }}" defer></script>
 @endpush
