@@ -3,6 +3,7 @@ Allow: /
 Disallow: /admin
 Disallow: /product-manager
 Disallow: /order-manager
+Disallow: /support
 Disallow: /delivery
 Disallow: /rider
 Disallow: /checkout

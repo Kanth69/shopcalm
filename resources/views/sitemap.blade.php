@@ -16,7 +16,7 @@
 
     @foreach($categories as $cat)
     <url>
-        <loc>{{ route('category.show', $cat->slug) }}</loc>
+        <loc>{{ route('category.products', $cat->slug) }}</loc>
         <lastmod>{{ $cat->updated_at ? $cat->updated_at->format('Y-m-d') : date('Y-m-d') }}</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.7</priority>
