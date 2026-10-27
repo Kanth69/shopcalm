@@ -24,6 +24,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let currentState = document.getElementById('state-register') && document.getElementById('state-register').style.display === 'block' ? 'register' : 'initial';
     let currentIdentifier = '';
+    let currentUserData = {};
+
+    function maskMobile(phone) {
+        if (!phone) return '••******••';
+        if (phone.includes('*')) return phone;
+        const clean = phone.replace(/\D/g, '');
+        if (clean.length >= 10) {
+            const ten = clean.slice(-10);
+            return ten.slice(0, 2) + '******' + ten.slice(-2);
+        }
+        return phone;
+    }
 
     function showInitialAlert(message, type = 'error') {
         const alertEl = document.getElementById('initial-alert');
@@ -192,6 +204,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (isUserExisting) {
                 // Registered user -> Show Password / Login Screen
+                currentUserData = (data && data.data) ? data.data : {};
                 const loginIdHidden = document.getElementById('login_identifier_for_login');
                 const loginIdDisplay = document.getElementById('login_identifier_display');
                 if (loginIdHidden) loginIdHidden.value = identifier;
@@ -336,21 +349,37 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Step 1: Send WhatsApp OTP for Forgot Password
-    const forgotRequestOtpForm = document.getElementById('form-forgot-request-otp');
-    if (forgotRequestOtpForm) {
-        forgotRequestOtpForm.addEventListener('submit', function(e) {
+    // Step 1: Send WhatsApp OTP for Forgot Password (Masked Confirmation Flow)
+    const forgotSendOtpBtn = document.getElementById('forgot-send-otp-btn');
+    if (forgotSendOtpBtn) {
+        forgotSendOtpBtn.addEventListener('click', function(e) {
             e.preventDefault();
 
-            const submitBtn = document.getElementById('forgot-send-otp-btn');
+            const submitBtn = forgotSendOtpBtn;
             const originalBtnText = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending OTP...';
-
             const alertEl = document.getElementById('forgot-alert');
             if (alertEl) alertEl.style.display = 'none';
 
-            const mobile = document.getElementById('mobile_number_for_forgot').value.trim();
+            let identifier = currentIdentifier;
+            if (!identifier && currentUserData && currentUserData.identifier) {
+                identifier = currentUserData.identifier;
+            }
+            if (!identifier) {
+                identifier = document.getElementById('mobile_number_for_forgot') ? document.getElementById('mobile_number_for_forgot').value.trim() : '';
+            }
+
+            if (!identifier) {
+                if (alertEl) {
+                    document.getElementById('forgot-alert-msg').textContent = 'No account identifier found. Please return to sign in.';
+                    alertEl.className = 'auth-alert error';
+                    document.getElementById('forgot-alert-icon').className = 'bi bi-exclamation-triangle-fill me-2';
+                    alertEl.style.display = 'flex';
+                }
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending WhatsApp OTP...';
 
             fetch('/forgot-password/send-otp', {
                 method: 'POST',
@@ -359,7 +388,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ mobile_number: mobile })
+                body: JSON.stringify({ identifier: identifier, mobile_number: identifier })
             })
             .then(async res => {
                 const data = await res.json();
@@ -367,10 +396,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.innerHTML = originalBtnText;
 
                 if (res.ok && data.success) {
-                    // Pre-fill hidden mobile in step 2 form
+                    // Pre-fill hidden mobile/identifier in step 2 form
                     const mobileHidden = document.getElementById('reset_modal_mobile_number');
-                    if (mobileHidden) mobileHidden.value = mobile;
-                    forgotRequestOtpForm.style.display = 'none';
+                    if (mobileHidden) mobileHidden.value = identifier;
+
+                    const confirmBox = document.getElementById('forgot-step-confirm');
+                    if (confirmBox) confirmBox.style.display = 'none';
+
+                    const reqForm = document.getElementById('form-forgot-request-otp');
+                    if (reqForm) reqForm.style.display = 'none';
+
                     const resetForm = document.getElementById('form-forgot-reset-password');
                     if (resetForm) {
                         resetForm.style.display = 'flex';
@@ -390,8 +425,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         modalPwConf.value = '';
                     }
 
+                    const displayMasked = data.masked_mobile || (currentUserData && currentUserData.masked_mobile) || maskMobile(identifier);
                     const subText = document.getElementById('forgot-subtitle-text');
-                    if (subText) subText.textContent = 'Enter the 6-digit WhatsApp OTP code and your new password.';
+                    if (subText) subText.textContent = 'Enter the 6-digit WhatsApp OTP code sent to +91 ' + displayMasked;
 
                     if (alertEl) {
                         document.getElementById('forgot-alert-msg').textContent = data.message + (data.dev_otp ? ' (Dev Code: ' + data.dev_otp + ')' : '');
@@ -399,6 +435,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         document.getElementById('forgot-alert-icon').className = 'bi bi-check-circle-fill me-2';
                         alertEl.style.display = 'flex';
                     }
+                    if (modalOtp) modalOtp.focus();
                 } else {
                     const msg = data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Mobile number not found.');
                     if (alertEl) {
@@ -414,7 +451,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalBtnText;
                 if (alertEl) {
-                    document.getElementById('forgot-alert-msg').textContent = 'An unexpected error occurred.';
+                    document.getElementById('forgot-alert-msg').textContent = 'Network error sending OTP. Please check your connection.';
                     alertEl.className = 'auth-alert error';
                     document.getElementById('forgot-alert-icon').className = 'bi bi-exclamation-triangle-fill me-2';
                     alertEl.style.display = 'flex';
@@ -980,10 +1017,45 @@ document.addEventListener('DOMContentLoaded', function() {
     if (showForgotBtn) {
         showForgotBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const forgotInput = document.getElementById('mobile_number_for_forgot');
-            if (forgotInput && /^\d+$/.test(currentIdentifier)) {
-                forgotInput.value = currentIdentifier;
+
+            let maskedDisplay = '';
+            if (currentUserData && currentUserData.masked_mobile) {
+                maskedDisplay = currentUserData.masked_mobile;
+            } else if (currentUserData && currentUserData.mobile_number) {
+                maskedDisplay = maskMobile(currentUserData.mobile_number);
+            } else if (currentIdentifier) {
+                maskedDisplay = maskMobile(currentIdentifier);
             }
+
+            const forgotInput = document.getElementById('mobile_number_for_forgot');
+            if (forgotInput) {
+                forgotInput.value = currentIdentifier || '';
+            }
+
+            const maskedEl = document.getElementById('forgot-masked-mobile-display');
+            if (maskedEl) {
+                maskedEl.textContent = '+91 ' + (maskMobile(maskedDisplay) || '••******••');
+            }
+
+            const nameRow = document.getElementById('forgot-user-name-row');
+            const nameDisplay = document.getElementById('forgot-user-name-display');
+            if (nameRow && nameDisplay) {
+                if (currentUserData && currentUserData.name) {
+                    nameDisplay.textContent = currentUserData.name;
+                    nameRow.style.display = 'flex';
+                } else {
+                    nameRow.style.display = 'none';
+                }
+            }
+
+            const confirmBox = document.getElementById('forgot-step-confirm');
+            const resetForm = document.getElementById('form-forgot-reset-password');
+            if (confirmBox) confirmBox.style.display = 'flex';
+            if (resetForm) resetForm.style.display = 'none';
+
+            const subText = document.getElementById('forgot-subtitle-text');
+            if (subText) subText.textContent = 'Confirm your registered WhatsApp number to receive an OTP.';
+
             const alertEl = document.getElementById('forgot-alert');
             if (alertEl) alertEl.style.display = 'none';
             transitionTo('forgot');
@@ -994,12 +1066,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (backToLoginBtn) {
         backToLoginBtn.addEventListener('click', function(e) {
             e.preventDefault();
+            const confirmBox = document.getElementById('forgot-step-confirm');
             const reqForm = document.getElementById('form-forgot-request-otp');
             const resetForm = document.getElementById('form-forgot-reset-password');
-            if (reqForm) {
-                reqForm.style.display = 'flex';
-                reqForm.style.flexDirection = 'column';
-            }
+            if (confirmBox) confirmBox.style.display = 'flex';
+            if (reqForm) reqForm.style.display = 'flex';
             if (resetForm) resetForm.style.display = 'none';
             const alertEl = document.getElementById('forgot-alert');
             if (alertEl) alertEl.style.display = 'none';

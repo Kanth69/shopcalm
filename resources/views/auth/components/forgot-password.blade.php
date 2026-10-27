@@ -2,8 +2,8 @@
     <a href="{{ route('home') }}" class="auth-logo d-inline-flex align-items-center justify-content-center mb-3 text-decoration-none">
         <x-logo height="40" />
     </a>
-    <h2 class="auth-title">Forgot Password</h2>
-    <p class="auth-subtitle" id="forgot-subtitle-text">Enter your mobile number to receive a 6-digit WhatsApp OTP code.</p>
+    <h2 class="auth-title">Reset Password</h2>
+    <p class="auth-subtitle" id="forgot-subtitle-text">Confirm your registered WhatsApp number</p>
 </div>
 
 <!-- Status Alert Banner -->
@@ -12,22 +12,34 @@
     <span id="forgot-alert-msg"></span>
 </div>
 
-<!-- Step 1: Request WhatsApp OTP Form -->
-<form id="form-forgot-request-otp" class="auth-form">
-    @csrf
-    <div class="form-group">
-        <label for="mobile_number_for_forgot">Registered Mobile Number <span class="text-danger">*</span></label>
-        <div class="input-group auth-phone-input-group">
-            <span class="input-group-text bg-light fw-bold">+91</span>
-            <input id="mobile_number_for_forgot" class="auth-input form-control" type="tel" inputmode="numeric" name="mobile_number" maxlength="10" required placeholder="10-digit mobile number">
+<!-- Step 1: Confirmation Card with Masked Mobile -->
+<div id="forgot-step-confirm" class="auth-form">
+    <div class="p-3 rounded-3 border bg-light text-start mb-2" style="border-color: #e2e8f0 !important;">
+        <div id="forgot-user-name-row" class="align-items-center mb-2 pb-2 border-bottom" style="display: none; border-color: #e2e8f0 !important;">
+            <i class="bi bi-person-circle text-primary me-2 fs-5"></i>
+            <span class="fw-bold text-dark" id="forgot-user-name-display">Customer</span>
         </div>
+        <div class="d-flex align-items-center">
+            <div class="bg-success-subtle text-success p-2 rounded-2 me-2.5 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                <i class="bi bi-whatsapp fs-5"></i>
+            </div>
+            <div>
+                <small class="text-muted d-block" style="font-size: 11px; font-weight: 700; letter-spacing: 0.3px;">REGISTERED WHATSAPP NUMBER</small>
+                <div class="fw-bold fs-6 text-dark" id="forgot-masked-mobile-display" style="letter-spacing: 1.5px;">+91 ••******••</div>
+            </div>
+        </div>
+        <p class="small text-muted mt-2.5 mb-0" style="font-size: 12px; line-height: 1.45;">
+            A 6-digit WhatsApp OTP verification code will be sent to this registered number to safely reset your password.
+        </p>
     </div>
 
-    <button type="submit" id="forgot-send-otp-btn" class="auth-submit-btn w-100 justify-content-center">
-        <span>Send WhatsApp OTP</span>
-        <i class="bi bi-whatsapp ms-1"></i>
+    <input type="hidden" id="mobile_number_for_forgot" name="mobile_number">
+
+    <button type="button" id="forgot-send-otp-btn" class="auth-submit-btn w-100 justify-content-center bg-success text-white border-0 py-2.5">
+        <span>Yes, Send OTP & Continue</span>
+        <i class="bi bi-arrow-right ms-2"></i>
     </button>
-</form>
+</div>
 
 <!-- Step 2: Reset Password Form (Initially Hidden) -->
 <form id="form-forgot-reset-password" class="auth-form mt-2" style="display: none;">

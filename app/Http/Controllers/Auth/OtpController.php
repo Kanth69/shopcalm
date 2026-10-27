@@ -62,9 +62,25 @@ class OtpController extends Controller
             ]);
         }
 
+        if ($user) {
+            $cleanMob = preg_replace('/\D/', '', $user->mobile_number ?? '');
+            $maskedMob = (strlen($cleanMob) >= 10) ? substr($cleanMob, 0, 2) . '******' . substr($cleanMob, -2) : '••••••••••';
+            return response()->json([
+                'success' => true,
+                'exists'  => true,
+                'type'    => $isEmail ? 'email' : 'mobile',
+                'data'    => [
+                    'exists'        => true,
+                    'name'          => $user->name,
+                    'masked_mobile' => $maskedMob,
+                    'identifier'    => $identifier,
+                ],
+            ]);
+        }
+
         return response()->json([
             'success' => true,
-            'exists'  => (bool)$user,
+            'exists'  => false,
             'type'    => $isEmail ? 'email' : 'mobile',
         ]);
     }

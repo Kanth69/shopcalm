@@ -57,8 +57,9 @@ class AuthController extends BaseApiController
                 'data'    => [
                     'exists'        => true,
                     'name'          => $user->name,
-                    'mobile_number' => $user->mobile_number,
-                    'email'         => $user->email,
+                    'masked_mobile' => $this->maskPhoneNumber($user->mobile_number),
+                    'masked_email'  => $this->maskEmailAddress($user->email),
+                    'identifier'    => $request->identifier,
                 ],
                 'message' => 'User account found.'
             ]);
@@ -75,29 +76,87 @@ class AuthController extends BaseApiController
     }
 
     /**
+     * Helper to mask phone numbers (e.g. 81******16) for zero PII leakage.
+     */
+    public function maskPhoneNumber(?string $phone): string
+    {
+        if (empty($phone)) return '••••••••••';
+        $digits = preg_replace('/\D/', '', $phone);
+        if (strlen($digits) >= 10) {
+            $ten = substr($digits, -10);
+            return substr($ten, 0, 2) . '******' . substr($ten, -2);
+        }
+        return '••••••••••';
+    }
+
+    /**
+     * Helper to mask email addresses for zero PII leakage.
+     */
+    public function maskEmailAddress(?string $email): string
+    {
+        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) return '••••@••••';
+        [$user, $domain] = explode('@', $email);
+        $len = strlen($user);
+        if ($len <= 2) {
+            $maskedUser = substr($user, 0, 1) . '*';
+        } else {
+            $maskedUser = substr($user, 0, 1) . str_repeat('*', max(1, $len - 2)) . substr($user, -1);
+        }
+        return $maskedUser . '@' . $domain;
+    }
+
+    /**
      * Send WhatsApp OTP for Login, Registration, or Password Reset.
      */
     public function sendOtp(Request $request): JsonResponse
     {
         $request->validate([
-            'mobile_number' => 'required|string',
+            'mobile_number' => 'nullable|string',
+            'identifier'    => 'nullable|string',
             'type'          => 'nullable|string|in:LOGIN,REGISTER,RESET_PASSWORD',
         ]);
 
         $type = strtoupper($request->input('type', 'LOGIN'));
         
+        $targetMobile = $request->input('mobile_number');
+        if (empty($targetMobile) && $request->filled('identifier')) {
+            $user = $this->findUserByIdentifier($request->identifier);
+            if ($user && !empty($user->mobile_number)) {
+                $targetMobile = $user->mobile_number;
+            }
+        }
+
+        if ($type === 'RESET_PASSWORD') {
+            $user = null;
+            if ($request->filled('identifier')) {
+                $user = $this->findUserByIdentifier($request->identifier);
+            } elseif (!empty($targetMobile)) {
+                $user = $this->findUserByIdentifier($targetMobile);
+            }
+
+            if (!$user || empty($user->mobile_number)) {
+                return $this->sendError('No registered account found with this credential.', [], 404);
+            }
+            $targetMobile = $user->mobile_number;
+        }
+
+        if (empty($targetMobile)) {
+            return $this->sendError('A valid mobile number is required to send OTP.', [], 422);
+        }
+
         if ($type === 'REGISTER') {
-            $user = $this->findUserByIdentifier($request->mobile_number);
+            $user = $this->findUserByIdentifier($targetMobile);
             if ($user) {
                 return $this->sendError('This mobile number is already registered. Please sign in instead.', [], 422);
             }
         }
 
-        $otp = $this->whatsAppService->sendOtp($request->mobile_number, $type);
+        $otp = $this->whatsAppService->sendOtp($targetMobile, $type);
 
         return $this->sendResponse([
-            'otp_sent' => true,
-            'dev_otp'  => app()->environment('local', 'testing') ? $otp : null,
+            'otp_sent'      => true,
+            'masked_mobile' => $this->maskPhoneNumber($targetMobile),
+            'dev_otp'       => app()->environment('local', 'testing') ? $otp : null,
         ], 'WhatsApp OTP sent successfully.');
     }
 
@@ -153,22 +212,28 @@ class AuthController extends BaseApiController
         }
 
         $request->validate([
-            'mobile_number' => 'required|string|digits:10',
+            'mobile_number' => 'nullable|string',
+            'identifier'    => 'nullable|string',
             'otp'           => 'required|string|size:6',
             'password'      => ['required', 'confirmed', Rules\Password::defaults()],
         ], [
-            'mobile_number.required' => 'Please enter your mobile number.',
-            'otp.required'           => 'Please enter the 6-digit WhatsApp OTP.',
-            'password.required'      => 'Please enter your new password.',
-            'password.confirmed'     => 'Password confirmation does not match.',
+            'otp.required'       => 'Please enter the 6-digit WhatsApp OTP.',
+            'password.required'  => 'Please enter your new password.',
+            'password.confirmed' => 'Password confirmation does not match.',
         ]);
 
-        $user = $this->findUserByIdentifier($request->mobile_number);
-        if (!$user) {
-            return $this->sendError('No registered account found with this mobile number.', [], 404);
+        $user = null;
+        if ($request->filled('identifier')) {
+            $user = $this->findUserByIdentifier($request->identifier);
+        } elseif ($request->filled('mobile_number')) {
+            $user = $this->findUserByIdentifier($request->mobile_number);
         }
 
-        $isValid = $this->whatsAppService->verifyOtp($request->mobile_number, $request->otp, 'RESET_PASSWORD');
+        if (!$user || empty($user->mobile_number)) {
+            return $this->sendError('No registered account found with this credential.', [], 404);
+        }
+
+        $isValid = $this->whatsAppService->verifyOtp($user->mobile_number, $request->otp, 'RESET_PASSWORD');
 
         if (!$isValid) {
             return $this->sendError('Invalid or expired WhatsApp OTP code.', [], 422);

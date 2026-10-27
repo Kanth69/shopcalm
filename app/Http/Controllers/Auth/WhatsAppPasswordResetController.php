@@ -26,38 +26,67 @@ class WhatsAppPasswordResetController extends Controller
 
     public function sendResetOtp(Request $request)
     {
-        $request->validate([
-            'mobile_number' => ['required', 'string', 'digits:10', 'exists:users,mobile_number'],
-        ], [
-            'mobile_number.required' => 'Please enter your registered mobile number.',
-            'mobile_number.digits'   => 'Please enter a valid 10-digit mobile number.',
-            'mobile_number.exists'   => 'We could not find an account registered with this mobile number.',
-        ]);
+        $identifier = $request->input('identifier') ?? $request->input('mobile_number');
+        if (empty($identifier)) {
+            return response()->json(['success' => false, 'message' => 'Please provide an email or registered mobile number.'], 422);
+        }
 
-        $otp = $this->whatsAppService->sendOtp($request->mobile_number, 'RESET_PASSWORD');
+        $cleanPhone = preg_replace('/[^\d]/', '', $identifier);
+        $user = User::where('email', $identifier)
+            ->orWhere('mobile_number', $identifier)
+            ->orWhere('mobile_number', $cleanPhone)
+            ->first();
+
+        if (!$user || empty($user->mobile_number)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'We could not find an account registered with this credential.',
+            ], 404);
+        }
+
+        $otp = $this->whatsAppService->sendOtp($user->mobile_number, 'RESET_PASSWORD');
+
+        $clean = preg_replace('/\D/', '', $user->mobile_number);
+        $masked = (strlen($clean) >= 10) ? substr($clean, 0, 2) . '******' . substr($clean, -2) : '••••••••••';
 
         return response()->json([
-            'success' => true,
-            'message' => 'WhatsApp OTP code sent to your mobile number.',
-            'dev_otp' => app()->environment('local', 'testing') ? $otp : null,
+            'success'       => true,
+            'masked_mobile' => $masked,
+            'message'       => 'WhatsApp OTP code sent to your registered mobile number.',
+            'dev_otp'       => app()->environment('local', 'testing') ? $otp : null,
         ]);
     }
 
     public function resetPassword(Request $request)
     {
+        $identifier = $request->input('identifier') ?? $request->input('mobile_number');
+        if (empty($identifier)) {
+            return response()->json(['success' => false, 'message' => 'Please provide your account credential.'], 422);
+        }
+
+        $cleanPhone = preg_replace('/[^\d]/', '', $identifier);
+        $user = User::where('email', $identifier)
+            ->orWhere('mobile_number', $identifier)
+            ->orWhere('mobile_number', $cleanPhone)
+            ->first();
+
+        if (!$user || empty($user->mobile_number)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'We could not find an account registered with this credential.',
+            ], 404);
+        }
+
         $request->validate([
-            'mobile_number' => ['required', 'string', 'digits:10', 'exists:users,mobile_number'],
-            'otp'           => ['required', 'string', 'max:6'],
-            'password'      => ['required', 'confirmed', Rules\Password::defaults()],
+            'otp'      => ['required', 'string', 'max:6'],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ], [
-            'mobile_number.required' => 'Please enter your mobile number.',
-            'mobile_number.exists'   => 'We could not find an account registered with this mobile number.',
-            'otp.required'           => 'Please enter the 6-digit WhatsApp OTP code.',
-            'password.required'      => 'Please enter your new password.',
-            'password.confirmed'     => 'The password confirmation does not match.',
+            'otp.required'       => 'Please enter the 6-digit WhatsApp OTP code.',
+            'password.required'  => 'Please enter your new password.',
+            'password.confirmed' => 'The password confirmation does not match.',
         ]);
 
-        $isValidOtp = $this->whatsAppService->verifyOtp($request->mobile_number, $request->otp, 'RESET_PASSWORD');
+        $isValidOtp = $this->whatsAppService->verifyOtp($user->mobile_number, $request->otp, 'RESET_PASSWORD');
 
         if (!$isValidOtp) {
             if ($request->wantsJson()) {
@@ -70,7 +99,6 @@ class WhatsAppPasswordResetController extends Controller
             return back()->withInput()->withErrors(['otp' => 'Invalid or expired WhatsApp OTP code.']);
         }
 
-        $user = User::where('mobile_number', $request->mobile_number)->first();
         $user->password = Hash::make($request->password);
         $user->save();
 
