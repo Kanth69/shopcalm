@@ -16,6 +16,8 @@ class StoreAddressRequest extends FormRequest
         return [
             'name'       => 'required|string|max:255',
             'phone'      => ['required', 'string', 'digits:10'],
+            'house_no'   => 'nullable|string|max:255',
+            'street'     => 'nullable|string|max:255',
             'address'    => 'required|string|max:500',
             'city'       => 'required|string|max:100',
             'state'      => 'required|string|max:100',

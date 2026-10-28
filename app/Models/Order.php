@@ -44,6 +44,8 @@ class Order extends Model
         'shipping_name',
         'shipping_email',
         'shipping_phone',
+        'shipping_house_no',
+        'shipping_street',
         'shipping_address',
         'shipping_city',
         'shipping_state',

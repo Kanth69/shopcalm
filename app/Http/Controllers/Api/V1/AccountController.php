@@ -336,9 +336,18 @@ class AccountController extends BaseApiController
             $request->merge(['zip' => $request->input('pincode')]);
         }
 
+        if (!$request->filled('address')) {
+            $parts = array_filter([$request->input('house_no'), $request->input('street')]);
+            if (!empty($parts)) {
+                $request->merge(['address' => implode(', ', $parts)]);
+            }
+        }
+
         $validated = $request->validate([
             'name'      => 'required|string|max:255',
             'phone'     => 'required|string|max:20',
+            'house_no'  => 'nullable|string|max:255',
+            'street'    => 'nullable|string|max:255',
             'address'   => 'required|string|max:500',
             'city'      => 'required|string|max:100',
             'state'     => 'required|string|max:100',
@@ -375,9 +384,20 @@ class AccountController extends BaseApiController
             $request->merge(['zip' => $request->input('pincode')]);
         }
 
+        if (!$request->filled('address') && ($request->filled('house_no') || $request->filled('street'))) {
+            $h = $request->input('house_no', $address->house_no);
+            $s = $request->input('street', $address->street);
+            $parts = array_filter([$h, $s]);
+            if (!empty($parts)) {
+                $request->merge(['address' => implode(', ', $parts)]);
+            }
+        }
+
         $validated = $request->validate([
             'name'      => 'sometimes|required|string|max:255',
             'phone'     => 'sometimes|required|string|max:20',
+            'house_no'  => 'nullable|string|max:255',
+            'street'    => 'nullable|string|max:255',
             'address'   => 'sometimes|required|string|max:500',
             'city'      => 'sometimes|required|string|max:100',
             'state'     => 'sometimes|required|string|max:100',
