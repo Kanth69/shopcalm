@@ -284,7 +284,9 @@ class CheckoutController extends Controller
         $validated = $request->validate([
             'name'      => 'required|string|max:255',
             'phone'     => 'required|string|max:20',
-            'address'   => 'required|string|max:500',
+            'house_no'  => 'nullable|string|max:255',
+            'street'    => 'nullable|string|max:255',
+            'address'   => 'nullable|string|max:500',
             'city'      => 'required|string|max:100',
             'state'     => 'required|string|max:100',
             'zip'       => 'required|string|max:20',
@@ -303,10 +305,18 @@ class CheckoutController extends Controller
             ], 401);
         }
 
+        $addressText = $validated['address'] ?? null;
+        if (empty($addressText)) {
+            $parts = array_filter([$validated['house_no'] ?? null, $validated['street'] ?? null]);
+            $addressText = !empty($parts) ? implode(', ', $parts) : ($validated['street'] ?? $validated['house_no'] ?? 'Address');
+        }
+
         $newAddress = $user->addresses()->create([
             'name'      => $validated['name'],
             'phone'     => $validated['phone'],
-            'address'   => $validated['address'],
+            'house_no'  => $validated['house_no'] ?? null,
+            'street'    => $validated['street'] ?? null,
+            'address'   => $addressText,
             'city'      => $validated['city'],
             'state'     => $validated['state'],
             'zip'       => $validated['zip'],

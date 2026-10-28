@@ -583,6 +583,8 @@
         <input type="hidden" name="shipping_name" id="hidden_shipping_name">
         <input type="hidden" name="shipping_email" id="hidden_shipping_email" value="{{ auth()->user()->email }}">
         <input type="hidden" name="shipping_phone" id="hidden_shipping_phone">
+        <input type="hidden" name="shipping_house_no" id="hidden_shipping_house_no">
+        <input type="hidden" name="shipping_street" id="hidden_shipping_street">
         <input type="hidden" name="shipping_address" id="hidden_shipping_address">
         <input type="hidden" name="shipping_city" id="hidden_shipping_city">
         <input type="hidden" name="shipping_state" id="hidden_shipping_state">
@@ -1627,6 +1629,9 @@
                                 <div class="min-w-0 flex-grow-1 w-100">
                                     <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                                         <strong class="text-dark fs-6">{{ $addr->name }}</strong>
+                                        @if(!empty($addr->type))
+                                            <span class="badge bg-light text-primary border rounded-pill px-2 py-0.5 text-uppercase fw-semibold" style="font-size: 0.65rem;">{{ $addr->type }}</span>
+                                        @endif
                                         @if($isCurrent)
                                             <span class="badge bg-success text-white rounded-pill px-2.5 py-0.5 fw-bold" style="font-size: 0.68rem;">✓ Selected</span>
                                         @elseif($addr->is_default)
@@ -1634,7 +1639,10 @@
                                         @endif
                                     </div>
                                     <div class="text-secondary mb-1.5" style="font-size: 0.86rem; line-height: 1.45;">
-                                        {{ $addr->address }}, {{ $addr->city }}, {{ $addr->state }} <span class="text-nowrap font-monospace text-dark fw-bold">- {{ $addr->zip }}</span>
+                                        @if(!empty($addr->house_no))<strong>{{ $addr->house_no }}</strong>, @endif{{ $addr->street ?? $addr->address }}, {{ $addr->city }}, {{ $addr->state }} <span class="text-nowrap font-monospace text-dark fw-bold">- {{ $addr->zip }}</span>
+                                        @if(!empty($addr->landmark))
+                                            <span class="text-muted small d-block mt-0.5"><i class="bi bi-geo-alt"></i> Landmark: {{ $addr->landmark }}</span>
+                                        @endif
                                     </div>
                                     <div class="small text-muted text-nowrap" style="font-size: 0.82rem; white-space: nowrap !important;">
                                         <i class="bi bi-telephone-fill text-muted me-1 small"></i> Mobile: <strong class="text-dark font-monospace">{{ $addr->phone }}</strong>
@@ -1702,21 +1710,80 @@
 
             {{-- Modal Body --}}
             <div class="modal-body p-3.5 p-sm-4">
-                <div class="d-block d-sm-none mb-2.5 text-end">
-                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 text-primary fw-semibold text-decoration-none" onclick="openLocationPickerFromAddressModal()" style="font-size: 0.74rem;">
-                        <i class="bi bi-map-fill me-1"></i>Select on Map
-                    </button>
+                <!-- GPS & Map Quick Actions Banner -->
+                <div class="d-flex align-items-center justify-content-between p-2.5 mb-3 rounded-3" style="background: #f0fdf4; border: 1px solid #bbf7d0;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-geo-alt-fill text-success fs-5"></i>
+                        <div>
+                            <div class="fw-semibold text-dark small" style="font-size: 0.78rem;">Save time with GPS</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">Auto-fill area, city & PIN code</div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-1.5">
+                        <button type="button" class="btn btn-sm btn-success rounded-pill px-2.5 py-1 fw-semibold text-nowrap" id="btn-checkout-modal-gps" onclick="fetchCheckoutModalGpsLocation()" style="font-size: 0.74rem;">
+                            <i class="bi bi-crosshair me-1"></i>Auto-Fill
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 text-primary fw-semibold text-nowrap" onclick="openLocationPickerFromAddressModal()" style="font-size: 0.74rem;">
+                            <i class="bi bi-map-fill me-1"></i>Map
+                        </button>
+                    </div>
                 </div>
+
+                <!-- Address Type Selector -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small mb-1.5" style="font-size: 0.8rem;">Save Address As</label>
+                    <div class="d-flex gap-2">
+                        <div class="form-check form-check-inline m-0 flex-fill">
+                            <input class="btn-check" type="radio" name="new_type" id="checkout_addr_type_home" value="home" checked autocomplete="off">
+                            <label class="btn btn-sm btn-outline-primary rounded-pill w-100 py-1 d-flex align-items-center justify-content-center gap-1" for="checkout_addr_type_home" style="font-size: 0.78rem;">
+                                <i class="bi bi-house-door"></i> Home
+                            </label>
+                        </div>
+                        <div class="form-check form-check-inline m-0 flex-fill">
+                            <input class="btn-check" type="radio" name="new_type" id="checkout_addr_type_work" value="work" autocomplete="off">
+                            <label class="btn btn-sm btn-outline-primary rounded-pill w-100 py-1 d-flex align-items-center justify-content-center gap-1" for="checkout_addr_type_work" style="font-size: 0.78rem;">
+                                <i class="bi bi-briefcase"></i> Work
+                            </label>
+                        </div>
+                        <div class="form-check form-check-inline m-0 flex-fill">
+                            <input class="btn-check" type="radio" name="new_type" id="checkout_addr_type_other" value="other" autocomplete="off">
+                            <label class="btn btn-sm btn-outline-primary rounded-pill w-100 py-1 d-flex align-items-center justify-content-center gap-1" for="checkout_addr_type_other" style="font-size: 0.78rem;">
+                                <i class="bi bi-geo-alt"></i> Other
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="row g-2.5">
-                    <div class="col-12">
+                    <div class="col-12 col-sm-6">
                         <label for="new_name" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Full Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control form-control-sm rounded-3 py-1.5" id="new_name" value="{{ auth()->user()->name ?? '' }}" placeholder="Enter full name" required>
+                        <input type="text" class="form-control form-control-sm rounded-3 py-1.5" id="new_name" value="{{ auth()->user()->name ?? '' }}" placeholder="Enter receiver's name" required>
                     </div>
                     <div class="col-12 col-sm-6">
                         <label for="new_phone" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Mobile Number <span class="text-danger">*</span></label>
                         <input type="tel" class="form-control form-control-sm rounded-3 py-1.5" id="new_phone" value="{{ auth()->user()->mobile_number ?? '' }}" placeholder="10-digit mobile" maxlength="10" inputmode="tel" autocomplete="tel" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 10)" required>
                     </div>
-                    <div class="col-12 col-sm-6">
+
+                    {{-- Structured Address: House/Flat (User Input) --}}
+                    <div class="col-12">
+                        <label for="new_house_no" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Flat / House No. / Building / Floor <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm rounded-3 py-1.5" id="new_house_no" placeholder="e.g. Flat 302, Sai Nilayam, 3rd Floor" required>
+                    </div>
+
+                    {{-- Structured Address: Street / Road / Colony (Auto-filled by GPS/Map or User) --}}
+                    <div class="col-12">
+                        <label for="new_street" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Street / Road / Colony / Area <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm rounded-3 py-1.5" id="new_street" placeholder="e.g. 4th Cross, 100ft Ring Road, Indiranagar" required>
+                    </div>
+
+                    {{-- Structured Address: Landmark (Optional) --}}
+                    <div class="col-12">
+                        <label for="new_landmark" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Landmark <span class="text-muted fw-normal">(Optional)</span></label>
+                        <input type="text" class="form-control form-control-sm rounded-3 py-1.5" id="new_landmark" placeholder="e.g. Near Apollo Pharmacy, Behind City Hospital">
+                    </div>
+
+                    {{-- Pincode --}}
+                    <div class="col-12 col-sm-4">
                         <label for="new_zip" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Pincode <span class="text-danger">*</span></label>
                         <input type="text" class="form-control form-control-sm rounded-3 font-monospace fw-bold py-1.5" id="new_zip" 
                                placeholder="6-digit PIN" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" autocomplete="postal-code"
@@ -1724,24 +1791,21 @@
                                oninput="handleCheckoutPincodeInput(this)" required>
                         <small id="new_zip_lookup_hint" class="d-block mt-0.5 transition-all" style="font-size: 0.72rem; min-height: 16px;"></small>
                     </div>
-                    <div class="col-12">
-                        <label for="new_address" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">Street Address <span class="text-danger">*</span></label>
-                        <textarea class="form-control form-control-sm rounded-3 p-2" id="new_address" rows="2" 
-                                  placeholder="Flat / House No. (e.g. #102/B), Building Name, Street, Area, Landmark" 
-                                  style="line-height: 1.45;" required></textarea>
-                    </div>
-                    <div class="col-12 col-sm-6">
+
+                    {{-- City --}}
+                    <div class="col-12 col-sm-4">
                         <label for="new_city" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">City / District <span class="text-danger">*</span></label>
                         <div class="position-relative">
                             <input type="text" class="form-control form-control-sm rounded-3 py-1.5 ps-3 pe-4" id="new_city" 
-                                   placeholder="City / District"
+                                   placeholder="City"
                                    oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')" required>
                             <i class="bi bi-lock-fill position-absolute top-50 end-0 translate-middle-y me-2.5 text-muted d-none" 
                                id="new_city_lock_icon" title="Auto-filled from PIN" style="pointer-events: none; font-size: 0.82rem;"></i>
                         </div>
-                        <small id="new_city_hint" class="d-block mt-0.5 text-muted transition-all" style="font-size: 0.72rem; min-height: 16px;"></small>
                     </div>
-                    <div class="col-12 col-sm-6">
+
+                    {{-- State --}}
+                    <div class="col-12 col-sm-4">
                         <label for="new_state" class="form-label fw-semibold small mb-1" style="font-size: 0.8rem;">State <span class="text-danger">*</span></label>
                         <div class="position-relative">
                             <input type="text" class="form-control form-control-sm rounded-3 py-1.5 ps-3 pe-4" id="new_state" 
@@ -1750,8 +1814,11 @@
                             <i class="bi bi-lock-fill position-absolute top-50 end-0 translate-middle-y me-2.5 text-muted d-none" 
                                id="new_state_lock_icon" title="Auto-filled from PIN" style="pointer-events: none; font-size: 0.82rem;"></i>
                         </div>
-                        <small id="new_state_hint" class="d-block mt-0.5 text-muted transition-all" style="font-size: 0.72rem; min-height: 16px;"></small>
                     </div>
+
+                    <input type="hidden" id="new_latitude" value="">
+                    <input type="hidden" id="new_longitude" value="">
+                    <input type="hidden" id="new_address" value="">
                 </div>
             </div>
 
@@ -2911,6 +2978,10 @@ function applySelectedAddress(addr) {
     
     document.getElementById('hidden_shipping_name').value = addr.name || '';
     document.getElementById('hidden_shipping_phone').value = addr.phone || '';
+    const houseNoHidden = document.getElementById('hidden_shipping_house_no');
+    if (houseNoHidden) houseNoHidden.value = addr.house_no || '';
+    const streetHidden = document.getElementById('hidden_shipping_street');
+    if (streetHidden) streetHidden.value = addr.street || '';
     document.getElementById('hidden_shipping_address').value = addr.address || '';
     document.getElementById('hidden_shipping_city').value = addr.city || '';
     document.getElementById('hidden_shipping_state').value = addr.state || '';
@@ -2928,8 +2999,16 @@ function applySelectedAddress(addr) {
     const activeDetails = document.getElementById('active-address-details');
     const noAddrMsg = document.getElementById('no-address-msg');
 
-    if (displayName) displayName.textContent = addr.name;
-    if (displayStreetCity) displayStreetCity.innerHTML = `${escapeAddressHtml(addr.address)}, ${escapeAddressHtml(addr.city)}, ${escapeAddressHtml(addr.state)} <span class="text-nowrap font-monospace fw-bold text-dark">- ${escapeAddressHtml(addr.zip)}</span>`;
+    if (displayName) {
+        const typeBadge = addr.type ? `<span class="badge bg-light text-primary border rounded-pill px-2 py-0.5 text-uppercase fw-semibold ms-1" style="font-size:0.65rem;">${escapeAddressHtml(addr.type)}</span>` : '';
+        displayName.innerHTML = `${escapeAddressHtml(addr.name)}${typeBadge}`;
+    }
+    if (displayStreetCity) {
+        const houseStr = addr.house_no ? `<strong>${escapeAddressHtml(addr.house_no)}</strong>, ` : '';
+        const streetStr = addr.street ? `${escapeAddressHtml(addr.street)}, ` : (addr.address ? `${escapeAddressHtml(addr.address)}, ` : '');
+        const landmarkStr = addr.landmark ? `<span class="text-muted small d-block mt-0.5"><i class="bi bi-geo-alt"></i> Landmark: ${escapeAddressHtml(addr.landmark)}</span>` : '';
+        displayStreetCity.innerHTML = `${houseStr}${streetStr}${escapeAddressHtml(addr.city)}, ${escapeAddressHtml(addr.state)} <span class="text-nowrap font-monospace fw-bold text-dark">- ${escapeAddressHtml(addr.zip)}</span>${landmarkStr}`;
+    }
     if (displayPhone) displayPhone.innerHTML = `<i class="bi bi-telephone-fill text-muted me-1 small"></i> Mobile: <strong class="text-dark font-monospace">${escapeAddressHtml(addr.phone)}</strong>`;
     
     if (activeDetails) activeDetails.style.display = 'block';
@@ -2980,6 +3059,91 @@ function openCheckoutAddressModal() {
     }
 }
 
+
+function fetchCheckoutModalGpsLocation() {
+    const btn = document.getElementById('btn-checkout-modal-gps');
+    if (!btn) return;
+    const origHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" style="width:0.7rem;height:0.7rem;"></span> Locating...';
+
+    if (!navigator.geolocation) {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+        Swal.fire('GPS Not Supported', 'Geolocation is not supported by your browser.', 'info');
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        async function (pos) {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+
+            const latInput = document.getElementById('new_latitude');
+            const lngInput = document.getElementById('new_longitude');
+            if (latInput) latInput.value = lat;
+            if (lngInput) lngInput.value = lng;
+
+            let addrData = null;
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=en`, {
+                    headers: { 'User-Agent': 'ShopCalm-App/1.0 (contact@shopcalm.in)' }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.address) {
+                        addrData = extractAddressComponents(data.address, data.display_name);
+                    }
+                }
+            } catch (err) {
+                console.warn("Reverse geocode failed:", err);
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+
+            if (addrData) {
+                const streetInput = document.getElementById('new_street');
+                const cityInput = document.getElementById('new_city');
+                const stateInput = document.getElementById('new_state');
+                const zipInput = document.getElementById('new_zip');
+                const houseNoInput = document.getElementById('new_house_no');
+
+                if (streetInput && addrData.roadStr) streetInput.value = addrData.roadStr;
+                if (cityInput && addrData.city) cityInput.value = addrData.city;
+                if (stateInput && addrData.state) stateInput.value = addrData.state;
+                if (zipInput && addrData.zip) {
+                    zipInput.value = addrData.zip;
+                    handleCheckoutPincodeInput(zipInput);
+                } else if (addrData.city && addrData.state) {
+                    isCheckoutPincodeValidated = true;
+                    setCheckoutAddressSaveEnabled(true);
+                }
+
+                if (houseNoInput) houseNoInput.focus();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Location Auto-Filled!',
+                    text: 'Please enter your Flat / House No to complete your address.',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            } else {
+                Swal.fire('Notice', 'Location detected, but unable to resolve street details automatically. Please enter your address details.', 'info');
+            }
+        },
+        function (err) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+            Swal.fire('GPS Notice', 'Unable to retrieve your current location. Please enter your address manually or select on map.', 'info');
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+    );
+}
+
 function openLocationPickerFromAddressModal() {
     const addrModalEl = document.getElementById('checkoutAddressModal');
     if (addrModalEl) {
@@ -3013,16 +3177,27 @@ function resetAddressModalToAddMode() {
     const nameEl = document.getElementById('new_name');
     const phoneEl = document.getElementById('new_phone');
     const zipEl = document.getElementById('new_zip');
-    const addrEl = document.getElementById('new_address');
+    const houseNoEl = document.getElementById('new_house_no');
+    const streetEl = document.getElementById('new_street');
+    const landmarkEl = document.getElementById('new_landmark');
     const cityEl = document.getElementById('new_city');
     const stateEl = document.getElementById('new_state');
+    const latEl = document.getElementById('new_latitude');
+    const lngEl = document.getElementById('new_longitude');
 
     if (nameEl) nameEl.value = '{{ auth()->user()->name ?? "" }}';
     if (phoneEl) phoneEl.value = '{{ auth()->user()->mobile_number ?? "" }}';
     if (zipEl) zipEl.value = '';
-    if (addrEl) addrEl.value = '';
+    if (houseNoEl) houseNoEl.value = '';
+    if (streetEl) streetEl.value = '';
+    if (landmarkEl) landmarkEl.value = '';
     if (cityEl) cityEl.value = '';
     if (stateEl) stateEl.value = '';
+    if (latEl) latEl.value = '';
+    if (lngEl) lngEl.value = '';
+
+    const homeRadio = document.getElementById('checkout_addr_type_home');
+    if (homeRadio) homeRadio.checked = true;
 
     clearCheckoutPincodeError();
     lockCheckoutCityState(false);
@@ -3098,16 +3273,28 @@ function editCheckoutAddress(e, addressId) {
     const nameEl = document.getElementById('new_name');
     const phoneEl = document.getElementById('new_phone');
     const zipEl = document.getElementById('new_zip');
-    const addrEl = document.getElementById('new_address');
+    const houseNoEl = document.getElementById('new_house_no');
+    const streetEl = document.getElementById('new_street');
+    const landmarkEl = document.getElementById('new_landmark');
     const cityEl = document.getElementById('new_city');
     const stateEl = document.getElementById('new_state');
+    const latEl = document.getElementById('new_latitude');
+    const lngEl = document.getElementById('new_longitude');
 
     if (nameEl) nameEl.value = addr.name || '';
     if (phoneEl) phoneEl.value = addr.phone || '';
     if (zipEl) zipEl.value = addr.zip || '';
-    if (addrEl) addrEl.value = addr.address || '';
+    if (houseNoEl) houseNoEl.value = addr.house_no || '';
+    if (streetEl) streetEl.value = addr.street || addr.address || '';
+    if (landmarkEl) landmarkEl.value = addr.landmark || '';
     if (cityEl) cityEl.value = addr.city || '';
     if (stateEl) stateEl.value = addr.state || '';
+    if (latEl) latEl.value = addr.latitude || '';
+    if (lngEl) lngEl.value = addr.longitude || '';
+
+    const typeVal = (addr.type || 'home').toLowerCase();
+    const typeRadio = document.querySelector(`input[name="new_type"][value="${typeVal}"]`);
+    if (typeRadio) typeRadio.checked = true;
 
     // Set validated & lock city/state
     if (addr.zip && addr.city && addr.state) {
@@ -3510,10 +3697,12 @@ function renderModalAddressList() {
                     <div class="min-w-0 flex-grow-1 w-100">
                         <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                             <strong class="text-dark fs-6">${escapeAddressHtml(safeName)}</strong>
+                            ${addr.type ? `<span class="badge bg-light text-primary border rounded-pill px-2 py-0.5 text-uppercase fw-semibold" style="font-size: 0.65rem;">${escapeAddressHtml(addr.type)}</span>` : ''}
                             ${isSelected ? '<span class="badge bg-success text-white rounded-pill px-2.5 py-0.5 fw-bold" style="font-size: 0.68rem;">✓ Selected</span>' : (addr.is_default ? '<span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">Default</span>' : '')}
                         </div>
                         <div class="text-secondary mb-1.5" style="font-size: 0.86rem; line-height: 1.45;">
-                            ${escapeAddressHtml(addr.address || '')}, ${escapeAddressHtml(addr.city || '')}, ${escapeAddressHtml(addr.state || '')} <span class="text-nowrap font-monospace text-dark fw-bold">- ${escapeAddressHtml(safeZip)}</span>
+                            ${addr.house_no ? `<strong>${escapeAddressHtml(addr.house_no)}</strong>, ` : ''}${escapeAddressHtml(addr.street || addr.address || '')}, ${escapeAddressHtml(addr.city || '')}, ${escapeAddressHtml(addr.state || '')} <span class="text-nowrap font-monospace text-dark fw-bold">- ${escapeAddressHtml(safeZip)}</span>
+                            ${addr.landmark ? `<span class="text-muted small d-block mt-0.5"><i class="bi bi-geo-alt"></i> Landmark: ${escapeAddressHtml(addr.landmark)}</span>` : ''}
                         </div>
                         <div class="small text-muted text-nowrap" style="font-size: 0.82rem; white-space: nowrap !important;">
                             <i class="bi bi-telephone-fill text-muted me-1 small"></i> Mobile: <strong class="text-dark font-monospace">${escapeAddressHtml(safePhone)}</strong>
@@ -3564,16 +3753,21 @@ function handleSaveAddress(e) {
 
     const nameVal = (document.getElementById('new_name')?.value || '').trim();
     const phoneVal = (document.getElementById('new_phone')?.value || '').trim();
+    const houseNoVal = (document.getElementById('new_house_no')?.value || '').trim();
+    const streetVal = (document.getElementById('new_street')?.value || '').trim();
+    const landmarkVal = (document.getElementById('new_landmark')?.value || '').trim();
     const zipVal = (document.getElementById('new_zip')?.value || '').trim();
-    const addressVal = (document.getElementById('new_address')?.value || '').trim();
     const cityVal = (document.getElementById('new_city')?.value || '').trim();
     const stateVal = (document.getElementById('new_state')?.value || '').trim();
+    const latVal = (document.getElementById('new_latitude')?.value || '').trim();
+    const lngVal = (document.getElementById('new_longitude')?.value || '').trim();
+    const typeVal = document.querySelector('input[name="new_type"]:checked')?.value || 'home';
 
-    if (!nameVal || !phoneVal || !zipVal || !addressVal || !cityVal || !stateVal) {
+    if (!nameVal || !phoneVal || !houseNoVal || !streetVal || !zipVal || !cityVal || !stateVal) {
         Swal.fire({
             icon: 'warning',
             title: 'Incomplete Address',
-            text: 'Please fill in Full Name, Mobile Number, 6-digit PIN Code, Street Address, City, and State.',
+            text: 'Please fill in Full Name, Mobile Number, Flat/House No, Street/Road/Area, 6-digit PIN Code, City, and State.',
             confirmButtonColor: '#4f46e5'
         });
         return;
@@ -3617,13 +3811,21 @@ function handleSaveAddress(e) {
         btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> ${isEdit ? 'Updating...' : 'Saving...'}`;
     }
 
+    const fullStreetAddress = [houseNoVal, streetVal, landmarkVal].filter(Boolean).join(', ');
+
     const payload = {
         name: nameVal,
         phone: phoneVal,
-        zip: zipVal,
-        address: addressVal,
+        house_no: houseNoVal,
+        street: streetVal,
+        landmark: landmarkVal || null,
+        address: fullStreetAddress,
         city: cityVal,
         state: stateVal,
+        zip: zipVal,
+        latitude: latVal ? parseFloat(latVal) : null,
+        longitude: lngVal ? parseFloat(lngVal) : null,
+        type: typeVal,
         country: 'India',
         is_default: true
     };
@@ -4382,6 +4584,9 @@ async function saveMapAddressToCheckout() {
     const payload = {
         name: name,
         phone: phone,
+        house_no: houseNo,
+        street: roadArea,
+        landmark: landmark || null,
         address: fullStreetAddress,
         city: city || 'City',
         state: state || 'State',
@@ -4389,7 +4594,6 @@ async function saveMapAddressToCheckout() {
         country: 'India',
         latitude: currentMapCoords.lat,
         longitude: currentMapCoords.lng,
-        landmark: landmark || null,
         type: type,
         is_default: true
     };

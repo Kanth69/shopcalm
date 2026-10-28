@@ -166,6 +166,23 @@
                     {{-- Alert for global errors --}}
                     <div class="alert alert-danger d-none py-2 px-3 rounded-3 small mb-3" id="modal-global-error"></div>
 
+                    {{-- Live GPS Auto-fill Banner --}}
+                    <div class="d-flex align-items-center justify-content-between p-2.5 mb-3 rounded-3 border" style="background: #f0fdf4; border-color: #bbf7d0 !important;">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center text-success flex-shrink-0" style="width: 28px; height: 28px; background: rgba(16, 185, 129, 0.15);">
+                                <i class="bi bi-geo-alt-fill" style="font-size: 0.85rem;"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark" style="font-size: 0.82rem;">Fetch Live Location</div>
+                                <div class="text-muted" style="font-size: 0.72rem;">Auto-detect PIN, city, state & street via GPS</div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-success rounded-pill px-3 py-1 fw-bold shadow-xs d-inline-flex align-items-center gap-1.5" id="btn-modal-gps" onclick="fetchModalGpsLocation()" style="font-size: 0.75rem;">
+                            <i class="bi bi-crosshair" id="modal-gps-icon"></i>
+                            <span id="modal-gps-text">Use GPS</span>
+                        </button>
+                    </div>
+
                     <div class="row g-3">
                         {{-- Full Name --}}
                         <div class="col-12 col-sm-6">
@@ -199,8 +216,39 @@
                             <div class="invalid-feedback d-block text-danger small mt-1" id="err-phone" style="display:none !important;"></div>
                         </div>
 
-                        {{-- Hidden Country (Domestic India Only) --}}
+                        {{-- Hidden Coordinates & Country --}}
                         <input type="hidden" id="addr_input_country" name="country" value="India">
+                        <input type="hidden" id="addr_input_latitude" name="latitude" value="">
+                        <input type="hidden" id="addr_input_longitude" name="longitude" value="">
+
+                        {{-- Flat / House / Building Number --}}
+                        <div class="col-12 col-sm-6">
+                            <label for="addr_input_house_no" class="form-label fw-semibold text-dark small mb-1">
+                                Flat / House / Building No. <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control py-2 px-3 rounded-3" id="addr_input_house_no" name="house_no" 
+                                   placeholder="e.g. Flat 302, Sai Residency" required style="border-color: #cbd5e1; font-size: 0.88rem;">
+                            <div class="invalid-feedback d-block text-danger small mt-1" id="err-house_no" style="display:none !important;"></div>
+                        </div>
+
+                        {{-- Landmark --}}
+                        <div class="col-12 col-sm-6">
+                            <label for="addr_input_landmark" class="form-label fw-semibold text-dark small mb-1">
+                                Landmark <span class="text-muted">(Optional)</span>
+                            </label>
+                            <input type="text" class="form-control py-2 px-3 rounded-3" id="addr_input_landmark" name="landmark" 
+                                   placeholder="e.g. Near Apollo Pharmacy" style="border-color: #cbd5e1; font-size: 0.88rem;">
+                        </div>
+
+                        {{-- Road / Street / Colony --}}
+                        <div class="col-12">
+                            <label for="addr_input_street" class="form-label fw-semibold text-dark small mb-1">
+                                Road / Street / Colony <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control py-2 px-3 rounded-3" id="addr_input_street" name="street" 
+                                   placeholder="Detected road or street" required style="border-color: #cbd5e1; font-size: 0.88rem;">
+                            <div class="invalid-feedback d-block text-danger small mt-1" id="err-street" style="display:none !important;"></div>
+                        </div>
 
                         {{-- Pincode --}}
                         <div class="col-12 col-sm-4">
@@ -253,15 +301,19 @@
                             <div class="invalid-feedback d-block text-danger small mt-1" id="err-state" style="display:none !important;"></div>
                         </div>
 
-                        {{-- Street Address --}}
+                        {{-- Address Type Selector --}}
                         <div class="col-12">
-                            <label for="addr_input_address" class="form-label fw-semibold text-dark small mb-1">
-                                Street Address / House / Flat <span class="text-danger">*</span>
-                            </label>
-                            <textarea class="form-control py-2 px-3 rounded-3" id="addr_input_address" name="address" rows="2" 
-                                      placeholder="Flat / House No. (e.g. #102/B), Building Name, Street, Area, Landmark" required 
-                                      style="border-color: #cbd5e1; font-size: 0.88rem; line-height: 1.45;"></textarea>
-                            <div class="invalid-feedback d-block text-danger small mt-1" id="err-address" style="display:none !important;"></div>
+                            <label class="form-label fw-semibold text-dark small mb-1">Address Type</label>
+                            <div class="btn-group btn-group-sm w-100" role="group">
+                                <input type="radio" class="btn-check" name="addr_type" id="addr_type_home" value="home" checked autocomplete="off">
+                                <label class="btn btn-outline-secondary py-1.5" for="addr_type_home" style="font-size: 0.82rem;"><i class="bi bi-house me-1"></i>Home</label>
+
+                                <input type="radio" class="btn-check" name="addr_type" id="addr_type_work" value="work" autocomplete="off">
+                                <label class="btn btn-outline-secondary py-1.5" for="addr_type_work" style="font-size: 0.82rem;"><i class="bi bi-briefcase me-1"></i>Work</label>
+
+                                <input type="radio" class="btn-check" name="addr_type" id="addr_type_other" value="other" autocomplete="off">
+                                <label class="btn btn-outline-secondary py-1.5" for="addr_type_other" style="font-size: 0.82rem;"><i class="bi bi-geo me-1"></i>Other</label>
+                            </div>
                         </div>
 
                     </div>
@@ -476,11 +528,18 @@ function openCreateAddressModal() {
     // Default values
     document.getElementById('addr_input_name').value = '{{ auth()->user()->name ?? "" }}';
     document.getElementById('addr_input_phone').value = '{{ preg_replace("/\D/", "", substr(auth()->user()->mobile_number ?? "", -10)) }}';
+    document.getElementById('addr_input_house_no').value = '';
+    document.getElementById('addr_input_landmark').value = '';
+    document.getElementById('addr_input_street').value = '';
     document.getElementById('addr_input_zip').value = '';
-    document.getElementById('addr_input_address').value = '';
     document.getElementById('addr_input_city').value = '';
     document.getElementById('addr_input_state').value = '';
     document.getElementById('addr_input_country').value = 'India';
+    document.getElementById('addr_input_latitude').value = '';
+    document.getElementById('addr_input_longitude').value = '';
+
+    const homeRadio = document.getElementById('addr_type_home');
+    if (homeRadio) homeRadio.checked = true;
 
     delete document.getElementById('addr_input_city').dataset.autofilled;
     delete document.getElementById('addr_input_state').dataset.autofilled;
@@ -512,11 +571,19 @@ function openEditAddressModal(address) {
     const zipVal = (address.zip || '').replace(/\D/g, '').slice(0, 6);
     document.getElementById('addr_input_name').value = address.name || '';
     document.getElementById('addr_input_phone').value = (address.phone || '').replace(/\D/g, '').slice(-10);
+    document.getElementById('addr_input_house_no').value = address.house_no || '';
+    document.getElementById('addr_input_landmark').value = address.landmark || '';
+    document.getElementById('addr_input_street').value = address.street || address.address || '';
     document.getElementById('addr_input_zip').value = zipVal;
-    document.getElementById('addr_input_address').value = address.address || '';
     document.getElementById('addr_input_city').value = address.city || '';
     document.getElementById('addr_input_state').value = address.state || '';
     document.getElementById('addr_input_country').value = address.country || 'India';
+    document.getElementById('addr_input_latitude').value = address.latitude || '';
+    document.getElementById('addr_input_longitude').value = address.longitude || '';
+
+    const typeVal = (address.type || 'home').toLowerCase();
+    const typeRadio = document.getElementById('addr_type_' + typeVal) || document.getElementById('addr_type_home');
+    if (typeRadio) typeRadio.checked = true;
 
     delete document.getElementById('addr_input_city').dataset.autofilled;
     delete document.getElementById('addr_input_state').dataset.autofilled;
@@ -532,6 +599,71 @@ function openEditAddressModal(address) {
 
     const modalEl = document.getElementById('addressModal');
     bootstrap.Modal.getOrCreateInstance(modalEl).show();
+}
+
+// Live GPS fetcher for Account Address Modal
+function fetchModalGpsLocation() {
+    if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser.');
+        return;
+    }
+
+    const btn = document.getElementById('btn-modal-gps');
+    const icon = document.getElementById('modal-gps-icon');
+    const text = document.getElementById('modal-gps-text');
+
+    btn.disabled = true;
+    icon.className = 'spinner-border spinner-border-sm';
+    text.textContent = 'Locating...';
+
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            document.getElementById('addr_input_latitude').value = lat;
+            document.getElementById('addr_input_longitude').value = lng;
+
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+                    headers: { 'Accept-Language': 'en' }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const addr = data.address || {};
+                    const road = addr.road || addr.street || addr.suburb || addr.neighbourhood || addr.residential || '';
+                    const city = addr.city || addr.town || addr.municipality || addr.village || addr.city_district || '';
+                    const state = addr.state || '';
+                    const postcode = (addr.postcode || '').replace(/\D/g, '').slice(0, 6);
+
+                    if (road) document.getElementById('addr_input_street').value = road;
+                    if (city) document.getElementById('addr_input_city').value = city;
+                    if (state) document.getElementById('addr_input_state').value = state;
+                    if (postcode && postcode.length === 6) {
+                        const zipEl = document.getElementById('addr_input_zip');
+                        zipEl.value = postcode;
+                        handleAddressModalPincodeInput(zipEl);
+                    }
+                }
+            } catch (err) {
+                console.warn('Reverse geocoding error:', err);
+            } finally {
+                btn.disabled = false;
+                icon.className = 'bi bi-check2';
+                text.textContent = 'Detected!';
+                setTimeout(() => {
+                    icon.className = 'bi bi-crosshair';
+                    text.textContent = 'Use GPS';
+                }, 3000);
+            }
+        },
+        (error) => {
+            btn.disabled = false;
+            icon.className = 'bi bi-crosshair';
+            text.textContent = 'Use GPS';
+            alert('Could not detect location. Please allow browser location access or type manually.');
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
 }
 
 // Delegate click on Edit buttons
@@ -649,6 +781,12 @@ function handleAddressModalPincode(pincode) {
 function renderAddressCardHtml(address) {
     const rawJson = JSON.stringify(address);
     const country = address.country || 'India';
+    const houseNo = address.house_no ? escapeHtml(address.house_no) : '';
+    const street = address.street ? escapeHtml(address.street) : escapeHtml(address.address || '');
+    const landmark = address.landmark ? ` (Near ${escapeHtml(address.landmark)})` : '';
+    const displayAddress = houseNo ? `${houseNo}, ${street}${landmark}` : `${street}${landmark}`;
+    const type = (address.type || 'home').toUpperCase();
+    const typeBadgeColor = type === 'WORK' ? 'background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe;' : 'background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0;';
 
     return `
     <div class="col-md-6" id="address-card-${address.id}">
@@ -659,10 +797,13 @@ function renderAddressCardHtml(address) {
                 <div class="d-flex align-items-start gap-3 mb-3">
                     <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
                          style="width:44px; height:44px; background:linear-gradient(135deg,#ede9fe,#ddd6fe);">
-                        <i class="bi bi-house-fill" style="color:#6d28d9; font-size:1.1rem;"></i>
+                        <i class="bi ${type === 'WORK' ? 'bi-briefcase-fill' : 'bi-house-fill'}" style="color:#6d28d9; font-size:1.1rem;"></i>
                     </div>
                     <div class="min-w-0 flex-grow-1">
-                        <h6 class="fw-bold text-dark mb-0.5 text-truncate" id="addr-name-${address.id}" style="font-size:0.95rem;">${escapeHtml(address.name)}</h6>
+                        <div class="d-flex align-items-center gap-1.5 mb-0.5">
+                            <h6 class="fw-bold text-dark mb-0 text-truncate" id="addr-name-${address.id}" style="font-size:0.95rem;">${escapeHtml(address.name)}</h6>
+                            <span class="badge rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.65rem; ${typeBadgeColor}">${type}</span>
+                        </div>
                         <span class="text-muted small" id="addr-phone-${address.id}"><i class="bi bi-telephone me-1 text-primary"></i>${escapeHtml(address.phone)}</span>
                     </div>
                 </div>
@@ -670,7 +811,7 @@ function renderAddressCardHtml(address) {
                 <div class="rounded-3 p-3 mb-3 flex-grow-1" style="background:#f8fafc; border:1px solid #e2e8f0;">
                     <p class="text-secondary small mb-0 lh-lg" id="addr-text-${address.id}">
                         <i class="bi bi-geo-alt text-primary me-1"></i>
-                        <span class="addr-line">${escapeHtml(address.address)}</span>,<br>
+                        <span class="addr-line">${displayAddress}</span>,<br>
                         <span class="addr-city-state-zip">${escapeHtml(address.city)}, ${escapeHtml(address.state)} – ${escapeHtml(address.zip)}</span><br>
                         <span class="fw-medium addr-country">${escapeHtml(country)}</span>
                     </p>
@@ -706,14 +847,29 @@ async function handleAddressFormSubmit(event) {
     const url = isEdit ? `/account/addresses/${addressId}` : "{{ route('account.addresses.store') }}";
     const httpMethod = isEdit ? 'PUT' : 'POST';
 
+    const houseNo = document.getElementById('addr_input_house_no').value.trim();
+    const street = document.getElementById('addr_input_street').value.trim();
+    const landmark = document.getElementById('addr_input_landmark').value.trim();
+    const type = document.querySelector('input[name="addr_type"]:checked')?.value || 'home';
+    const lat = document.getElementById('addr_input_latitude').value.trim();
+    const lng = document.getElementById('addr_input_longitude').value.trim();
+
+    const fullAddress = landmark ? `${houseNo}, ${street} (Near ${landmark})` : `${houseNo}, ${street}`;
+
     const payload = {
         name: document.getElementById('addr_input_name').value.trim(),
         phone: document.getElementById('addr_input_phone').value.trim(),
+        house_no: houseNo,
+        street: street,
+        landmark: landmark,
+        type: type,
+        address: fullAddress,
         zip: document.getElementById('addr_input_zip').value.trim(),
-        address: document.getElementById('addr_input_address').value.trim(),
         city: document.getElementById('addr_input_city').value.trim(),
         state: document.getElementById('addr_input_state').value.trim(),
-        country: document.getElementById('addr_input_country').value.trim() || 'India'
+        country: document.getElementById('addr_input_country').value.trim() || 'India',
+        latitude: lat ? parseFloat(lat) : null,
+        longitude: lng ? parseFloat(lng) : null
     };
 
     // Client-side quick check
@@ -723,11 +879,12 @@ async function handleAddressFormSubmit(event) {
         showAddressFieldError('phone', 'Please enter a valid 10-digit mobile number.'); 
         hasClientErr = true; 
     }
+    if (!payload.house_no) { showAddressFieldError('house_no', 'Please enter Flat / House / Building Number.'); hasClientErr = true; }
+    if (!payload.street) { showAddressFieldError('street', 'Please enter Road / Street details.'); hasClientErr = true; }
     if (!payload.zip || payload.zip.length !== 6) { 
         showAddressFieldError('zip', 'Please enter a valid 6-digit PIN code.'); 
         hasClientErr = true; 
     }
-    if (!payload.address) { showAddressFieldError('address', 'Please enter your street address.'); hasClientErr = true; }
     if (!payload.city) { showAddressFieldError('city', 'Please enter your city.'); hasClientErr = true; }
     if (!payload.state) { showAddressFieldError('state', 'Please enter your state.'); hasClientErr = true; }
     if (!isProfilePincodeValidated && !isEdit) {
