@@ -175,6 +175,24 @@ class CheckoutController extends BaseApiController
 
         $grandTotal = max(0, $payableBeforeWallet - $walletUsed);
 
+        // Calculate Total MRP, Offer Discount, and Total Savings (matching Web CheckoutController)
+        $totalMrp = 0.00;
+        $totalDiscount = 0.00;
+        foreach ($cart->items as $item) {
+            $product = $item->product;
+            $unitPrice = (float) $item->unit_price;
+            $originalPrice = (float) ($product ? $product->price : $unitPrice);
+            if ($originalPrice < $unitPrice) {
+                $originalPrice = $unitPrice;
+            }
+            $totalMrp += round($originalPrice * $item->quantity, 2);
+            if ($originalPrice > $unitPrice) {
+                $totalDiscount += ($originalPrice - $unitPrice) * $item->quantity;
+            }
+        }
+        $totalDiscount = round($totalDiscount, 2);
+        $totalSavings = round($totalDiscount + $couponDiscount + $walletUsed, 2);
+
         // Fetch Active Available Coupons with Eligibility & Savings (matching Web CheckoutController)
         $availableCoupons = \App\Models\Coupon::where('is_active', true)
             ->where(function ($q) {
@@ -211,6 +229,10 @@ class CheckoutController extends BaseApiController
             ->values();
 
         return $this->sendResponse([
+            'total_mrp'               => round($totalMrp, 2),
+            'total_discount'          => round($totalDiscount, 2),
+            'offer_discount'          => round($totalDiscount, 2),
+            'total_savings'           => round($totalSavings, 2),
             'subtotal'                => round($subtotal, 2),
             'coupon_code'             => $couponCode,
             'coupon_discount'         => round($couponDiscount, 2),
