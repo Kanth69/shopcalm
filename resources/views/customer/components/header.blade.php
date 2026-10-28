@@ -128,8 +128,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             style="font-size: 0.88rem;"
                             autocomplete="off"
                         >
-                        <button type="button" class="btn btn-link text-muted p-0 pe-3 d-none btn-clear-search" aria-label="Clear search" style="text-decoration: none;">
-                            <i class="bi bi-x-circle-fill"></i>
+                        <button type="button" class="btn btn-link text-secondary p-0 pe-3 d-none btn-clear-search" aria-label="Clear search" style="text-decoration: none; cursor: pointer; z-index: 5;">
+                            <i class="bi bi-x-circle-fill" style="font-size: 1.05rem;"></i>
                         </button>
                     </div>
 
@@ -252,8 +252,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         <i class="bi bi-search text-primary" style="font-size: 0.85rem;"></i>
                     </span>
                     <input type="text" name="q" id="mobileSearchInput" class="form-control bg-transparent border-0 shadow-none ps-1 py-2" placeholder="{{ $headerSearchPlaceholder }}" value="{{ request('q') }}" style="font-size: 0.86rem;" autocomplete="off">
-                    <button type="button" class="btn btn-link text-muted p-0 pe-3 d-none btn-clear-search" aria-label="Clear search" style="text-decoration: none;">
-                        <i class="bi bi-x-circle-fill"></i>
+                    <button type="button" class="btn btn-link text-secondary p-0 pe-3 d-none btn-clear-search" aria-label="Clear search" style="text-decoration: none; cursor: pointer; z-index: 5;">
+                        <i class="bi bi-x-circle-fill" style="font-size: 1.05rem;"></i>
                     </button>
                 </div>
 

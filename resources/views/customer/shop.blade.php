@@ -151,39 +151,41 @@
     @if(request()->filled('q'))
         <div class="card border-0 shadow-sm rounded-4 p-2.5 p-sm-3 p-md-4 mb-3 mb-md-4 overflow-hidden w-100" 
              style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border: 1px solid #e2e8f0 !important;">
-            <div class="d-flex align-items-center justify-content-between gap-2.5 w-100 min-w-0">
-                <div class="d-flex align-items-center gap-2 gap-sm-3 min-w-0 flex-grow-1">
+            <div class="d-flex align-items-center justify-content-between gap-2 w-100 min-w-0">
+                <div class="d-flex align-items-center gap-2 gap-sm-2.5 min-w-0 flex-grow-1" style="max-width: calc(100% - 122px);">
                     <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
-                         style="width: clamp(36px, 8vw, 44px); height: clamp(36px, 8vw, 44px); background: #ede9fe; color: #6366f1; font-size: clamp(1rem, 2.5vw, 1.25rem);">
+                         style="width: clamp(34px, 7vw, 42px); height: clamp(34px, 7vw, 42px); background: #ede9fe; color: #6366f1; font-size: clamp(0.95rem, 2.2vw, 1.2rem);">
                         <i class="bi bi-search"></i>
                     </div>
                     <div class="min-w-0 flex-grow-1">
                         <div class="d-flex align-items-center gap-1.5 flex-nowrap mb-0.5 min-w-0">
-                            <span class="text-muted small fw-semibold text-uppercase text-nowrap d-none d-sm-inline" style="font-size: 0.72rem; letter-spacing: 0.05em;">Search:</span>
+                            <span class="text-muted small fw-semibold text-uppercase text-nowrap d-none d-sm-inline" style="font-size: 0.7rem; letter-spacing: 0.05em;">Search:</span>
                             <span class="badge rounded-pill px-2.5 py-1 fw-bold text-truncate d-inline-block align-middle" 
-                                  style="background: rgba(99, 102, 241, 0.12); color: #6366f1; border: 1px solid rgba(99, 102, 241, 0.25); max-width: min(220px, 48vw); font-size: clamp(0.78rem, 2vw, 0.9rem); vertical-align: middle;" 
+                                  style="background: rgba(99, 102, 241, 0.12); color: #6366f1; border: 1px solid rgba(99, 102, 241, 0.25); max-width: 100%; font-size: clamp(0.76rem, 2vw, 0.88rem); vertical-align: middle;" 
                                   title="{{ request('q') }}">
                                 "{{ request('q') }}"
                             </span>
                         </div>
                         @if(isset($didYouMean) && $didYouMean)
-                            <div class="small text-muted text-truncate" style="font-size: 0.78rem;">
+                            <div class="small text-muted text-truncate" style="font-size: 0.76rem;">
                                 Did you mean: <a href="{{ route('shop', array_merge(request()->query(), ['q' => $didYouMean])) }}" class="fw-bold text-primary text-decoration-underline">{{ $didYouMean }}</a>?
                             </div>
                         @else
-                            <div class="text-muted small text-truncate" style="font-size: 0.76rem;">
-                                Matching products for your search
+                            <div class="text-muted small text-truncate" style="font-size: 0.74rem;">
+                                {{ number_format($products->total()) }} matching products
                             </div>
                         @endif
                     </div>
                 </div>
 
-                <div class="flex-shrink-0">
+                <div class="flex-shrink-0 ms-auto">
                     @php
                         $queryWithoutSearch = request()->except(['q', 'page', 'suggestion']);
                     @endphp
-                    <a href="{{ route('shop', $queryWithoutSearch) }}" class="btn btn-outline-secondary rounded-pill px-2.5 px-sm-3 py-1.5 fw-semibold btn-sm d-inline-flex align-items-center gap-1 shadow-xs text-nowrap" style="font-size: 0.78rem;">
-                        <i class="bi bi-x-lg"></i> <span class="d-none d-sm-inline">Clear</span> Search
+                    <a href="{{ route('shop', $queryWithoutSearch) }}" 
+                       class="btn btn-sm rounded-pill px-2.5 px-sm-3 py-1.5 fw-bold d-inline-flex align-items-center gap-1.5 shadow-xs text-nowrap" 
+                       style="background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; font-size: 0.78rem;">
+                        <i class="bi bi-x-circle-fill text-danger"></i> Clear Search
                     </a>
                 </div>
             </div>
