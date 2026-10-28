@@ -219,6 +219,17 @@ class ProductController extends BaseApiController
             return $img;
         });
 
+        if (!empty($product->option_images)) {
+            $optImgs = is_array($product->option_images) ? $product->option_images : json_decode($product->option_images, true);
+            if (is_array($optImgs)) {
+                $formattedOptImgs = [];
+                foreach ($optImgs as $k => $v) {
+                    $formattedOptImgs[$k] = !empty($v) && !str_starts_with($v, 'http') ? asset('storage/' . $v) : $v;
+                }
+                $product->option_images = $formattedOptImgs;
+            }
+        }
+
         // Compute aggregations
         $product->selling_price = (float) $product->price;
         $product->offer_price = isset($product->sale_price) ? (float) $product->sale_price : null;

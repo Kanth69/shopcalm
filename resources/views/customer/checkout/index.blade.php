@@ -1065,6 +1065,53 @@
                 <!-- ====================================================== -->
                 <div id="checkout-step-4-view" class="d-none">
                     
+                    <!-- Mobile-Only Top Action & Terms Section (Confirm Order Step 4) -->
+                    <div class="d-block d-lg-none mb-3" id="step-4-mobile-top-action-bar">
+                        <div class="card border-0 shadow-xs rounded-4 p-3" style="background: #ffffff; border: 1.5px solid #4f46e5 !important;">
+                            <!-- Compact Header / Grand Total Info -->
+                            <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom">
+                                <div>
+                                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.05em;">Grand Total Due</span>
+                                    <div class="fs-5 fw-bolder text-dark font-monospace" id="mobile-top-grand-total">₹{{ number_format($grandTotal, 2) }}</div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge rounded-pill px-2.5 py-1 fw-bold text-white shadow-xs" id="mobile-top-paymode-badge" style="background: #4f46e5; font-size: 0.72rem;">
+                                        <i class="bi bi-shield-check me-1"></i> Final Step
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Top Terms & Conditions Agreement Box -->
+                            <div class="confirm-terms-box mb-3" id="confirm-terms-wrapper-top" style="border-radius: 12px; padding: 0.75rem 0.85rem;">
+                                <div class="form-check d-flex align-items-start gap-2 m-0">
+                                    <input class="form-check-input cursor-pointer flex-shrink-0 mt-0.5" 
+                                           type="checkbox" 
+                                           id="terms-consent-checkbox-top" 
+                                           onchange="syncTermsConsent(this)" 
+                                           style="cursor: pointer; width: 1.25rem; height: 1.25rem; accent-color: #4f46e5;">
+                                    <label class="form-check-label text-dark small mb-0 user-select-none" for="terms-consent-checkbox-top" style="font-size: 0.78rem; line-height: 1.4; cursor: pointer;">
+                                        I have reviewed my order and agree to {{ \App\Models\Setting::get('store_name', 'ShopCalm') }}'s 
+                                        <a href="{{ route('page.return') }}" target="_blank" class="text-primary text-decoration-underline fw-semibold">No Return Policy</a> 
+                                        and 
+                                        <a href="{{ route('page.terms') }}" target="_blank" class="text-primary text-decoration-underline fw-semibold">Terms &amp; Conditions</a>.
+                                        <span class="text-danger fw-bold ms-0.5">*</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Top Action Buttons (Back + Place Order / Pay) -->
+                            <div class="d-flex justify-content-between align-items-center gap-2">
+                                <button type="button" class="btn btn-light border rounded-pill px-3 py-2 fw-semibold text-secondary btn-sm d-inline-flex align-items-center gap-1.5" onclick="goToStep(3)" style="font-size: 0.82rem;">
+                                    <i class="bi bi-arrow-left"></i> <span>Back</span>
+                                </button>
+                                <button type="button" onclick="handleOrderSubmission(event)" class="btn btn-primary rounded-pill px-3.5 py-2 fw-bold shadow-xs d-inline-flex align-items-center gap-1.5 btn-checkout-cta" id="btn-place-order-top" style="font-size: 0.85rem; background: #4f46e5; border-color: #4f46e5;">
+                                    <span id="btn-place-order-text-top">Pay Online (₹{{ number_format($grandTotal, 2) }})</span>
+                                    <i class="bi bi-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Items in Order Card -->
                     <div class="card border-0 shadow-xs rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 1.5px solid #4f46e5 !important;">
                         <div class="card-header bg-white py-3 px-3.5 px-md-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -1291,6 +1338,7 @@
                                        value="1" 
                                        required 
                                        form="checkout-form" 
+                                       onchange="syncTermsConsent(this)" 
                                        style="cursor: pointer; width: 1.25rem; height: 1.25rem; accent-color: #4f46e5;">
                                 <label class="form-check-label text-dark small mb-0 user-select-none" for="terms-consent-checkbox" style="font-size: 0.82rem; line-height: 1.45; cursor: pointer;">
                                     I have reviewed my order and agree to {{ \App\Models\Setting::get('store_name', 'ShopCalm') }}'s 
@@ -2009,11 +2057,24 @@ function proceedFromStep3() {
     goToStep(4);
 }
 
+function syncTermsConsent(source) {
+    const isChecked = source.checked;
+    const topCb = document.getElementById('terms-consent-checkbox-top');
+    const btmCb = document.getElementById('terms-consent-checkbox');
+    if (topCb) topCb.checked = isChecked;
+    if (btmCb) btmCb.checked = isChecked;
+
+    ['confirm-terms-wrapper', 'confirm-terms-wrapper-top'].forEach(id => {
+        const box = document.getElementById(id);
+        if (box) {
+            box.style.borderColor = isChecked ? '#cbd5e1' : '';
+            box.style.background = isChecked ? '#f8fafc' : '';
+        }
+    });
+}
+window.syncTermsConsent = syncTermsConsent;
+
 function resetPlaceOrderButton() {
-    const placeOrderBtn = document.getElementById('btn-place-order');
-    if (!placeOrderBtn) return;
-    placeOrderBtn.disabled = false;
-    
     const isOnline = document.getElementById('pay_online')?.checked;
     const grandTotalFmt = document.getElementById('summary-grand-total')?.textContent?.trim() || '₹{{ number_format($grandTotal, 2) }}';
     const grandTotalRaw = document.getElementById('summary-grand-total')?.textContent.replace(/[^0-9.]/g, '') || '0';
@@ -2026,7 +2087,17 @@ function resetPlaceOrderButton() {
         btnText = `Place COD Order (${grandTotalFmt})`;
     }
 
-    placeOrderBtn.innerHTML = `<span id="btn-place-order-text">${btnText}</span> <i class="bi bi-arrow-right ms-1"></i>`;
+    const placeOrderBtn = document.getElementById('btn-place-order');
+    if (placeOrderBtn) {
+        placeOrderBtn.disabled = false;
+        placeOrderBtn.innerHTML = `<span id="btn-place-order-text">${btnText}</span> <i class="bi bi-arrow-right ms-1"></i>`;
+    }
+
+    const placeOrderBtnTop = document.getElementById('btn-place-order-top');
+    if (placeOrderBtnTop) {
+        placeOrderBtnTop.disabled = false;
+        placeOrderBtnTop.innerHTML = `<span id="btn-place-order-text-top">${btnText}</span> <i class="bi bi-arrow-right ms-1"></i>`;
+    }
 }
 window.resetPlaceOrderButton = resetPlaceOrderButton;
 
@@ -2067,6 +2138,27 @@ function updateReviewSummaries() {
             revPay.innerHTML = '<div class="d-flex align-items-center gap-2 flex-wrap mb-1.5"><span class="badge text-white px-3 py-1.5 rounded-pill fw-bold shadow-xs" style="background: #4f46e5; font-size: 0.78rem; letter-spacing: 0.4px;"><i class="bi bi-lightning-charge-fill me-1 text-warning"></i>ONLINE PAYMENT</span> <span class="fw-bold text-dark fs-6">UPI / Cards / NetBanking / PhonePe</span></div><small class="text-secondary d-block" style="font-size: 0.82rem; line-height: 1.45;">Instant payment via Razorpay with instant order confirmation.</small>';
         } else {
             revPay.innerHTML = '<div class="d-flex align-items-center gap-2 flex-wrap mb-1.5"><span class="badge bg-dark text-white px-3 py-1.5 rounded-pill fw-bold shadow-xs" style="font-size: 0.78rem; letter-spacing: 0.4px;"><i class="bi bi-cash-stack me-1 text-success"></i>CASH ON DELIVERY</span> <span class="fw-bold text-dark fs-6">Cash on Delivery (Pay at Doorstep)</span></div><small class="text-secondary d-block" style="font-size: 0.82rem; line-height: 1.45;">Pay via cash or UPI directly to our delivery executive when parcel arrives.</small>';
+        }
+    }
+
+    // Step 4 Mobile Top Summary Updates
+    const mobileTopTotal = document.getElementById('mobile-top-grand-total');
+    if (mobileTopTotal) {
+        const grandTotalFmt = document.getElementById('summary-grand-total')?.textContent?.trim() || '₹{{ number_format($grandTotal, 2) }}';
+        mobileTopTotal.textContent = grandTotalFmt;
+    }
+    const mobileTopBadge = document.getElementById('mobile-top-paymode-badge');
+    if (mobileTopBadge) {
+        if (grandTotalVal <= 0) {
+            mobileTopBadge.className = 'badge rounded-pill px-2.5 py-1 fw-bold text-white shadow-xs bg-success';
+            mobileTopBadge.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Covered by Wallet';
+        } else if (isOnline) {
+            mobileTopBadge.className = 'badge rounded-pill px-2.5 py-1 fw-bold text-white shadow-xs';
+            mobileTopBadge.style.background = '#4f46e5';
+            mobileTopBadge.innerHTML = '<i class="bi bi-lightning-charge-fill me-1 text-warning"></i> Online Payment';
+        } else {
+            mobileTopBadge.className = 'badge rounded-pill px-2.5 py-1 fw-bold text-white shadow-xs bg-dark';
+            mobileTopBadge.innerHTML = '<i class="bi bi-cash-stack me-1 text-success"></i> Cash on Delivery';
         }
     }
 
@@ -2152,21 +2244,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Step 4: Final Place Order Validation
         const consentCb = document.getElementById('terms-consent-checkbox');
-        if (consentCb && !consentCb.checked) {
-            const termsBox = document.getElementById('confirm-terms-wrapper');
-            if (termsBox) {
-                termsBox.style.borderColor = '#ef4444';
-                termsBox.style.background = '#fef2f2';
-            }
+        const consentCbTop = document.getElementById('terms-consent-checkbox-top');
+        const hasConsent = (consentCb && consentCb.checked) || (consentCbTop && consentCbTop.checked);
+
+        if (!hasConsent) {
+            ['confirm-terms-wrapper', 'confirm-terms-wrapper-top'].forEach(id => {
+                const termsBox = document.getElementById(id);
+                if (termsBox) {
+                    termsBox.style.borderColor = '#ef4444';
+                    termsBox.style.background = '#fef2f2';
+                }
+            });
             Swal.fire({
                 icon: 'warning',
                 title: 'Agreement Required',
                 text: 'Please check the agreement box for the No Return Policy & Terms & Conditions before placing your order.',
                 confirmButtonColor: '#4f46e5'
             });
-            consentCb.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const targetCb = (window.innerWidth < 992 && consentCbTop) ? consentCbTop : consentCb;
+            if (targetCb) targetCb.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
+
+        // Keep form checkbox checked so server receives terms_consent=1
+        if (consentCb) consentCb.checked = true;
+        if (consentCbTop) consentCbTop.checked = true;
 
         const hiddenAddress = document.getElementById('hidden_shipping_address');
         if (!currentSelectedAddress || !hiddenAddress || !hiddenAddress.value.trim() || window.isCurrentAddressServiceable === false) {
@@ -2194,11 +2296,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const placeOrderBtn = document.getElementById('btn-place-order');
-        if (placeOrderBtn) {
-            placeOrderBtn.disabled = true;
-            placeOrderBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing...';
-        }
+        ['btn-place-order', 'btn-place-order-top'].forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing...';
+            }
+        });
 
         const checkoutForm = document.getElementById('checkout-form');
         const formData = new FormData(checkoutForm);
@@ -2250,7 +2354,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     prefill: data.prefill || {},
                     theme: { color: "#4f46e5" },
                     handler: function(response) {
-                        if (placeOrderBtn) placeOrderBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Verifying Payment...';
+                        ['btn-place-order', 'btn-place-order-top'].forEach(id => {
+                            const btn = document.getElementById(id);
+                            if (btn) btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Verifying Payment...';
+                        });
                         fetch('{{ route("checkout.razorpay.verify") }}', {
                             method: 'POST',
                             headers: {
