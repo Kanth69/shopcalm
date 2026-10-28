@@ -30,12 +30,12 @@
 
         {{-- Floating Countdown Timer Pill (Only if active deal end_time is set) --}}
         @if($heroOffer->end_time)
-            <div class="position-absolute bottom-0 end-0 m-2 m-sm-2.5 m-md-3.5 px-2.5 px-sm-3 py-1 py-sm-1.5 rounded-pill shadow-sm d-inline-flex align-items-center gap-1.5 gap-sm-2"
+            <div class="position-absolute bottom-0 end-0 m-2.5 m-md-3.5 px-3 py-1.5 rounded-pill shadow-sm d-inline-flex align-items-center gap-1.5 gap-sm-2"
                  style="background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.22); z-index: 2;">
-                <span class="text-warning small fw-bold text-uppercase d-inline-flex align-items-center gap-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">
-                    <i class="bi bi-clock-history"></i> <span class="d-none d-sm-inline">Ends in:</span>
+                <span class="text-warning small fw-bold text-uppercase d-inline-flex align-items-center gap-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                    <i class="bi bi-clock-history"></i> <span>Ends in:</span>
                 </span>
-                <span id="dedicated-sale-timer" data-endtime="{{ $heroOffer->end_time->toISOString() }}" class="font-monospace text-white fw-bold small" style="font-size: 0.76rem;">
+                <span id="dedicated-sale-timer" data-endtime="{{ $heroOffer->end_time->toISOString() }}" class="font-monospace text-white fw-bold small" style="font-size: 0.78rem;">
                     <span id="dt-days">00</span>d : <span id="dt-hours">00</span>h : <span id="dt-mins">00</span>m : <span id="dt-secs">00</span>s
                 </span>
             </div>
@@ -338,12 +338,12 @@
 <style>
 .offers-page-hero {
     min-height: 240px;
-    max-height: 300px;
+    max-height: 320px;
 }
 .offers-hero-img {
     height: 280px !important;
     min-height: 240px !important;
-    max-height: 300px !important;
+    max-height: 320px !important;
     width: 100% !important;
     object-fit: cover !important;
 }
@@ -369,14 +369,14 @@
 }
 @media (max-width: 767.98px) {
     .offers-page-hero {
-        min-height: 140px;
-        max-height: 200px;
+        min-height: 220px !important;
+        max-height: 280px !important;
     }
     .offers-hero-img {
-        height: auto !important;
-        min-height: 140px !important;
-        max-height: 200px !important;
-        aspect-ratio: 16 / 7;
+        height: 250px !important;
+        min-height: 220px !important;
+        max-height: 280px !important;
+        width: 100% !important;
         object-fit: cover !important;
     }
 }

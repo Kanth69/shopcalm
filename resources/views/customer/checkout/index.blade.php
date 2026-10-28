@@ -1105,7 +1105,7 @@
                                     <i class="bi bi-arrow-left"></i> <span>Back</span>
                                 </button>
                                 <button type="button" onclick="handleOrderSubmission(event)" class="btn btn-primary rounded-pill px-3.5 py-2 fw-bold shadow-xs d-inline-flex align-items-center gap-1.5 btn-checkout-cta" id="btn-place-order-top" style="font-size: 0.85rem; background: #4f46e5; border-color: #4f46e5;">
-                                    <span id="btn-place-order-text-top">Pay Online (₹{{ number_format($grandTotal, 2) }})</span>
+                                    <span id="btn-place-order-text-top">Pay Online</span>
                                     <i class="bi bi-arrow-right"></i>
                                 </button>
                             </div>
@@ -1355,7 +1355,7 @@
                                 <i class="bi bi-arrow-left"></i> <span>Back</span>
                             </button>
                             <button type="submit" form="checkout-form" onclick="handleOrderSubmission(event)" class="btn btn-primary rounded-pill px-3.5 px-sm-4 py-2 fw-bold shadow-xs d-inline-flex align-items-center gap-1.5 btn-checkout-cta" id="btn-place-order" style="font-size: 0.85rem; background: #4f46e5; border-color: #4f46e5;">
-                                <span id="btn-place-order-text">Pay Online (₹{{ number_format($grandTotal, 2) }})</span>
+                                <span id="btn-place-order-text">Pay Online</span>
                                 <i class="bi bi-arrow-right"></i>
                             </button>
                         </div>
@@ -2076,15 +2076,14 @@ window.syncTermsConsent = syncTermsConsent;
 
 function resetPlaceOrderButton() {
     const isOnline = document.getElementById('pay_online')?.checked;
-    const grandTotalFmt = document.getElementById('summary-grand-total')?.textContent?.trim() || '₹{{ number_format($grandTotal, 2) }}';
     const grandTotalRaw = document.getElementById('summary-grand-total')?.textContent.replace(/[^0-9.]/g, '') || '0';
     const grandTotalVal = parseFloat(grandTotalRaw);
     
-    let btnText = `Pay Online (${grandTotalFmt})`;
+    let btnText = 'Pay Online';
     if (grandTotalVal <= 0) {
-        btnText = 'Confirm Order (₹0.00 - Paid)';
+        btnText = 'Confirm Order';
     } else if (!isOnline) {
-        btnText = `Place COD Order (${grandTotalFmt})`;
+        btnText = 'Place Order (COD)';
     }
 
     const placeOrderBtn = document.getElementById('btn-place-order');
