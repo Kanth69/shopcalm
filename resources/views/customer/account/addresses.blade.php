@@ -138,6 +138,15 @@
             padding: 0.75rem 1rem !important;
         }
     }
+
+    /* Instantly hide placeholder on cursor focus or click so example text disappears immediately */
+    input:focus::placeholder,
+    textarea:focus::placeholder {
+        color: transparent !important;
+        opacity: 0 !important;
+        transition: opacity 0.1s ease, color 0.1s ease;
+    }
+
 </style>
 
 <div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true" data-bs-backdrop="static">
@@ -1080,6 +1089,22 @@ document.addEventListener('DOMContentLoaded', function () {
         timerProgressBar: true
     });
 });
+
+document.addEventListener('focus', function(e) {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && e.target.placeholder) {
+        e.target.dataset.originalPlaceholder = e.target.placeholder;
+        e.target.placeholder = '';
+    }
+}, true);
+
+document.addEventListener('blur', function(e) {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && e.target.dataset.originalPlaceholder) {
+        if (!e.target.value) {
+            e.target.placeholder = e.target.dataset.originalPlaceholder;
+        }
+    }
+}, true);
+
 </script>
 @endif
 

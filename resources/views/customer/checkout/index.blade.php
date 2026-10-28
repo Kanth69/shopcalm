@@ -6,6 +6,55 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 <style>
+    /* Instantly hide placeholder on cursor focus or click so example text disappears immediately */
+    input:focus::placeholder,
+    textarea:focus::placeholder {
+        color: transparent !important;
+        opacity: 0 !important;
+        transition: opacity 0.1s ease, color 0.1s ease;
+    }
+
+    /* Segmented Pill Group for Address Type (Home / Office / Other) - 100% Mobile Responsive */
+    .checkout-addr-type-group {
+        display: flex !important;
+        width: 100% !important;
+        background: #f1f5f9;
+        padding: 4px;
+        border-radius: 50rem;
+        border: 1.5px solid #cbd5e1;
+        gap: 4px;
+        margin-top: 2px;
+    }
+    .checkout-addr-type-group .btn {
+        flex: 1 1 0% !important;
+        border-radius: 50rem !important;
+        border: none !important;
+        background: transparent;
+        color: #475569;
+        font-size: 0.82rem;
+        font-weight: 700;
+        padding: 0.45rem 0.35rem !important;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        transition: all 0.2s ease;
+        box-shadow: none !important;
+        white-space: nowrap;
+        cursor: pointer;
+    }
+    .checkout-addr-type-group .btn i {
+        font-size: 0.88rem;
+    }
+    .checkout-addr-type-group .btn-check:checked + .btn {
+        background: #4f46e5 !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 6px rgba(79, 70, 229, 0.32) !important;
+    }
+    .checkout-addr-type-group .btn-check:checked + .btn i {
+        color: #ffffff !important;
+    }
+
     /* Delivery Map Modal Styles */
     #delivery-map-container {
         min-height: 290px !important;
@@ -1481,18 +1530,27 @@
                             <input type="tel" class="form-control form-control-sm rounded-3 py-1.5" id="map_phone" value="{{ auth()->user()->mobile_number ?? '' }}" placeholder="Mobile number" maxlength="10" inputmode="tel" autocomplete="tel" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 10)">
                         </div>
                         
-                        <!-- Address Type (Home / Work / Other) -->
+                        <!-- Address Type (Home / Office / Other) -->
                         <div class="col-12 pt-1">
-                            <label class="form-label fw-semibold small mb-1 d-block" style="font-size: 0.78rem;">Save Address As</label>
-                            <div class="btn-group btn-group-sm w-100" role="group">
+                            <label class="form-label fw-bold text-dark small mb-1.5 d-flex align-items-center justify-content-between" style="font-size: 0.8rem;">
+                                <span><i class="bi bi-tag-fill text-primary me-1"></i> Save Address As</span>
+                                <span class="text-muted fw-normal" style="font-size: 0.72rem;">Delivery Type</span>
+                            </label>
+                            <div class="btn-group w-100 checkout-addr-type-group" role="group" aria-label="Address Type">
                                 <input type="radio" class="btn-check" name="map_address_type" id="map_type_home" value="home" checked autocomplete="off">
-                                <label class="btn btn-outline-secondary py-1" for="map_type_home" style="font-size: 0.76rem;"><i class="bi bi-house me-1"></i>Home</label>
+                                <label class="btn" for="map_type_home">
+                                    <i class="bi bi-house-door-fill text-primary"></i> <span>Home</span>
+                                </label>
 
                                 <input type="radio" class="btn-check" name="map_address_type" id="map_type_work" value="work" autocomplete="off">
-                                <label class="btn btn-outline-secondary py-1" for="map_type_work" style="font-size: 0.76rem;"><i class="bi bi-briefcase me-1"></i>Work</label>
+                                <label class="btn" for="map_type_work">
+                                    <i class="bi bi-briefcase-fill text-warning"></i> <span>Office</span>
+                                </label>
 
                                 <input type="radio" class="btn-check" name="map_address_type" id="map_type_other" value="other" autocomplete="off">
-                                <label class="btn btn-outline-secondary py-1" for="map_type_other" style="font-size: 0.76rem;"><i class="bi bi-geo me-1"></i>Other</label>
+                                <label class="btn" for="map_type_other">
+                                    <i class="bi bi-geo-alt-fill text-success"></i> <span>Other</span>
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -1729,28 +1787,27 @@
                     </div>
                 </div>
 
-                <!-- Address Type Selector -->
+                <!-- Address Type Selector (Home / Office / Other) -->
                 <div class="mb-3">
-                    <label class="form-label fw-semibold small mb-1.5" style="font-size: 0.8rem;">Save Address As</label>
-                    <div class="d-flex gap-2">
-                        <div class="form-check form-check-inline m-0 flex-fill">
-                            <input class="btn-check" type="radio" name="new_type" id="checkout_addr_type_home" value="home" checked autocomplete="off">
-                            <label class="btn btn-sm btn-outline-primary rounded-pill w-100 py-1 d-flex align-items-center justify-content-center gap-1" for="checkout_addr_type_home" style="font-size: 0.78rem;">
-                                <i class="bi bi-house-door"></i> Home
-                            </label>
-                        </div>
-                        <div class="form-check form-check-inline m-0 flex-fill">
-                            <input class="btn-check" type="radio" name="new_type" id="checkout_addr_type_work" value="work" autocomplete="off">
-                            <label class="btn btn-sm btn-outline-primary rounded-pill w-100 py-1 d-flex align-items-center justify-content-center gap-1" for="checkout_addr_type_work" style="font-size: 0.78rem;">
-                                <i class="bi bi-briefcase"></i> Work
-                            </label>
-                        </div>
-                        <div class="form-check form-check-inline m-0 flex-fill">
-                            <input class="btn-check" type="radio" name="new_type" id="checkout_addr_type_other" value="other" autocomplete="off">
-                            <label class="btn btn-sm btn-outline-primary rounded-pill w-100 py-1 d-flex align-items-center justify-content-center gap-1" for="checkout_addr_type_other" style="font-size: 0.78rem;">
-                                <i class="bi bi-geo-alt"></i> Other
-                            </label>
-                        </div>
+                    <label class="form-label fw-bold text-dark small mb-1.5 d-flex align-items-center justify-content-between" style="font-size: 0.8rem;">
+                        <span><i class="bi bi-tag-fill text-primary me-1"></i> Save Address As</span>
+                        <span class="text-muted fw-normal" style="font-size: 0.72rem;">Delivery Type</span>
+                    </label>
+                    <div class="btn-group w-100 checkout-addr-type-group" role="group" aria-label="Address Type">
+                        <input type="radio" class="btn-check" name="new_type" id="checkout_addr_type_home" value="home" checked autocomplete="off">
+                        <label class="btn" for="checkout_addr_type_home">
+                            <i class="bi bi-house-door-fill text-primary"></i> <span>Home</span>
+                        </label>
+
+                        <input type="radio" class="btn-check" name="new_type" id="checkout_addr_type_work" value="work" autocomplete="off">
+                        <label class="btn" for="checkout_addr_type_work">
+                            <i class="bi bi-briefcase-fill text-warning"></i> <span>Office</span>
+                        </label>
+
+                        <input type="radio" class="btn-check" name="new_type" id="checkout_addr_type_other" value="other" autocomplete="off">
+                        <label class="btn" for="checkout_addr_type_other">
+                            <i class="bi bi-geo-alt-fill text-success"></i> <span>Other</span>
+                        </label>
                     </div>
                 </div>
 
@@ -4658,5 +4715,22 @@ async function saveMapAddressToCheckout() {
         Swal.fire('Error', err.message || 'Could not save address.', 'error');
     }
 }
+
+// Auto-clear placeholder on focus / click so example text disappears immediately
+document.addEventListener('focus', function(e) {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && e.target.placeholder) {
+        e.target.dataset.originalPlaceholder = e.target.placeholder;
+        e.target.placeholder = '';
+    }
+}, true);
+
+document.addEventListener('blur', function(e) {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && e.target.dataset.originalPlaceholder) {
+        if (!e.target.value) {
+            e.target.placeholder = e.target.dataset.originalPlaceholder;
+        }
+    }
+}, true);
+
 </script>
 @endpush

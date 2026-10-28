@@ -1,3 +1,13 @@
+
+<style>
+    /* Instantly hide placeholder on cursor focus or click */
+    input:focus::placeholder,
+    textarea:focus::placeholder {
+        color: transparent !important;
+        opacity: 0 !important;
+        transition: opacity 0.1s ease, color 0.1s ease;
+    }
+</style>
 <div class="row g-3">
     {{-- Live Location GPS Button --}}
     <div class="col-12">
@@ -153,4 +163,21 @@ function fetchPageGpsLocation() {
         { enableHighAccuracy: true, timeout: 10000 }
     );
 }
+</script>
+
+<script>
+document.addEventListener('focus', function(e) {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && e.target.placeholder) {
+        e.target.dataset.originalPlaceholder = e.target.placeholder;
+        e.target.placeholder = '';
+    }
+}, true);
+
+document.addEventListener('blur', function(e) {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && e.target.dataset.originalPlaceholder) {
+        if (!e.target.value) {
+            e.target.placeholder = e.target.dataset.originalPlaceholder;
+        }
+    }
+}, true);
 </script>
