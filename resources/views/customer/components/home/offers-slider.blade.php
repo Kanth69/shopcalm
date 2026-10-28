@@ -108,14 +108,15 @@
     }
     @media (max-width: 767.98px) {
         .offers-slide-item {
-            min-height: 140px !important;
+            min-height: 200px !important;
+            height: 200px !important;
             max-height: 200px !important;
-            aspect-ratio: 16 / 7;
         }
     }
     @media (min-width: 768px) {
         .offers-slide-item {
             min-height: 300px !important;
+            height: 300px !important;
         }
     }
     .offers-section .object-fit-cover { object-fit: cover; }
