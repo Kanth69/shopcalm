@@ -337,13 +337,17 @@ class AccountController extends BaseApiController
         }
 
         $validated = $request->validate([
-            'name'     => 'required|string|max:255',
-            'phone'    => 'required|string|max:20',
-            'address'  => 'required|string|max:500',
-            'city'     => 'required|string|max:100',
-            'state'    => 'required|string|max:100',
-            'zip'      => 'required|string|max:10',
-            'country'  => 'nullable|string|max:100',
+            'name'      => 'required|string|max:255',
+            'phone'     => 'required|string|max:20',
+            'address'   => 'required|string|max:500',
+            'city'      => 'required|string|max:100',
+            'state'     => 'required|string|max:100',
+            'zip'       => 'required|string|max:10',
+            'country'   => 'nullable|string|max:100',
+            'latitude'  => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'landmark'  => 'nullable|string|max:255',
+            'type'      => 'nullable|string|max:50',
         ]);
 
         $validated['country'] = $validated['country'] ?? 'India';
@@ -372,13 +376,17 @@ class AccountController extends BaseApiController
         }
 
         $validated = $request->validate([
-            'name'     => 'sometimes|required|string|max:255',
-            'phone'    => 'sometimes|required|string|max:20',
-            'address'  => 'sometimes|required|string|max:500',
-            'city'     => 'sometimes|required|string|max:100',
-            'state'    => 'sometimes|required|string|max:100',
-            'zip'      => 'sometimes|required|string|max:10',
-            'country'  => 'nullable|string|max:100',
+            'name'      => 'sometimes|required|string|max:255',
+            'phone'     => 'sometimes|required|string|max:20',
+            'address'   => 'sometimes|required|string|max:500',
+            'city'      => 'sometimes|required|string|max:100',
+            'state'     => 'sometimes|required|string|max:100',
+            'zip'       => 'sometimes|required|string|max:10',
+            'country'   => 'nullable|string|max:100',
+            'latitude'  => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'landmark'  => 'nullable|string|max:255',
+            'type'      => 'nullable|string|max:50',
         ]);
 
         $address->update($validated);
