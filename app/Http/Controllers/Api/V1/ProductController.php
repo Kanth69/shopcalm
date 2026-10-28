@@ -236,6 +236,8 @@ class ProductController extends BaseApiController
         $product->discount_percentage = $product->offer_discount_percentage ?? 0;
         $product->average_rating = $product->averageRating();
         $product->total_reviews = $product->reviews->count();
+        $product->youtube_embed_url = $product->getYoutubeEmbedUrl();
+        $product->youtube_watch_url = $product->getYoutubeWatchUrl();
 
         $product->rating_breakdown = [
             5 => $product->ratingPercentage(5),
