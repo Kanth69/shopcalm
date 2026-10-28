@@ -97,36 +97,69 @@
                                 }
                             }
                         }
+
+                        $hasProductVideo = !empty($product->getYoutubeEmbedUrl());
+                        $videoEmbedUrl = $hasProductVideo ? $product->getYoutubeEmbedUrl() : null;
+                        $videoWatchUrl = $hasProductVideo ? $product->getYoutubeWatchUrl() : null;
+                        $totalGallerySlides = count($allProductImages) + ($hasProductVideo ? 1 : 0);
+                        $videoSlideIndex = $hasProductVideo ? count($allProductImages) : -1;
+                        $youtubeThumb = null;
+                        if ($hasProductVideo && preg_match('/embed\/([a-zA-Z0-9_\-]+)/', (string) $videoEmbedUrl, $matches)) {
+                            $youtubeThumb = 'https://img.youtube.com/vi/' . $matches[1] . '/hqdefault.jpg';
+                        }
                     @endphp
 
                     {{-- Main Image Area (Fixed Uniform 1:1 Square Frame) --}}
                     <div class="p-3 p-md-4 d-flex align-items-center justify-content-center position-relative pdp-main-image-stage">
-                        @if(count($allProductImages) > 0)
+                        @if($totalGallerySlides > 0)
                             {{-- Expand / Fullscreen Hint Button (Top Left) --}}
                             <button type="button" class="btn btn-light bg-white bg-opacity-90 shadow-2xs rounded-circle position-absolute top-0 start-0 m-2.5 p-0 d-flex align-items-center justify-content-center border"
                                     style="width: 34px; height: 34px; z-index: 5;" 
-                                    onclick="openProductLightbox()" 
+                                    onclick="handleMainImageClick()" 
                                     title="View full screen" aria-label="Expand image">
                                 <i class="bi bi-arrows-fullscreen text-secondary" style="font-size: 0.82rem;"></i>
                             </button>
 
                             <div class="pdp-uniform-image-box d-flex align-items-center justify-content-center cursor-pointer"
                                  id="pdp-main-image-box"
-                                 onclick="openProductLightbox()" 
-                                 title="Click to view full screen" 
-                                 style="cursor: zoom-in;">
-                                <img src="{{ $allProductImages[0] }}" id="main-product-img" 
-                                     class="main-pdp-image" alt="{{ $product->name }}">
+                                 onclick="handleMainImageClick()" 
+                                 title="Click to view" 
+                                 style="cursor: pointer; width: 100%; height: 100%;">
+                                @if(!empty($allProductImages[0]))
+                                    <img src="{{ $allProductImages[0] }}" id="main-product-img" 
+                                         class="main-pdp-image" alt="{{ $product->name }}">
+                                @endif
+
+                                @if($hasProductVideo)
+                                    <div id="pdp-video-slide-view" class="{{ empty($allProductImages) ? '' : 'd-none' }} w-100 h-100 position-relative rounded-3 overflow-hidden d-flex align-items-center justify-content-center" 
+                                         style="background: #0f172a; min-height: 280px;" 
+                                         onclick="openProductVideoModal(event)">
+                                        @if($youtubeThumb)
+                                            <img src="{{ $youtubeThumb }}" alt="Product Video Thumbnail" class="w-100 h-100 position-absolute top-0 start-0" style="object-fit: cover; opacity: 0.6;">
+                                        @elseif(!empty($allProductImages[0]))
+                                            <img src="{{ $allProductImages[0] }}" alt="Product Video Thumbnail" class="w-100 h-100 position-absolute top-0 start-0" style="object-fit: contain; opacity: 0.4;">
+                                        @endif
+                                        <div class="position-absolute w-100 h-100 top-0 start-0" style="background: radial-gradient(circle, rgba(0,0,0,0.15) 0%, rgba(15,23,42,0.85) 100%);"></div>
+                                        <div class="position-relative z-2 text-center p-3">
+                                            <div class="pdp-video-play-pulse mx-auto mb-2 d-flex align-items-center justify-content-center rounded-circle" 
+                                                 style="width: 58px; height: 58px; background: #ef4444; color: white; box-shadow: 0 0 0 10px rgba(239, 68, 68, 0.28); transition: transform 0.2s ease;">
+                                                <i class="bi bi-play-fill fs-2 ps-1"></i>
+                                            </div>
+                                            <div class="fw-bold text-white small text-uppercase" style="letter-spacing: 0.05em;">Watch Product Video</div>
+                                            <div class="text-white-50 extra-small mt-0.5" style="font-size: 0.72rem;">Click to play in HD</div>
+                                        </div>
+                                    </div>
+                                @endif
                             </div>
 
-                            @if(count($allProductImages) > 1)
+                            @if($totalGallerySlides > 1)
                                 {{-- Previous / Next Image Controls (Laptop / Desktop only, Hidden on Mobile) --}}
-                                <button type="button" onclick="stepProductGallery(-1)" aria-label="Previous image"
+                                <button type="button" onclick="stepProductGallery(-1)" aria-label="Previous slide"
                                         class="btn btn-light shadow-sm rounded-circle position-absolute start-0 ms-2.5 d-none d-md-flex align-items-center justify-content-center z-2 pdp-arrow-nav"
                                         style="width: 38px; height: 38px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.95); border: 1px solid #e2e8f0;">
                                     <i class="bi bi-chevron-left text-dark" style="font-size: 1rem;"></i>
                                 </button>
-                                <button type="button" onclick="stepProductGallery(1)" aria-label="Next image"
+                                <button type="button" onclick="stepProductGallery(1)" aria-label="Next slide"
                                         class="btn btn-light shadow-sm rounded-circle position-absolute end-0 me-2.5 d-none d-md-flex align-items-center justify-content-center z-2 pdp-arrow-nav"
                                         style="width: 38px; height: 38px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.95); border: 1px solid #e2e8f0;">
                                     <i class="bi bi-chevron-right text-dark" style="font-size: 1rem;"></i>
@@ -139,27 +172,11 @@
                             </div>
                         @endif
                     </div>
-
-                    {{-- Watch Video Button (Floating Bottom-Left on Main Image) --}}
-                    @if(!empty($product->getYoutubeEmbedUrl()))
-                        <div class="position-absolute bottom-0 start-0 m-2.5 m-sm-3 pdp-video-btn-wrap">
-                            <button type="button" 
-                                    class="btn pdp-video-floating-btn shadow-sm d-inline-flex align-items-center gap-2" 
-                                    onclick="openProductVideoModal(event)"
-                                    title="Watch Product Video" 
-                                    aria-label="Watch product video">
-                                <span class="pdp-video-play-icon d-inline-flex align-items-center justify-content-center rounded-circle">
-                                    <i class="bi bi-play-fill text-white"></i>
-                                </span>
-                                <span class="pdp-video-btn-text">Watch Video</span>
-                            </button>
-                        </div>
-                    @endif
                 </div>
 
                 {{-- Slider Dots (Both Laptop & Mobile below main image) --}}
-                @if(count($allProductImages) > 1)
-                    <div class="d-flex justify-content-center align-items-center gap-1.5 py-2.5" id="pdp-slider-dots">
+                @if($totalGallerySlides > 1)
+                    <div class="d-flex justify-content-center align-items-center gap-1.5 py-2.5 flex-wrap" id="pdp-slider-dots">
                         @foreach($allProductImages as $idx => $imgUrl)
                             <button type="button" 
                                     onclick="selectProductGalleryIndex({{ $idx }})"
@@ -168,6 +185,16 @@
                                     title="View image {{ $idx + 1 }}"
                                     aria-label="Slide {{ $idx + 1 }}"></button>
                         @endforeach
+                        @if($hasProductVideo)
+                            <button type="button" 
+                                    onclick="selectProductGalleryIndex({{ $videoSlideIndex }})"
+                                    class="pdp-slider-dot pdp-video-dot" 
+                                    data-dot-idx="{{ $videoSlideIndex }}"
+                                    title="Watch Product Video"
+                                    aria-label="Slide {{ $videoSlideIndex + 1 }} - Product Video">
+                                <i class="bi bi-play-fill"></i> <span>VIDEO</span>
+                            </button>
+                        @endif
                     </div>
                 @endif
             </div>
@@ -929,6 +956,39 @@
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         cursor: pointer;
     }
+    .pdp-video-dot {
+        width: auto !important;
+        height: 20px !important;
+        border-radius: 999px !important;
+        padding: 0 8px !important;
+        font-size: 0.68rem !important;
+        font-weight: 700 !important;
+        background: #fee2e2 !important;
+        color: #dc2626 !important;
+        border: 1px solid #fca5a5 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 2px !important;
+        line-height: 1 !important;
+        cursor: pointer;
+    }
+    .pdp-video-dot i {
+        font-size: 0.85rem !important;
+        color: #dc2626 !important;
+        line-height: 1 !important;
+    }
+    .pdp-video-dot.active {
+        background: #ef4444 !important;
+        color: #ffffff !important;
+        border-color: #dc2626 !important;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4) !important;
+    }
+    .pdp-video-dot.active i {
+        color: #ffffff !important;
+    }
+    .pdp-video-play-pulse:hover {
+        transform: scale(1.08);
+    }
     .pdp-slider-dot.active {
         width: 24px;
         background: #4f46e5;
@@ -1392,21 +1452,43 @@ function switchVariantImage(key) {
     }
 }
 
+const hasProductVideo = @json($hasProductVideo ?? false);
+const videoSlideIndex = @json($videoSlideIndex ?? -1);
+const totalGallerySlidesCount = (typeof pdpGalleryImages !== 'undefined' ? pdpGalleryImages.length : 0) + (hasProductVideo ? 1 : 0);
+
+function handleMainImageClick() {
+    if (hasProductVideo && currentProductGalleryIdx === videoSlideIndex) {
+        openProductVideoModal();
+    } else {
+        openProductLightbox();
+    }
+}
+
 function selectProductGalleryIndex(idx) {
-    if (!pdpGalleryImages || !pdpGalleryImages.length) return;
-    if (idx < 0) idx = pdpGalleryImages.length - 1;
-    if (idx >= pdpGalleryImages.length) idx = 0;
+    if (!totalGallerySlidesCount) return;
+    if (idx < 0) idx = totalGallerySlidesCount - 1;
+    if (idx >= totalGallerySlidesCount) idx = 0;
 
     currentProductGalleryIdx = idx;
-    const src = pdpGalleryImages[idx];
     const mainImg = document.getElementById('main-product-img');
+    const videoView = document.getElementById('pdp-video-slide-view');
 
-    if (mainImg && src && mainImg.src !== src) {
-        mainImg.style.opacity = '0.35';
-        setTimeout(() => {
-            mainImg.src = src;
-            mainImg.style.opacity = '1';
-        }, 90);
+    if (hasProductVideo && idx === videoSlideIndex) {
+        if (mainImg) mainImg.classList.add('d-none');
+        if (videoView) videoView.classList.remove('d-none');
+    } else {
+        if (videoView) videoView.classList.add('d-none');
+        if (mainImg) {
+            mainImg.classList.remove('d-none');
+            const src = pdpGalleryImages[idx];
+            if (src && mainImg.src !== src) {
+                mainImg.style.opacity = '0.35';
+                setTimeout(() => {
+                    mainImg.src = src;
+                    mainImg.style.opacity = '1';
+                }, 80);
+            }
+        }
     }
 
     // Update slider dots
