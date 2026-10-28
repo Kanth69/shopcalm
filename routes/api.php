@@ -48,6 +48,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/products/suggestions', [ProductController::class, 'suggestions']);
     Route::get('/products/{slug}', [ProductController::class, 'show']);
     Route::post('/delivery/check-pincode', [CheckoutController::class, 'checkPincode']);
+    Route::get('/config/map', [CheckoutController::class, 'getMapConfig']);
     Route::post('/contact', [\App\Http\Controllers\ContactController::class, 'submit']);
     Route::get('/tickets', [AccountController::class, 'tickets']);
 

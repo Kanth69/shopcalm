@@ -41,6 +41,19 @@ class CheckoutController extends BaseApiController
     }
 
     /**
+     * Map configuration and keys from DB / .env
+     */
+    public function getMapConfig(): JsonResponse
+    {
+        $locationiqKey = Setting::get('locationiq_api_key', config('services.locationiq.key', env('LOCATIONIQ_API_KEY', '')));
+        return $this->sendResponse([
+            'locationiq_key' => $locationiqKey,
+            'default_lat'    => 12.971599,
+            'default_lng'    => 77.594566,
+        ], 'Map configuration loaded successfully.');
+    }
+
+    /**
      * Pincode Serviceability & COD Fee Checker Endpoint.
      */
     public function checkPincode(Request $request): JsonResponse
