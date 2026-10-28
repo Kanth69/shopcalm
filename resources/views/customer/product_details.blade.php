@@ -1039,6 +1039,33 @@
         }
     }
 
+    /* Mobile Review Form Modal - App-Style Responsive Dialog */
+    @media (max-width: 576px) {
+        #writeReviewModal .modal-dialog {
+            margin: 0.5rem auto !important;
+            width: calc(100% - 1rem) !important;
+            max-width: 100% !important;
+            max-height: calc(100dvh - 1rem) !important;
+        }
+        #writeReviewModal .modal-content {
+            border-radius: 1.25rem !important;
+            max-height: calc(100dvh - 1rem) !important;
+        }
+        #writeReviewModal .modal-header {
+            padding: 0.85rem 1rem !important;
+            position: sticky;
+            top: 0;
+            z-index: 1055;
+            background: #ffffff !important;
+        }
+        #writeReviewModal .modal-body {
+            padding: 1rem !important;
+            max-height: 75vh;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+        }
+    }
+
     /* Amazon-style Clean Fullscreen Lightbox */
     #productLightboxModal {
         background: #ffffff !important;
@@ -2102,19 +2129,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
 {{-- Product Rating & Review Modal Popup (Desktop & Mobile) --}}
 <div class="modal fade" id="writeReviewModal" tabindex="-1" aria-labelledby="writeReviewModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg mx-2 mx-sm-auto">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg mx-2 mx-sm-auto">
         <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
-            <div class="modal-header border-bottom py-3 px-3 px-sm-4 bg-light">
-                <div class="d-flex align-items-center gap-2.5 min-w-0">
-                    <div class="rounded-circle bg-warning bg-opacity-15 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px;">
-                        <i class="bi bi-star-fill fs-5"></i>
+            <div class="modal-header border-bottom py-2.5 px-3 px-sm-4 bg-white d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2.5 min-w-0 flex-grow-1 pe-2">
+                    <div class="rounded-circle bg-warning bg-opacity-15 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;">
+                        <i class="bi bi-star-fill fs-6"></i>
                     </div>
-                    <div class="min-w-0">
-                        <h5 class="modal-title fw-bold text-dark mb-0 fs-6" id="writeReviewModalLabel">Rate & Review Product</h5>
-                        <div class="text-muted small text-truncate" style="max-width: 300px; font-size: 0.78rem;">{{ $product->name }}</div>
+                    <div class="min-w-0 flex-grow-1">
+                        <h5 class="modal-title fw-bold text-dark mb-0 fs-6 text-truncate" id="writeReviewModalLabel">Rate & Review Product</h5>
+                        <div class="text-muted small text-truncate" style="font-size: 0.76rem;">{{ $product->name }}</div>
                     </div>
                 </div>
-                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" 
+                        class="btn btn-sm btn-light border rounded-circle p-0 d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs hover-scale" 
+                        data-bs-dismiss="modal" 
+                        aria-label="Close" 
+                        title="Close"
+                        style="width: 34px; height: 34px; background: #f8fafc; border-color: #cbd5e1 !important; color: #475569; z-index: 10;">
+                    <i class="bi bi-x-lg" style="font-size: 0.88rem; font-weight: bold;"></i>
+                </button>
             </div>
             <div class="modal-body p-3 p-sm-4 bg-white">
                 @include('customer.components.reviews.write-review-form', ['product' => $product])

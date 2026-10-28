@@ -134,8 +134,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
 
                     <!-- Live Suggestions Dropdown -->
-                    <div id="searchSuggestions" class="position-absolute bg-white border rounded-4 shadow-lg mt-2 d-none overflow-hidden search-suggestions-box" 
-                         style="z-index: 1060; top: 100%; left: 0; right: 0; max-height: 540px; overflow-y: auto;">
+                    <div id="searchSuggestions" class="position-absolute bg-white border rounded-4 shadow-lg mt-2 d-none search-suggestions-box" 
+                         style="z-index: 1060; top: 100%; left: 0; right: 0; max-height: 520px; overflow-y: auto; -webkit-overflow-scrolling: touch;">
                     </div>
                 </form>
             </div>
@@ -258,8 +258,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
 
                 <!-- Mobile Live Suggestions Dropdown -->
-                <div id="mobileSearchSuggestions" class="position-absolute bg-white border rounded-4 shadow-lg mt-2 d-none overflow-hidden search-suggestions-box" 
-                     style="z-index: 1070; top: 100%; left: 0; right: 0; max-height: 75vh; overflow-y: auto;">
+                <div id="mobileSearchSuggestions" class="position-absolute bg-white border rounded-4 shadow-lg mt-2 d-none search-suggestions-box" 
+                     style="z-index: 1070; top: 100%; left: 0; right: 0; max-height: 70vh; overflow-y: auto; -webkit-overflow-scrolling: touch;">
                 </div>
             </form>
         </div>
@@ -521,6 +521,11 @@ document.addEventListener('DOMContentLoaded', function() {
         border: 1px solid #e2e8f0 !important;
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
         border-radius: 1rem !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-y !important;
+        overscroll-behavior: contain !important;
     }
     .search-suggestions-box,
     .search-suggestions-box * {
