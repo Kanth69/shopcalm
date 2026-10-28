@@ -80,6 +80,19 @@
                                         </div>
                                     </div>
                                 @endif
+
+                                {{-- Floating Countdown Timer Pill (Only if active deal end_time is set) --}}
+                                @if($offer->end_time)
+                                    <div class="position-absolute bottom-0 end-0 m-2 m-md-3 px-2.5 px-md-3 py-1 py-md-1.5 rounded-pill shadow-sm d-inline-flex align-items-center gap-1.5 gap-sm-2"
+                                         style="background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.22); z-index: 2;">
+                                        <span class="text-warning small fw-bold text-uppercase d-inline-flex align-items-center gap-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">
+                                            <i class="bi bi-clock-history"></i> <span class="d-none d-sm-inline">Ends in:</span>
+                                        </span>
+                                        <span class="home-offer-timer font-monospace text-white fw-bold small" data-endtime="{{ $offer->end_time->toISOString() }}" style="font-size: 0.75rem;">
+                                            <span class="ht-days">00</span>d : <span class="ht-hours">00</span>h : <span class="ht-mins">00</span>m : <span class="ht-secs">00</span>s
+                                        </span>
+                                    </div>
+                                @endif
                             </div>
                         </a>
                     </div>
@@ -112,6 +125,12 @@
             height: 200px !important;
             max-height: 200px !important;
         }
+        .offers-section .carousel-indicators {
+            justify-content: flex-start !important;
+            margin-left: 1rem !important;
+            margin-right: auto !important;
+            margin-bottom: 0.65rem !important;
+        }
     }
     @media (min-width: 768px) {
         .offers-slide-item {
@@ -123,9 +142,49 @@
     .carousel-indicators .active.offer-indicator { background-color: var(--bs-primary) !important; opacity: 1 !important; }
 </style>
 
-@if($offers->count() > 1)
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Live countdown timer for home offers slider
+        function updateHomeOfferTimers() {
+            const timerContainers = document.querySelectorAll('.home-offer-timer');
+            if (!timerContainers.length) return;
+            const now = new Date().getTime();
+
+            timerContainers.forEach(container => {
+                const endTimeStr = container.dataset.endtime;
+                if (!endTimeStr) return;
+                const endTime = new Date(endTimeStr).getTime();
+                const diff = endTime - now;
+
+                const daysEl = container.querySelector('.ht-days');
+                const hoursEl = container.querySelector('.ht-hours');
+                const minsEl = container.querySelector('.ht-mins');
+                const secsEl = container.querySelector('.ht-secs');
+
+                if (diff <= 0) {
+                    if (daysEl) daysEl.textContent = '00';
+                    if (hoursEl) hoursEl.textContent = '00';
+                    if (minsEl) minsEl.textContent = '00';
+                    if (secsEl) secsEl.textContent = '00';
+                    return;
+                }
+
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                if (daysEl) daysEl.textContent = String(days).padStart(2, '0');
+                if (hoursEl) hoursEl.textContent = String(hours).padStart(2, '0');
+                if (minsEl) minsEl.textContent = String(minutes).padStart(2, '0');
+                if (secsEl) secsEl.textContent = String(seconds).padStart(2, '0');
+            });
+        }
+
+        updateHomeOfferTimers();
+        setInterval(updateHomeOfferTimers, 1000);
+
+        @if($offers->count() > 1)
         const carouselEl = document.getElementById('offersCarousel');
         if (carouselEl && typeof bootstrap !== 'undefined') {
             const bsCarousel = bootstrap.Carousel.getOrCreateInstance(carouselEl, {
@@ -160,7 +219,7 @@
                 }
             }, { passive: true });
         }
+        @endif
     });
 </script>
-@endif
 @endif
