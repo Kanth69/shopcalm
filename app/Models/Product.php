@@ -287,7 +287,7 @@ class Product extends Model
         return null;
     }
 
-    public function getYoutubeWatchUrl(): string
+    public function getYoutubeWatchUrl(): ?string
     {
         $embedUrl = $this->getYoutubeEmbedUrl();
         if ($embedUrl && preg_match('/embed\/([a-zA-Z0-9_\-]+)/i', $embedUrl, $matches)) {
@@ -296,7 +296,7 @@ class Product extends Model
         if (!empty($this->video_url) && preg_match('/^https?:\/\/[^\s]+/i', trim($this->video_url), $matches)) {
             return $matches[0];
         }
-        return 'https://www.youtube.com';
+        return null;
     }
 
     public function reduceOptionStock(?string $optionKey, int $quantity = 1): void
