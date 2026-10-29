@@ -7,6 +7,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Offer;
 use App\Models\Product;
+use App\Models\Setting;
 use Illuminate\Support\Facades\Cache;
 
 class HomeController extends BaseApiController
@@ -129,8 +130,55 @@ class HomeController extends BaseApiController
             'latestProducts'   => $latestProducts,
             'categories'       => $categories,
             'brands'           => $brands,
+            'settings'         => [
+                'store_name'                  => Setting::get('store_name', 'ShopCalm'),
+                'tagline'                     => Setting::get('tagline', "Nature's Purest Goodness"),
+                'contact_email'               => Setting::get('contact_email', 'support@shopcalm.in'),
+                'contact_phone'               => Setting::get('contact_phone', ''),
+                'whatsapp_number'             => Setting::get('whatsapp_number', ''),
+                'support_hours'               => Setting::get('support_hours', 'Mon - Sat: 9:00 AM - 8:00 PM'),
+                'currency'                    => Setting::get('currency', 'INR'),
+                'currency_symbol'             => Setting::get('currency_symbol', '₹'),
+                'free_shipping_min'           => (float) Setting::get('free_shipping_min', 499),
+                'default_shipping_fee'        => (float) Setting::get('default_shipping_fee', 40.00),
+                'cod_flat_fee'                => (float) Setting::get('cod_flat_fee', 40.00),
+                'enable_cod'                  => Setting::get('enable_cod', '1') === '1',
+                'allow_customer_cancellation' => Setting::get('allow_customer_cancellation', '1') === '1',
+                'facebook_url'                => Setting::get('facebook_url', ''),
+                'instagram_url'               => Setting::get('instagram_url', ''),
+                'twitter_url'                 => Setting::get('twitter_url', ''),
+                'youtube_url'                 => Setting::get('youtube_url', ''),
+            ],
         ];
 
         return $this->sendResponse($data, 'Homepage data retrieved successfully.');
+    }
+
+    /**
+     * Get public store configuration and contact settings.
+     */
+    public function getStoreSettings()
+    {
+        $settings = [
+            'store_name'                  => Setting::get('store_name', 'ShopCalm'),
+            'tagline'                     => Setting::get('tagline', "Nature's Purest Goodness"),
+            'contact_email'               => Setting::get('contact_email', 'support@shopcalm.in'),
+            'contact_phone'               => Setting::get('contact_phone', ''),
+            'whatsapp_number'             => Setting::get('whatsapp_number', ''),
+            'support_hours'               => Setting::get('support_hours', 'Mon - Sat: 9:00 AM - 8:00 PM'),
+            'currency'                    => Setting::get('currency', 'INR'),
+            'currency_symbol'             => Setting::get('currency_symbol', '₹'),
+            'free_shipping_min'           => (float) Setting::get('free_shipping_min', 499),
+            'default_shipping_fee'        => (float) Setting::get('default_shipping_fee', 40.00),
+            'cod_flat_fee'                => (float) Setting::get('cod_flat_fee', 40.00),
+            'enable_cod'                  => Setting::get('enable_cod', '1') === '1',
+            'allow_customer_cancellation' => Setting::get('allow_customer_cancellation', '1') === '1',
+            'facebook_url'                => Setting::get('facebook_url', ''),
+            'instagram_url'               => Setting::get('instagram_url', ''),
+            'twitter_url'                 => Setting::get('twitter_url', ''),
+            'youtube_url'                 => Setting::get('youtube_url', ''),
+        ];
+
+        return $this->sendResponse($settings, 'Store settings retrieved successfully.');
     }
 }
