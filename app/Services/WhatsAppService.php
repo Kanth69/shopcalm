@@ -85,20 +85,20 @@ class WhatsAppService
                 ],
             ];
 
-            $response = Http::timeout(6)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
+            $response = Http::timeout(3)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
 
             // 1. Language mismatch retry (if template was registered under 'en' instead of 'en_US' or vice-versa)
             if ($response->failed() && (str_contains($response->body(), '132001') || str_contains($response->body(), 'translated language'))) {
                 $altLang = ($langCode === 'en_US') ? 'en' : 'en_US';
                 $payload['template']['language']['code'] = $altLang;
-                $response = Http::timeout(6)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
+                $response = Http::timeout(3)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
             }
 
             // 2. If template with button fails, retry once with body-only components (fallback for templates without buttons)
             if ($response->failed() && !empty($buttonParameters)) {
                 $bodyOnlyComponents = array_filter($components, fn($c) => ($c['type'] ?? '') === 'body');
                 $payload['template']['components'] = array_values($bodyOnlyComponents);
-                $retryRes = Http::timeout(6)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
+                $retryRes = Http::timeout(3)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
                 if ($retryRes->successful()) {
                     Log::info("Meta WhatsApp API Message dispatched to {$cleanPhone} [Template: {$templateName}] (body-only). Message ID: " . ($retryRes->json('messages.0.id') ?? 'N/A'));
                     return true;
@@ -114,7 +114,7 @@ class WhatsAppService
                     $payload['template']['components'] = [
                         ['type' => 'body', 'parameters' => $reducedFormatted]
                     ];
-                    $retryRes = Http::timeout(6)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
+                    $retryRes = Http::timeout(3)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
                     if ($retryRes->successful()) {
                         Log::info("Meta WhatsApp API Message dispatched to {$cleanPhone} [Template: {$templateName}] (2-variable adaptation). Message ID: " . ($retryRes->json('messages.0.id') ?? 'N/A'));
                         return true;
@@ -128,7 +128,7 @@ class WhatsAppService
                     $payload['template']['components'] = [
                         ['type' => 'body', 'parameters' => $singleParam]
                     ];
-                    $retryRes = Http::timeout(6)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
+                    $retryRes = Http::timeout(3)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
                     if ($retryRes->successful()) {
                         Log::info("Meta WhatsApp API Message dispatched to {$cleanPhone} [Template: {$templateName}] (1-variable adaptation). Message ID: " . ($retryRes->json('messages.0.id') ?? 'N/A'));
                         return true;
@@ -139,7 +139,7 @@ class WhatsAppService
                 // 3c. Try 0 parameters (static body)
                 if (str_contains($response->body(), '132000') || str_contains($response->body(), 'does not match the expected number')) {
                     $payload['template']['components'] = [];
-                    $retryRes = Http::timeout(6)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
+                    $retryRes = Http::timeout(3)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
                     if ($retryRes->successful()) {
                         Log::info("Meta WhatsApp API Message dispatched to {$cleanPhone} [Template: {$templateName}] (0-variable adaptation). Message ID: " . ($retryRes->json('messages.0.id') ?? 'N/A'));
                         return true;
@@ -153,7 +153,7 @@ class WhatsAppService
                 $altTemplate = ($templateName === 'shopcalm_order_confirmed') ? 'shopcalm_order_confirmation' : 'shopcalm_order_confirmed';
                 if ($altTemplate !== $templateName) {
                     $payload['template']['name'] = $altTemplate;
-                    $retryRes = Http::timeout(6)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
+                    $retryRes = Http::timeout(3)->withToken($apiToken)->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
                     if ($retryRes->successful()) {
                         Log::info("Meta WhatsApp API Message dispatched to {$cleanPhone} [Template: {$altTemplate}] (alternate name fallback). Message ID: " . ($retryRes->json('messages.0.id') ?? 'N/A'));
                         return true;

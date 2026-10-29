@@ -279,21 +279,13 @@ class CheckoutService
             // 6. Clear Selected Cart Items
             $this->cartService->clearSelectedItems();
 
-            // 7. Trigger Order Confirmation Notifications (Email if provided, WhatsApp compulsory)
-            try {
-                app(\App\Services\EmailService::class)->sendOrderConfirmation($order);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning("[CheckoutService] Order confirmation email failed: " . $e->getMessage());
-            }
-
-            try {
-                app(\App\Services\WhatsAppService::class)->sendOrderConfirmation($order);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning("[CheckoutService] WhatsApp order confirmation failed: " . $e->getMessage());
-            }
-
             return $order;
         });
+
+        // Fast response: trigger notifications after transaction without blocking user
+        $this->dispatchOrderConfirmationNotifications($order);
+
+        return $order;
     }
 
     /**
@@ -574,21 +566,13 @@ class CheckoutService
             // 7. Clear Selected Cart Items
             $this->cartService->clearSelectedItems();
 
-            // 8. Trigger Email & WhatsApp Confirmation (Email if provided, WhatsApp compulsory)
-            try {
-                app(\App\Services\EmailService::class)->sendOrderConfirmation($order);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning("[CheckoutService] Order confirmation email failed: " . $e->getMessage());
-            }
-
-            try {
-                app(\App\Services\WhatsAppService::class)->sendOrderConfirmation($order);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning("[CheckoutService] WhatsApp order confirmation failed: " . $e->getMessage());
-            }
-
             return $order;
         });
+
+        // Fast response: trigger notifications after transaction without blocking user
+        $this->dispatchOrderConfirmationNotifications($order);
+
+        return $order;
     }
 
     /**
@@ -749,21 +733,13 @@ class CheckoutService
             // 5. Clear Selected Cart Items
             $this->cartService->clearSelectedItems();
 
-            // 6. Trigger Order Confirmation Notifications (Email if provided, WhatsApp compulsory)
-            try {
-                app(\App\Services\EmailService::class)->sendOrderConfirmation($order);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning("[CheckoutService] Order confirmation email failed: " . $e->getMessage());
-            }
-
-            try {
-                app(\App\Services\WhatsAppService::class)->sendOrderConfirmation($order);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning("[CheckoutService] WhatsApp order confirmation failed on switchToCod: " . $e->getMessage());
-            }
-
             return $order;
         });
+
+        // Fast response: trigger notifications after transaction without blocking user
+        $this->dispatchOrderConfirmationNotifications($order);
+
+        return $order;
     }
 
     /**
@@ -796,5 +772,25 @@ class CheckoutService
         );
 
         return $candidate;
+    }
+
+    /**
+     * Dispatch order confirmation notifications without delaying the user checkout response.
+     */
+    protected function dispatchOrderConfirmationNotifications(Order $order): void
+    {
+        app()->terminating(function () use ($order) {
+            try {
+                app(\App\Services\EmailService::class)->sendOrderConfirmation($order);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("[CheckoutService] Order confirmation email failed: " . $e->getMessage());
+            }
+
+            try {
+                app(\App\Services\WhatsAppService::class)->sendOrderConfirmation($order);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("[CheckoutService] WhatsApp order confirmation failed: " . $e->getMessage());
+            }
+        });
     }
 }

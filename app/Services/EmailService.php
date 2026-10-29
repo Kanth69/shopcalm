@@ -76,7 +76,7 @@ class EmailService
         }
 
         try {
-            $request = Http::withHeaders([
+            $request = Http::timeout(5)->withHeaders([
                 'api-key'      => $this->apiKey,
                 'Content-Type' => 'application/json',
                 'Accept'       => 'application/json',
