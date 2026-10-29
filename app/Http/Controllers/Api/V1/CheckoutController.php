@@ -320,11 +320,20 @@ class CheckoutController extends BaseApiController
             : ($user->email ?? 'customer@shopcalm.in');
 
         try {
-            // If user had a previous uncompleted/abandoned pending online order, release any locked wallet balance and cancel it
+            // Check if user already has an active pending order (Amazon/Flipkart Single-Order Pattern)
             $pendingOrder = $this->checkoutService->getActivePendingOrder($user);
             if ($pendingOrder && $pendingOrder->payment_status !== 'paid') {
-                $this->checkoutService->markOrderPaymentFailed($pendingOrder, 'Superseded by new checkout order.');
-                $pendingOrder->update(['status' => 'cancelled']);
+                return $this->sendError(
+                    "You already have a pending order (#{$pendingOrder->order_number}). Please proceed with or cancel that order.",
+                    [
+                        'has_pending_order'    => true,
+                        'pending_order_id'     => (int) $pendingOrder->id,
+                        'pending_order_number' => $pendingOrder->order_number,
+                        'pending_order_total'  => (float) $pendingOrder->total_amount,
+                        'payment_method'       => $pendingOrder->payment_method,
+                    ],
+                    422
+                );
             }
 
             if ($validated['payment_method'] === 'cod') {
@@ -620,6 +629,84 @@ class CheckoutController extends BaseApiController
                 'payment_method' => 'cod',
                 'total_amount'   => (float) $confirmedOrder->total_amount,
             ], 'Order switched to Cash on Delivery & confirmed.');
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage(), [], 422);
+        }
+    }
+
+    /**
+     * Retry an unpaid/failed online order.
+     * Generates a fresh gateway order reference via Razorpay for the EXACT same order.
+     */
+    public function retryPayment(Request $request, Order $order): JsonResponse
+    {
+        $user = $request->user();
+
+        if ((int)$order->user_id !== (int)$user->id) {
+            return $this->sendError('Unauthorized access to this order.', [], 403);
+        }
+
+        if ($order->status === 'cancelled') {
+            return $this->sendError('This order has been cancelled and cannot be retried.', [], 422);
+        }
+
+        if ($order->payment_status === 'paid') {
+            return $this->sendResponse([
+                'order_id'       => (int) $order->id,
+                'order_number'   => $order->order_number,
+                'status'         => $order->status,
+                'payment_status' => 'paid',
+                'already_paid'   => true,
+            ], 'Order is already paid.');
+        }
+
+        try {
+            $rzpOrder = $this->razorpayService->createRazorpayOrder(
+                $order->order_number,
+                (float) $order->total_amount,
+                [
+                    'user_id'  => (string) $user->id,
+                    'order_id' => (string) $order->id,
+                    'customer' => $user->name ?? $order->shipping_name,
+                ]
+            );
+
+            $rzpOrderId = $rzpOrder['razorpay_order_id'] ?? $rzpOrder['id'] ?? null;
+
+            Payment::create([
+                'order_id'             => $order->id,
+                'user_id'              => $user->id,
+                'order_number'         => $order->order_number,
+                'gateway'              => 'razorpay',
+                'gateway_order_id'     => $rzpOrderId,
+                'amount'               => (float) $order->total_amount,
+                'currency'             => 'INR',
+                'status'               => 'PENDING',
+                'payment_method_group' => 'online',
+                'gateway_message'      => 'Payment retry initiated via Razorpay.',
+            ]);
+
+            return $this->sendResponse([
+                'order_id'          => (int) $order->id,
+                'order_number'      => $order->order_number,
+                'status'            => $order->status,
+                'total_amount'      => (float) $order->total_amount,
+                'payment_method'    => 'online',
+                'payment_status'    => 'pending',
+                'razorpay'          => [
+                    'key_id'            => $this->razorpayService->getKeyId(),
+                    'razorpay_order_id' => $rzpOrderId,
+                    'amount'            => $rzpOrder['amount'] ?? ((int) round($order->total_amount * 100)),
+                    'currency'          => 'INR',
+                    'name'              => Setting::get('store_name', 'ShopCalm'),
+                    'description'       => "Order #{$order->order_number}",
+                    'prefill'           => [
+                        'name'    => $user->name ?? $order->shipping_name,
+                        'email'   => $user->email ?? $order->shipping_email,
+                        'contact' => $order->shipping_phone,
+                    ],
+                ],
+            ], 'Razorpay payment retry initialized.');
         } catch (Exception $e) {
             return $this->sendError($e->getMessage(), [], 422);
         }

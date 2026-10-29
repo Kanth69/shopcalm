@@ -75,6 +75,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/place-order', [CheckoutController::class, 'placeOrder']);
             Route::post('/verify-payment', [CheckoutController::class, 'verifyPayment']);
             Route::post('/orders/{order}/switch-to-cod', [CheckoutController::class, 'switchToCod']);
+            Route::post('/orders/{order}/retry-payment', [CheckoutController::class, 'retryPayment']);
         });
 
         Route::prefix('account')->group(function () {
