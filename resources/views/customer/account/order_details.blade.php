@@ -541,36 +541,39 @@
                         </div>
 
                         {{-- Directly Under Handover OTP: High-Contrast Payment Status Pill --}}
-                        <div class="pt-2.5 border-top d-flex align-items-center justify-content-between flex-wrap gap-2" style="border-color: #e2e8f0 !important;">
+                        <div class="pt-2.5 mt-2.5 border-top d-flex align-items-center justify-content-between flex-wrap gap-2.5" style="border-color: #e2e8f0 !important;">
                             @if($order->payment_status === 'paid')
                                 <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill shadow-xs" style="background: #ecfdf5; border: 1.5px solid #86efac;">
                                     <span class="fw-bold font-monospace d-inline-flex align-items-center" style="font-size: 0.84rem; color: #15803d !important;">
-                                        <i class="bi bi-check-circle-fill me-1.5 fs-6 text-success"></i>
-                                        @if($order->payment_method === 'doorstep_upi')
-                                            Paid via Doorstep UPI &bull; Collect ₹0
-                                        @elseif($order->payment_method === 'cod')
-                                            Cash Paid at Doorstep &bull; Collect ₹0
-                                        @elseif($order->payment_method === 'wallet')
-                                            Paid via ShopCalm Wallet &bull; Collect ₹0
-                                        @else
-                                            Paid Online &bull; Collect ₹0
-                                        @endif
+                                        <i class="bi bi-check-circle-fill me-2 fs-6 text-success" style="font-size: 1rem !important;"></i>
+                                        <span>
+                                            @if($order->payment_method === 'doorstep_upi')
+                                                Paid via Doorstep UPI &bull; Collect ₹0
+                                            @elseif($order->payment_method === 'cod')
+                                                Cash Paid at Doorstep &bull; Collect ₹0
+                                            @elseif($order->payment_method === 'wallet')
+                                                Paid via ShopCalm Wallet &bull; Collect ₹0
+                                            @else
+                                                Paid Online &bull; Collect ₹0
+                                            @endif
+                                        </span>
                                     </span>
                                 </div>
-                                <span class="text-secondary fw-semibold small" style="font-size: 0.74rem;">
-                                    <i class="bi bi-shield-check text-success me-0.5"></i> Zero amount to pay at doorstep
+                                <span class="text-secondary fw-semibold small ps-1" style="font-size: 0.74rem;">
+                                    <i class="bi bi-shield-check text-success me-1"></i> Zero amount to pay at doorstep
                                 </span>
                             @else
-                                <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill shadow-xs" style="background: #fffbeb; border: 1.5px solid #fde68a;">
-                                    <span class="fw-bold d-inline-flex align-items-center text-uppercase" style="font-size: 0.76rem; color: #b45309 !important;">
-                                        <i class="bi bi-cash-stack me-1.5 fs-6"></i> Payable at Doorstep:
+                                <div class="d-inline-flex align-items-center gap-2.5 px-3 py-1.5 rounded-pill shadow-xs" style="background: #fffbeb; border: 1.5px solid #fde68a;">
+                                    <span class="fw-bold d-inline-flex align-items-center text-uppercase" style="font-size: 0.76rem; color: #b45309 !important; letter-spacing: 0.3px;">
+                                        <i class="bi bi-cash-stack me-2 fs-5" style="color: #b45309 !important; line-height: 1;"></i>
+                                        <span>Payable at Doorstep:</span>
                                     </span>
-                                    <span class="fw-extrabold text-dark font-monospace" style="font-size: 0.95rem;">
+                                    <span class="fw-extrabold text-dark font-monospace ps-1" style="font-size: 0.95rem;">
                                         ₹{{ number_format($order->total_amount, 2) }}
                                     </span>
                                 </div>
-                                <span class="text-muted small" style="font-size: 0.72rem;">
-                                    Cash or Instant UPI QR to Rider
+                                <span class="text-muted small ps-1" style="font-size: 0.74rem;">
+                                    <i class="bi bi-info-circle me-1 text-secondary"></i> Cash or Instant UPI QR to Rider
                                 </span>
                             @endif
                         </div>
