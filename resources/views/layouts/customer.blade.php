@@ -8,6 +8,9 @@
     <title>@yield('title', \App\Models\Setting::get('store_name', 'ShopCalm') . ' - ' . \App\Models\Setting::get('tagline', 'Shop More. Worry Less.'))</title>
     <meta name="description" content="@yield('meta_description', \App\Models\Setting::get('tagline', 'Discover genuine electronics, smartphones, fashion, and lifestyle essentials at best prices with fast doorstep delivery.'))">
     <link rel="canonical" href="{{ url()->current() }}">
+    @if(\App\Models\Setting::get('google_site_verification'))
+    <meta name="google-site-verification" content="{{ \App\Models\Setting::get('google_site_verification') }}">
+    @endif
     @php
         $storeFavicon = \App\Models\Setting::get('favicon');
         $hasStorageFavicon = $storeFavicon && file_exists(storage_path('app/public/' . $storeFavicon));
