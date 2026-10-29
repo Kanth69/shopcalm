@@ -515,48 +515,63 @@
             {{-- Bottom Row: Clean OTP Box & Payment summary --}}
             @if($order->delivery_otp)
                 <div class="pt-3">
-                    <div class="p-2.5 p-sm-3 rounded-3 d-flex align-items-center justify-content-between flex-wrap gap-2.5" style="background: #f8fafc; border: 1.5px dashed #cbd5e1; max-width: 100%;">
-                        {{-- OTP Digits --}}
-                        <div style="min-width: 0; max-width: 100%;">
-                            <div class="d-flex align-items-center gap-1.5 mb-1.5 flex-wrap">
-                                <span class="badge bg-dark rounded-pill px-2 py-0.5 text-warning fw-bold small" style="font-size: 0.65rem;">
-                                    <i class="bi bi-shield-lock-fill me-1"></i> Handover OTP
-                                </span>
-                                <span class="text-secondary small text-break" style="font-size: 0.74rem;">Share with rider upon receiving parcel</span>
-                            </div>
-                            <div class="d-flex align-items-center gap-1.5 mt-1 flex-wrap">
-                                @foreach(str_split((string) $order->delivery_otp) as $digit)
-                                    <span class="d-inline-flex align-items-center justify-content-center fw-extrabold rounded-2 bg-white border text-dark shadow-xs" 
-                                          style="width: 34px; height: 38px; font-size: 1.25rem; font-family: monospace; border-color: #94a3b8 !important;">
-                                        {{ $digit }}
+                    <div class="p-3 rounded-3" style="background: #f8fafc; border: 1.5px dashed #cbd5e1; max-width: 100%;">
+                        {{-- Top Row: Handover OTP and digits --}}
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2.5">
+                            <div>
+                                <div class="d-flex align-items-center gap-1.5 mb-1.5 flex-wrap">
+                                    <span class="badge bg-dark rounded-pill px-2.5 py-1 text-warning fw-bold small" style="font-size: 0.68rem; letter-spacing: 0.4px;">
+                                        <i class="bi bi-shield-lock-fill me-1"></i> HANDOVER OTP
                                     </span>
-                                @endforeach
-                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 text-secondary fw-semibold ms-1" 
-                                        onclick="navigator.clipboard.writeText('{{ $order->delivery_otp }}'); this.innerText = 'Copied!'; setTimeout(() => this.innerHTML = '<i class=\'bi bi-copy\'></i> Copy', 1500);" style="font-size: 0.74rem;">
-                                    <i class="bi bi-copy"></i> Copy
-                                </button>
+                                    <span class="text-secondary small" style="font-size: 0.78rem;">Share with delivery agent upon parcel delivery</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-1.5 mt-1 flex-wrap">
+                                    @foreach(str_split((string) $order->delivery_otp) as $digit)
+                                        <span class="d-inline-flex align-items-center justify-content-center fw-extrabold rounded-2 bg-white border text-dark shadow-xs" 
+                                              style="width: 34px; height: 38px; font-size: 1.25rem; font-family: monospace; border-color: #94a3b8 !important;">
+                                            {{ $digit }}
+                                        </span>
+                                    @endforeach
+                                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 text-secondary fw-semibold ms-1 shadow-xs" 
+                                            onclick="navigator.clipboard.writeText('{{ $order->delivery_otp }}'); this.innerText = 'Copied!'; setTimeout(() => this.innerHTML = '<i class=\'bi bi-copy\'></i> Copy', 1500);" style="font-size: 0.74rem;">
+                                        <i class="bi bi-copy"></i> Copy
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-                        {{-- Payment Status at Doorstep --}}
-                        <div class="text-start text-sm-end pt-1 pt-sm-0" style="min-width: 0;">
+                        {{-- Directly Under Handover OTP: High-Contrast Payment Status Pill --}}
+                        <div class="pt-2.5 border-top d-flex align-items-center justify-content-between flex-wrap gap-2" style="border-color: #e2e8f0 !important;">
                             @if($order->payment_status === 'paid')
-                                <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.74rem; white-space: normal; line-height: 1.3;">
-                                    @if($order->payment_method === 'doorstep_upi')
-                                        <i class="bi bi-qr-code-scan me-1"></i> Paid via Doorstep UPI &bull; Collect ₹0
-                                    @elseif($order->payment_method === 'cod')
-                                        <i class="bi bi-cash-stack me-1"></i> Cash Paid at Doorstep &bull; Collect ₹0
-                                    @elseif($order->payment_method === 'wallet')
-                                        <i class="bi bi-wallet2 me-1"></i> Paid via Wallet &bull; Collect ₹0
-                                    @else
-                                        <i class="bi bi-check-circle-fill me-1"></i> Paid Online &bull; Collect ₹0
-                                    @endif
+                                <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill shadow-xs" style="background: #ecfdf5; border: 1.5px solid #86efac;">
+                                    <span class="fw-bold font-monospace d-inline-flex align-items-center" style="font-size: 0.84rem; color: #15803d !important;">
+                                        <i class="bi bi-check-circle-fill me-1.5 fs-6 text-success"></i>
+                                        @if($order->payment_method === 'doorstep_upi')
+                                            Paid via Doorstep UPI &bull; Collect ₹0
+                                        @elseif($order->payment_method === 'cod')
+                                            Cash Paid at Doorstep &bull; Collect ₹0
+                                        @elseif($order->payment_method === 'wallet')
+                                            Paid via ShopCalm Wallet &bull; Collect ₹0
+                                        @else
+                                            Paid Online &bull; Collect ₹0
+                                        @endif
+                                    </span>
+                                </div>
+                                <span class="text-secondary fw-semibold small" style="font-size: 0.74rem;">
+                                    <i class="bi bi-shield-check text-success me-0.5"></i> Zero amount to pay at doorstep
                                 </span>
-                                <div class="text-secondary small mt-0.5" style="font-size: 0.7rem;">Zero amount to pay at doorstep</div>
                             @else
-                                <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.65rem;">Payable at Doorstep</div>
-                                <div class="h5 fw-extrabold text-dark mb-0 font-monospace">₹{{ number_format($order->total_amount, 2) }}</div>
-                                <div class="text-muted small" style="font-size: 0.68rem;">Cash or Instant UPI QR</div>
+                                <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill shadow-xs" style="background: #fffbeb; border: 1.5px solid #fde68a;">
+                                    <span class="fw-bold d-inline-flex align-items-center text-uppercase" style="font-size: 0.76rem; color: #b45309 !important;">
+                                        <i class="bi bi-cash-stack me-1.5 fs-6"></i> Payable at Doorstep:
+                                    </span>
+                                    <span class="fw-extrabold text-dark font-monospace" style="font-size: 0.95rem;">
+                                        ₹{{ number_format($order->total_amount, 2) }}
+                                    </span>
+                                </div>
+                                <span class="text-muted small" style="font-size: 0.72rem;">
+                                    Cash or Instant UPI QR to Rider
+                                </span>
                             @endif
                         </div>
                     </div>
