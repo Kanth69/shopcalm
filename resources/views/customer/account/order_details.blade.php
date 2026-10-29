@@ -719,7 +719,7 @@
 </div>
 
 {{-- Order Items Card (Perfect Alignment for Mobile & Desktop) --}}
-<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important; max-width: 100%;">
     <div class="card-header bg-white py-3 px-3 px-md-4 border-bottom d-flex align-items-center justify-content-between">
         <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.92rem;">
             <i class="bi bi-bag-check-fill text-primary"></i> Purchased Items ({{ $order->items->count() }})
@@ -734,8 +734,8 @@
         <div style="flex: 0 0 18%;" class="text-end">SUBTOTAL</div>
     </div>
 
-    <div class="card-body p-0">
-        <div class="d-flex flex-column">
+    <div class="card-body p-0" style="max-width: 100%; overflow: hidden;">
+        <div class="d-flex flex-column" style="max-width: 100%;">
             @foreach($order->items as $index => $item)
             @php 
                 $product = $item->product;
@@ -746,12 +746,12 @@
                 $savedPerUnit = $hasDiscount ? ($origPrice - $unitPrice) : 0;
                 $totalSaved = $savedPerUnit * $item->quantity;
             @endphp
-            <div class="p-3 p-md-4 {{ $index < $order->items->count()-1 ? 'border-bottom' : '' }}" style="border-color: #f1f5f9 !important;">
+            <div class="p-3 p-md-4 {{ $index < $order->items->count()-1 ? 'border-bottom' : '' }}" style="border-color: #f1f5f9 !important; max-width: 100%; min-width: 0; overflow: hidden;">
                 
                 {{-- 💻 Desktop Layout (Aligned to Header Bar) --}}
-                <div class="d-none d-md-flex align-items-center">
+                <div class="d-none d-md-flex align-items-center" style="min-width: 0; max-width: 100%;">
                     {{-- 1. Thumbnail + Info (50%) --}}
-                    <div class="d-flex align-items-center gap-3 min-w-0" style="flex: 1 1 50%;">
+                    <div class="d-flex align-items-center gap-3 min-w-0" style="flex: 1 1 50%; min-width: 0; overflow: hidden;">
                         <div class="flex-shrink-0">
                             @php $orderThumb = $item->display_image ?? $product?->main_image; @endphp
                             @if($orderThumb)
@@ -769,7 +769,7 @@
                             @endif
                         </div>
 
-                        <div class="min-w-0 flex-grow-1 pe-3">
+                        <div class="min-w-0 flex-grow-1 pe-3" style="min-width: 0; overflow: hidden;">
                             <div class="d-flex align-items-center gap-1.5 flex-wrap mb-1">
                                 @if($product && $product->brand)
                                     <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
@@ -830,8 +830,8 @@
                 </div>
 
                 {{-- 📱 Mobile Layout (Spacious Vertical Stack with Clear Price Hierarchy) --}}
-                <div class="d-block d-md-none">
-                    <div class="d-flex align-items-start gap-3 mb-3">
+                <div class="d-block d-md-none" style="width: 100%; max-width: 100%; min-width: 0; overflow: hidden;">
+                    <div class="d-flex align-items-start gap-2.5 gap-sm-3 mb-2.5" style="width: 100%; max-width: 100%; min-width: 0;">
                         <div class="flex-shrink-0">
                             @php $orderThumb = $item->display_image ?? $product?->main_image; @endphp
                             @if($orderThumb)
@@ -839,18 +839,18 @@
                                     <img src="{{ asset('storage/' . $orderThumb) }}"
                                          alt="{{ $item->product_name }}"
                                          class="rounded-3 border p-1 bg-white shadow-2xs"
-                                         width="68" height="68" style="object-fit: contain;">
+                                         width="64" height="64" style="width: 64px; height: 64px; object-fit: contain; flex-shrink: 0;">
                                 </a>
                             @else
                                 <div class="rounded-3 bg-light border d-flex align-items-center justify-content-center text-muted"
-                                     style="width: 68px; height: 68px;">
+                                     style="width: 64px; height: 64px; flex-shrink: 0;">
                                     <i class="bi bi-image fs-4 opacity-25"></i>
                                 </div>
                             @endif
                         </div>
 
-                        <div class="flex-grow-1 min-w-0">
-                            <div class="d-flex align-items-center gap-1.5 flex-wrap mb-1.5">
+                        <div class="flex-grow-1 min-w-0" style="min-width: 0; max-width: calc(100% - 74px); overflow: hidden; word-break: break-word;">
+                            <div class="d-flex align-items-center gap-1.5 flex-wrap mb-1" style="max-width: 100%;">
                                 @if($product && $product->brand)
                                     <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
                                         {{ $product->brand->name }}
@@ -871,35 +871,35 @@
                             </div>
                             @if($product)
                                 <a href="{{ route('product.show', $product->slug) }}"
-                                   class="fw-bold text-dark text-decoration-none d-block mb-1.5 text-truncate"
-                                   style="font-size: 0.92rem; line-height: 1.35;"
+                                   class="fw-bold text-dark text-decoration-none d-block mb-1 text-line-clamp-2"
+                                   style="font-size: 0.9rem; line-height: 1.35;"
                                    title="{{ $item->product_name }}">
                                     {{ $item->product_name }}
                                 </a>
                             @else
-                                <div class="fw-bold text-dark mb-1.5 text-truncate" style="font-size: 0.92rem;">{{ $item->product_name }}</div>
+                                <div class="fw-bold text-dark mb-1 text-line-clamp-2" style="font-size: 0.9rem; line-height: 1.35;">{{ $item->product_name }}</div>
                             @endif
 
                             {{-- Price Row (Clear deal price, real price, % off) --}}
-                            <div class="d-flex align-items-center gap-2 flex-wrap pt-0.5">
-                                <span class="fw-bold text-dark font-monospace" style="font-size: 1rem;">₹{{ number_format($unitPrice, 2) }}</span>
+                            <div class="d-flex align-items-center gap-2 flex-wrap pt-0.5" style="max-width: 100%;">
+                                <span class="fw-bold text-dark font-monospace" style="font-size: 0.96rem;">₹{{ number_format($unitPrice, 2) }}</span>
                                 @if($hasDiscount)
-                                    <span class="text-muted text-decoration-line-through small" style="font-size: 0.78rem;">₹{{ number_format($origPrice, 2) }}</span>
-                                    <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-0.5 fw-bold" style="font-size: 0.68rem;">{{ $discountPct }}% OFF</span>
+                                    <span class="text-muted text-decoration-line-through small" style="font-size: 0.76rem;">₹{{ number_format($origPrice, 2) }}</span>
+                                    <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-0.5 fw-bold" style="font-size: 0.65rem;">{{ $discountPct }}% OFF</span>
                                 @endif
                             </div>
                         </div>
                     </div>
 
                     {{-- Mobile Bottom Bar: Qty Badge on Left + Subtotal on Right --}}
-                    <div class="d-flex align-items-center justify-content-between px-3 py-2 rounded-3 border" style="background: #f8fafc; border-color: #e2e8f0 !important; font-size: 0.84rem;">
-                        <div class="d-flex align-items-center gap-2">
+                    <div class="d-flex align-items-center justify-content-between px-2.5 px-sm-3 py-2 rounded-3 border flex-wrap gap-2" style="background: #f8fafc; border-color: #e2e8f0 !important; font-size: 0.84rem; width: 100%; max-width: 100%;">
+                        <div class="d-flex align-items-center gap-1.5 flex-wrap">
                             <span class="text-muted small">Qty:</span>
-                            <span class="badge bg-white text-dark border px-2.5 py-1 fw-bold font-monospace shadow-2xs" style="padding-left: 0.65rem; padding-right: 0.65rem;">×{{ $item->quantity }}</span>
+                            <span class="badge bg-white text-dark border px-2.5 py-1 fw-bold font-monospace shadow-2xs">×{{ $item->quantity }}</span>
                         </div>
-                        <div class="d-flex align-items-baseline gap-1.5">
+                        <div class="d-flex align-items-baseline gap-1.5 flex-wrap ms-auto">
                             <span class="text-muted small">Subtotal:</span>
-                            <span class="fw-bolder text-dark font-monospace" style="font-size: 1rem;">₹{{ number_format($item->total_price, 2) }}</span>
+                            <span class="fw-bolder text-dark font-monospace" style="font-size: 0.96rem;">₹{{ number_format($item->total_price, 2) }}</span>
                         </div>
                     </div>
                 </div>
@@ -930,7 +930,7 @@
 
 <div class="row justify-content-end mb-4">
     <div class="col-12 col-md-7 col-lg-6 col-xl-5">
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background:#ffffff; border: 1.5px solid #e2e8f0 !important;">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background:#ffffff; border: 1.5px solid #e2e8f0 !important; max-width: 100%;">
             <div class="card-header bg-white py-3 px-3 px-sm-4 border-bottom d-flex align-items-center justify-content-between">
                 <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.92rem;">
                     <i class="bi bi-receipt text-primary"></i> Price Details
