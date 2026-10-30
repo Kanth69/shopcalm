@@ -779,18 +779,16 @@ class CheckoutService
      */
     protected function dispatchOrderConfirmationNotifications(Order $order): void
     {
-        app()->terminating(function () use ($order) {
-            try {
-                app(\App\Services\EmailService::class)->sendOrderConfirmation($order);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning("[CheckoutService] Order confirmation email failed: " . $e->getMessage());
-            }
+        try {
+            app(\App\Services\EmailService::class)->sendOrderConfirmation($order);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("[CheckoutService] Order confirmation email failed: " . $e->getMessage());
+        }
 
-            try {
-                app(\App\Services\WhatsAppService::class)->sendOrderConfirmation($order);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning("[CheckoutService] WhatsApp order confirmation failed: " . $e->getMessage());
-            }
-        });
+        try {
+            app(\App\Services\WhatsAppService::class)->sendOrderConfirmation($order);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("[CheckoutService] WhatsApp order confirmation failed: " . $e->getMessage());
+        }
     }
 }
