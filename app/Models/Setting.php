@@ -48,6 +48,7 @@ class Setting extends Model
     {
         self::$runtimeCache = null;
         \Illuminate\Support\Facades\Cache::forget('app_settings');
+        \App\Http\Controllers\Api\V1\HomeController::clearCache();
     }
 
     /**

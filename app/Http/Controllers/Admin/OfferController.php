@@ -24,6 +24,7 @@ class OfferController extends Controller
 
     protected function clearOfferCaches(): void
     {
+        \App\Http\Controllers\Api\V1\HomeController::clearCache();
         Cache::forget('home_active_offers');
         Cache::forget('home_offers');
         Cache::forget('home_banners');

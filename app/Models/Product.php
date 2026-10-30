@@ -75,6 +75,7 @@ class Product extends Model
         });
 
         static::saved(function () {
+            \App\Http\Controllers\Api\V1\HomeController::clearCache();
             \Illuminate\Support\Facades\Cache::forget('featured_products');
             \Illuminate\Support\Facades\Cache::forget('trending_products');
             \Illuminate\Support\Facades\Cache::forget('latest_products');
@@ -84,6 +85,7 @@ class Product extends Model
         });
 
         static::deleted(function () {
+            \App\Http\Controllers\Api\V1\HomeController::clearCache();
             \Illuminate\Support\Facades\Cache::forget('featured_products');
             \Illuminate\Support\Facades\Cache::forget('trending_products');
             \Illuminate\Support\Facades\Cache::forget('latest_products');

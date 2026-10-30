@@ -78,6 +78,7 @@ class BannerController extends Controller
 
             Banner::create($data);
             Cache::forget('home_banners');
+            \App\Http\Controllers\Api\V1\HomeController::clearCache();
         });
 
         return redirect()->route('admin.banners.index')->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => 'Banner created successfully.']);
@@ -112,6 +113,7 @@ class BannerController extends Controller
 
             $banner->update($data);
             Cache::forget('home_banners');
+            \App\Http\Controllers\Api\V1\HomeController::clearCache();
         });
 
         return redirect()->route('admin.banners.index')->with('toast', ['type' => 'success', 'title' => 'Success', 'message' => 'Banner updated successfully.']);
@@ -121,6 +123,7 @@ class BannerController extends Controller
     {
         $banner->delete();
         Cache::forget('home_banners');
+        \App\Http\Controllers\Api\V1\HomeController::clearCache();
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
