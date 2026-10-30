@@ -11,6 +11,19 @@ class CheckBlockedStatus
 {
     public function handle(Request $request, Closure $next): Response
     {
+        // 1. Check Mobile App & Sanctum API Authenticated Users
+        $apiUser = $request->user('sanctum') ?? $request->user();
+        if ($apiUser && isset($apiUser->status) && in_array(strtolower($apiUser->status), ['blocked', 'deleted'])) {
+            if (method_exists($apiUser, 'tokens')) {
+                $apiUser->tokens()->delete();
+            }
+            return response()->json([
+                'success' => false,
+                'message' => 'This account has been closed or blocked. Please contact customer support.',
+            ], 403);
+        }
+
+        // 2. Check Session-based Web Guards
         $guards = ['admin', 'product_manager', 'order_manager', 'support', 'delivery_partner', 'customer'];
 
         foreach ($guards as $guard) {

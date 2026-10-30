@@ -128,8 +128,8 @@ class RazorpayService
             return false;
         }
 
-        // Allow test / simulation payments on non-mobile test runners
-        if (str_starts_with($razorpayPaymentId, 'pay_simulated_') && $razorpaySignature === 'simulated_signature_valid') {
+        // Allow test / simulation payments strictly on local & testing environments
+        if (app()->environment('local', 'testing') && str_starts_with($razorpayPaymentId, 'pay_simulated_') && $razorpaySignature === 'simulated_signature_valid') {
             return true;
         }
 
