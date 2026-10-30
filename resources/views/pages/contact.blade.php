@@ -2,7 +2,6 @@
 
 @php
     $storeName   = \App\Models\Setting::get('store_name', 'ShopCalm');
-    $storePhone  = \App\Models\Setting::get('contact_phone', '+91 98765 43210');
     $storeEmail  = \App\Models\Setting::get('contact_email', 'support@shopcalm.com');
     $storeAddr   = \App\Models\Setting::get('address', 'ShopCalm HQ, Tech Park, Bangalore, India');
     $storeHours  = \App\Models\Setting::get('support_hours', 'Monday – Saturday: 9:00 AM – 8:00 PM');
@@ -192,18 +191,6 @@
                         </div>
                     </div>
 
-                    <!-- Contact Detail 2: Helpline -->
-                    <div class="contact-info-item">
-                        <div class="contact-info-icon-box">
-                            <i class="bi bi-telephone-fill"></i>
-                        </div>
-                        <div>
-                            <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.72rem; letter-spacing: 0.05em;">Customer Helpline</div>
-                            <a href="tel:{{ $storePhone }}" class="fw-bold text-primary mt-0.5 d-inline-block text-decoration-none" style="font-size: 0.92rem; color: #4f46e5 !important;">
-                                {{ $storePhone }}
-                            </a>
-                        </div>
-                    </div>
 
                     <!-- Contact Detail 3: Email -->
                     <div class="contact-info-item">

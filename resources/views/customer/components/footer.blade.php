@@ -8,7 +8,6 @@
     $twitterUrl    = \App\Models\Setting::get('twitter_url');
     $linkedinUrl   = \App\Models\Setting::get('linkedin_url');
     $youtubeUrl    = \App\Models\Setting::get('youtube_url');
-    $whatsappNum   = \App\Models\Setting::get('whatsapp_number');
 @endphp
 <footer id="site-main-footer" class="section-footer border-top bg-dark text-white footer-responsive-container">
     <div class="container px-3 px-md-4">
@@ -36,9 +35,6 @@
                 @endif
                 @if($twitterUrl)
                     <a class="btn btn-icon btn-outline-light rounded-circle border-secondary footer-social-btn-sm" href="{{ $twitterUrl }}" target="_blank" rel="noopener noreferrer" title="Twitter"><i class="bi bi-twitter-x"></i></a>
-                @endif
-                @if($whatsappNum)
-                    <a class="btn btn-icon btn-outline-success rounded-circle text-success footer-social-btn-sm" href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $whatsappNum) }}" target="_blank" rel="noopener noreferrer" title="WhatsApp"><i class="bi bi-whatsapp"></i></a>
                 @endif
                 @if(!$instaUrl && !$fbUrl && !$youtubeUrl)
                     <a class="btn btn-icon btn-outline-light rounded-circle border-secondary footer-social-btn-sm" href="javascript:void(0);"><i class="bi bi-instagram"></i></a>
@@ -124,9 +120,6 @@
                                 @endif
                                 @if($youtubeUrl)
                                     <a class="btn btn-icon btn-outline-light rounded-circle border-secondary footer-social-btn" title="YouTube" target="_blank" rel="noopener noreferrer" href="{{ $youtubeUrl }}"><i class="bi bi-youtube"></i></a>
-                                @endif
-                                @if($whatsappNum)
-                                    <a class="btn btn-icon btn-outline-success rounded-circle text-success footer-social-btn" title="Chat on WhatsApp" target="_blank" rel="noopener noreferrer" href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $whatsappNum) }}"><i class="bi bi-whatsapp"></i></a>
                                 @endif
                                 @if(!$fbUrl && !$instaUrl && !$twitterUrl && !$linkedinUrl && !$youtubeUrl)
                                     <a class="btn btn-icon btn-outline-light rounded-circle border-secondary footer-social-btn" title="Facebook" href="javascript:void(0);"><i class="bi bi-facebook"></i></a>

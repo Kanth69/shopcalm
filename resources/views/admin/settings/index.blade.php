@@ -71,14 +71,6 @@
 
                     <div class="row g-4 mb-4">
                         <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark small mb-2">Customer Support Phone</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-telephone"></i></span>
-                                <input type="text" name="contact_phone" class="form-control" value="{{ $settings['contact_phone'] ?? '' }}" placeholder="+91 98765 43210">
-                            </div>
-                            <div class="form-text text-muted mt-1.5" style="font-size: 0.75rem;">Helpline displayed on the storefront for customer assistance.</div>
-                        </div>
-                        <div class="col-md-6">
                             <label class="form-label fw-bold text-dark small mb-2">Store Currency & Symbol</label>
                             <div class="input-group">
                                 <span class="input-group-text">ISO</span>
@@ -88,24 +80,13 @@
                             </div>
                             <div class="form-text text-muted mt-1.5" style="font-size: 0.75rem;">Default currency displayed across product pricing and cart checkouts.</div>
                         </div>
-                    </div>
-
-                    <div class="row g-4 mb-4">
                         <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark small mb-2">WhatsApp Support Phone Number</label>
-                            <div class="input-group">
-                                <span class="input-group-text text-success"><i class="bi bi-whatsapp"></i></span>
-                                <input type="text" name="whatsapp_number" class="form-control" value="{{ $settings['whatsapp_number'] ?? '' }}" placeholder="+91 98765 43210">
-                            </div>
-                            <div class="form-text text-muted mt-1.5" style="font-size: 0.75rem;">Enables 1-click WhatsApp customer support chat in the storefront footer.</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark small mb-2">Support Working Hours</label>
+                            <label class="form-label fw-bold text-dark small mb-2">Support Desk Response Hours</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-clock"></i></span>
                                 <input type="text" name="support_hours" class="form-control" value="{{ $settings['support_hours'] ?? 'Mon - Sat: 9:00 AM - 8:00 PM' }}" placeholder="e.g. Mon - Sat: 9:00 AM - 8:00 PM">
                             </div>
-                            <div class="form-text text-muted mt-1.5" style="font-size: 0.75rem;">Helpline availability hours displayed on the contact page.</div>
+                            <div class="form-text text-muted mt-1.5" style="font-size: 0.75rem;">Support desk operating hours for customer email inquiries.</div>
                         </div>
                     </div>
 

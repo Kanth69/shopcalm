@@ -48,8 +48,6 @@ class SettingController extends Controller
             'copyright_text'              => 'nullable|string|max:255',
             'support_hours'               => 'nullable|string|max:255',
             'contact_email'               => 'nullable|email|max:255',
-            'contact_phone'               => 'nullable|string|max:20',
-            'whatsapp_number'             => 'nullable|string|max:20',
             'address'                     => 'nullable|string|max:500',
             'currency'                    => 'nullable|string|max:10',
             'currency_symbol'             => 'nullable|string|max:5',
