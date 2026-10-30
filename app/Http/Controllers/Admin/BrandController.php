@@ -6,12 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BrandRequest;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Services\ImageOptimizerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class BrandController extends Controller
 {
+    public function __construct(
+        protected ImageOptimizerService $imageOptimizer
+    ) {}
     private function checkSuperAdmin(): void
     {
         $user = auth('admin')->user() ?? auth()->user();
@@ -85,7 +89,7 @@ class BrandController extends Controller
         }
 
         if ($request->hasFile('logo')) {
-            $logoPath = $request->file('logo')->store('brands', 'public');
+            $logoPath = $this->imageOptimizer->optimizeAndStore($request->file('logo'), 'brands', 600);
             $validated['logo'] = $logoPath;
         }
 
@@ -129,7 +133,7 @@ class BrandController extends Controller
                 Storage::disk('public')->delete($brand->logo);
             }
 
-            $logoPath = $request->file('logo')->store('brands', 'public');
+            $logoPath = $this->imageOptimizer->optimizeAndStore($request->file('logo'), 'brands', 600);
             $validated['logo'] = $logoPath;
         }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\ProductManager;
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Services\ImageOptimizerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -13,6 +14,9 @@ use Illuminate\View\View;
 
 class BrandController extends Controller
 {
+    public function __construct(
+        protected ImageOptimizerService $imageOptimizer
+    ) {}
     /**
      * Display brand listing for Product Manager.
      */
@@ -78,7 +82,7 @@ class BrandController extends Controller
         }
 
         if ($request->hasFile('logo')) {
-            $validated['logo'] = $request->file('logo')->store('brands', 'public');
+            $validated['logo'] = $this->imageOptimizer->optimizeAndStore($request->file('logo'), 'brands', 600);
         }
 
         Brand::create($validated);
@@ -136,7 +140,7 @@ class BrandController extends Controller
             if ($brand->logo && Storage::disk('public')->exists($brand->logo)) {
                 Storage::disk('public')->delete($brand->logo);
             }
-            $validated['logo'] = $request->file('logo')->store('brands', 'public');
+            $validated['logo'] = $this->imageOptimizer->optimizeAndStore($request->file('logo'), 'brands', 600);
         }
 
         $brand->update($validated);

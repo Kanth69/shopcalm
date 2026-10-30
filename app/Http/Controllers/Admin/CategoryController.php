@@ -5,12 +5,16 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CategoryRequest;
 use App\Models\Category;
+use App\Services\ImageOptimizerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class CategoryController extends Controller
 {
+    public function __construct(
+        protected ImageOptimizerService $imageOptimizer
+    ) {}
     private function checkSuperAdmin(): void
     {
         $user = auth('admin')->user() ?? auth()->user();
@@ -69,7 +73,7 @@ class CategoryController extends Controller
         }
 
         if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('categories', 'public');
+            $imagePath = $this->imageOptimizer->optimizeAndStore($request->file('image'), 'categories', 600);
             $validated['image'] = $imagePath;
         }
 
@@ -105,7 +109,7 @@ class CategoryController extends Controller
                 Storage::disk('public')->delete($category->image);
             }
 
-            $imagePath = $request->file('image')->store('categories', 'public');
+            $imagePath = $this->imageOptimizer->optimizeAndStore($request->file('image'), 'categories', 600);
             $validated['image'] = $imagePath;
         }
 

@@ -9,6 +9,7 @@ use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Brand;
 use App\Models\Product;
+use App\Services\ImageOptimizerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
@@ -17,6 +18,10 @@ use DB;
 
 class OfferController extends Controller
 {
+    public function __construct(
+        protected ImageOptimizerService $imageOptimizer
+    ) {}
+
     protected function clearOfferCaches(): void
     {
         Cache::forget('home_active_offers');
@@ -76,7 +81,7 @@ class OfferController extends Controller
         DB::transaction(function () use ($request, $validated) {
             $imagePath = null;
             if ($request->hasFile('banner_image')) {
-                $imagePath = $request->file('banner_image')->store('offers', 'public');
+                $imagePath = $this->imageOptimizer->optimizeAndStore($request->file('banner_image'), 'offers', 1200);
             }
 
             $offer = Offer::create([
@@ -162,7 +167,7 @@ class OfferController extends Controller
                 if ($offer->banner_image) {
                     Storage::disk('public')->delete($offer->banner_image);
                 }
-                $imagePath = $request->file('banner_image')->store('offers', 'public');
+                $imagePath = $this->imageOptimizer->optimizeAndStore($request->file('banner_image'), 'offers', 1200);
             }
 
             $offer->update([

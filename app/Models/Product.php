@@ -39,6 +39,7 @@ class Product extends Model
         'has_options',
         'option_type',
         'option_stocks',
+        'option_images',
         'hsn_code',
         'tax_rate',
     ];
@@ -48,6 +49,7 @@ class Product extends Model
         'trending'      => 'boolean',
         'has_options'   => 'boolean',
         'option_stocks' => 'array',
+        'option_images' => 'array',
         'cost_price'    => 'decimal:2',
         'price'         => 'decimal:2',
         'weight'        => 'decimal:2',

@@ -8,12 +8,17 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Services\ImageOptimizerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
+    public function __construct(
+        protected ImageOptimizerService $imageOptimizer
+    ) {}
+
     public function index(Request $request)
     {
         $query = Product::with(['category', 'brand', 'latestRejectionReason']);
@@ -149,7 +154,7 @@ class ProductController extends Controller
         }
 
         if ($request->hasFile('main_image')) {
-            $validated['main_image'] = $request->file('main_image')->store('products/main', 'public');
+            $validated['main_image'] = $this->imageOptimizer->optimizeAndStore($request->file('main_image'), 'products/main');
         }
 
         $validated['featured'] = $request->has('featured');
@@ -178,7 +183,7 @@ class ProductController extends Controller
                     if ($file && $file->isValid()) {
                         $trimmedKey = trim($keys[$idx] ?? '');
                         if ($trimmedKey !== '') {
-                            $path = $file->store('products/variants', 'public');
+                            $path = $this->imageOptimizer->optimizeAndStore($file, 'products/variants');
                             $optionImagesMap[$trimmedKey] = $path;
                         }
                     }
@@ -210,7 +215,7 @@ class ProductController extends Controller
 
         if ($request->hasFile('gallery_images')) {
             foreach ($request->file('gallery_images') as $image) {
-                $path = $image->store('products/gallery', 'public');
+                $path = $this->imageOptimizer->optimizeAndStore($image, 'products/gallery');
                 $product->galleryImages()->create(['image' => $path]);
             }
         }
@@ -263,7 +268,7 @@ class ProductController extends Controller
             if ($product->main_image) {
                 Storage::disk('public')->delete($product->main_image);
             }
-            $validated['main_image'] = $request->file('main_image')->store('products/main', 'public');
+            $validated['main_image'] = $this->imageOptimizer->optimizeAndStore($request->file('main_image'), 'products/main');
         }
 
         $validated['featured'] = $request->has('featured');
@@ -292,7 +297,7 @@ class ProductController extends Controller
                     if ($file && $file->isValid()) {
                         $trimmedKey = trim($keys[$idx] ?? '');
                         if ($trimmedKey !== '') {
-                            $path = $file->store('products/variants', 'public');
+                            $path = $this->imageOptimizer->optimizeAndStore($file, 'products/variants');
                             $optionImagesMap[$trimmedKey] = $path;
                         }
                     }
@@ -324,7 +329,7 @@ class ProductController extends Controller
 
         if ($request->hasFile('gallery_images')) {
             foreach ($request->file('gallery_images') as $image) {
-                $path = $image->store('products/gallery', 'public');
+                $path = $this->imageOptimizer->optimizeAndStore($image, 'products/gallery');
                 $product->galleryImages()->create(['image' => $path]);
             }
         }

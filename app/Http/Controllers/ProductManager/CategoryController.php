@@ -4,6 +4,7 @@ namespace App\Http\Controllers\ProductManager;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Services\ImageOptimizerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -12,6 +13,9 @@ use Illuminate\View\View;
 
 class CategoryController extends Controller
 {
+    public function __construct(
+        protected ImageOptimizerService $imageOptimizer
+    ) {}
     /**
      * Display category listing for Product Manager.
      */
@@ -64,7 +68,7 @@ class CategoryController extends Controller
         $validated['slug'] = $slug;
 
         if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('categories', 'public');
+            $validated['image'] = $this->imageOptimizer->optimizeAndStore($request->file('image'), 'categories', 600);
         }
 
         Category::create($validated);
@@ -111,7 +115,7 @@ class CategoryController extends Controller
             if ($category->image && Storage::disk('public')->exists($category->image)) {
                 Storage::disk('public')->delete($category->image);
             }
-            $validated['image'] = $request->file('image')->store('categories', 'public');
+            $validated['image'] = $this->imageOptimizer->optimizeAndStore($request->file('image'), 'categories', 600);
         }
 
         $category->update($validated);

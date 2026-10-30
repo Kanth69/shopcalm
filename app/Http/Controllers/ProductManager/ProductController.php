@@ -11,6 +11,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\StockMovement;
+use App\Services\ImageOptimizerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,6 +21,10 @@ use Illuminate\View\View;
 
 class ProductController extends Controller
 {
+    public function __construct(
+        protected ImageOptimizerService $imageOptimizer
+    ) {}
+
     /**
      * Display all catalog products for the Product Manager.
      */
@@ -197,7 +202,7 @@ class ProductController extends Controller
 
         // Handle Main Product Image
         if ($request->hasFile('main_image')) {
-            $validated['main_image'] = $request->file('main_image')->store('products', 'public');
+            $validated['main_image'] = $this->imageOptimizer->optimizeAndStore($request->file('main_image'), 'products/main');
         }
 
         // Enforce approval workflow: New products by Product Manager start as Pending_Approval
@@ -230,7 +235,7 @@ class ProductController extends Controller
                     if ($file && $file->isValid()) {
                         $trimmedKey = trim($keys[$idx] ?? '');
                         if ($trimmedKey !== '') {
-                            $path = $file->store('products/variants', 'public');
+                            $path = $this->imageOptimizer->optimizeAndStore($file, 'products/variants');
                             $optionImagesMap[$trimmedKey] = $path;
                         }
                     }
@@ -263,7 +268,7 @@ class ProductController extends Controller
         // Handle Multiple Gallery Images
         if ($request->hasFile('gallery_images')) {
             foreach ($request->file('gallery_images') as $file) {
-                $path = $file->store('products/gallery', 'public');
+                $path = $this->imageOptimizer->optimizeAndStore($file, 'products/gallery');
                 ProductImage::create([
                     'product_id' => $product->id,
                     'image'      => $path,
@@ -328,7 +333,7 @@ class ProductController extends Controller
             if ($product->main_image && Storage::disk('public')->exists($product->main_image)) {
                 Storage::disk('public')->delete($product->main_image);
             }
-            $validated['main_image'] = $request->file('main_image')->store('products', 'public');
+            $validated['main_image'] = $this->imageOptimizer->optimizeAndStore($request->file('main_image'), 'products/main');
         }
 
         // Approval workflow:
@@ -371,7 +376,7 @@ class ProductController extends Controller
                     if ($file && $file->isValid()) {
                         $trimmedKey = trim($keys[$idx] ?? '');
                         if ($trimmedKey !== '') {
-                            $path = $file->store('products/variants', 'public');
+                            $path = $this->imageOptimizer->optimizeAndStore($file, 'products/variants');
                             $optionImagesMap[$trimmedKey] = $path;
                         }
                     }
@@ -404,7 +409,7 @@ class ProductController extends Controller
         // Handle Additional Gallery Images
         if ($request->hasFile('gallery_images')) {
             foreach ($request->file('gallery_images') as $file) {
-                $path = $file->store('products/gallery', 'public');
+                $path = $this->imageOptimizer->optimizeAndStore($file, 'products/gallery');
                 ProductImage::create([
                     'product_id' => $product->id,
                     'image'      => $path,

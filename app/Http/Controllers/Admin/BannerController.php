@@ -8,6 +8,7 @@ use App\Models\Banner;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Offer;
+use App\Services\ImageOptimizerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,10 @@ use Illuminate\Support\Facades\Cache;
 
 class BannerController extends Controller
 {
+    public function __construct(
+        protected ImageOptimizerService $imageOptimizer
+    ) {}
+
     private function formData(): array
     {
         return [
@@ -65,10 +70,10 @@ class BannerController extends Controller
             }
 
             if ($request->hasFile('desktop_image')) {
-                $data['desktop_image'] = $request->file('desktop_image')->store('banners/desktop', 'public');
+                $data['desktop_image'] = $this->imageOptimizer->optimizeAndStore($request->file('desktop_image'), 'banners/desktop', 1920, 85);
             }
             if ($request->hasFile('mobile_image')) {
-                $data['mobile_image'] = $request->file('mobile_image')->store('banners/mobile', 'public');
+                $data['mobile_image'] = $this->imageOptimizer->optimizeAndStore($request->file('mobile_image'), 'banners/mobile', 800, 82);
             }
 
             Banner::create($data);
@@ -98,11 +103,11 @@ class BannerController extends Controller
 
             if ($request->hasFile('desktop_image')) {
                 if ($banner->desktop_image) Storage::disk('public')->delete($banner->desktop_image);
-                $data['desktop_image'] = $request->file('desktop_image')->store('banners/desktop', 'public');
+                $data['desktop_image'] = $this->imageOptimizer->optimizeAndStore($request->file('desktop_image'), 'banners/desktop', 1920, 85);
             }
             if ($request->hasFile('mobile_image')) {
                 if ($banner->mobile_image) Storage::disk('public')->delete($banner->mobile_image);
-                $data['mobile_image'] = $request->file('mobile_image')->store('banners/mobile', 'public');
+                $data['mobile_image'] = $this->imageOptimizer->optimizeAndStore($request->file('mobile_image'), 'banners/mobile', 800, 82);
             }
 
             $banner->update($data);
