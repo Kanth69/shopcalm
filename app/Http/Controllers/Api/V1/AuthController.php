@@ -51,6 +51,14 @@ class AuthController extends BaseApiController
         $user = $this->findUserByIdentifier($request->identifier);
 
         if ($user) {
+            if (isset($user->status) && in_array(strtolower($user->status), ['blocked', 'deleted'])) {
+                return response()->json([
+                    'success' => false,
+                    'blocked' => true,
+                    'message' => 'This account has been closed or blocked. Please contact customer support.'
+                ], 200);
+            }
+
             return response()->json([
                 'success' => true,
                 'exists'  => true,
@@ -123,6 +131,19 @@ class AuthController extends BaseApiController
             $user = $this->findUserByIdentifier($request->identifier);
             if ($user && !empty($user->mobile_number)) {
                 $targetMobile = $user->mobile_number;
+            }
+        }
+
+        // Prevent OTP dispatch to blocked or deleted accounts
+        if (in_array($type, ['LOGIN', 'RESET_PASSWORD'])) {
+            $chkUser = null;
+            if ($request->filled('identifier')) {
+                $chkUser = $this->findUserByIdentifier($request->identifier);
+            } elseif (!empty($targetMobile)) {
+                $chkUser = $this->findUserByIdentifier($targetMobile);
+            }
+            if ($chkUser && isset($chkUser->status) && in_array(strtolower($chkUser->status), ['blocked', 'deleted'])) {
+                return $this->sendError('This account has been closed or blocked. Please contact customer support.', [], 403);
             }
         }
 
