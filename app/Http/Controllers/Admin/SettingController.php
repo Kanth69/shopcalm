@@ -44,10 +44,14 @@ class SettingController extends Controller
 
         $validated = $request->validate([
             'store_name'                  => 'nullable|string|max:255',
+            'invoice_company_name'        => 'nullable|string|max:255',
+            'invoice_gstin'               => 'nullable|string|max:50',
+            'invoice_cin'                 => 'nullable|string|max:50',
             'tagline'                     => 'nullable|string|max:500',
             'copyright_text'              => 'nullable|string|max:255',
             'support_hours'               => 'nullable|string|max:255',
             'contact_email'               => 'nullable|email|max:255',
+            'contact_phone'               => 'nullable|string|max:50',
             'address'                     => 'nullable|string|max:500',
             'currency'                    => 'nullable|string|max:10',
             'currency_symbol'             => 'nullable|string|max:5',

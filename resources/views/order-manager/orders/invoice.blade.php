@@ -167,11 +167,20 @@
     $payment = $order->primaryPayment ?? $order->latestPayment;
     $isPaid = in_array(strtolower($order->payment_status ?? ''), ['paid', 'success']) || $order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0);
     
+    // Seller Info from Admin Settings (Karnataka registered: Code 29)
+    $sellerCompanyName = \App\Models\Setting::get('invoice_company_name', \App\Models\Setting::get('company_name', 'ShopCalm Retail Pvt. Ltd.'));
+    $sellerAddress = \App\Models\Setting::get('address', 'Bengaluru, Karnataka - 560001');
+    $sellerGstin = \App\Models\Setting::get('invoice_gstin', \App\Models\Setting::get('gstin', '29AABCU9603R1ZM'));
+    $sellerCin = \App\Models\Setting::get('invoice_cin', \App\Models\Setting::get('cin', 'U52100KA2024PTC184920'));
+    $sellerEmail = \App\Models\Setting::get('contact_email', 'support@shopcalm.in');
+    $sellerPhone = \App\Models\Setting::get('contact_phone', '+91 99999 99999');
+    $storeName = \App\Models\Setting::get('store_name', 'ShopCalm');
+
     // State Code Map
     $stateCodes = [
+        'karnataka' => '29',
         'telangana' => '36',
         'andhra pradesh' => '37',
-        'karnataka' => '29',
         'tamil nadu' => '33',
         'maharashtra' => '27',
         'delhi' => '07',
@@ -180,10 +189,29 @@
         'rajasthan' => '08',
         'west bengal' => '19',
         'uttar pradesh' => '09',
+        'goa' => '30',
+        'puducherry' => '34',
+        'odisha' => '21',
+        'madhya pradesh' => '23',
+        'punjab' => '03',
+        'haryana' => '06',
+        'assam' => '18',
+        'bihar' => '10',
     ];
     $customerState = strtolower(trim($order->shipping_state ?? ''));
-    $customerStateCode = $stateCodes[$customerState] ?? '29';
-    $isInterState = ($customerStateCode !== '36'); // ShopCalm registered in Telangana (36)
+    $customerZip = trim($order->shipping_zip ?? '');
+    
+    // Auto-detect Karnataka via Pincode prefix 560, 57, 58 if state wasn't recognized
+    if (empty($stateCodes[$customerState])) {
+        if (str_starts_with($customerZip, '56') || str_starts_with($customerZip, '57') || str_starts_with($customerZip, '58') || str_contains($customerState, 'bengaluru') || str_contains($customerState, 'bangalore')) {
+            $customerStateCode = '29';
+        } else {
+            $customerStateCode = '29'; // Default to Karnataka
+        }
+    } else {
+        $customerStateCode = $stateCodes[$customerState];
+    }
+    $isInterState = ($customerStateCode !== '29'); // Seller registered in Karnataka (Code: 29)
 
     if (!function_exists('numberToIndianWords')) {
         function numberToIndianWords($number) {
@@ -245,7 +273,9 @@
 
     <!-- Main Invoice Sheet -->
     <div class="invoice-sheet position-relative">
-        @if($isPaid)
+        @if($order->status === 'cancelled')
+            <div class="watermark-cancelled" style="position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%) rotate(-25deg); font-size: clamp(2.5rem, 9vw, 5.2rem); font-weight: 900; color: rgba(239, 68, 68, 0.08); letter-spacing: 0.2em; pointer-events: none; text-transform: uppercase; border: 6px dashed rgba(239, 68, 68, 0.12); padding: 8px 28px; border-radius: 20px; white-space: nowrap; z-index: 0;">CANCELLED</div>
+        @elseif($isPaid)
             <div class="watermark-paid">PAID</div>
         @endif
 
@@ -256,12 +286,12 @@
                     <div class="rounded-3 bg-primary text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width: 36px; height: 36px; font-size: 1.15rem; background: linear-gradient(135deg, #4f46e5, #6366f1) !important;">
                         <i class="bi bi-bag-heart-fill"></i>
                     </div>
-                    <h3 class="fw-bolder text-dark mb-0 company-title" style="letter-spacing: -0.02em;">ShopCalm Retail Pvt. Ltd.</h3>
+                    <h3 class="fw-bolder text-dark mb-0 company-title" style="letter-spacing: -0.02em;">{{ $sellerCompanyName }}</h3>
                 </div>
                 <div class="text-secondary small mt-1" style="line-height: 1.55; font-size: 0.78rem;">
-                    108 Tech Boulevard, Financial District, Gachibowli, Hyderabad - 500032<br>
-                    <strong>GSTIN:</strong> 36AABCU9603R1ZM &bull; <strong>CIN:</strong> U52100TG2024PTC184920<br>
-                    <strong>State:</strong> Telangana (Code: 36) &bull; <strong>Email:</strong> support@shopcalm.in
+                    {{ $sellerAddress }}<br>
+                    <strong>GSTIN:</strong> {{ $sellerGstin }} &bull; <strong>CIN:</strong> {{ $sellerCin }}<br>
+                    <strong>State:</strong> Karnataka (Code: 29) &bull; <strong>Email:</strong> {{ $sellerEmail }}
                 </div>
             </div>
             <div class="text-start text-md-end print-text-end w-100 w-md-auto border-top border-md-0 pt-2 pt-md-0">
@@ -272,7 +302,7 @@
                 <div class="text-secondary small" style="font-size: 0.78rem; line-height: 1.5;">
                     <strong>Invoice Date:</strong> {{ $order->created_at->format('d M Y') }}<br>
                     <strong>Order Date:</strong> {{ $order->created_at->format('d M Y, h:i A') }}<br>
-                    <strong>Place of Supply:</strong> {{ ucfirst($order->shipping_state ?? 'Telangana') }} ({{ $customerStateCode }})
+                    <strong>Place of Supply:</strong> {{ ucfirst($order->shipping_state ?: 'Karnataka') }} ({{ $customerStateCode }})
                 </div>
             </div>
         </div>
@@ -303,7 +333,13 @@
                 <div class="p-3 rounded-3 bg-light border h-100">
                     <div class="small fw-bold text-uppercase text-secondary mb-2 d-flex flex-wrap justify-content-between align-items-center gap-1" style="font-size: 0.68rem; letter-spacing: 0.05em;">
                         <span><i class="bi bi-credit-card-2-front-fill text-primary me-1"></i> Payment & Dispatch:</span>
-                        @if($isPaid)
+                        @if($order->status === 'cancelled')
+                            @if($isPaid || ($order->cancellation && (float)$order->cancellation->refund_amount > 0))
+                                <span class="invoice-badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;"><i class="bi bi-x-circle-fill"></i> CANCELLED & REFUNDED</span>
+                            @else
+                                <span class="invoice-badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;"><i class="bi bi-x-circle-fill"></i> CANCELLED (100% FREE)</span>
+                            @endif
+                        @elseif($isPaid)
                             <span class="invoice-badge invoice-badge-paid"><i class="bi bi-check-circle-fill"></i> PAID</span>
                         @else
                             <span class="invoice-badge invoice-badge-pending"><i class="bi bi-clock-history"></i> PENDING (COD)</span>
@@ -337,7 +373,18 @@
                         @endif
                         <strong>Dispatch Partner:</strong> {{ $order->courier_partner ?: ($order->rider_name ? 'Bengaluru Local Fleet (' . $order->rider_name . ')' : 'Express Logistics') }}<br>
                         @if($order->tracking_number)
-                            <strong>AWB / Tracking #:</strong> <span class="font-mono text-dark">{{ $order->tracking_number }}</span>
+                            <strong>AWB / Tracking #:</strong> <span class="font-mono text-dark">{{ $order->tracking_number }}</span><br>
+                        @endif
+                        @if($order->status === 'cancelled')
+                            <div class="mt-2 pt-2 border-top">
+                                <strong class="text-danger">Order Status:</strong> <span class="badge bg-danger text-white rounded-pill px-2 py-0.5" style="font-size: 0.7rem;">Cancelled</span><br>
+                                <strong>Refund / Settlement:</strong>
+                                @if($order->cancellation && (float)$order->cancellation->refund_amount > 0)
+                                    <span class="text-success fw-bold">₹{{ number_format($order->cancellation->refund_amount, 2) }} Refunded</span>
+                                @else
+                                    <span class="text-success fw-bold">100% Free Cancellation (No payment was collected)</span>
+                                @endif
+                            </div>
                         @endif
                     </div>
                 </div>
@@ -521,11 +568,11 @@
         <div class="border-top pt-3 pt-md-4 mt-2 position-relative" style="z-index: 1;">
             <div class="d-flex flex-column flex-md-row print-row-flex justify-content-between align-items-start align-items-md-end gap-3">
                 <div class="text-secondary small" style="font-size: 0.72rem; line-height: 1.5;">
-                    <strong>ShopCalm Customer Support:</strong> support@shopcalm.in &bull; +91 99999 99999<br>
+                    <strong>{{ $storeName }} Customer Support:</strong> {{ $sellerEmail }} &bull; {{ $sellerPhone }}<br>
                     This is a digitally generated Tax Invoice and does not require a physical signature.
                 </div>
                 <div class="text-start text-md-end print-text-end">
-                    <div class="text-secondary small fw-bold text-uppercase mb-1.5" style="font-size: 0.68rem;">For ShopCalm Retail Pvt. Ltd.</div>
+                    <div class="text-secondary small fw-bold text-uppercase mb-1.5" style="font-size: 0.68rem;">For {{ $sellerCompanyName }}</div>
                     <div class="font-mono fw-bold small d-inline-block px-3 py-1 rounded border bg-light" style="color: #4f46e5;">
                         ✓ Digitally Signed & Authorized
                     </div>

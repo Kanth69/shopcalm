@@ -92,6 +92,44 @@
 
                     <div class="row g-4 mb-4">
                         <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark small mb-2">Legal Company / Invoice Entity Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-briefcase-fill"></i></span>
+                                <input type="text" name="invoice_company_name" class="form-control" value="{{ $settings['invoice_company_name'] ?? 'ShopCalm Retail Pvt. Ltd.' }}" placeholder="e.g. ShopCalm Retail Pvt. Ltd.">
+                            </div>
+                            <div class="form-text text-muted mt-1.5" style="font-size: 0.75rem;">Official registered business name printed on GST Tax Invoices.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark small mb-2">Official Support Phone</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-telephone-fill"></i></span>
+                                <input type="text" name="contact_phone" class="form-control" value="{{ $settings['contact_phone'] ?? '+91 99999 99999' }}" placeholder="e.g. +91 99999 99999">
+                            </div>
+                            <div class="form-text text-muted mt-1.5" style="font-size: 0.75rem;">Customer service helpline printed on tax invoice footer.</div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark small mb-2">GSTIN (Goods and Services Tax ID)</label>
+                            <div class="input-group">
+                                <span class="input-group-text font-monospace fw-bold">GST</span>
+                                <input type="text" name="invoice_gstin" class="form-control font-monospace text-uppercase" value="{{ $settings['invoice_gstin'] ?? '29AABCU9603R1ZM' }}" placeholder="29AABCU9603R1ZM">
+                            </div>
+                            <div class="form-text text-muted mt-1.5" style="font-size: 0.75rem;">15-digit GSTIN for Karnataka (State Code 29).</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark small mb-2">CIN (Corporate Identity Number)</label>
+                            <div class="input-group">
+                                <span class="input-group-text font-monospace fw-bold">CIN</span>
+                                <input type="text" name="invoice_cin" class="form-control font-monospace text-uppercase" value="{{ $settings['invoice_cin'] ?? 'U52100KA2024PTC184920' }}" placeholder="U52100KA2024PTC184920">
+                            </div>
+                            <div class="form-text text-muted mt-1.5" style="font-size: 0.75rem;">Corporate registration number printed on tax invoice header.</div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
                             <label class="form-label fw-bold text-dark small mb-2">Store Tagline / Footer Summary</label>
                             <input type="text" name="tagline" class="form-control" value="{{ $settings['tagline'] ?? 'Your one-stop shop for everything you need. Quality products, unbeatable prices.' }}" placeholder="Store tagline...">
                             <div class="form-text text-muted mt-1.5" style="font-size: 0.75rem;">Short 1-sentence bio shown below the footer logo.</div>
@@ -106,7 +144,7 @@
                     <div class="mb-0">
                         <label class="form-label fw-bold text-dark small mb-2">Registered Business Address</label>
                         <textarea name="address" class="form-control" rows="3" placeholder="Physical office or fulfillment hub address...">{{ $settings['address'] ?? '' }}</textarea>
-                        <div class="form-text text-muted mt-1.5" style="font-size: 0.75rem;">Rendered in invoice headers and official contact pages.</div>
+                        <div class="form-text text-muted mt-1.5" style="font-size: 0.75rem;">Rendered in invoice headers and official contact pages (Karnataka, Code: 29).</div>
                     </div>
                 </div>
             </div>

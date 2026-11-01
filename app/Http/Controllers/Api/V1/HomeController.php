@@ -281,9 +281,16 @@ class HomeController extends BaseApiController
     {
         return [
             'store_name'                  => Setting::get('store_name', 'ShopCalm'),
+            'invoice_company_name'        => Setting::get('invoice_company_name', Setting::get('company_name', 'ShopCalm Retail Pvt. Ltd.')),
+            'address'                     => Setting::get('address', 'Bengaluru, Karnataka - 560001'),
+            'invoice_address'             => Setting::get('address', 'Bengaluru, Karnataka - 560001'),
+            'invoice_gstin'               => Setting::get('invoice_gstin', Setting::get('gstin', '29AABCU9603R1ZM')),
+            'invoice_cin'                 => Setting::get('invoice_cin', Setting::get('cin', 'U52100KA2024PTC184920')),
+            'invoice_state'               => 'Karnataka',
+            'invoice_state_code'          => '29',
             'tagline'                     => Setting::get('tagline', "Nature's Purest Goodness"),
             'contact_email'               => Setting::get('contact_email', 'support@shopcalm.in'),
-            'contact_phone'               => Setting::get('contact_phone', ''),
+            'contact_phone'               => Setting::get('contact_phone', '+91 99999 99999'),
             'whatsapp_number'             => Setting::get('whatsapp_number', ''),
             'support_hours'               => Setting::get('support_hours', 'Mon - Sat: 9:00 AM - 8:00 PM'),
             'currency'                    => Setting::get('currency', 'INR'),

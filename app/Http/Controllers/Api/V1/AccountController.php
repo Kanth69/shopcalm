@@ -179,6 +179,16 @@ class AccountController extends BaseApiController
             'can_customer_cancel'         => $canCustomerCancel,
             'allow_customer_cancellation' => $allowCancellationSetting,
             'cancellation'                => $cancellationData,
+            'seller_info'                 => [
+                'company_name' => Setting::get('invoice_company_name', Setting::get('company_name', 'ShopCalm Retail Pvt. Ltd.')),
+                'address'      => Setting::get('address', 'Bengaluru, Karnataka - 560001'),
+                'gstin'        => Setting::get('invoice_gstin', Setting::get('gstin', '29AABCU9603R1ZM')),
+                'cin'          => Setting::get('invoice_cin', Setting::get('cin', 'U52100KA2024PTC184920')),
+                'state'        => 'Karnataka',
+                'state_code'   => '29',
+                'email'        => Setting::get('contact_email', 'support@shopcalm.in'),
+                'phone'        => Setting::get('contact_phone', '+91 99999 99999'),
+            ],
             'created_at'                  => $order->created_at ? $order->created_at->format('d M, Y h:i A') : '',
             'created_at_date'             => $order->created_at ? $order->created_at->format('d M, Y') : '',
             'items'                       => $order->items->map(function ($item) {
