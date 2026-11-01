@@ -68,15 +68,15 @@ class AddressController extends Controller
             return redirect()->route('account.addresses.index')->with('success', 'Address already existed and was updated with latest details.');
         }
 
-        // 2. Strict Limit: Max 5 Addresses
-        if ($user->addresses()->count() >= 5) {
+        // 2. Strict Limit: Max 3 Addresses (Home, Work, Other)
+        if ($user->addresses()->count() >= 3) {
             if ($request->ajax() || $request->wantsJson() || $request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'You have reached the maximum limit of 5 saved addresses. Please edit or delete an existing address.'
+                    'message' => 'You have reached the maximum limit of 3 saved addresses (Home, Work, Other). Please edit or delete an existing address.'
                 ], 422);
             }
-            return redirect()->route('account.addresses.index')->with('error', 'You have reached the maximum limit of 5 saved addresses. Please edit or delete an existing address.');
+            return redirect()->route('account.addresses.index')->with('error', 'You have reached the maximum limit of 3 saved addresses (Home, Work, Other). Please edit or delete an existing address.');
         }
 
         $address = $user->addresses()->create($data);

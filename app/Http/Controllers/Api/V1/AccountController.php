@@ -322,7 +322,7 @@ class AccountController extends BaseApiController
 
         return $this->sendResponse([
             'addresses' => $addresses,
-            'limit'     => 5,
+            'limit'     => 3,
             'count'     => $addresses->count(),
         ], 'Saved addresses retrieved.');
     }
@@ -385,19 +385,19 @@ class AccountController extends BaseApiController
 
             return $this->sendResponse([
                 'address' => $existingAddress->fresh(),
-                'limit'   => 5,
+                'limit'   => 3,
                 'count'   => $user->addresses()->count(),
                 'is_duplicate_updated' => true,
             ], 'Address already exists. Updated with latest details.', 200);
         }
 
-        // 2. Strict Limit: Max 5 Saved Addresses per customer
+        // 2. Strict Limit: Max 3 Saved Addresses per customer (Home, Work, Other)
         $currentCount = $user->addresses()->count();
-        if ($currentCount >= 5) {
+        if ($currentCount >= 3) {
             return $this->sendError(
-                'You have reached the maximum limit of 5 saved addresses. Please edit or delete an existing address.',
+                'You have reached the maximum limit of 3 saved addresses (Home, Work, Other). Please edit or delete an existing address.',
                 [
-                    'limit'   => 5,
+                    'limit'   => 3,
                     'current' => $currentCount,
                 ],
                 422
@@ -409,7 +409,7 @@ class AccountController extends BaseApiController
 
         return $this->sendResponse([
             'address' => $address,
-            'limit'   => 5,
+            'limit'   => 3,
             'count'   => $currentCount + 1,
         ], 'Delivery address saved successfully.', 201);
     }
