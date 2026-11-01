@@ -322,6 +322,8 @@ class AccountController extends BaseApiController
 
         return $this->sendResponse([
             'addresses' => $addresses,
+            'limit'     => 5,
+            'count'     => $addresses->count(),
         ], 'Saved addresses retrieved.');
     }
 
@@ -361,11 +363,54 @@ class AccountController extends BaseApiController
 
         $validated['country'] = $validated['country'] ?? 'India';
 
+        // 1. Smart Deduplication: Check if identical address already exists (same ZIP and house_no / address)
+        $houseNo = trim($validated['house_no'] ?? '');
+        $zip = trim($validated['zip'] ?? '');
+        $fullAddress = trim($validated['address'] ?? '');
+
+        $duplicateQuery = $user->addresses()->where('zip', $zip);
+        if (!empty($houseNo)) {
+            $duplicateQuery->where(function ($q) use ($houseNo, $fullAddress) {
+                $q->where('house_no', $houseNo)
+                  ->orWhere('address', $fullAddress);
+            });
+        } else {
+            $duplicateQuery->where('address', $fullAddress);
+        }
+
+        $existingAddress = $duplicateQuery->first();
+        if ($existingAddress) {
+            $existingAddress->update($validated);
+            Cache::forget("user_{$user->id}_addresses");
+
+            return $this->sendResponse([
+                'address' => $existingAddress->fresh(),
+                'limit'   => 5,
+                'count'   => $user->addresses()->count(),
+                'is_duplicate_updated' => true,
+            ], 'Address already exists. Updated with latest details.', 200);
+        }
+
+        // 2. Strict Limit: Max 5 Saved Addresses per customer
+        $currentCount = $user->addresses()->count();
+        if ($currentCount >= 5) {
+            return $this->sendError(
+                'You have reached the maximum limit of 5 saved addresses. Please edit or delete an existing address.',
+                [
+                    'limit'   => 5,
+                    'current' => $currentCount,
+                ],
+                422
+            );
+        }
+
         $address = $user->addresses()->create($validated);
         Cache::forget("user_{$user->id}_addresses");
 
         return $this->sendResponse([
             'address' => $address,
+            'limit'   => 5,
+            'count'   => $currentCount + 1,
         ], 'Delivery address saved successfully.', 201);
     }
 
