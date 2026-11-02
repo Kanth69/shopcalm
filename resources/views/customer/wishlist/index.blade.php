@@ -52,17 +52,20 @@
                                style="font-size: 0.95rem; line-height: 1.35;" title="{{ $item->product->name }}">
                                 {{ $item->product->name }}
                             </a>
+                            @php
+                                $prod = $item->product;
+                                $hasDiscount = (isset($prod->sale_price) && (float) $prod->sale_price < (float) $prod->price) || !empty($prod->offer_discount_percentage);
+                                $finalPrice = $hasDiscount ? (float) $prod->sale_price : (float) $prod->price;
+                                $mrp = (float) $prod->price;
+                                $discountPct = $prod->offer_discount_percentage ?? ($hasDiscount && $mrp > 0 ? round((($mrp - $finalPrice) / $mrp) * 100) : 0);
+                            @endphp
                             <div class="d-flex align-items-center gap-2 flex-wrap">
-                                @if($item->product->offer_price)
-                                    <span class="fw-bold text-dark font-monospace fs-6">₹{{ number_format($item->product->offer_price, 2) }}</span>
-                                    <del class="text-muted small" style="font-size: 0.78rem;">₹{{ number_format($item->product->selling_price, 2) }}</del>
-                                    @php
-                                        $saving = $item->product->selling_price - $item->product->offer_price;
-                                        $pct = round(($saving / $item->product->selling_price) * 100);
-                                    @endphp
-                                    <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 fw-bold px-2 py-0.5" style="font-size: 0.68rem;">{{ $pct }}% OFF</span>
+                                @if($hasDiscount)
+                                    <span class="fw-bold text-dark font-monospace fs-6">₹{{ number_format($finalPrice, 2) }}</span>
+                                    <del class="text-muted small" style="font-size: 0.78rem;">₹{{ number_format($mrp, 2) }}</del>
+                                    <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 fw-bold px-2 py-0.5" style="font-size: 0.68rem;">{{ $discountPct }}% OFF</span>
                                 @else
-                                    <span class="fw-bold font-monospace fs-6 text-dark">₹{{ number_format($item->product->selling_price, 2) }}</span>
+                                    <span class="fw-bold font-monospace fs-6 text-dark">₹{{ number_format($finalPrice, 2) }}</span>
                                 @endif
 
                                 @if($item->product->stock > 0)
@@ -121,17 +124,20 @@
                                style="font-size: 0.92rem; line-height: 1.35;" title="{{ $item->product->name }}">
                                 {{ $item->product->name }}
                             </a>
+                            @php
+                                $prod = $item->product;
+                                $hasDiscount = (isset($prod->sale_price) && (float) $prod->sale_price < (float) $prod->price) || !empty($prod->offer_discount_percentage);
+                                $finalPrice = $hasDiscount ? (float) $prod->sale_price : (float) $prod->price;
+                                $mrp = (float) $prod->price;
+                                $discountPct = $prod->offer_discount_percentage ?? ($hasDiscount && $mrp > 0 ? round((($mrp - $finalPrice) / $mrp) * 100) : 0);
+                            @endphp
                             <div class="d-flex align-items-baseline gap-2 flex-wrap mb-1">
-                                @if($item->product->offer_price)
-                                    <span class="fw-bold text-dark font-monospace" style="font-size: 1rem;">₹{{ number_format($item->product->offer_price, 2) }}</span>
-                                    <del class="text-muted small" style="font-size: 0.75rem;">₹{{ number_format($item->product->selling_price, 2) }}</del>
-                                    @php
-                                        $saving = $item->product->selling_price - $item->product->offer_price;
-                                        $pct = round(($saving / $item->product->selling_price) * 100);
-                                    @endphp
-                                    <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 fw-bold px-2 py-0.5" style="font-size: 0.65rem;">{{ $pct }}% OFF</span>
+                                @if($hasDiscount)
+                                    <span class="fw-bold text-dark font-monospace" style="font-size: 1rem;">₹{{ number_format($finalPrice, 2) }}</span>
+                                    <del class="text-muted small" style="font-size: 0.75rem;">₹{{ number_format($mrp, 2) }}</del>
+                                    <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 fw-bold px-2 py-0.5" style="font-size: 0.65rem;">{{ $discountPct }}% OFF</span>
                                 @else
-                                    <span class="fw-bold font-monospace text-dark" style="font-size: 1rem;">₹{{ number_format($item->product->selling_price, 2) }}</span>
+                                    <span class="fw-bold font-monospace text-dark" style="font-size: 1rem;">₹{{ number_format($finalPrice, 2) }}</span>
                                 @endif
                             </div>
                             <div>

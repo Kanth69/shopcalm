@@ -15,7 +15,11 @@ class WishlistController extends Controller
     {
         $wishlistItems = WishlistItem::whereHas('wishlist', function ($query) {
             $query->where('user_id', Auth::id());
-        })->with('product')->latest()->get();
+        })->with(['product.brand', 'product.category'])->latest()->get();
+
+        $offerService = app(\App\Services\OfferService::class);
+        $products = $wishlistItems->pluck('product')->filter();
+        $offerService->applyOfferDiscountsToProducts($products);
 
         return view('customer.wishlist.index', compact('wishlistItems'));
     }

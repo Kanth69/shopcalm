@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\AccountController;
+use App\Http\Controllers\Api\V1\WishlistController;
 
 /*
 |--------------------------------------------------------------------------
@@ -91,6 +92,14 @@ Route::prefix('v1')->group(function () {
             Route::post('/profile', [AccountController::class, 'updateProfile']);
             Route::post('/change-password', [AccountController::class, 'changePassword']);
             Route::get('/tickets', [AccountController::class, 'tickets']);
+        });
+
+        // Wishlist
+        Route::prefix('wishlist')->group(function () {
+            Route::get('/', [WishlistController::class, 'index']);
+            Route::post('/toggle', [WishlistController::class, 'toggle']);
+            Route::delete('/remove/{productId}', [WishlistController::class, 'remove']);
+            Route::post('/move-to-cart/{productId}', [WishlistController::class, 'moveToCart']);
         });
 
         // Reviews
