@@ -504,7 +504,7 @@ class AccountController extends BaseApiController
             'name'               => 'sometimes|required|string|max:255',
             'email'              => 'nullable|email|max:255|unique:users,email,' . $user->id,
             'avatar'             => 'nullable|image|max:2048',
-            'gender'             => 'nullable|string|in:Male,Female,Other,Prefer not to say',
+            'gender'             => 'nullable|string|in:Male,Female',
             'date_of_birth'      => 'nullable|date|before:today',
             'preferred_language' => 'nullable|string|max:50',
         ]);

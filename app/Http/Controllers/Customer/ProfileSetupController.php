@@ -26,7 +26,7 @@ class ProfileSetupController extends Controller
 
         // All fields are optional
         $validated = $request->validate([
-            'gender' => ['nullable', 'in:Male,Female,Other,Prefer not to say'],
+            'gender' => ['nullable', 'in:Male,Female'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'preferred_language' => ['nullable', 'string', 'max:50'],
             'interests' => ['nullable', 'array'],

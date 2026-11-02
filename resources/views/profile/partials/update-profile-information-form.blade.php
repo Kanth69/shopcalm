@@ -69,8 +69,6 @@
                         <option value="">Select Gender</option>
                         <option value="Male" {{ old('gender', $user->profile?->gender) === 'Male' ? 'selected' : '' }}>Male</option>
                         <option value="Female" {{ old('gender', $user->profile?->gender) === 'Female' ? 'selected' : '' }}>Female</option>
-                        <option value="Other" {{ old('gender', $user->profile?->gender) === 'Other' ? 'selected' : '' }}>Other</option>
-                        <option value="Prefer not to say" {{ old('gender', $user->profile?->gender) === 'Prefer not to say' ? 'selected' : '' }}>Prefer not to say</option>
                     </select>
                 </div>
                 @error('gender') <div class="text-danger small mt-1.5">{{ $message }}</div> @enderror

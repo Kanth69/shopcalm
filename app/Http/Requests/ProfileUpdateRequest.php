@@ -24,7 +24,7 @@ class ProfileUpdateRequest extends FormRequest
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
             'mobile_number' => ['nullable', 'string', 'max:15'],
-            'gender' => ['nullable', 'in:Male,Female,Other,Prefer not to say'],
+            'gender' => ['nullable', 'in:Male,Female'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'interests' => ['nullable', 'array'],
             'interests.*' => ['exists:categories,id'],
