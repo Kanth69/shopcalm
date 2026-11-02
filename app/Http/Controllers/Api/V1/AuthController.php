@@ -403,6 +403,8 @@ class AuthController extends BaseApiController
     public function user(Request $request): JsonResponse
     {
         $user = $request->user();
+        $user->load('profile');
+        $profile = $user->profile;
         $wallet = app(\App\Services\WalletService::class)->getOrCreateWallet($user);
 
         return $this->sendResponse([
@@ -410,6 +412,9 @@ class AuthController extends BaseApiController
             'name'               => $user->name,
             'email'              => $user->email,
             'mobile_number'      => $user->mobile_number,
+            'gender'             => $profile?->gender,
+            'date_of_birth'      => $profile?->date_of_birth ? $profile->date_of_birth->format('Y-m-d') : null,
+            'preferred_language' => $profile?->preferred_language,
             'avatar'             => $user->avatar ? asset('storage/' . $user->avatar) : null,
             'wallet_balance'     => (float) $wallet->balance,
             'referral_code'      => $wallet->referral_code,

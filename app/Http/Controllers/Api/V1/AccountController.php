@@ -501,9 +501,12 @@ class AccountController extends BaseApiController
         }
 
         $validated = $request->validate([
-            'name'   => 'sometimes|required|string|max:255',
-            'email'  => 'nullable|email|max:255|unique:users,email,' . $user->id,
-            'avatar' => 'nullable|image|max:2048',
+            'name'               => 'sometimes|required|string|max:255',
+            'email'              => 'nullable|email|max:255|unique:users,email,' . $user->id,
+            'avatar'             => 'nullable|image|max:2048',
+            'gender'             => 'nullable|string|in:Male,Female,Other,Prefer not to say',
+            'date_of_birth'      => 'nullable|date|before:today',
+            'preferred_language' => 'nullable|string|max:50',
         ]);
 
         if ($request->hasFile('avatar')) {
@@ -513,15 +516,32 @@ class AccountController extends BaseApiController
             $validated['avatar'] = $request->file('avatar')->store('avatars', 'public');
         }
 
-        $user->update($validated);
+        $userFields = collect($validated)->only(['name', 'email', 'avatar'])->filter(fn($v) => !is_null($v))->toArray();
+        if (!empty($userFields)) {
+            $user->update($userFields);
+        }
+
+        $profileFields = collect($validated)->only(['gender', 'date_of_birth', 'preferred_language'])->toArray();
+        if (!empty($profileFields)) {
+            $user->profile()->updateOrCreate(
+                ['user_id' => $user->id],
+                $profileFields
+            );
+        }
+
+        $user->load('profile');
+        $profile = $user->profile;
 
         return $this->sendResponse([
             'user' => [
-                'id'            => $user->id,
-                'name'          => $user->name,
-                'email'         => $user->email,
-                'mobile_number' => $user->mobile_number,
-                'avatar'        => $user->avatar ? asset('storage/' . $user->avatar) : null,
+                'id'                 => $user->id,
+                'name'               => $user->name,
+                'email'              => $user->email,
+                'mobile_number'      => $user->mobile_number,
+                'gender'             => $profile?->gender,
+                'date_of_birth'      => $profile?->date_of_birth ? $profile->date_of_birth->format('Y-m-d') : null,
+                'preferred_language' => $profile?->preferred_language,
+                'avatar'             => $user->avatar ? asset('storage/' . $user->avatar) : null,
             ],
         ], 'Profile updated successfully.');
     }
