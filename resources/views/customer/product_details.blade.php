@@ -98,6 +98,20 @@
                             }
                         }
 
+                        if (!empty($product->option_images)) {
+                            $optImagesMap = is_array($product->option_images) ? $product->option_images : json_decode($product->option_images, true);
+                            if (is_array($optImagesMap)) {
+                                foreach ($optImagesMap as $optImgPath) {
+                                    if (!empty($optImgPath)) {
+                                        $optFullUrl = str_starts_with($optImgPath, 'http') ? $optImgPath : asset('storage/' . $optImgPath);
+                                        if (!in_array($optFullUrl, $allProductImages, true)) {
+                                            $allProductImages[] = $optFullUrl;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         $hasProductVideo = !empty($product->getYoutubeEmbedUrl());
                         $videoEmbedUrl = $hasProductVideo ? $product->getYoutubeEmbedUrl() : null;
                         $videoWatchUrl = $hasProductVideo ? $product->getYoutubeWatchUrl() : null;
@@ -1425,13 +1439,38 @@ let currentProductGalleryIdx = 0;
 const pdpGalleryImages = @json($allProductImages);
 const pdpVariantImages = @json($product->option_images ?? []);
 
+// Preload all variant images in the background for instant 0ms switching
+if (pdpVariantImages && typeof pdpVariantImages === 'object') {
+    Object.values(pdpVariantImages).forEach(p => {
+        if (p && typeof p === 'string' && p.trim()) {
+            const pre = new Image();
+            pre.src = p.startsWith('http') ? p : '/storage/' + p;
+        }
+    });
+}
+
 function switchVariantImage(key) {
     if (!key || !pdpVariantImages || typeof pdpVariantImages !== 'object') return;
     
-    let path = pdpVariantImages[key];
-    if (!path && key.includes(' - ')) {
-        const color = key.split(' - ')[0].trim();
-        path = pdpVariantImages[color];
+    const cleanKey = String(key).trim();
+    let path = pdpVariantImages[cleanKey];
+    if (!path) {
+        const lowerKey = cleanKey.toLowerCase();
+        for (const [k, v] of Object.entries(pdpVariantImages)) {
+            if (String(k).trim().toLowerCase() === lowerKey) {
+                path = v;
+                break;
+            }
+        }
+    }
+    if (!path && cleanKey.includes(' - ')) {
+        const color = cleanKey.split(' - ')[0].trim().toLowerCase();
+        for (const [k, v] of Object.entries(pdpVariantImages)) {
+            if (String(k).trim().toLowerCase() === color) {
+                path = v;
+                break;
+            }
+        }
     }
     
     if (path) {
@@ -1442,11 +1481,7 @@ function switchVariantImage(key) {
             if (idx !== -1) {
                 selectProductGalleryIndex(idx);
             } else {
-                mainImg.style.opacity = '0.35';
-                setTimeout(() => {
-                    mainImg.src = fullUrl;
-                    mainImg.style.opacity = '1';
-                }, 90);
+                mainImg.src = fullUrl;
             }
         }
     }
