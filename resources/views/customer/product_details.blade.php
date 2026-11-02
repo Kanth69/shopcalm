@@ -98,20 +98,6 @@
                             }
                         }
 
-                        if (!empty($product->option_images)) {
-                            $optImagesMap = is_array($product->option_images) ? $product->option_images : json_decode($product->option_images, true);
-                            if (is_array($optImagesMap)) {
-                                foreach ($optImagesMap as $optImgPath) {
-                                    if (!empty($optImgPath)) {
-                                        $optFullUrl = str_starts_with($optImgPath, 'http') ? $optImgPath : asset('storage/' . $optImgPath);
-                                        if (!in_array($optFullUrl, $allProductImages, true)) {
-                                            $allProductImages[] = $optFullUrl;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
                         $hasProductVideo = !empty($product->getYoutubeEmbedUrl());
                         $videoEmbedUrl = $hasProductVideo ? $product->getYoutubeEmbedUrl() : null;
                         $videoWatchUrl = $hasProductVideo ? $product->getYoutubeWatchUrl() : null;
@@ -1476,12 +1462,17 @@ function switchVariantImage(key) {
     if (path) {
         const fullUrl = path.startsWith('http') ? path : '/storage/' + path;
         const mainImg = document.getElementById('main-product-img');
+        const videoView = document.getElementById('pdp-video-slide-view');
+        if (videoView) videoView.classList.add('d-none');
         if (mainImg) {
+            mainImg.classList.remove('d-none');
             const idx = pdpGalleryImages ? pdpGalleryImages.indexOf(fullUrl) : -1;
             if (idx !== -1) {
                 selectProductGalleryIndex(idx);
             } else {
                 mainImg.src = fullUrl;
+                document.querySelectorAll('.pdp-slider-dot').forEach(d => d.classList.remove('active'));
+                document.querySelectorAll('.pdp-gallery-thumb').forEach(t => t.classList.remove('border-primary'));
             }
         }
     }
