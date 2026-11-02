@@ -70,6 +70,15 @@ class CartService
                 $item->quantity = $maxStock;
                 $item->save();
             }
+
+            // Sync unit_price with active live product price / offer
+            $offerService = app(\App\Services\OfferService::class);
+            $productWithOffer = $offerService->applyOfferDiscountsToProducts(collect([$product]))->first();
+            $latestPrice = (float) ($productWithOffer->sale_price ?? $product->price);
+            if (abs(((float) $item->unit_price) - $latestPrice) > 0.001) {
+                $item->unit_price = $latestPrice;
+                $item->save();
+            }
         }
     }
 

@@ -56,27 +56,32 @@ class CartController extends BaseApiController
                 }
             }
 
+            $discountPct = ($originalPrice > $unitPrice && $originalPrice > 0)
+                ? (int) round((($originalPrice - $unitPrice) / $originalPrice) * 100)
+                : 0;
+
             $items[] = [
-                'id'              => (int) $item->id,
-                'cart_item_id'    => (int) $item->id,
-                'product_id'      => (int) $item->product_id,
-                'name'            => $product ? $product->name : 'Product',
-                'product_name'    => $product ? $product->name : 'Product',
-                'slug'            => $product ? $product->slug : '',
-                'brand_name'      => ($product && $product->brand) ? $product->brand->name : null,
-                'quantity'        => (int) $item->quantity,
-                'price'           => $unitPrice,
-                'unit_price'      => $unitPrice,
-                'original_price'  => $originalPrice,
-                'image_url'       => $imgPath ? (str_starts_with($imgPath, 'http') ? $imgPath : asset('storage/' . $imgPath)) : null,
-                'selected_option' => $item->selected_option,
-                'is_selected'     => (bool) ($item->is_selected && $inStock),
-                'total'           => $itemTotal,
-                'subtotal'        => $itemTotal,
-                'in_stock'        => $inStock,
-                'max_available'   => $maxAvail,
-                'stock_status'    => !$inStock ? 'out_of_stock' : ($maxAvail <= 5 ? 'limited_stock' : 'in_stock'),
-                'stock_message'   => !$inStock ? 'Currently out of stock' : ($maxAvail <= 5 ? "Only {$maxAvail} left in stock" : null),
+                'id'                  => (int) $item->id,
+                'cart_item_id'        => (int) $item->id,
+                'product_id'          => (int) $item->product_id,
+                'name'                => $product ? $product->name : 'Product',
+                'product_name'        => $product ? $product->name : 'Product',
+                'slug'                => $product ? $product->slug : '',
+                'brand_name'          => ($product && $product->brand) ? $product->brand->name : null,
+                'quantity'            => (int) $item->quantity,
+                'price'               => $unitPrice,
+                'unit_price'          => $unitPrice,
+                'original_price'      => $originalPrice,
+                'discount_percentage' => $discountPct,
+                'image_url'           => $imgPath ? (str_starts_with($imgPath, 'http') ? $imgPath : asset('storage/' . $imgPath)) : null,
+                'selected_option'     => $item->selected_option,
+                'is_selected'         => (bool) ($item->is_selected && $inStock),
+                'total'               => $itemTotal,
+                'subtotal'            => $itemTotal,
+                'in_stock'            => $inStock,
+                'max_available'       => $maxAvail,
+                'stock_status'        => !$inStock ? 'out_of_stock' : ($maxAvail <= 5 ? 'limited_stock' : 'in_stock'),
+                'stock_message'       => !$inStock ? 'Currently out of stock' : ($maxAvail <= 5 ? "Only {$maxAvail} left in stock" : null),
             ];
         }
 
