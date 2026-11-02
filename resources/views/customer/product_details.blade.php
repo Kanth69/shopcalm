@@ -1422,8 +1422,63 @@ function validateOptionSelected(formEl) {
 }
 
 let currentProductGalleryIdx = 0;
-const pdpGalleryImages = @json($allProductImages);
+const pdpBaseGalleryImages = @json($allProductImages);
+let activeGalleryImages = [...pdpBaseGalleryImages];
+let activeVariantImage = null;
 const pdpVariantImages = @json($product->option_images ?? []);
+const hasProductVideo = @json($hasProductVideo ?? false);
+
+function getTotalGallerySlidesCount() {
+    return activeGalleryImages.length + (hasProductVideo ? 1 : 0);
+}
+
+function getVideoSlideIndex() {
+    return hasProductVideo ? activeGalleryImages.length : -1;
+}
+
+function updateGalleryDots() {
+    const dotsContainer = document.getElementById('pdp-slider-dots');
+    if (!dotsContainer) return;
+
+    const totalCount = getTotalGallerySlidesCount();
+    if (totalCount <= 1) {
+        dotsContainer.innerHTML = '';
+        return;
+    }
+
+    const vIdx = getVideoSlideIndex();
+    let html = '';
+    activeGalleryImages.forEach((_, idx) => {
+        const isActive = (idx === currentProductGalleryIdx);
+        html += `<button type="button" onclick="selectProductGalleryIndex(${idx})" class="pdp-slider-dot ${isActive ? 'active' : ''}" data-dot-idx="${idx}" title="View image ${idx + 1}" aria-label="Slide ${idx + 1}"></button>`;
+    });
+
+    if (hasProductVideo) {
+        const isActive = (currentProductGalleryIdx === vIdx);
+        html += `<button type="button" onclick="selectProductGalleryIndex(${vIdx})" class="pdp-slider-dot pdp-video-dot ${isActive ? 'active' : ''}" data-dot-idx="${vIdx}" title="Watch Product Video" aria-label="Slide ${vIdx + 1} - Product Video"><i class="bi bi-play-fill"></i> <span>VIDEO</span></button>`;
+    }
+
+    dotsContainer.innerHTML = html;
+}
+
+function updateLightboxThumbs() {
+    const thumbScroll = document.querySelector('.lightbox-thumb-scroll');
+    if (!thumbScroll) return;
+
+    let html = '';
+    activeGalleryImages.forEach((url, lIdx) => {
+        const isActive = (lIdx === currentLightboxIdx);
+        const borderStyle = isActive ? '2px solid #007185' : '1px solid #d5d9d9';
+        html += `<button type="button" onclick="setLightboxIndex(${lIdx})"
+                        class="lightbox-thumb-item rounded-2 p-1 bg-white ${isActive ? 'active' : ''}"
+                        data-lightbox-thumb="${lIdx}"
+                        aria-label="View thumbnail ${lIdx + 1}"
+                        style="width: 56px; height: 56px; flex-shrink: 0; cursor: pointer; transition: all 0.2s ease; border: ${borderStyle};">
+                    <img src="${url}" alt="Thumb ${lIdx + 1}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 2px;">
+                </button>`;
+    });
+    thumbScroll.innerHTML = html;
+}
 
 // Preload all variant images in the background for instant 0ms switching
 if (pdpVariantImages && typeof pdpVariantImages === 'object') {
@@ -1461,58 +1516,48 @@ function switchVariantImage(key) {
     
     if (path) {
         const fullUrl = path.startsWith('http') ? path : '/storage/' + path;
-        const mainImg = document.getElementById('main-product-img');
-        const videoView = document.getElementById('pdp-video-slide-view');
-        if (videoView) videoView.classList.add('d-none');
-        if (mainImg) {
-            mainImg.classList.remove('d-none');
-            const idx = pdpGalleryImages ? pdpGalleryImages.indexOf(fullUrl) : -1;
-            if (idx !== -1) {
-                selectProductGalleryIndex(idx);
-            } else {
-                mainImg.src = fullUrl;
-                document.querySelectorAll('.pdp-slider-dot').forEach(d => d.classList.remove('active'));
-                document.querySelectorAll('.pdp-gallery-thumb').forEach(t => t.classList.remove('border-primary'));
-            }
-        }
+        activeVariantImage = fullUrl;
+
+        // Exactly like the App: [selected Color Image, Main Image, Gallery Images]
+        activeGalleryImages = [fullUrl, ...pdpBaseGalleryImages.filter(img => img !== fullUrl)];
+
+        // Switch to the color image at index 0
+        selectProductGalleryIndex(0);
+        updateGalleryDots();
+        updateLightboxThumbs();
     }
 }
 
-const hasProductVideo = @json($hasProductVideo ?? false);
-const videoSlideIndex = @json($videoSlideIndex ?? -1);
-const totalGallerySlidesCount = (typeof pdpGalleryImages !== 'undefined' ? pdpGalleryImages.length : 0) + (hasProductVideo ? 1 : 0);
-
 function handleMainImageClick() {
-    if (hasProductVideo && currentProductGalleryIdx === videoSlideIndex) {
+    const vIdx = getVideoSlideIndex();
+    if (hasProductVideo && currentProductGalleryIdx === vIdx) {
         openProductVideoModal();
     } else {
-        openProductLightbox();
+        openProductLightbox(currentProductGalleryIdx);
     }
 }
 
 function selectProductGalleryIndex(idx) {
-    if (!totalGallerySlidesCount) return;
-    if (idx < 0) idx = totalGallerySlidesCount - 1;
-    if (idx >= totalGallerySlidesCount) idx = 0;
+    const totalCount = getTotalGallerySlidesCount();
+    if (!totalCount) return;
+    if (idx < 0) idx = totalCount - 1;
+    if (idx >= totalCount) idx = 0;
 
     currentProductGalleryIdx = idx;
     const mainImg = document.getElementById('main-product-img');
     const videoView = document.getElementById('pdp-video-slide-view');
+    const vIdx = getVideoSlideIndex();
 
-    if (hasProductVideo && idx === videoSlideIndex) {
+    if (hasProductVideo && idx === vIdx) {
         if (mainImg) mainImg.classList.add('d-none');
         if (videoView) videoView.classList.remove('d-none');
     } else {
         if (videoView) videoView.classList.add('d-none');
         if (mainImg) {
             mainImg.classList.remove('d-none');
-            const src = pdpGalleryImages[idx];
+            const src = activeGalleryImages[idx];
             if (src && mainImg.src !== src) {
-                mainImg.style.opacity = '0.35';
-                setTimeout(() => {
-                    mainImg.src = src;
-                    mainImg.style.opacity = '1';
-                }, 80);
+                mainImg.src = src;
             }
         }
     }
@@ -2117,7 +2162,7 @@ function openProductLightbox(idx) {
     if (typeof idx !== 'number') {
         idx = (typeof currentProductGalleryIdx === 'number') ? currentProductGalleryIdx : 0;
     }
-    if (!pdpGalleryImages || !pdpGalleryImages.length) return;
+    if (!activeGalleryImages || !activeGalleryImages.length) return;
     setLightboxIndex(idx);
     
     const modalEl = document.getElementById('productLightboxModal');
@@ -2128,16 +2173,16 @@ function openProductLightbox(idx) {
 }
 
 function setLightboxIndex(idx) {
-    if (!pdpGalleryImages || !pdpGalleryImages.length) return;
-    if (idx < 0) idx = pdpGalleryImages.length - 1;
-    if (idx >= pdpGalleryImages.length) idx = 0;
+    if (!activeGalleryImages || !activeGalleryImages.length) return;
+    if (idx < 0) idx = activeGalleryImages.length - 1;
+    if (idx >= activeGalleryImages.length) idx = 0;
 
     currentLightboxIdx = idx;
     const imgEl = document.getElementById('lightbox-img');
     
     if (imgEl) {
         imgEl.style.opacity = '0.35';
-        imgEl.src = pdpGalleryImages[idx];
+        imgEl.src = activeGalleryImages[idx];
         setTimeout(() => { imgEl.style.opacity = '1'; }, 70);
     }
 
