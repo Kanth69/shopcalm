@@ -61,9 +61,11 @@ class DashboardController extends Controller
             'banner_image'     => 'nullable|url|max:500',
             'destination_type' => 'required|string|in:home,offers,category,cart',
             'category_id'      => 'nullable|required_if:destination_type,category|exists:categories,id',
+            'campaign_type'    => 'nullable|string|in:custom,birthday,seasonal,flash_sale,dormant,wallet_expiry',
             'target_gender'    => 'required|string|in:all,Male,Female',
             'target_age_group' => 'required|string|in:all,birthday_month,under_25,25_40,over_40',
             'target_activity'  => 'required|string|in:all,dormant',
+            'target_language'  => 'nullable|string|in:all,en,te,hi,ta,kn',
         ]);
 
         $user = auth('marketing')->user() ?? auth('admin')->user() ?? auth()->user();
@@ -71,34 +73,20 @@ class DashboardController extends Controller
         $actorId = $user ? $user->id : null;
 
         if ($isSuperAdmin) {
-            // 1. Build targeted audience query on registered active devices
-            $devicesQuery = UserDevice::where('is_active', true)->whereNotNull('fcm_token');
+            $tokens = UserDevice::targetAudience(
+                $request->target_gender,
+                $request->target_age_group,
+                $request->target_activity,
+                $request->target_language ?? 'all'
+            )->pluck('fcm_token')->unique()->values();
 
-            if ($request->target_gender !== 'all') {
-                $devicesQuery->whereHas('user.profile', fn($q) => $q->where('gender', $request->target_gender));
-            }
-
-            if ($request->target_age_group === 'birthday_month') {
-                $devicesQuery->whereHas('user.profile', fn($q) => $q->whereRaw('MONTH(date_of_birth) = ?', [now()->month]));
-            } elseif ($request->target_age_group === 'under_25') {
-                $devicesQuery->whereHas('user.profile', fn($q) => $q->where('date_of_birth', '>', now()->subYears(25)));
-            } elseif ($request->target_age_group === '25_40') {
-                $devicesQuery->whereHas('user.profile', fn($q) => $q->whereBetween('date_of_birth', [now()->subYears(40), now()->subYears(25)]));
-            } elseif ($request->target_age_group === 'over_40') {
-                $devicesQuery->whereHas('user.profile', fn($q) => $q->where('date_of_birth', '<', now()->subYears(40)));
-            }
-
-            if ($request->target_activity === 'dormant') {
-                $devicesQuery->whereHas('user', fn($q) => $q->whereDoesntHave('orders', fn($oq) => $oq->where('created_at', '>=', now()->subDays(30))));
-            }
-
-            $tokens = $devicesQuery->pluck('fcm_token')->unique()->values();
             $sentCount = 0;
 
             // 2. Prepare Flutter deep link payload
             $payload = [
-                'type'   => 'broadcast',
-                'screen' => $request->destination_type,
+                'type'          => 'broadcast',
+                'screen'        => $request->destination_type,
+                'campaign_type' => $request->campaign_type ?? 'custom',
             ];
 
             if ($request->destination_type === 'category' && $request->filled('category_id')) {
@@ -119,9 +107,11 @@ class DashboardController extends Controller
                 'banner_image'     => $request->banner_image,
                 'destination_type' => $request->destination_type,
                 'destination_id'   => $request->category_id,
+                'campaign_type'    => $request->campaign_type ?? 'custom',
                 'target_gender'    => $request->target_gender,
                 'target_age_group' => $request->target_age_group,
                 'target_activity'  => $request->target_activity,
+                'target_language'  => $request->target_language ?? 'all',
                 'recipient_count'  => $sentCount,
                 'status'           => 'Approved',
                 'approved_by'      => $actorId,
@@ -140,9 +130,11 @@ class DashboardController extends Controller
             'banner_image'     => $request->banner_image,
             'destination_type' => $request->destination_type,
             'destination_id'   => $request->category_id,
+            'campaign_type'    => $request->campaign_type ?? 'custom',
             'target_gender'    => $request->target_gender,
             'target_age_group' => $request->target_age_group,
             'target_activity'  => $request->target_activity,
+            'target_language'  => $request->target_language ?? 'all',
             'recipient_count'  => 0,
             'status'           => 'Pending_Approval',
             'sent_by'          => $actorId,

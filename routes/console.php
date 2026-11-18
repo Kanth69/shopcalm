@@ -10,3 +10,7 @@ Artisan::command('inspire', function () {
 \Illuminate\Support\Facades\Schedule::command('shopcalm:send-cart-nudges')
     ->everyThirtyMinutes()
     ->withoutOverlapping();
+
+\Illuminate\Support\Facades\Schedule::command('shopcalm:send-wallet-nudges')
+    ->dailyAt('11:30')
+    ->withoutOverlapping();

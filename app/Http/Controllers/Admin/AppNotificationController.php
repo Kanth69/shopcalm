@@ -76,9 +76,11 @@ class AppNotificationController extends Controller
             'banner_image'     => 'nullable|url|max:500',
             'destination_type' => 'required|string|in:home,offers,category,cart',
             'category_id'      => 'nullable|required_if:destination_type,category|exists:categories,id',
+            'campaign_type'    => 'nullable|string|in:custom,birthday,seasonal,flash_sale,dormant,wallet_expiry',
             'target_gender'    => 'required|string|in:all,Male,Female',
             'target_age_group' => 'required|string|in:all,birthday_month,under_25,25_40,over_40',
             'target_activity'  => 'required|string|in:all,dormant',
+            'target_language'  => 'nullable|string|in:all,en,te,hi,ta,kn',
         ]);
 
         $adminId = auth('admin')->id() ?? auth()->id();
@@ -89,9 +91,11 @@ class AppNotificationController extends Controller
             'banner_image'     => $request->banner_image,
             'destination_type' => $request->destination_type,
             'destination_id'   => $request->category_id,
+            'campaign_type'    => $request->campaign_type ?? 'custom',
             'target_gender'    => $request->target_gender,
             'target_age_group' => $request->target_age_group,
             'target_activity'  => $request->target_activity,
+            'target_language'  => $request->target_language ?? 'all',
             'recipient_count'  => 0,
             'status'           => 'Approved',
             'approved_by'      => $adminId,
@@ -157,32 +161,19 @@ class AppNotificationController extends Controller
      */
     protected function broadcastNotification(AppNotification $notification, FcmNotificationService $fcmService): int
     {
-        $devicesQuery = UserDevice::where('is_active', true)->whereNotNull('fcm_token');
+        $tokens = UserDevice::targetAudience(
+            $notification->target_gender,
+            $notification->target_age_group,
+            $notification->target_activity,
+            $notification->target_language ?? 'all'
+        )->pluck('fcm_token')->unique()->values();
 
-        if ($notification->target_gender && $notification->target_gender !== 'all') {
-            $devicesQuery->whereHas('user.profile', fn($q) => $q->where('gender', $notification->target_gender));
-        }
-
-        if ($notification->target_age_group === 'birthday_month') {
-            $devicesQuery->whereHas('user.profile', fn($q) => $q->whereRaw('MONTH(date_of_birth) = ?', [now()->month]));
-        } elseif ($notification->target_age_group === 'under_25') {
-            $devicesQuery->whereHas('user.profile', fn($q) => $q->where('date_of_birth', '>', now()->subYears(25)));
-        } elseif ($notification->target_age_group === '25_40') {
-            $devicesQuery->whereHas('user.profile', fn($q) => $q->whereBetween('date_of_birth', [now()->subYears(40), now()->subYears(25)]));
-        } elseif ($notification->target_age_group === 'over_40') {
-            $devicesQuery->whereHas('user.profile', fn($q) => $q->where('date_of_birth', '<', now()->subYears(40)));
-        }
-
-        if ($notification->target_activity === 'dormant') {
-            $devicesQuery->whereHas('user', fn($q) => $q->whereDoesntHave('orders', fn($oq) => $oq->where('created_at', '>=', now()->subDays(30))));
-        }
-
-        $tokens = $devicesQuery->pluck('fcm_token')->unique()->values();
         $sentCount = 0;
 
         $payload = [
-            'type'   => 'broadcast',
-            'screen' => $notification->destination_type,
+            'type'          => 'broadcast',
+            'screen'        => $notification->destination_type,
+            'campaign_type' => $notification->campaign_type ?? 'custom',
         ];
 
         if ($notification->destination_type === 'category' && $notification->destination_id) {

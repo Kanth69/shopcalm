@@ -129,6 +129,27 @@
 
                         <td>
                             <div class="d-flex flex-wrap gap-1">
+                                @if($pending->campaign_type === 'birthday')
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill small">🎂 Birthday</span>
+                                @elseif($pending->campaign_type === 'seasonal')
+                                    <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill small">🌦️ Seasonal</span>
+                                @elseif($pending->campaign_type === 'flash_sale')
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill small">⚡ Flash Sale</span>
+                                @elseif($pending->campaign_type === 'dormant')
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill small">💤 Winback</span>
+                                @elseif($pending->campaign_type === 'wallet_expiry')
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small">💰 Wallet Expiry</span>
+                                @endif
+
+                                @if($pending->target_language && $pending->target_language !== 'all')
+                                    @php
+                                        $langMap = ['te' => 'తెలుగు (TS/AP)', 'hi' => 'हिंदी (Hindi)', 'ta' => 'தமிழ் (Tamil)', 'kn' => 'ಕನ್ನಡ (Kannada)', 'en' => 'English'];
+                                    @endphp
+                                    <span class="badge rounded-pill small" style="background-color: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe;">
+                                        <i class="bi bi-translate me-1"></i>{{ $langMap[$pending->target_language] ?? strtoupper($pending->target_language) }}
+                                    </span>
+                                @endif
+
                                 @if($pending->target_gender === 'Male')
                                     <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill small">Male Only</span>
                                 @elseif($pending->target_gender === 'Female')
@@ -281,6 +302,29 @@
 
                         <td>
                             <div class="d-flex flex-wrap gap-1">
+                                <!-- Campaign Preset Tag -->
+                                @if($item->campaign_type === 'birthday')
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill small">🎂 Birthday</span>
+                                @elseif($item->campaign_type === 'seasonal')
+                                    <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill small">🌦️ Seasonal</span>
+                                @elseif($item->campaign_type === 'flash_sale')
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill small">⚡ Flash Sale</span>
+                                @elseif($item->campaign_type === 'dormant')
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill small">💤 Winback</span>
+                                @elseif($item->campaign_type === 'wallet_expiry')
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small">💰 Wallet Expiry</span>
+                                @endif
+
+                                <!-- Language Tag -->
+                                @if($item->target_language && $item->target_language !== 'all')
+                                    @php
+                                        $langMap = ['te' => 'తెలుగు (TS/AP)', 'hi' => 'हिंदी (Hindi)', 'ta' => 'தமிழ் (Tamil)', 'kn' => 'ಕನ್ನಡ (Kannada)', 'en' => 'English'];
+                                    @endphp
+                                    <span class="badge rounded-pill small" style="background-color: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe;">
+                                        <i class="bi bi-translate me-1"></i>{{ $langMap[$item->target_language] ?? strtoupper($item->target_language) }}
+                                    </span>
+                                @endif
+
                                 <!-- Gender Tag -->
                                 @if($item->target_gender === 'Male')
                                     <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill small">
