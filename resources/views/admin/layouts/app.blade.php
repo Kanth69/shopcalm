@@ -648,9 +648,8 @@
                 @if(optional(auth()->user())->isSuperAdmin())
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}" href="{{ route('admin.notifications.index') }}">
-                        <i class="bi bi-bell-fill text-danger"></i>
-                        <span class="nav-label">App Push Alerts</span>
-                        <span class="badge bg-danger text-white nav-badge">SUPER</span>
+                        <i class="bi bi-bell"></i>
+                        <span class="nav-label">Push Notifications</span>
                     </a>
                 </li>
                 @endif
@@ -661,9 +660,8 @@
                     <a class="nav-link has-submenu {{ request()->routeIs('admin.finance.*') || request()->routeIs('admin.reports.*') ? '' : 'collapsed' }}"
                        data-bs-toggle="collapse" href="#financeSubmenu" role="button"
                        aria-expanded="{{ request()->routeIs('admin.finance.*') || request()->routeIs('admin.reports.*') ? 'true' : 'false' }}">
-                        <i class="bi bi-graph-up text-warning"></i>
+                        <i class="bi bi-graph-up"></i>
                         <span class="nav-label">Finance & P&L</span>
-                        <span class="badge bg-warning text-dark nav-badge">SUPER</span>
                     </a>
                     <div class="collapse {{ request()->routeIs('admin.finance.*') || request()->routeIs('admin.reports.*') ? 'show' : '' }}" id="financeSubmenu">
                         <ul class="nav flex-column submenu">

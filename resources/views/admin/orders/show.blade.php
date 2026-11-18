@@ -454,8 +454,8 @@
 <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff;">
     <div class="card-header border-0 py-3.5 px-4 d-flex align-items-center justify-content-between" style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.08) !important;">
         <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-warning text-dark px-2.5 py-1 fw-bold rounded-pill" style="font-size: 0.68rem; letter-spacing: 0.5px;">
-                <i class="bi bi-shield-lock-fill me-1"></i> SUPER ADMIN ONLY
+            <span class="badge bg-primary px-2.5 py-1 fw-semibold rounded-pill" style="font-size: 0.68rem; letter-spacing: 0.5px;">
+                <i class="bi bi-graph-up me-1"></i> Profit Analysis
             </span>
             <h6 class="mb-0 fw-bold text-white" style="font-size: 0.92rem;">Financial & Unit Economics Analytics</h6>
         </div>

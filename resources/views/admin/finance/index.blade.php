@@ -31,8 +31,8 @@
                 </div>
                 <div>
                     <div class="d-flex align-items-center gap-2 mb-1">
-                        <span class="badge bg-warning text-dark px-2.5 py-1 fw-bolder rounded-pill" style="font-size: 0.68rem; letter-spacing: 0.06em;">
-                            SUPER ADMIN EXCLUSIVE
+                        <span class="badge bg-primary px-2.5 py-1 fw-semibold rounded-pill" style="font-size: 0.68rem; letter-spacing: 0.04em;">
+                            Financial Analytics
                         </span>
                         <span class="text-white-50 small">&bull; Real-Time Unit Economics & P&L Analysis</span>
                     </div>

@@ -67,7 +67,7 @@
                             <option value="4" {{ old('role_id') == '4' ? 'selected' : '' }}>📦 Product Manager (Catalog, Stock, Reviews & Product Reports - /product-manager/login)</option>
                             <option value="6" {{ old('role_id') == '6' ? 'selected' : '' }}>🎧 Customer Support (Contact Enquiries, Customer Registry & Subscribers)</option>
                             <option value="2" {{ old('role_id', '2') == '2' ? 'selected' : '' }}>🛡️ Admin (General Operations, Product Approvals & Storefront Config)</option>
-                            <option value="1" {{ old('role_id') == '1' ? 'selected' : '' }}>👑 Super Admin (Full Master Authority & Staff Provisioning)</option>
+                            <option value="1" {{ old('role_id') == '1' ? 'selected' : '' }}>Super Admin (Full Master Authority & Staff Provisioning)</option>
                         </select>
                         @error('role_id') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         <div class="form-text small text-muted mt-1">Product Managers access their dedicated workspace at <code>/product-manager/login</code>.</div>

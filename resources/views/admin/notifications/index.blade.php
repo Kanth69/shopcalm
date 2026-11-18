@@ -78,7 +78,6 @@
         <div class="d-flex align-items-center gap-2">
             <i class="bi bi-bell-fill text-primary fs-5"></i>
             <h6 class="mb-0 fw-bold text-dark">Broadcast Push Notifications History</h6>
-            <span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-0.5 small fw-bold">SUPER ADMIN</span>
         </div>
         <span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill font-monospace small">
             Total Sent: {{ $notifications->total() }}
@@ -181,7 +180,7 @@
                         </td>
 
                         <td>
-                            <small class="fw-semibold text-dark">{{ optional($item->sender)->name ?? 'Super Admin' }}</small>
+                            <small class="fw-semibold text-dark">{{ optional($item->sender)->name ?? 'Admin' }}</small>
                         </td>
 
                         <td class="text-end pe-4 text-nowrap">
