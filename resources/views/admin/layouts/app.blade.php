@@ -646,6 +646,15 @@
                 </li>
 
                 @if(optional(auth()->user())->isSuperAdmin())
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}" href="{{ route('admin.notifications.index') }}">
+                        <i class="bi bi-bell"></i>
+                        <span class="nav-label">App Notifications</span>
+                    </a>
+                </li>
+                @endif
+
+                @if(optional(auth()->user())->isSuperAdmin())
                 <li class="nav-header">Finance & Unit Economics</li>
                 <li class="nav-item">
                     <a class="nav-link has-submenu {{ request()->routeIs('admin.finance.*') || request()->routeIs('admin.reports.*') ? '' : 'collapsed' }}"
@@ -710,13 +719,15 @@
                 @endif
 
                 @if(optional(auth()->user())->isSuperAdmin())
-                <li class="nav-header">Operations Portals</li>
+                <li class="nav-header">All Portals</li>
                 <li class="nav-item">
-                    <a class="nav-link has-submenu collapsed" data-bs-toggle="collapse" href="#operationsSubmenu" role="button" aria-expanded="false">
+                    <a class="nav-link has-submenu {{ request()->routeIs('product-manager.*') || request()->routeIs('order-manager.*') || request()->routeIs('support.*') || request()->routeIs('marketing.*') || request()->routeIs('delivery.*') ? '' : 'collapsed' }}"
+                       data-bs-toggle="collapse" href="#operationsSubmenu" role="button"
+                       aria-expanded="{{ request()->routeIs('product-manager.*') || request()->routeIs('order-manager.*') || request()->routeIs('support.*') || request()->routeIs('marketing.*') || request()->routeIs('delivery.*') ? 'true' : 'false' }}">
                         <i class="bi bi-layers"></i>
-                        <span class="nav-label">Operations Portals</span>
+                        <span class="nav-label">All Portals</span>
                     </a>
-                    <div class="collapse" id="operationsSubmenu">
+                    <div class="collapse {{ request()->routeIs('product-manager.*') || request()->routeIs('order-manager.*') || request()->routeIs('support.*') || request()->routeIs('marketing.*') || request()->routeIs('delivery.*') ? 'show' : '' }}" id="operationsSubmenu">
                         <ul class="nav flex-column submenu">
                             <li class="nav-item">
                                 <a class="nav-link d-flex align-items-center justify-content-between" href="{{ route('product-manager.dashboard') }}" target="_blank">
@@ -737,21 +748,19 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center justify-content-between" href="{{ route('delivery.dashboard') }}" target="_blank">
+                                    <span><i class="bi bi-bicycle me-2 text-warning"></i> Delivery & Rider</span>
+                                    <i class="bi bi-box-arrow-up-right small text-white-50"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link d-flex align-items-center justify-content-between" href="{{ route('marketing.dashboard') }}" target="_blank">
-                                    <span><i class="bi bi-bell me-2" style="color: #ec4899;"></i> Marketing Portal</span>
+                                    <span><i class="bi bi-megaphone me-2" style="color: #ec4899;"></i> Marketing Portal</span>
                                     <i class="bi bi-box-arrow-up-right small text-white-50"></i>
                                 </a>
                             </li>
                         </ul>
                     </div>
-                </li>
-                <li class="nav-header">Marketing & Growth</li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('marketing.*') ? 'active' : '' }}" href="{{ route('marketing.dashboard') }}" target="_blank">
-                        <i class="bi bi-megaphone"></i>
-                        <span class="nav-label">Marketing Portal</span>
-                        <i class="bi bi-box-arrow-up-right small ms-auto text-white-50"></i>
-                    </a>
                 </li>
                 @endif
 
