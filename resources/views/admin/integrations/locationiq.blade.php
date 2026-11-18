@@ -93,17 +93,23 @@
                     <div class="mb-3">
                         <div class="d-flex align-items-center justify-content-between mb-1">
                             <label class="form-label fw-bold text-dark small mb-0">LocationIQ API Access Token (Public Key)</label>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
-                                <i class="bi bi-shield-lock-fill me-1"></i>Encrypted in DB
-                            </span>
+                            @if($isConfigured)
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+                                    <i class="bi bi-shield-check me-1"></i>Configured &amp; Encrypted
+                                </span>
+                            @else
+                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>Not Set
+                                </span>
+                            @endif
                         </div>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-muted"><i class="bi bi-geo-alt"></i></span>
-                            <input type="password" name="locationiq_api_key" id="locationiq_api_key" class="form-control font-monospace" value="{{ old('locationiq_api_key', $locationiqKey) }}" placeholder="pk.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+                            <input type="password" name="locationiq_api_key" id="locationiq_api_key" class="form-control font-monospace" value="" placeholder="{{ $isConfigured ? '•••••••••••••••• (Configured — leave blank to keep current)' : 'pk.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' }}" autocomplete="new-password">
                             <button type="button" class="btn btn-outline-secondary" onclick="toggleTokenVisibility()" title="Toggle view token"><i class="bi bi-eye" id="toggleIcon"></i></button>
                         </div>
                         <div class="d-flex align-items-center justify-content-between mt-1 text-muted" style="font-size: 0.72rem;">
-                            <span>Starts with <code>pk.</code> (Public Access Token).</span>
+                            <span>{{ $isConfigured ? '✓ Token is masked & encrypted in DB. Leave blank to keep existing.' : 'Starts with pk. (Public Client Token).' }}</span>
                             <span class="text-primary fw-semibold"><i class="bi bi-shield-check me-0.5"></i> Auto-validated on save</span>
                         </div>
                     </div>
@@ -120,6 +126,31 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- Security Best Practice Card: HTTP Referrer Restriction -->
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 border-start border-4 border-primary">
+            <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-shield-lock-fill text-primary me-2"></i>Token Security &amp; Referrer Restriction</h6>
+                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2.5 py-0.5 fw-bold" style="font-size: 0.68rem;">Best Practice</span>
+            </div>
+            <div class="card-body p-4 small">
+                <p class="mb-2 text-dark fw-medium">Prevent unauthorized domains and bots from using your LocationIQ quota:</p>
+                <ol class="ps-3 mb-3 text-muted" style="line-height: 1.6; font-size: 0.76rem;">
+                    <li>Log in to your <a href="https://my.locationiq.com/dashboard#accesstokens" target="_blank" class="fw-bold text-primary text-decoration-underline">LocationIQ Access Tokens Dashboard</a>.</li>
+                    <li>Click <strong>Edit / Settings</strong> on your public token (<code>pk....</code>).</li>
+                    <li>Under <strong>Allowed HTTP Referrers</strong>, add your domains:
+                        <div class="bg-light p-2 rounded-2 font-monospace text-dark mt-1 border">
+                            https://shopcalm.in/*<br>
+                            https://hub.shopcalm.in/*
+                        </div>
+                    </li>
+                    <li>Click <strong>Save</strong>. Once restricted, requests from any unauthorized third-party website or scraper will be instantly blocked by LocationIQ.</li>
+                </ol>
+                <div class="bg-light-subtle rounded-3 p-2 border text-muted" style="font-size: 0.72rem;">
+                    <i class="bi bi-info-circle-fill text-primary me-1"></i> LocationIQ public tokens (<code>pk.</code>) are designed for client browser maps. Restricting HTTP referrers ensures zero abuse risk.
+                </div>
             </div>
         </div>
 

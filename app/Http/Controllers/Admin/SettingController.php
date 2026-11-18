@@ -88,6 +88,7 @@ class SettingController extends Controller
             'logo.uploaded' => 'Main Storefront Logo failed to upload. Please check the file size (max 10 MB) and format.',
         ]);
 
+        $changedFields = [];
         foreach ($validated as $key => $value) {
             if (in_array($key, ['logo', 'favicon'], true)) {
                 if ($request->hasFile($key)) {
@@ -97,6 +98,7 @@ class SettingController extends Controller
                     }
                     $storedPath = $request->file($key)->store('settings', 'public');
                     Setting::set($key, $storedPath);
+                    $changedFields[] = ucfirst($key) . ' Image';
 
                     if ($key === 'favicon') {
                         try {
@@ -109,7 +111,39 @@ class SettingController extends Controller
                 }
                 continue;
             }
-            Setting::set($key, $value);
+            if ($value !== Setting::get($key)) {
+                Setting::set($key, $value);
+                $changedFields[] = ucwords(str_replace('_', ' ', $key));
+            }
+        }
+
+        // Record security audit if sensitive store configurations changed
+        if (!empty($changedFields)) {
+            $adminUser = auth('admin')->user() ?? auth()->user();
+            $adminName = $adminUser ? $adminUser->name : 'Super Admin';
+            $adminEmail = $adminUser ? $adminUser->email : 'superadmin@shopcalm.in';
+            $ip = $request->ip();
+
+            \Illuminate\Support\Facades\Log::warning("[SECURITY AUDIT] Store Settings modified by {$adminName} ({$adminEmail}) from IP: {$ip}", [
+                'admin_id'    => $adminUser?->id,
+                'admin_email' => $adminEmail,
+                'ip'          => $ip,
+                'fields'      => $changedFields,
+                'timestamp'   => now()->toIso8601String(),
+            ]);
+
+            try {
+                app(\App\Services\EmailService::class)->sendSecurityAlert('Store Settings & Business Details Updated', [
+                    'admin_name'  => $adminName,
+                    'admin_email' => $adminEmail,
+                    'ip_address'  => $ip,
+                    'user_agent'  => $request->userAgent() ?? 'Unknown Agent',
+                    'timestamp'   => now()->format('d M Y, h:i A T'),
+                    'changes'     => $changedFields,
+                ]);
+            } catch (\Throwable $e) {
+                // Non-blocking
+            }
         }
 
         return back()

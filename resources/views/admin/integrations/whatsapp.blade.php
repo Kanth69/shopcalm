@@ -48,19 +48,30 @@
                         <div class="form-text text-muted" style="font-size: 0.71rem;">Meta App Console &rarr; WhatsApp &rarr; API Setup &rarr; Phone Number ID</div>
                     </div>
 
+                    @php
+                        $hasWhatsAppToken = !empty($settings['whatsapp_api_token'] ?? env('WHATSAPP_API_TOKEN', ''));
+                    @endphp
                     <div class="mb-3">
                         <div class="d-flex align-items-center justify-content-between mb-1">
                             <label class="form-label fw-bold text-dark small mb-0">Permanent System User Access Token <span class="text-danger">*</span></label>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
-                                <i class="bi bi-shield-lock-fill me-1"></i>Encrypted in DB
-                            </span>
+                            @if($hasWhatsAppToken)
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+                                    <i class="bi bi-shield-check me-1"></i>Configured &amp; Encrypted
+                                </span>
+                            @else
+                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>Not Set
+                                </span>
+                            @endif
                         </div>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-muted"><i class="bi bi-shield-lock"></i></span>
-                            <input type="password" name="whatsapp_api_token" id="whatsapp_api_token" class="form-control font-monospace" value="{{ $settings['whatsapp_api_token'] ?? env('WHATSAPP_API_TOKEN', '') }}" placeholder="EAAO2o..." required>
+                            <input type="password" name="whatsapp_api_token" id="whatsapp_api_token" class="form-control font-monospace" value="" placeholder="{{ $hasWhatsAppToken ? '•••••••••••••••• (Configured — leave blank to keep current)' : 'Paste System User Access Token (EAAO2o...)' }}" autocomplete="new-password">
                             <button type="button" class="btn btn-outline-secondary" onclick="togglePasswordVisibility('whatsapp_api_token', this)" title="Toggle view token"><i class="bi bi-eye"></i></button>
                         </div>
-                        <div class="form-text text-muted" style="font-size: 0.71rem;">Original token shown decrypted here. Stored safely encrypted in DB.</div>
+                        <div class="form-text text-muted" style="font-size: 0.71rem;">
+                            {{ $hasWhatsAppToken ? '✓ Access token is securely masked and encrypted in the database. Leave blank to keep existing token.' : 'Enter Meta permanent system user access token.' }}
+                        </div>
                     </div>
 
                     <hr class="my-3 border-secondary-subtle">

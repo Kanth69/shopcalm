@@ -72,24 +72,35 @@
                         <label class="form-label fw-bold text-dark small">Razorpay Key ID <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-muted"><i class="bi bi-person-badge"></i></span>
-                            <input type="text" name="razorpay_key_id" class="form-control font-monospace" value="{{ $settings['razorpay_key_id'] ?? env('RAZORPAY_KEY_ID', 'rzp_test_TiwC0gVacieKkn') }}" placeholder="rzp_test_... or rzp_live_...">
+                            <input type="text" name="razorpay_key_id" class="form-control font-monospace" value="{{ $settings['razorpay_key_id'] ?? env('RAZORPAY_KEY_ID', '') }}" placeholder="rzp_test_... or rzp_live_...">
                         </div>
                         <div class="form-text text-muted" style="font-size: 0.72rem;">Razorpay Dashboard &rarr; Account Settings &rarr; API Keys</div>
                     </div>
 
+                    @php
+                        $hasRzpSecret = !empty($settings['razorpay_key_secret'] ?? env('RAZORPAY_KEY_SECRET', ''));
+                    @endphp
                     <div class="mb-4">
                         <div class="d-flex align-items-center justify-content-between mb-1">
                             <label class="form-label fw-bold text-dark small mb-0">Razorpay Key Secret <span class="text-danger">*</span></label>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
-                                <i class="bi bi-shield-lock-fill me-1"></i>Stored Encrypted in DB
-                            </span>
+                            @if($hasRzpSecret)
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+                                    <i class="bi bi-shield-check me-1"></i>Configured &amp; Encrypted
+                                </span>
+                            @else
+                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>Not Set
+                                </span>
+                            @endif
                         </div>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-muted"><i class="bi bi-key-fill"></i></span>
-                            <input type="password" name="razorpay_key_secret" id="razorpay_key_secret" class="form-control font-monospace" value="{{ $settings['razorpay_key_secret'] ?? env('RAZORPAY_KEY_SECRET', 'nuKs1b9OeDT5p0Jxr4pUKcUR') }}" placeholder="Key Secret...">
+                            <input type="password" name="razorpay_key_secret" id="razorpay_key_secret" class="form-control font-monospace" value="" placeholder="{{ $hasRzpSecret ? '•••••••••••••••• (Configured — leave blank to keep current)' : 'Paste Key Secret...' }}" autocomplete="new-password">
                             <button type="button" class="btn btn-outline-secondary" onclick="togglePasswordVisibility('razorpay_key_secret', this)" title="Toggle view secret"><i class="bi bi-eye"></i></button>
                         </div>
-                        <div class="form-text text-muted" style="font-size: 0.72rem;">Original secret shown decrypted here. Stored safely encrypted in DB.</div>
+                        <div class="form-text text-muted" style="font-size: 0.72rem;">
+                            {{ $hasRzpSecret ? '✓ Secret is securely masked and encrypted in the database. Leave blank to keep the current secret unchanged.' : 'Enter your Razorpay Key Secret. It will be encrypted at rest in the database.' }}
+                        </div>
                     </div>
 
                     <button type="submit" class="btn btn-primary rounded-pill w-100 fw-bold">

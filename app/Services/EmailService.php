@@ -314,4 +314,71 @@ class EmailService
 
         return $this->sendEmail($recipientEmail, $subject, $html);
     }
+
+    /**
+     * Send an instant security alert email when sensitive credentials or settings are modified.
+     *
+     * @param string $actionTitle e.g. "Razorpay API Credentials Updated"
+     * @param array $metadata e.g. ['admin_name' => ..., 'admin_email' => ..., 'ip_address' => ..., 'changes' => ...]
+     * @return array
+     */
+    public function sendSecurityAlert(string $actionTitle, array $metadata): array
+    {
+        $storeName = \App\Models\Setting::get('store_name', config('app.name', 'ShopCalm'));
+        $recipient = \App\Models\Setting::get('contact_email') ?: config('mail.from.address');
+        if (empty($recipient)) {
+            return ['success' => false, 'message' => 'No alert recipient email configured'];
+        }
+
+        $subject = "🚨 [Security Alert] {$actionTitle} — {$storeName}";
+        
+        $adminName = htmlspecialchars($metadata['admin_name'] ?? 'Super Admin', ENT_QUOTES, 'UTF-8');
+        $adminEmail = htmlspecialchars($metadata['admin_email'] ?? 'Unknown', ENT_QUOTES, 'UTF-8');
+        $ip = htmlspecialchars($metadata['ip_address'] ?? 'Unknown IP', ENT_QUOTES, 'UTF-8');
+        $userAgent = htmlspecialchars($metadata['user_agent'] ?? 'Unknown Agent', ENT_QUOTES, 'UTF-8');
+        $timestamp = htmlspecialchars($metadata['timestamp'] ?? now()->toDayDateTimeString(), ENT_QUOTES, 'UTF-8');
+        
+        $changesList = '';
+        foreach (($metadata['changes'] ?? []) as $field) {
+            $changesList .= '<li style="margin-bottom: 5px;"><strong>' . htmlspecialchars($field, ENT_QUOTES, 'UTF-8') . '</strong></li>';
+        }
+
+        $html = <<<HTML
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px;">
+    <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <div style="background: #dc2626; padding: 20px 24px; color: #ffffff;">
+            <h2 style="margin: 0; font-size: 20px; font-weight: 700;">🛡️ Security Alert Notification</h2>
+            <p style="margin: 4px 0 0; font-size: 13px; opacity: 0.9;">{$storeName} Store Administration Hub</p>
+        </div>
+        <div style="padding: 24px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+            <p style="margin-top: 0; font-size: 15px; font-weight: 600; color: #0f172a;">
+                Sensitive configuration credentials were just updated in your Store Administration Portal.
+            </p>
+            <div style="background: #f1f5f9; border-radius: 8px; padding: 16px; margin: 16px 0; border-left: 4px solid #dc2626;">
+                <p style="margin: 0 0 8px;"><strong>Action:</strong> {$actionTitle}</p>
+                <p style="margin: 0 0 8px;"><strong>Modified By:</strong> {$adminName} ({$adminEmail})</p>
+                <p style="margin: 0 0 8px;"><strong>IP Address:</strong> {$ip}</p>
+                <p style="margin: 0 0 8px;"><strong>Time:</strong> {$timestamp}</p>
+                <p style="margin: 0 0 8px; word-break: break-all;"><strong>User Agent:</strong> {$userAgent}</p>
+                <p style="margin: 10px 0 4px;"><strong>Fields Modified:</strong></p>
+                <ul style="margin: 0; padding-left: 20px;">{$changesList}</ul>
+            </div>
+            <p style="font-size: 12px; color: #64748b; margin-bottom: 0;">
+                If you or an authorized team member performed this action, no further steps are required.<br>
+                If you did not authorize this change, please log in immediately to your <a href="https://hub.shopcalm.in/admin" style="color: #4f46e5; text-decoration: underline;">Staff Hub</a>, rotate your API keys, and update your administrator credentials.
+            </p>
+        </div>
+        <div style="background: #f8fafc; padding: 14px 24px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center;">
+            This is an automated security audit email from {$storeName}.
+        </div>
+    </div>
+</body>
+</html>
+HTML;
+
+        return $this->sendEmail($recipient, $subject, $html);
+    }
 }

@@ -101,6 +101,42 @@ class IntegrationController extends Controller
     }
 
     /**
+     * Dispatch security audit log & email alert for sensitive integration changes.
+     */
+    protected function recordSecurityAudit(Request $request, string $actionTitle, array $changedFields): void
+    {
+        $user = auth('admin')->user() ?? auth()->user();
+        $adminName = $user ? $user->name : 'Super Admin';
+        $adminEmail = $user ? $user->email : 'superadmin@shopcalm.in';
+        $ip = $request->ip();
+        $userAgent = $request->userAgent() ?? 'Unknown Agent';
+
+        // 1. Permanent System Log
+        \Illuminate\Support\Facades\Log::warning("[SECURITY AUDIT] {$actionTitle} performed by {$adminName} ({$adminEmail}) from IP: {$ip}", [
+            'admin_id'    => $user?->id,
+            'admin_email' => $adminEmail,
+            'ip'          => $ip,
+            'user_agent'  => $userAgent,
+            'fields'      => $changedFields,
+            'timestamp'   => now()->toIso8601String(),
+        ]);
+
+        // 2. Instant Email Alert (Non-blocking)
+        try {
+            app(EmailService::class)->sendSecurityAlert($actionTitle, [
+                'admin_name'  => $adminName,
+                'admin_email' => $adminEmail,
+                'ip_address'  => $ip,
+                'user_agent'  => $userAgent,
+                'timestamp'   => now()->format('d M Y, h:i A T'),
+                'changes'     => $changedFields,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("[SECURITY AUDIT] Failed to dispatch security alert email: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Update Brevo Credentials & Sender Profile.
      */
     public function updateBrevo(Request $request)
@@ -116,9 +152,27 @@ class IntegrationController extends Controller
             'brevo_sender_name'  => 'nullable|string|max:255',
         ]);
 
-        Setting::set('brevo_api_key', $request->brevo_api_key);
-        Setting::set('brevo_sender_email', $request->brevo_sender_email);
-        Setting::set('brevo_sender_name', $request->brevo_sender_name);
+        $changed = [];
+
+        // Masked Secret: Only update API key if user typed a new key
+        if ($request->filled('brevo_api_key')) {
+            Setting::set('brevo_api_key', trim($request->brevo_api_key));
+            $changed[] = 'Brevo v3 REST API Key (Updated & Encrypted)';
+        }
+
+        if ($request->has('brevo_sender_email') && $request->brevo_sender_email !== Setting::get('brevo_sender_email')) {
+            Setting::set('brevo_sender_email', $request->brevo_sender_email);
+            $changed[] = 'Brevo Sender Email (' . $request->brevo_sender_email . ')';
+        }
+
+        if ($request->has('brevo_sender_name') && $request->brevo_sender_name !== Setting::get('brevo_sender_name')) {
+            Setting::set('brevo_sender_name', $request->brevo_sender_name);
+            $changed[] = 'Brevo Sender Name (' . $request->brevo_sender_name . ')';
+        }
+
+        if (!empty($changed)) {
+            $this->recordSecurityAudit($request, 'Brevo Email Service Credentials Updated', $changed);
+        }
 
         return back()->with('toast', ['type' => 'success', 'title' => 'Brevo Settings Updated', 'message' => 'Brevo REST API credentials saved successfully.'])->with('success', 'Brevo REST API credentials saved successfully.');
     }
@@ -160,8 +214,24 @@ class IntegrationController extends Controller
             'whatsapp_template_order_confirmed' => 'nullable|string|max:255',
         ]);
 
+        $changed = [];
         foreach ($validated as $key => $value) {
-            Setting::set($key, $value);
+            if ($key === 'whatsapp_api_token') {
+                // Masked Secret: Only update if a new token was provided
+                if ($request->filled('whatsapp_api_token')) {
+                    Setting::set($key, trim($value));
+                    $changed[] = 'WhatsApp Access Token (Updated & Encrypted)';
+                }
+            } else {
+                if ($value !== Setting::get($key)) {
+                    Setting::set($key, $value);
+                    $changed[] = ucwords(str_replace('_', ' ', $key));
+                }
+            }
+        }
+
+        if (!empty($changed)) {
+            $this->recordSecurityAudit($request, 'WhatsApp Cloud API Configuration Updated', $changed);
         }
 
         return back()->with('toast', ['type' => 'success', 'title' => 'WhatsApp Config Saved', 'message' => 'Meta WhatsApp Business API credentials & OTP template updated.'])->with('success', 'Meta WhatsApp Business API credentials & OTP template updated.');
@@ -208,8 +278,22 @@ class IntegrationController extends Controller
             'razorpay_key_secret' => 'nullable|string|max:255',
         ]);
 
-        Setting::set('razorpay_key_id', $request->razorpay_key_id);
-        Setting::set('razorpay_key_secret', $request->razorpay_key_secret);
+        $changed = [];
+
+        if ($request->has('razorpay_key_id') && $request->razorpay_key_id !== Setting::get('razorpay_key_id')) {
+            Setting::set('razorpay_key_id', trim((string) $request->razorpay_key_id));
+            $changed[] = 'Razorpay Key ID';
+        }
+
+        // Masked Secret: Only update secret if user entered a new secret
+        if ($request->filled('razorpay_key_secret')) {
+            Setting::set('razorpay_key_secret', trim((string) $request->razorpay_key_secret));
+            $changed[] = 'Razorpay Key Secret (Updated & Encrypted)';
+        }
+
+        if (!empty($changed)) {
+            $this->recordSecurityAudit($request, 'Razorpay Payment Gateway Credentials Updated', $changed);
+        }
 
         return back()->with('toast', ['type' => 'success', 'title' => 'Razorpay Keys Saved', 'message' => 'Razorpay API credentials updated successfully.'])->with('success', 'Razorpay API credentials updated successfully.');
     }
@@ -338,9 +422,27 @@ class IntegrationController extends Controller
 
         $token = trim((string) $request->locationiq_api_key);
 
-        // Allow clearing the token (falls back to OpenStreetMap)
+        // Check if user submitted blank while already having a configured token (preserve it)
+        $existingToken = Setting::get('locationiq_api_key') ?: config('services.locationiq.key');
+        if (empty($token) && !empty($existingToken) && !$request->boolean('clear_token')) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success'      => true,
+                    'message'      => 'Existing LocationIQ Token preserved.',
+                    'display_name' => 'Configured Token Active',
+                ]);
+            }
+            return back()->with('toast', [
+                'type'    => 'info',
+                'title'   => 'Token Preserved',
+                'message' => 'Your existing LocationIQ token was preserved unchanged.',
+            ])->with('info', 'Your existing LocationIQ token was preserved unchanged.');
+        }
+
+        // Allow explicitly clearing the token (falls back to OpenStreetMap)
         if (empty($token)) {
             Setting::set('locationiq_api_key', '');
+            $this->recordSecurityAudit($request, 'LocationIQ Maps Access Token Cleared', ['Token removed -> fallback to OpenStreetMap']);
 
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
@@ -380,6 +482,8 @@ class IntegrationController extends Controller
         // Token is 100% verified and active! Save to settings
         Setting::set('locationiq_api_key', $token);
         $displayName = $validation['display_name'] ?? 'Bengaluru, India';
+
+        $this->recordSecurityAudit($request, 'LocationIQ Maps Access Token Updated', ['LocationIQ Public Token Verified & Saved (' . Str::limit($token, 8, '...') . ')']);
 
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([

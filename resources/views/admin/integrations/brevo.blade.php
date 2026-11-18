@@ -72,20 +72,30 @@
             <div class="card-body p-4">
                 <form action="{{ route('admin.integrations.brevo.update') }}" method="POST">
                     @csrf
+                    @php
+                        $hasBrevoKey = !empty($settings['brevo_api_key'] ?? env('BREVO_API_KEY', ''));
+                    @endphp
                     <div class="mb-3">
                         <div class="d-flex align-items-center justify-content-between mb-1">
                             <label class="form-label fw-bold text-dark small mb-0">Brevo v3 REST API Key <span class="text-danger">*</span></label>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
-                                <i class="bi bi-shield-lock-fill me-1"></i>Stored Encrypted in DB
-                            </span>
+                            @if($hasBrevoKey)
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+                                    <i class="bi bi-shield-check me-1"></i>Configured &amp; Encrypted
+                                </span>
+                            @else
+                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>Not Set
+                                </span>
+                            @endif
                         </div>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-muted"><i class="bi bi-key"></i></span>
-                            <input type="text" name="brevo_api_key" id="brevo_api_key" class="form-control font-monospace" value="{{ $settings['brevo_api_key'] ?? env('BREVO_API_KEY', '') }}" placeholder="xkeysib-...">
-                            <button type="button" class="btn btn-outline-secondary" onclick="togglePasswordVisibility('brevo_api_key', this)" title="Toggle hide/mask key"><i class="bi bi-eye-slash"></i></button>
-                            <button type="button" class="btn btn-outline-secondary" onclick="copyCredential('brevo_api_key', this)" title="Copy key"><i class="bi bi-clipboard"></i></button>
+                            <input type="password" name="brevo_api_key" id="brevo_api_key" class="form-control font-monospace" value="" placeholder="{{ $hasBrevoKey ? '•••••••••••••••• (Configured — leave blank to keep current)' : 'xkeysib-...' }}" autocomplete="new-password">
+                            <button type="button" class="btn btn-outline-secondary" onclick="togglePasswordVisibility('brevo_api_key', this)" title="Toggle hide/view key"><i class="bi bi-eye"></i></button>
                         </div>
-                        <div class="form-text text-muted" style="font-size: 0.72rem;">Original API key shown in plain text here. Safely stored encrypted at rest in the database.</div>
+                        <div class="form-text text-muted" style="font-size: 0.72rem;">
+                            {{ $hasBrevoKey ? '✓ API key is securely masked and encrypted in the database. Leave blank to keep the current key unchanged.' : 'Enter your Brevo v3 REST API key (starts with xkeysib-).' }}
+                        </div>
                     </div>
 
                     <div class="mb-3">
