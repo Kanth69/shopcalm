@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'order.manager' => \App\Http\Middleware\OrderManagerMiddleware::class,
             'support.agent' => \App\Http\Middleware\SupportMiddleware::class,
             'delivery.partner' => \App\Http\Middleware\DeliveryPartnerMiddleware::class,
+            'marketing.staff' => \App\Http\Middleware\MarketingMiddleware::class,
             'guest.admin' => \App\Http\Middleware\RedirectIfAdmin::class,
             'profile.setup' => \App\Http\Middleware\CheckProfileSetup::class,
         ]);

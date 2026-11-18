@@ -26,6 +26,10 @@ class RedirectIfAdmin
             return redirect()->route('support.dashboard');
         }
 
+        if ($guard === 'marketing' && Auth::guard('marketing')->check()) {
+            return redirect()->route('marketing.dashboard');
+        }
+
         if (($guard === 'admin' || $guard === null) && Auth::guard('admin')->check()) {
             return redirect()->route('admin.dashboard');
         }

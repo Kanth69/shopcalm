@@ -63,6 +63,7 @@
                     <div class="mb-3">
                         <label class="form-label fw-bold text-dark small">Departmental Staff Role <span class="text-danger">*</span></label>
                         <select name="role_id" class="form-select @error('role_id') is-invalid @enderror" required>
+                            <option value="8" {{ old('role_id', $admin->role_id) == '8' ? 'selected' : '' }}>📢 Marketing Manager (App Push Broadcasts & Audience Targeting - /marketing/login)</option>
                             <option value="7" {{ old('role_id', $admin->role_id) == '7' ? 'selected' : '' }}>🛵 Delivery Partner (Bengaluru Local Fleet Run-Sheets & Doorstep OTP - /delivery/login)</option>
                             <option value="5" {{ old('role_id', $admin->role_id) == '5' ? 'selected' : '' }}>🚚 Order Manager (Orders, Shipments & Fulfillment Analytics)</option>
                             <option value="4" {{ old('role_id', $admin->role_id) == '4' ? 'selected' : '' }}>📦 Product Manager (Catalog, Stock, Reviews & Product Reports - /product-manager/login)</option>

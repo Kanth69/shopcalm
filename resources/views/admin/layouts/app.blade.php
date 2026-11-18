@@ -646,15 +646,6 @@
                 </li>
 
                 @if(optional(auth()->user())->isSuperAdmin())
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}" href="{{ route('admin.notifications.index') }}">
-                        <i class="bi bi-bell"></i>
-                        <span class="nav-label">Push Notifications</span>
-                    </a>
-                </li>
-                @endif
-
-                @if(optional(auth()->user())->isSuperAdmin())
                 <li class="nav-header">Finance & Unit Economics</li>
                 <li class="nav-item">
                     <a class="nav-link has-submenu {{ request()->routeIs('admin.finance.*') || request()->routeIs('admin.reports.*') ? '' : 'collapsed' }}"
@@ -745,8 +736,22 @@
                                     <i class="bi bi-box-arrow-up-right small text-white-50"></i>
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center justify-content-between" href="{{ route('marketing.dashboard') }}" target="_blank">
+                                    <span><i class="bi bi-bell me-2" style="color: #ec4899;"></i> Marketing Portal</span>
+                                    <i class="bi bi-box-arrow-up-right small text-white-50"></i>
+                                </a>
+                            </li>
                         </ul>
                     </div>
+                </li>
+                <li class="nav-header">Marketing & Growth</li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('marketing.*') ? 'active' : '' }}" href="{{ route('marketing.dashboard') }}" target="_blank">
+                        <i class="bi bi-megaphone"></i>
+                        <span class="nav-label">Marketing Portal</span>
+                        <i class="bi bi-box-arrow-up-right small ms-auto text-white-50"></i>
+                    </a>
                 </li>
                 @endif
 

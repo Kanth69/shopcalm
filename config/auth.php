@@ -62,6 +62,10 @@ return [
             'driver' => 'session',
             'provider' => 'delivery_partners',
         ],
+        'marketing' => [
+            'driver' => 'session',
+            'provider' => 'marketings',
+        ],
     ],
 
     /*
@@ -103,6 +107,10 @@ return [
             'model'  => env('AUTH_MODEL', User::class),
         ],
         'delivery_partners' => [
+            'driver' => 'eloquent',
+            'model'  => env('AUTH_MODEL', User::class),
+        ],
+        'marketings' => [
             'driver' => 'eloquent',
             'model'  => env('AUTH_MODEL', User::class),
         ],

@@ -27,7 +27,8 @@
     $orderManagerCount = $admins->where('role_id', \App\Models\User::ROLE_ORDER_MANAGER)->count();
     $supportCount = $admins->where('role_id', \App\Models\User::ROLE_SUPPORT)->count();
     $deliveryPartnerCount = $admins->where('role_id', \App\Models\User::ROLE_DELIVERY_PARTNER)->count();
-    $deptStaffCount = $productManagerCount + $orderManagerCount + $supportCount + $deliveryPartnerCount;
+    $marketingCount = $admins->where('role_id', \App\Models\User::ROLE_MARKETING)->count();
+    $deptStaffCount = $productManagerCount + $orderManagerCount + $supportCount + $deliveryPartnerCount + $marketingCount;
 @endphp
 
 <div class="row g-3 mb-4">
@@ -183,7 +184,8 @@
                             \App\Models\User::ROLE_PRODUCT_MANAGER => '#7e22ce',
                             \App\Models\User::ROLE_ORDER_MANAGER => '#b45309',
                             \App\Models\User::ROLE_SUPPORT => '#0f766e',
-                            \App\Models\User::ROLE_DELIVERY_PARTNER => '#059669',
+                            \App\Models\User::ROLE_DELIVERY_PARTNER => '#047857',
+                            \App\Models\User::ROLE_MARKETING => '#be185d',
                             default => '#64748b'
                         };
                     @endphp
@@ -248,6 +250,10 @@
                             @elseif($admin->role_id == \App\Models\User::ROLE_DELIVERY_PARTNER)
                                 <span class="badge rounded-pill px-2.5 py-1.5 d-inline-flex align-items-center" style="background-color: #d1fae5; color: #047857; border: 1px solid #a7f3d0; gap: 0.35rem !important;">
                                     <i class="bi bi-bicycle"></i> Delivery Partner
+                                </span>
+                            @elseif($admin->role_id == \App\Models\User::ROLE_MARKETING)
+                                <span class="badge rounded-pill px-2.5 py-1.5 d-inline-flex align-items-center" style="background-color: #fce7f3; color: #be185d; border: 1px solid #fbcfe8; gap: 0.35rem !important;">
+                                    <i class="bi bi-megaphone"></i> Marketing Manager
                                 </span>
                             @else
                                 <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-2.5 py-1.5">

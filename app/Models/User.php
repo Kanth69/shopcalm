@@ -31,6 +31,7 @@ class User extends Authenticatable
     const ROLE_ORDER_MANAGER = 5;
     const ROLE_SUPPORT = 6;
     const ROLE_DELIVERY_PARTNER = 7;
+    const ROLE_MARKETING = 8;
 
     /**
      * The attributes that are mass assignable.
@@ -136,7 +137,13 @@ class User extends Authenticatable
             self::ROLE_ORDER_MANAGER,
             self::ROLE_SUPPORT,
             self::ROLE_DELIVERY_PARTNER,
+            self::ROLE_MARKETING,
         ]);
+    }
+
+    public function canAccessMarketingPortal(): bool
+    {
+        return in_array((int) $this->role_id, [self::ROLE_SUPER_ADMIN, self::ROLE_MARKETING]);
     }
 
     public function canAccessProductManagerPortal(): bool
@@ -172,6 +179,8 @@ class User extends Authenticatable
             self::ROLE_PRODUCT_MANAGER => 'Product Manager',
             self::ROLE_ORDER_MANAGER   => 'Order Manager',
             self::ROLE_SUPPORT         => 'Customer Support',
+            self::ROLE_DELIVERY_PARTNER => 'Delivery Partner',
+            self::ROLE_MARKETING       => 'Marketing Manager',
             default                    => 'Customer',
         };
     }

@@ -322,6 +322,22 @@ $registerStaffRoutes = function () {
             Route::get('live-alerts', [\App\Http\Controllers\StaffNotificationController::class, 'liveOrders'])->name('live-alerts');
         });
     });
+
+    // Dedicated Marketing & Growth Portal Routes
+    Route::prefix('marketing')->name('marketing.')->group(function () {
+        Route::middleware('guest.admin:marketing')->group(function () {
+            Route::get('login', [\App\Http\Controllers\Marketing\AuthController::class, 'create'])->name('login');
+            Route::post('login', [\App\Http\Controllers\Marketing\AuthController::class, 'store'])->name('login.submit');
+        });
+
+        Route::post('logout', [\App\Http\Controllers\Marketing\AuthController::class, 'destroy'])->name('logout');
+
+        Route::middleware(['marketing.staff'])->group(function () {
+            Route::get('/', [\App\Http\Controllers\Marketing\DashboardController::class, 'index']);
+            Route::get('dashboard', [\App\Http\Controllers\Marketing\DashboardController::class, 'index'])->name('dashboard');
+            Route::post('notifications/send', [\App\Http\Controllers\Marketing\DashboardController::class, 'send'])->name('notifications.send');
+        });
+    });
 };
 
 // ─── 2. STOREFRONT CUSTOMER ROUTES ───────────────────────────────────────────
