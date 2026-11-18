@@ -694,7 +694,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (otpTimerInterval) clearInterval(otpTimerInterval);
 
-        let countdown = 60;
+        let countdown = 90;
         resendBtn.style.display = 'none';
         if (countdownPill) countdownPill.style.display = 'inline-flex';
         if (countdownText) countdownText.textContent = `${countdown}s`;

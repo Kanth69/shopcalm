@@ -103,13 +103,27 @@
                 })
                 .then(async res => {
                     const data = await res.json();
-                    btnSendOtp.disabled = false;
-                    btnSendOtp.innerHTML = 'Get OTP <i class="bi bi-whatsapp ms-1"></i>';
 
                     if (res.status === 200 && data.success) {
                         otpInfo.textContent = 'OTP sent! ' + (data.dev_otp ? '(Dev Code: ' + data.dev_otp + ')' : 'Check WhatsApp.');
                         otpInfo.style.display = 'block';
+
+                        let cd = 90;
+                        btnSendOtp.disabled = true;
+                        btnSendOtp.innerHTML = `Resend in ${cd}s`;
+                        const cdInterval = setInterval(() => {
+                            cd--;
+                            if (cd > 0) {
+                                btnSendOtp.innerHTML = `Resend in ${cd}s`;
+                            } else {
+                                clearInterval(cdInterval);
+                                btnSendOtp.disabled = false;
+                                btnSendOtp.innerHTML = 'Resend OTP <i class="bi bi-arrow-repeat ms-1"></i>';
+                            }
+                        }, 1000);
                     } else {
+                        btnSendOtp.disabled = false;
+                        btnSendOtp.innerHTML = 'Get OTP <i class="bi bi-whatsapp ms-1"></i>';
                         const msg = data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Error sending OTP.');
                         alertBox.textContent = msg;
                         alertBox.style.display = 'block';

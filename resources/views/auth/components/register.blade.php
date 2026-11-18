@@ -148,7 +148,7 @@
             <span class="text-muted" style="font-size: 12px;">Didn't receive code?</span>
             <div class="d-flex align-items-center gap-1.5">
                 <span id="otp-countdown-pill" class="badge rounded-pill bg-light text-muted border font-monospace px-2 py-1" style="font-size: 11px;">
-                    <i class="bi bi-clock me-1"></i><span id="otp-countdown-text">60s</span>
+                    <i class="bi bi-clock me-1"></i><span id="otp-countdown-text">90s</span>
                 </span>
                 <button type="button" id="reg-resend-otp-btn" class="btn btn-sm btn-link text-primary p-0 fw-bold text-decoration-none" style="font-size: 12px; display: none;">
                     <i class="bi bi-arrow-repeat me-0.5"></i> Resend OTP
