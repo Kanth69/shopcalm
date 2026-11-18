@@ -142,6 +142,9 @@ $registerStaffRoutes = function () {
             Route::post('locationiq/test-osm', [\App\Http\Controllers\Admin\IntegrationController::class, 'testOsm'])->name('locationiq.test-osm');
             Route::get('pincodes', [\App\Http\Controllers\Admin\IntegrationController::class, 'pincodes'])->name('pincodes');
             Route::post('pincodes/test-lookup', [\App\Http\Controllers\Admin\IntegrationController::class, 'testPincodeLookup'])->name('pincodes.test-lookup');
+            Route::get('firebase', [\App\Http\Controllers\Admin\IntegrationController::class, 'firebase'])->name('firebase');
+            Route::post('firebase/update', [\App\Http\Controllers\Admin\IntegrationController::class, 'updateFirebase'])->name('firebase.update');
+            Route::post('firebase/test', [\App\Http\Controllers\Admin\IntegrationController::class, 'testFirebase'])->name('firebase.test');
         });
     });
 

@@ -59,6 +59,10 @@ class IntegrationController extends Controller
         $totalPincodesCount = Pincode::count();
         $serviceablePincodesCount = Pincode::where('is_serviceable', true)->count();
 
+        // 6. Firebase Cloud Messaging (FCM) Health
+        $hasFirebase = !empty($settings['firebase_service_account_json'] ?? env('FIREBASE_SERVICE_ACCOUNT_JSON'));
+        $activeDevicesCount = \App\Models\UserDevice::where('is_active', true)->count();
+
         return view('admin.integrations.index', compact(
             'settings',
             'brevoQuota',
@@ -73,7 +77,9 @@ class IntegrationController extends Controller
             'geocodedAddressesCount',
             'totalAddressesCount',
             'totalPincodesCount',
-            'serviceablePincodesCount'
+            'serviceablePincodesCount',
+            'hasFirebase',
+            'activeDevicesCount'
         ));
     }
 
@@ -688,5 +694,101 @@ class IntegrationController extends Controller
                 'zone'             => $zone, // 'local_fleet' vs 'national_courier'
             ]
         ]);
+    }
+
+    /**
+     * Dedicated Firebase Cloud Messaging (FCM) Integration Hub.
+     */
+    public function firebase()
+    {
+        $settings = Setting::getAll();
+        $hasServiceAccount = !empty($settings['firebase_service_account_json'] ?? env('FIREBASE_SERVICE_ACCOUNT_JSON'));
+        $firebaseStatus = $hasServiceAccount ? 'ACTIVE' : 'CONFIG_NEEDED';
+
+        $totalDevices = \App\Models\UserDevice::count();
+        $activeDevices = \App\Models\UserDevice::where('is_active', true)->count();
+        $recentDevices = \App\Models\UserDevice::with('user')->latest()->take(10)->get();
+
+        return view('admin.integrations.firebase', compact(
+            'settings',
+            'hasServiceAccount',
+            'firebaseStatus',
+            'totalDevices',
+            'activeDevices',
+            'recentDevices'
+        ));
+    }
+
+    /**
+     * Update Firebase Cloud Messaging (FCM) Credentials.
+     */
+    public function updateFirebase(Request $request)
+    {
+        $request->validate([
+            'firebase_service_account_json' => 'nullable|string',
+            'firebase_project_id'           => 'nullable|string|max:255',
+        ]);
+
+        if ($request->filled('firebase_service_account_json')) {
+            $json = trim($request->input('firebase_service_account_json'));
+            $decoded = json_decode($json, true);
+            if (!is_array($decoded) || empty($decoded['project_id']) || empty($decoded['private_key'])) {
+                return back()->with('error', 'Invalid Firebase Service Account JSON. Please paste the full JSON object downloaded from Firebase Console.');
+            }
+            Setting::set('firebase_service_account_json', $json);
+            if (!empty($decoded['project_id'])) {
+                Setting::set('firebase_project_id', $decoded['project_id']);
+            }
+        } elseif ($request->has('firebase_service_account_json') && empty($request->input('firebase_service_account_json'))) {
+            Setting::set('firebase_service_account_json', null);
+        }
+
+        if ($request->filled('firebase_project_id')) {
+            Setting::set('firebase_project_id', trim($request->input('firebase_project_id')));
+        }
+
+        return back()->with('toast', [
+            'type'    => 'success',
+            'title'   => 'Firebase Settings Saved',
+            'message' => 'FCM credentials and push notification settings updated successfully.'
+        ])->with('success', 'FCM credentials updated successfully.');
+    }
+
+    /**
+     * Test Firebase FCM OAuth2 Token & Dispatch.
+     */
+    public function testFirebase(Request $request)
+    {
+        $fcmService = app(\App\Services\FcmNotificationService::class);
+        $token = $fcmService->getAccessToken();
+
+        if (!$token) {
+            return back()->with('error', 'FCM Test Failed: Could not acquire Google OAuth2 Access Token. Please verify your Service Account JSON.');
+        }
+
+        if ($request->filled('test_fcm_token')) {
+            $sent = $fcmService->sendToToken(
+                trim($request->input('test_fcm_token')),
+                '🔔 ShopCalm Test Notification',
+                'Firebase Cloud Messaging HTTP v1 connection is active and working!',
+                ['type' => 'test', 'screen' => 'home']
+            );
+
+            if ($sent) {
+                return back()->with('toast', [
+                    'type'    => 'success',
+                    'title'   => 'Test Push Sent',
+                    'message' => 'Test notification successfully sent to device!'
+                ])->with('success', 'Test notification successfully sent to device!');
+            }
+
+            return back()->with('error', 'Failed to dispatch test notification to the provided device token.');
+        }
+
+        return back()->with('toast', [
+            'type'    => 'success',
+            'title'   => 'FCM Authenticated',
+            'message' => 'Google FCM OAuth2 Access Token generated successfully! Integration is ACTIVE.'
+        ])->with('success', 'Google FCM OAuth2 Access Token generated successfully! Integration is ACTIVE.');
     }
 }

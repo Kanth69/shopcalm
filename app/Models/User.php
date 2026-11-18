@@ -46,6 +46,7 @@ class User extends Authenticatable
         'avatar',
         'role_id',
         'status',
+        'fcm_token',
     ];
 
     /**
@@ -248,5 +249,10 @@ class User extends Authenticatable
     public function referredUsers(): HasMany
     {
         return $this->hasMany(Wallet::class, 'referred_by', 'id');
+    }
+
+    public function devices(): HasMany
+    {
+        return $this->hasMany(UserDevice::class);
     }
 }

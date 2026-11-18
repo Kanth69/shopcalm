@@ -429,14 +429,33 @@ class AuthController extends BaseApiController
     public function registerDeviceToken(Request $request): JsonResponse
     {
         $request->validate([
-            'fcm_token' => 'required|string',
-            'device_type' => 'nullable|string|in:android,ios',
+            'fcm_token'   => 'required|string',
+            'device_type' => 'nullable|string|in:android,ios,web',
+            'device_id'   => 'nullable|string',
+            'app_version' => 'nullable|string',
         ]);
 
         $user = $request->user();
-        $user->update([
-            'fcm_token' => $request->fcm_token,
-        ]);
+        $deviceId = $request->input('device_id') ?: $request->header('X-Device-Id');
+        $deviceType = $request->input('device_type', 'android');
+
+        if ($user) {
+            $user->update([
+                'fcm_token' => $request->fcm_token,
+            ]);
+        }
+
+        \App\Models\UserDevice::updateOrCreate(
+            ['fcm_token' => $request->fcm_token],
+            [
+                'user_id'        => $user?->id,
+                'device_id'      => $deviceId,
+                'device_type'    => $deviceType,
+                'app_version'    => $request->input('app_version'),
+                'is_active'      => true,
+                'last_active_at' => now(),
+            ]
+        );
 
         return $this->sendResponse([
             'registered' => true,

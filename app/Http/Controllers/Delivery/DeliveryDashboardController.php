@@ -416,6 +416,13 @@ class DeliveryDashboardController extends Controller
 
             // Trigger Tiered Referral Milestone Rewards for Referrer
             app(\App\Services\WalletService::class)->rewardReferrerOnDeliveredOrder($order);
+
+            // Real-Time Delivered Push Notification to Customer App
+            try {
+                app(\App\Services\FcmNotificationService::class)->sendOrderNotification($order, 'delivered');
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("[FCM] Delivered push notification failed: " . $e->getMessage());
+            }
         });
 
         if ($request->ajax() || $request->wantsJson()) {

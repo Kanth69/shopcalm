@@ -242,6 +242,13 @@ class OrderController extends Controller
             if ($newStatus === 'delivered') {
                 app(\App\Services\WalletService::class)->rewardReferrerOnDeliveredOrder($order);
             }
+
+            // Real-Time Push Notification to Customer App
+            try {
+                app(\App\Services\FcmNotificationService::class)->sendOrderNotification($order, $newStatus);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("[FCM] Order notification failed: " . $e->getMessage());
+            }
         });
 
         if ($request->ajax() || $request->wantsJson()) {

@@ -244,5 +244,48 @@
             </div>
         </div>
     </div>
+
+    <!-- 6. Firebase Cloud Messaging (FCM) Card -->
+    <div class="col-xl-4 col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden hover-shadow transition-all">
+            <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-3 p-2 d-flex align-items-center justify-content-center" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; width: 40px; height: 40px;">
+                        <i class="bi bi-bell-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Firebase Cloud Messaging</h6>
+                        <span class="text-muted" style="font-size: 0.72rem;">Customer App Push Engine</span>
+                    </div>
+                </div>
+                <span class="badge {{ $hasFirebase ? 'bg-success' : 'bg-warning text-dark' }} rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.71rem;">
+                    {{ $hasFirebase ? 'Active & Ready ✓' : 'Setup Required' }}
+                </span>
+            </div>
+            <div class="card-body p-4 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="p-3 bg-light rounded-3 border mb-3 text-center">
+                        <div class="text-muted small fw-bold mb-1">Active Connected Devices</div>
+                        <div class="fs-4 fw-black text-warning">{{ number_format($activeDevicesCount) }} <span class="fs-6 text-muted fw-normal">Mobile Devices</span></div>
+                        <div class="text-muted" style="font-size: 0.7rem;">Automated Cart & Order Pushes</div>
+                    </div>
+                    <ul class="list-unstyled small text-muted mb-4 space-y-2">
+                        <li class="d-flex align-items-center gap-2">
+                            <i class="bi bi-check-circle-fill text-success"></i> 30m Automated Abandoned Cart Recovery
+                        </li>
+                        <li class="d-flex align-items-center gap-2">
+                            <i class="bi bi-check-circle-fill text-success"></i> Live Order Lifecycle Status Push Alerts
+                        </li>
+                        <li class="d-flex align-items-center gap-2">
+                            <i class="bi bi-check-circle-fill text-success"></i> Google HTTP v1 OAuth2 Secure Messaging
+                        </li>
+                    </ul>
+                </div>
+                <a href="{{ route('admin.integrations.firebase') }}" class="btn btn-warning text-dark rounded-pill w-100 fw-bold">
+                    Open Firebase Hub <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
