@@ -152,6 +152,8 @@ $registerStaffRoutes = function () {
             Route::get('/', [\App\Http\Controllers\Admin\AppNotificationController::class, 'index'])->name('index');
             Route::get('/create', [\App\Http\Controllers\Admin\AppNotificationController::class, 'create'])->name('create');
             Route::post('/send', [\App\Http\Controllers\Admin\AppNotificationController::class, 'send'])->name('send');
+            Route::post('/{notification}/approve', [\App\Http\Controllers\Admin\AppNotificationController::class, 'approve'])->name('approve');
+            Route::post('/{notification}/reject', [\App\Http\Controllers\Admin\AppNotificationController::class, 'reject'])->name('reject');
         });
     });
 

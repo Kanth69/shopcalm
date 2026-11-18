@@ -20,7 +20,12 @@ class AppNotificationController extends Controller
     {
         $this->authorizeSuperAdmin();
 
-        $notifications = AppNotification::with(['sender', 'category'])
+        $pendingNotifications = AppNotification::with(['sender', 'category'])
+            ->where('status', 'Pending_Approval')
+            ->latest()
+            ->get();
+
+        $notifications = AppNotification::with(['sender', 'category', 'approver'])
             ->latest()
             ->paginate(15);
 
@@ -31,10 +36,11 @@ class AppNotificationController extends Controller
         $femaleDevices = UserDevice::where('is_active', true)
             ->whereHas('user.profile', fn($q) => $q->where('gender', 'Female'))
             ->count();
-        $totalBroadcasts = AppNotification::count();
-        $totalDelivered = (int) AppNotification::sum('recipient_count');
+        $totalBroadcasts = AppNotification::where('status', 'Approved')->count();
+        $totalDelivered = (int) AppNotification::where('status', 'Approved')->sum('recipient_count');
 
         return view('admin.notifications.index', compact(
+            'pendingNotifications',
             'notifications',
             'totalActiveDevices',
             'maleDevices',
@@ -75,52 +81,9 @@ class AppNotificationController extends Controller
             'target_activity'  => 'required|string|in:all,dormant',
         ]);
 
-        // 1. Build targeted audience query on registered active devices
-        $devicesQuery = UserDevice::where('is_active', true)->whereNotNull('fcm_token');
+        $adminId = auth('admin')->id() ?? auth()->id();
 
-        // Gender filter
-        if ($request->target_gender !== 'all') {
-            $devicesQuery->whereHas('user.profile', fn($q) => $q->where('gender', $request->target_gender));
-        }
-
-        // Age / DOB filter
-        if ($request->target_age_group === 'birthday_month') {
-            $devicesQuery->whereHas('user.profile', fn($q) => $q->whereRaw('MONTH(date_of_birth) = ?', [now()->month]));
-        } elseif ($request->target_age_group === 'under_25') {
-            $devicesQuery->whereHas('user.profile', fn($q) => $q->where('date_of_birth', '>', now()->subYears(25)));
-        } elseif ($request->target_age_group === '25_40') {
-            $devicesQuery->whereHas('user.profile', fn($q) => $q->whereBetween('date_of_birth', [now()->subYears(40), now()->subYears(25)]));
-        } elseif ($request->target_age_group === 'over_40') {
-            $devicesQuery->whereHas('user.profile', fn($q) => $q->where('date_of_birth', '<', now()->subYears(40)));
-        }
-
-        // Activity filter
-        if ($request->target_activity === 'dormant') {
-            $devicesQuery->whereHas('user', fn($q) => $q->whereDoesntHave('orders', fn($oq) => $oq->where('created_at', '>=', now()->subDays(30))));
-        }
-
-        $tokens = $devicesQuery->pluck('fcm_token')->unique()->values();
-        $sentCount = 0;
-
-        // 2. Prepare Flutter deep link data payload
-        $payload = [
-            'type'   => 'broadcast',
-            'screen' => $request->destination_type,
-        ];
-
-        if ($request->destination_type === 'category' && $request->filled('category_id')) {
-            $payload['category_id'] = (string) $request->category_id;
-        }
-
-        // 3. Dispatch FCM Push to each target device
-        foreach ($tokens as $token) {
-            if ($fcmService->sendToToken($token, $request->title, $request->body, $payload, $request->banner_image)) {
-                $sentCount++;
-            }
-        }
-
-        // 4. Save sent broadcast log
-        AppNotification::create([
+        $notification = AppNotification::create([
             'title'            => $request->title,
             'body'             => $request->body,
             'banner_image'     => $request->banner_image,
@@ -129,12 +92,110 @@ class AppNotificationController extends Controller
             'target_gender'    => $request->target_gender,
             'target_age_group' => $request->target_age_group,
             'target_activity'  => $request->target_activity,
-            'recipient_count'  => $sentCount,
-            'sent_by'          => auth('admin')->id() ?? auth()->id(),
+            'recipient_count'  => 0,
+            'status'           => 'Approved',
+            'approved_by'      => $adminId,
+            'approved_at'      => now(),
+            'sent_by'          => $adminId,
         ]);
+
+        $sentCount = $this->broadcastNotification($notification, $fcmService);
+        $notification->update(['recipient_count' => $sentCount]);
 
         return redirect()->route('admin.notifications.index')
             ->with('success', "Push broadcast sent successfully to {$sentCount} active device(s)!");
+    }
+
+    /**
+     * Approve a pending notification and broadcast it to targeted customer devices.
+     */
+    public function approve(AppNotification $notification, FcmNotificationService $fcmService): RedirectResponse
+    {
+        $this->authorizeSuperAdmin();
+
+        $sentCount = $this->broadcastNotification($notification, $fcmService);
+
+        $notification->update([
+            'status'           => 'Approved',
+            'recipient_count'  => $sentCount,
+            'approved_by'      => auth('admin')->id() ?? auth()->id(),
+            'approved_at'      => now(),
+            'rejection_reason' => null,
+        ]);
+
+        return redirect()->route('admin.notifications.index')
+            ->with('success', "Notification '{$notification->title}' approved and broadcast to {$sentCount} active device(s)!");
+    }
+
+    /**
+     * Reject a pending notification draft with mandatory feedback reason.
+     */
+    public function reject(Request $request, AppNotification $notification): RedirectResponse
+    {
+        $this->authorizeSuperAdmin();
+
+        $request->validate([
+            'rejection_reason' => 'required|string|min:5|max:1000',
+        ], [
+            'rejection_reason.required' => 'Please provide feedback explaining why this notification was rejected.',
+            'rejection_reason.min'      => 'Rejection reason must be at least 5 characters.',
+        ]);
+
+        $notification->update([
+            'status'           => 'Rejected',
+            'rejection_reason' => $request->rejection_reason,
+            'approved_by'      => null,
+            'approved_at'      => null,
+        ]);
+
+        return redirect()->route('admin.notifications.index')
+            ->with('success', "Notification draft '{$notification->title}' was rejected with feedback.");
+    }
+
+    /**
+     * Helper: Filter audience and broadcast FCM push to matching devices.
+     */
+    protected function broadcastNotification(AppNotification $notification, FcmNotificationService $fcmService): int
+    {
+        $devicesQuery = UserDevice::where('is_active', true)->whereNotNull('fcm_token');
+
+        if ($notification->target_gender && $notification->target_gender !== 'all') {
+            $devicesQuery->whereHas('user.profile', fn($q) => $q->where('gender', $notification->target_gender));
+        }
+
+        if ($notification->target_age_group === 'birthday_month') {
+            $devicesQuery->whereHas('user.profile', fn($q) => $q->whereRaw('MONTH(date_of_birth) = ?', [now()->month]));
+        } elseif ($notification->target_age_group === 'under_25') {
+            $devicesQuery->whereHas('user.profile', fn($q) => $q->where('date_of_birth', '>', now()->subYears(25)));
+        } elseif ($notification->target_age_group === '25_40') {
+            $devicesQuery->whereHas('user.profile', fn($q) => $q->whereBetween('date_of_birth', [now()->subYears(40), now()->subYears(25)]));
+        } elseif ($notification->target_age_group === 'over_40') {
+            $devicesQuery->whereHas('user.profile', fn($q) => $q->where('date_of_birth', '<', now()->subYears(40)));
+        }
+
+        if ($notification->target_activity === 'dormant') {
+            $devicesQuery->whereHas('user', fn($q) => $q->whereDoesntHave('orders', fn($oq) => $oq->where('created_at', '>=', now()->subDays(30))));
+        }
+
+        $tokens = $devicesQuery->pluck('fcm_token')->unique()->values();
+        $sentCount = 0;
+
+        $payload = [
+            'type'   => 'broadcast',
+            'screen' => $notification->destination_type,
+        ];
+
+        if ($notification->destination_type === 'category' && $notification->destination_id) {
+            $payload['category_id'] = (string) $notification->destination_id;
+        }
+
+        foreach ($tokens as $token) {
+            if ($fcmService->sendToToken($token, $notification->title, $notification->body, $payload, $notification->banner_image)) {
+                $sentCount++;
+            }
+        }
+
+        return $sentCount;
     }
 
     /**

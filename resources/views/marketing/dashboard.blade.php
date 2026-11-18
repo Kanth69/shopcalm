@@ -327,9 +327,21 @@
 
                         <!-- Submit Button -->
                         <div class="mb-5">
-                            <button type="submit" class="btn btn-primary rounded-pill px-5 py-2.5 fw-bold shadow" onclick="return confirm('Broadcast this push notification alert to all matching active app devices now?');">
-                                <i class="bi bi-send-fill me-2"></i> Broadcast Push Alert Now
-                            </button>
+                            @if(isset($isSuperAdmin) && $isSuperAdmin)
+                                <button type="submit" class="btn btn-primary rounded-pill px-5 py-2.5 fw-bold shadow" onclick="return confirm('Broadcast this push notification alert to all matching active app devices now?');">
+                                    <i class="bi bi-send-fill me-2"></i> Broadcast Push Alert Now
+                                </button>
+                                <div class="form-text text-muted small mt-2">
+                                    <i class="bi bi-shield-check text-primary me-1"></i> Logged in as Super Admin. Your push broadcast will be dispatched immediately.
+                                </div>
+                            @else
+                                <button type="submit" class="btn btn-primary rounded-pill px-5 py-2.5 fw-bold shadow" onclick="return confirm('Submit this push notification draft for Super Admin approval?');">
+                                    <i class="bi bi-send-check-fill me-2"></i> Submit for Super Admin Approval
+                                </button>
+                                <div class="form-text text-muted small mt-2">
+                                    <i class="bi bi-info-circle text-primary me-1"></i> Push notification will be queued for Super Admin review before broadcasting to customer apps.
+                                </div>
+                            @endif
                         </div>
                     </div>
 
@@ -421,12 +433,13 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light text-muted small text-uppercase">
                             <tr>
-                                <th class="ps-4" style="width: 35%;">Notification Message</th>
+                                <th class="ps-4" style="width: 32%;">Notification Message</th>
                                 <th>Audience Target</th>
                                 <th>Destination</th>
+                                <th class="text-center">Status</th>
                                 <th class="text-center">Delivered</th>
-                                <th>Sent By</th>
-                                <th class="text-end pe-4">Sent At</th>
+                                <th>Submitted By</th>
+                                <th class="text-end pe-4">Date</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -484,12 +497,41 @@
                                         @endif
                                     </td>
 
-                                    <td class="text-center fw-bold text-dark">
-                                        {{ number_format($item->recipient_count) }}
+                                    <td class="text-center">
+                                        @if($item->isPending())
+                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill small">
+                                                <i class="bi bi-hourglass-split me-1"></i> Pending Review
+                                            </span>
+                                        @elseif($item->isApproved())
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small">
+                                                <i class="bi bi-check2-circle me-1"></i> Approved & Broadcast
+                                            </span>
+                                        @elseif($item->isRejected())
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill small" title="{{ $item->rejection_reason }}">
+                                                <i class="bi bi-x-circle me-1"></i> Rejected
+                                            </span>
+                                            @if($item->rejection_reason)
+                                                <small class="text-danger d-block mt-1 text-truncate" style="font-size: 10px; max-width: 140px;" title="{{ $item->rejection_reason }}">
+                                                    Note: {{ $item->rejection_reason }}
+                                                </small>
+                                            @endif
+                                        @endif
+                                    </td>
+
+                                    <td class="text-center">
+                                        @if($item->isApproved())
+                                            <span class="fw-bold text-dark">{{ number_format($item->recipient_count) }}</span>
+                                            <small class="text-muted d-block" style="font-size: 11px;">phones</small>
+                                        @else
+                                            <span class="text-muted small">—</span>
+                                        @endif
                                     </td>
 
                                     <td>
                                         <small class="fw-semibold text-dark">{{ optional($item->sender)->name ?? 'Marketing Staff' }}</small>
+                                        @if($item->isApproved() && $item->approver)
+                                            <small class="text-muted d-block" style="font-size: 10px;">Approved by {{ $item->approver->name }}</small>
+                                        @endif
                                     </td>
 
                                     <td class="text-end pe-4 text-nowrap">
@@ -499,8 +541,8 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center py-4 text-muted">
-                                        No push alerts broadcast yet. Compose your first notification above!
+                                    <td colspan="7" class="text-center py-4 text-muted">
+                                        No push alerts submitted yet. Compose your first campaign draft above!
                                     </td>
                                 </tr>
                             @endforelse
