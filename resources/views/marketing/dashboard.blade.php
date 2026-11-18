@@ -132,27 +132,10 @@
     </div>
 </div>
 
-<!-- Workspace Tabs -->
-<ul class="nav nav-pills mb-4 gap-2">
-    <li class="nav-item">
-        <button class="nav-link active rounded-pill px-4 fw-bold" id="pushes-tab" data-bs-toggle="pill" data-bs-target="#pushes-content" type="button">
-            <i class="bi bi-bell-fill me-1"></i> App Push Notifications
-        </button>
-    </li>
-    <li class="nav-item">
-        <button class="nav-link rounded-pill px-4 fw-semibold text-muted" id="urls-tab" data-bs-toggle="pill" data-bs-target="#urls-content" type="button">
-            <i class="bi bi-link-45deg me-1"></i> Digital Marketing URLs <span class="badge bg-secondary-subtle text-secondary ms-1 rounded-pill small">On Hold</span>
-        </button>
-    </li>
-</ul>
+<form action="{{ route('marketing.notifications.send') }}" method="POST" id="pushBroadcastForm">
+    @csrf
 
-<div class="tab-content" id="marketingTabContent">
-    <!-- TAB 1: App Push Notifications Composer & History -->
-    <div class="tab-pane fade show active" id="pushes-content">
-        <form action="{{ route('marketing.notifications.send') }}" method="POST" id="pushBroadcastForm">
-            @csrf
-
-            <div class="row g-4">
+    <div class="row g-4">
                 <!-- Composer Left Column -->
                 <div class="col-lg-7">
                     <!-- 1. Content Card -->
@@ -497,23 +480,6 @@
                 </div>
             @endif
         </div>
-    </div>
-
-    <!-- TAB 2: Digital Marketing URLs (On Hold Placeholder) -->
-    <div class="tab-pane fade" id="urls-content">
-        <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">
-            <div class="py-5">
-                <div class="rounded-circle bg-light p-4 d-inline-flex align-items-center justify-content-center text-muted mb-3" style="width: 80px; height: 80px;">
-                    <i class="bi bi-pause-circle fs-1"></i>
-                </div>
-                <h4 class="fw-bold text-dark">Digital Marketing URLs (Paused)</h4>
-                <p class="text-muted mx-auto" style="max-width: 480px;">
-                    Campaign tracking links and vanity URL generation for Instagram, Google Ads, and Influencers are currently on hold. We will activate this tab when you are ready to launch digital ads.
-                </p>
-            </div>
-        </div>
-    </div>
-</div>
 @endsection
 
 @push('scripts')
