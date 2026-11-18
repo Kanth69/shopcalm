@@ -187,7 +187,7 @@
                         @endforeach
                         @if($hasProductVideo)
                             <button type="button" 
-                                    onclick="selectProductGalleryIndex({{ $videoSlideIndex }})"
+                                    onclick="onVideoDotClicked({{ $videoSlideIndex }})"
                                     class="pdp-slider-dot pdp-video-dot" 
                                     data-dot-idx="{{ $videoSlideIndex }}"
                                     title="Watch Product Video"
@@ -1455,7 +1455,7 @@ function updateGalleryDots() {
 
     if (hasProductVideo) {
         const isActive = (currentProductGalleryIdx === vIdx);
-        html += `<button type="button" onclick="selectProductGalleryIndex(${vIdx})" class="pdp-slider-dot pdp-video-dot ${isActive ? 'active' : ''}" data-dot-idx="${vIdx}" title="Watch Product Video" aria-label="Slide ${vIdx + 1} - Product Video"><i class="bi bi-play-fill"></i> <span>VIDEO</span></button>`;
+        html += `<button type="button" onclick="onVideoDotClicked(${vIdx})" class="pdp-slider-dot pdp-video-dot ${isActive ? 'active' : ''}" data-dot-idx="${vIdx}" title="Watch Product Video" aria-label="Slide ${vIdx + 1} - Product Video"><i class="bi bi-play-fill"></i> <span>VIDEO</span></button>`;
     }
 
     dotsContainer.innerHTML = html;
@@ -1477,6 +1477,16 @@ function updateLightboxThumbs() {
                     <img src="${url}" alt="Thumb ${lIdx + 1}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 2px;">
                 </button>`;
     });
+    if (hasProductVideo) {
+        html += `<button type="button" onclick="closeLightboxAndPlayVideo()"
+                        class="lightbox-thumb-item rounded-2 p-1 bg-dark text-white d-flex flex-column align-items-center justify-content-center"
+                        title="Watch Product Video"
+                        aria-label="Product Video"
+                        style="width: 56px; height: 56px; flex-shrink: 0; cursor: pointer; border: 1.5px solid #ef4444; background: #0f172a !important;">
+                    <i class="bi bi-play-fill text-danger fs-5"></i>
+                    <span style="font-size: 0.58rem; font-weight: 800; color: white; letter-spacing: 0.3px;">VIDEO</span>
+                </button>`;
+    }
     thumbScroll.innerHTML = html;
 }
 
@@ -1607,9 +1617,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         stepProductGallery(-1); // Swipe right -> Prev
                     }
                 } else if (!isMoving || (Math.abs(diffX) < 10 && Math.abs(diffY) < 10)) {
-                    // Tap on image without drag -> Open full screen lightbox!
+                    // Tap on image without drag -> Open full screen lightbox or play video!
                     if (!e.target.closest('.pdp-video-btn-wrap') && !e.target.closest('button')) {
-                        openProductLightbox();
+                        handleMainImageClick();
                     }
                 }
             }
@@ -2118,6 +2128,25 @@ schedulePdpReviewsEarlyPreload();
 
 // Product Video Modal Controls
 const pdpVideoEmbedUrl = @json($product->getYoutubeEmbedUrl());
+
+function onVideoDotClicked(idx) {
+    selectProductGalleryIndex(idx);
+    openProductVideoModal();
+}
+
+function closeLightboxAndPlayVideo() {
+    const lbModal = document.getElementById('productLightboxModal');
+    if (lbModal && typeof bootstrap !== 'undefined') {
+        const modal = bootstrap.Modal.getInstance(lbModal);
+        if (modal) modal.hide();
+    }
+    setTimeout(() => {
+        const vIdx = getVideoSlideIndex();
+        selectProductGalleryIndex(vIdx);
+        openProductVideoModal();
+    }, 200);
+}
+
 function openProductVideoModal(e) {
     if (e) {
         if (typeof e.preventDefault === 'function') e.preventDefault();
@@ -2125,9 +2154,11 @@ function openProductVideoModal(e) {
     }
     const iframe = document.getElementById('productVideoIframe');
     if (iframe && pdpVideoEmbedUrl) {
-        if (!iframe.src || iframe.src === '' || iframe.src === 'about:blank' || iframe.src.indexOf('youtube') === -1) {
-            iframe.src = pdpVideoEmbedUrl;
+        let playUrl = pdpVideoEmbedUrl;
+        if (playUrl.indexOf('autoplay=1') === -1) {
+            playUrl += (playUrl.indexOf('?') === -1 ? '?' : '&') + 'autoplay=1&enablejsapi=1&playsinline=1';
         }
+        iframe.src = playUrl;
     }
     const modalEl = document.getElementById('productVideoModal');
     if (modalEl) {
@@ -2161,6 +2192,11 @@ let currentLightboxIdx = 0;
 function openProductLightbox(idx) {
     if (typeof idx !== 'number') {
         idx = (typeof currentProductGalleryIdx === 'number') ? currentProductGalleryIdx : 0;
+    }
+    const vIdx = getVideoSlideIndex();
+    if (hasProductVideo && idx === vIdx) {
+        openProductVideoModal();
+        return;
     }
     if (!activeGalleryImages || !activeGalleryImages.length) return;
     setLightboxIndex(idx);
@@ -2423,6 +2459,16 @@ document.addEventListener('DOMContentLoaded', function() {
                             <img src="{{ $lUrl }}" alt="Thumb {{ $lIdx + 1 }}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 2px;">
                         </button>
                     @endforeach
+                    @if($hasProductVideo)
+                        <button type="button" onclick="closeLightboxAndPlayVideo()"
+                                class="lightbox-thumb-item rounded-2 p-1 bg-dark text-white d-flex flex-column align-items-center justify-content-center"
+                                title="Watch Product Video"
+                                aria-label="Product Video"
+                                style="width: 56px; height: 56px; flex-shrink: 0; cursor: pointer; border: 1.5px solid #ef4444; background: #0f172a !important;">
+                            <i class="bi bi-play-fill text-danger fs-5"></i>
+                            <span style="font-size: 0.58rem; font-weight: 800; color: white; letter-spacing: 0.3px;">VIDEO</span>
+                        </button>
+                    @endif
                 </div>
             </div>
             @endif
