@@ -646,6 +646,16 @@
                 </li>
 
                 @if(optional(auth()->user())->isSuperAdmin())
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}" href="{{ route('admin.notifications.index') }}">
+                        <i class="bi bi-bell-fill text-danger"></i>
+                        <span class="nav-label">App Push Alerts</span>
+                        <span class="badge bg-danger text-white nav-badge">SUPER</span>
+                    </a>
+                </li>
+                @endif
+
+                @if(optional(auth()->user())->isSuperAdmin())
                 <li class="nav-header">Finance & Unit Economics</li>
                 <li class="nav-item">
                     <a class="nav-link has-submenu {{ request()->routeIs('admin.finance.*') || request()->routeIs('admin.reports.*') ? '' : 'collapsed' }}"

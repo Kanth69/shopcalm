@@ -104,7 +104,7 @@ class FcmNotificationService
     /**
      * Send a notification to a specific device FCM token.
      */
-    public function sendToToken(string $token, string $title, string $body, array $data = []): bool
+    public function sendToToken(string $token, string $title, string $body, array $data = [], ?string $imageUrl = null): bool
     {
         $creds = $this->getCredentials();
         if (!$creds) {
@@ -127,21 +127,30 @@ class FcmNotificationService
             $stringData[(string) $k] = is_array($v) ? json_encode($v) : (string) $v;
         }
 
+        $notificationData = [
+            'title' => $title,
+            'body'  => $body,
+        ];
+
+        $androidNotification = [
+            'channel_id'   => 'shopcalm_orders_channel',
+            'sound'        => 'default',
+            'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+        ];
+
+        if (!empty($imageUrl)) {
+            $notificationData['image'] = $imageUrl;
+            $androidNotification['image'] = $imageUrl;
+        }
+
         $payload = [
             'message' => [
                 'token' => $token,
-                'notification' => [
-                    'title' => $title,
-                    'body'  => $body,
-                ],
+                'notification' => $notificationData,
                 'data' => $stringData,
                 'android' => [
                     'priority' => 'HIGH',
-                    'notification' => [
-                        'channel_id'   => 'shopcalm_orders_channel',
-                        'sound'        => 'default',
-                        'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
-                    ],
+                    'notification' => $androidNotification,
                 ],
             ],
         ];

@@ -146,6 +146,13 @@ $registerStaffRoutes = function () {
             Route::post('firebase/update', [\App\Http\Controllers\Admin\IntegrationController::class, 'updateFirebase'])->name('firebase.update');
             Route::post('firebase/test', [\App\Http\Controllers\Admin\IntegrationController::class, 'testFirebase'])->name('firebase.test');
         });
+
+        // App Push Notifications Broadcast Console (Super Admin)
+        Route::prefix('notifications')->name('notifications.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\AppNotificationController::class, 'index'])->name('index');
+            Route::get('/create', [\App\Http\Controllers\Admin\AppNotificationController::class, 'create'])->name('create');
+            Route::post('/send', [\App\Http\Controllers\Admin\AppNotificationController::class, 'send'])->name('send');
+        });
     });
 
     // Dedicated Product Manager Portal Routes
