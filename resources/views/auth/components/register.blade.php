@@ -47,13 +47,19 @@
             <input id="name" class="auth-input" type="text" name="name" value="{{ old('name') }}" required placeholder="e.g. Rahul Sharma" autofocus>
         </div>
 
-        <div class="form-group">
-            <label for="register_mobile">Mobile Number <span class="text-danger">*</span></label>
+        <div class="form-group" id="reg-mobile-group">
+            <div class="label-row">
+                <label for="register_mobile">Mobile Number <span class="text-danger">*</span></label>
+                <button type="button" class="change-identifier-btn" id="change-identifier-from-register" style="display: none;">Change</button>
+            </div>
             <input id="register_mobile" class="auth-input" type="tel" name="mobile_number" value="{{ old('mobile_number') }}" required pattern="[0-9]{10}" maxlength="10" inputmode="numeric" placeholder="Enter 10-digit mobile number">
         </div>
 
-        <div class="form-group">
-            <label for="register_email">Email Address <small class="text-muted">(Optional)</small></label>
+        <div class="form-group" id="reg-email-group">
+            <div class="label-row">
+                <label for="register_email">Email Address <small class="text-muted">(Optional)</small></label>
+                <button type="button" class="change-identifier-btn" id="change-email-from-register" style="display: none;">Change</button>
+            </div>
             <input id="register_email" class="auth-input" type="email" name="email" value="{{ old('email') }}" placeholder="name@example.com (Optional)">
         </div>
 

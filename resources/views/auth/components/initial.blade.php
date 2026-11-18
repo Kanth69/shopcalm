@@ -1,13 +1,14 @@
 @php
     $rawStoreName = \App\Models\Setting::get('store_name', 'ShopCalm');
     $brandDisplay = str_ireplace('shopcalm', 'ShopCalm', $rawStoreName);
+    $isRegisterRoute = request()->routeIs('register');
 @endphp
 <div class="auth-header text-center">
     <a href="{{ route('home') }}" class="auth-logo d-inline-flex align-items-center justify-content-center mb-3 text-decoration-none">
         <x-logo height="40" />
     </a>
-    <h2 class="auth-title">Welcome to {{ $brandDisplay }}</h2>
-    <p class="auth-subtitle">Sign in or create your account</p>
+    <h2 class="auth-title">{{ $isRegisterRoute ? 'Create Your Account' : 'Welcome to ' . $brandDisplay }}</h2>
+    <p class="auth-subtitle">{{ $isRegisterRoute ? 'Enter your mobile number to get started' : 'Sign in or create your account' }}</p>
 </div>
 
 <form id="form-initial" class="auth-form" onsubmit="return false;">
@@ -17,7 +18,7 @@
     </div>
 
     <div class="form-group">
-        <label for="initial_identifier">Email or Mobile Number</label>
+        <label for="initial_identifier">{{ $isRegisterRoute ? 'Mobile Number or Email' : 'Email or Mobile Number' }}</label>
         <input
             id="initial_identifier"
             class="auth-input"
@@ -26,10 +27,10 @@
             required
             autofocus
             autocomplete="username"
-            placeholder="Enter your email or mobile"
-            inputmode="email"
+            placeholder="{{ $isRegisterRoute ? 'Enter 10-digit mobile number or email' : 'Enter your email or mobile' }}"
+            inputmode="{{ $isRegisterRoute ? 'tel' : 'email' }}"
         >
-        <span class="field-hint">We'll check if you have an account</span>
+        <span class="field-hint">We'll check if you already have an account</span>
     </div>
 
     <button type="button" id="initial-continue-btn" class="auth-submit-btn">

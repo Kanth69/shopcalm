@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return window.csrfToken || '';
     }
 
-    let currentState = document.getElementById('state-register') && document.getElementById('state-register').style.display === 'block' ? 'register' : 'initial';
+    let currentState = 'initial';
     let currentIdentifier = '';
     let currentUserData = {};
 
@@ -220,7 +220,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const isEmailType = identifier.includes('@');
                 const regEmail = document.getElementById('register_email');
                 const regMobile = document.getElementById('register_mobile');
-                const changeBtn = document.getElementById('change-identifier-from-register');
+                const changeMobileBtn = document.getElementById('change-identifier-from-register');
+                const changeEmailBtn = document.getElementById('change-email-from-register');
 
                 if (isEmailType) {
                     if (regEmail) {
@@ -228,20 +229,26 @@ document.addEventListener('DOMContentLoaded', function() {
                         regEmail.readOnly = true;
                         regEmail.classList.add('readonly-input');
                     }
+                    if (changeEmailBtn) changeEmailBtn.style.display = 'inline-block';
                     if (regMobile) {
                         regMobile.readOnly = false;
                         regMobile.classList.remove('readonly-input');
+                        regMobile.value = '';
                     }
+                    if (changeMobileBtn) changeMobileBtn.style.display = 'none';
                 } else {
+                    const clean10 = identifier.replace(/\D/g, '').slice(-10);
                     if (regMobile) {
-                        regMobile.value = identifier;
+                        regMobile.value = clean10;
                         regMobile.readOnly = true;
                         regMobile.classList.add('readonly-input');
                     }
+                    if (changeMobileBtn) changeMobileBtn.style.display = 'inline-block';
                     if (regEmail) {
                         regEmail.readOnly = false;
                         regEmail.classList.remove('readonly-input');
                     }
+                    if (changeEmailBtn) changeEmailBtn.style.display = 'none';
                 }
 
                 // Reset to step 1 (details)
@@ -615,8 +622,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            const cleanPhone = mobile.replace(/[\s\-]/g, '');
-            if (!cleanPhone || !/^\d{10}$/.test(cleanPhone)) {
+            const cleanPhone = mobile.replace(/\D/g, '').slice(-10);
+            if (!cleanPhone || cleanPhone.length !== 10) {
                 showRegAlert('details', 'Please enter a valid 10-digit mobile number.');
                 if (mobileInp) { mobileInp.classList.add('is-invalid'); mobileInp.focus(); }
                 return;
@@ -980,19 +987,60 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Navigation & Back buttons
+    function returnToInitialScreen() {
+        const regMobile = document.getElementById('register_mobile');
+        if (regMobile) {
+            regMobile.readOnly = false;
+            regMobile.classList.remove('readonly-input');
+        }
+        const regEmail = document.getElementById('register_email');
+        if (regEmail) {
+            regEmail.readOnly = false;
+            regEmail.classList.remove('readonly-input');
+        }
+        const changeMobileBtn = document.getElementById('change-identifier-from-register');
+        if (changeMobileBtn) changeMobileBtn.style.display = 'none';
+        const changeEmailBtn = document.getElementById('change-email-from-register');
+        if (changeEmailBtn) changeEmailBtn.style.display = 'none';
+
+        hideRegAlert('details');
+        hideRegAlert('otp');
+        transitionTo('initial');
+
+        if (initialInput) {
+            setTimeout(() => {
+                initialInput.focus();
+                initialInput.select();
+            }, 250);
+        }
+    }
+
     const changeLoginBtn = document.getElementById('change-identifier-from-login');
     if (changeLoginBtn) {
         changeLoginBtn.addEventListener('click', function() {
             transitionTo('initial');
+            if (initialInput) {
+                setTimeout(() => {
+                    initialInput.focus();
+                    initialInput.select();
+                }, 250);
+            }
         });
+    }
+
+    const changeRegBtn = document.getElementById('change-identifier-from-register');
+    if (changeRegBtn) {
+        changeRegBtn.addEventListener('click', returnToInitialScreen);
+    }
+
+    const changeEmailBtn = document.getElementById('change-email-from-register');
+    if (changeEmailBtn) {
+        changeEmailBtn.addEventListener('click', returnToInitialScreen);
     }
 
     const regTopBackBtn = document.getElementById('register-top-back-btn');
     if (regTopBackBtn) {
-        regTopBackBtn.addEventListener('click', function() {
-            hideRegAlert('details');
-            transitionTo('initial');
-        });
+        regTopBackBtn.addEventListener('click', returnToInitialScreen);
     }
 
     const regOtpBackBtn = document.getElementById('reg-otp-back-btn');

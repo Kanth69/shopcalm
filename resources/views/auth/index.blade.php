@@ -3,7 +3,7 @@
 
     <div id="auth-container" class="auth-card-container">
         <!-- Initial State -->
-        <div id="state-initial" style="{{ request()->routeIs('register') ? 'display: none;' : '' }}">
+        <div id="state-initial">
             @include('auth.components.initial')
         </div>
 
@@ -13,7 +13,7 @@
         </div>
 
         <!-- Register State -->
-        <div id="state-register" style="{{ request()->routeIs('register') ? 'display: block;' : 'display: none;' }}">
+        <div id="state-register" style="display: none;">
             @include('auth.components.register')
         </div>
 
