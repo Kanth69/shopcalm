@@ -68,7 +68,7 @@
                             <div class="rounded-circle d-flex align-items-center justify-content-center mb-2.5 transition-all category-avatar shadow-xs overflow-hidden" 
                                  style="width: 64px; height: 64px; min-width: 64px; @if(!$hasImage) background: {{ $color['bg'] }}; color: {{ $color['text'] }}; @endif">
                                 @if($hasImage)
-                                    <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="w-100 h-100 object-fit-cover">
+                                    <img loading="lazy" decoding="async" src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="w-100 h-100 object-fit-cover">
                                 @else
                                     <span class="fw-bold fs-3 text-white user-select-none">{{ $initial }}</span>
                                 @endif

@@ -185,7 +185,8 @@
                                     <a href="{{ route('product.show', $item->product->slug) }}" class="flex-shrink-0 position-relative">
                                         @php $cartThumb = $item->display_image ?? $item->product->main_image; @endphp
                                         @if($cartThumb)
-                                            <img src="{{ asset('storage/' . $cartThumb) }}" 
+                                            <img loading="lazy" decoding="async" src="{{ asset('storage/' . $cartThumb) }}" 
+                                                 alt="{{ $item->product->name ?? 'Cart item' }}"
                                                  class="rounded-3 border p-1 bg-white shadow-2xs cart-thumb" 
                                                  width="78" height="78" style="object-fit: contain;">
                                         @else

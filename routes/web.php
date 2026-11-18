@@ -43,7 +43,7 @@ $registerStaffRoutes = function () {
     // Admin Login / Logout Routes
     Route::middleware('guest.admin:admin')->group(function () {
         Route::get('admin/login', [AdminAuthController::class, 'create'])->name('admin.login');
-        Route::post('admin/login', [AdminAuthController::class, 'store']);
+        Route::post('admin/login', [AdminAuthController::class, 'store'])->middleware('throttle:10,1');
     });
     Route::match(['get', 'post'], 'admin/logout', [AdminAuthController::class, 'destroy'])->name('admin.logout');
 
@@ -421,10 +421,10 @@ $registerCustomerRoutes = function () {
         });
     });
 
-    // Unified Auth Routes
-    Route::post('/auth/check-user', [OtpController::class, 'checkUser'])->name('auth.check');
-    Route::post('/auth/send-otp', [OtpController::class, 'sendOtp'])->name('auth.otp.send');
-    Route::post('/auth/verify-otp', [OtpController::class, 'verifyOtp'])->name('auth.otp.verify');
+    // Unified Auth Routes (Rate limited against brute-force & OTP bombing)
+    Route::post('/auth/check-user', [OtpController::class, 'checkUser'])->name('auth.check')->middleware('throttle:20,1');
+    Route::post('/auth/send-otp', [OtpController::class, 'sendOtp'])->name('auth.otp.send')->middleware('throttle:6,1');
+    Route::post('/auth/verify-otp', [OtpController::class, 'verifyOtp'])->name('auth.otp.verify')->middleware('throttle:10,1');
 
     // Webhook Routes (Exempt from Session Auth)
     Route::post('/checkout/razorpay/webhook', [\App\Http\Controllers\Customer\CheckoutController::class, 'razorpayWebhook'])->name('checkout.razorpay.webhook');

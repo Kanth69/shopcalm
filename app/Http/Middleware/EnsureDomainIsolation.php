@@ -44,22 +44,15 @@ class EnsureDomainIsolation
             }
         } else {
             // ── 2. MAIN CUSTOMER DOMAIN ISOLATION ──
-            // If attempting to access staff paths on Main domain, redirect to Hub domain
+            // If attempting to access staff paths on Main domain, return 404 (stealth security rule)
             if ($isStaffPath) {
                 // In local dev when accessing via IP/localhost, allow staff routes directly
                 if (app()->environment('local') && ($host === '127.0.0.1' || $host === 'localhost')) {
                     return $next($request);
                 }
 
-                $port = $request->getPort();
-                $portStr = ($port && $port != 80 && $port != 443) ? ":{$port}" : "";
-
-                $hubBaseUrl = app()->environment('local')
-                    ? "http://hub.localhost{$portStr}"
-                    : "https://{$configuredHub}";
-
-                $targetPath = $path === '/admin' ? '/admin/login' : $path;
-                return redirect($hubBaseUrl . $targetPath);
+                // Modern Web Security Rule: Never disclose internal staff hub URL via redirect. Return 404.
+                abort(404);
             }
         }
 

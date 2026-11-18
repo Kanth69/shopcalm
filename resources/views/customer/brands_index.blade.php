@@ -45,7 +45,7 @@
                 <div class="card h-100 border-0 shadow-xs rounded-4 overflow-hidden text-center p-3 p-md-4 brand-card transition-all" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
                     @if($brand->logo)
                         <div class="mb-2.5 d-flex align-items-center justify-content-center" style="height: 54px;">
-                            <img src="{{ asset('storage/' . $brand->logo) }}" alt="{{ $brand->name }}" class="img-fluid" style="max-height: 48px; max-width: 100%; object-fit: contain;">
+                            <img loading="lazy" decoding="async" src="{{ asset('storage/' . $brand->logo) }}" alt="{{ $brand->name }}" class="img-fluid" style="max-height: 48px; max-width: 100%; object-fit: contain;">
                         </div>
                     @else
                         <div class="bg-primary-subtle text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-2.5 mx-auto" style="width: 54px; height: 54px;">

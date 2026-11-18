@@ -21,6 +21,11 @@
     <link rel="icon" type="image/png" href="{{ $storeFaviconUrl }}">
     <link rel="shortcut icon" type="image/png" href="{{ $storeFaviconUrl }}">
     <link rel="apple-touch-icon" href="{{ $storeFaviconUrl }}">
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
     <!-- Open Graph / Social & WhatsApp Link Sharing Preview -->
     <meta property="og:site_name" content="{{ \App\Models\Setting::get('store_name', 'ShopCalm') }}">
@@ -35,11 +40,11 @@
     {
         "@@context": "https://schema.org",
         "@@type": "Organization",
-        "name": "ShopCalm",
-        "legalName": "ShopCalm E-Commerce Solutions",
-        "url": "{{ config('app.url', 'https://shopcalm.in') }}",
-        "email": "support@shopcalm.in",
-        "description": "ShopCalm is an Indian e-commerce store offering curated products, fast shipping across India, and pre-dispatch cancellations with instant refunds."
+        "name": "{{ \App\Models\Setting::get('store_name', 'ShopCalm') }}",
+        "legalName": "{{ \App\Models\Setting::get('invoice_company_name', \App\Models\Setting::get('store_name', 'ShopCalm')) }}",
+        "url": "{{ config('app.url', url('/')) }}",
+        "email": "{{ \App\Models\Setting::get('contact_email', 'support@shopcalm.in') }}",
+        "description": "{{ addslashes(\App\Models\Setting::get('tagline', 'Shop More. Worry Less.')) }}"
     }
     </script>
 

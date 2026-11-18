@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->prepend(\App\Http\Middleware\EnsureDomainIsolation::class);
         $middleware->append(\App\Http\Middleware\CheckBlockedStatus::class);
+        $middleware->append(\App\Http\Middleware\AddSecurityHeaders::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Global exception handling for API routes
