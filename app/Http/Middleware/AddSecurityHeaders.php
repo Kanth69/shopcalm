@@ -15,11 +15,13 @@ class AddSecurityHeaders
     {
         $response = $next($request);
 
-        // Attach modern HTTP security headers
+        // Attach modern OWASP enterprise security headers
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
+        $response->headers->set('X-XSS-Protection', '1; mode=block');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
+        $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
 
         // Enforce HTTPS Strict Transport Security (HSTS) on secure/production connections
         if ($request->isSecure() || app()->environment('production')) {

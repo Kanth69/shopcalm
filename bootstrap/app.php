@@ -28,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->prepend(\App\Http\Middleware\EnsureDomainIsolation::class);
+        $middleware->prepend(\App\Http\Middleware\EnterpriseFirewall::class);
         $middleware->append(\App\Http\Middleware\CheckBlockedStatus::class);
         $middleware->append(\App\Http\Middleware\AddSecurityHeaders::class);
     })
