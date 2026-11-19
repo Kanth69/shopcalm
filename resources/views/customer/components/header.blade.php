@@ -783,6 +783,29 @@ document.addEventListener('DOMContentLoaded', function() {
         animation: mic-pulse 1.2s infinite ease-in-out;
         display: inline-block;
     }
+    .voice-mic-wave-container {
+        position: relative;
+        width: 104px;
+        height: 104px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .voice-wave-ring {
+        position: absolute;
+        width: 76px;
+        height: 76px;
+        border-radius: 50%;
+        background: rgba(239, 68, 68, 0.28);
+        animation: voiceRipple 1.8s infinite ease-out;
+    }
+    .voice-wave-ring.ring-2 {
+        animation-delay: 0.6s;
+    }
+    @keyframes voiceRipple {
+        0% { transform: scale(0.9); opacity: 0.85; }
+        100% { transform: scale(1.65); opacity: 0; }
+    }
 </style>
 
 <script>
@@ -1295,83 +1318,205 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Voice Search via Web Speech API (Desktop & Mobile)
-    const voiceBtns = document.querySelectorAll('.btn-voice-search');
-    if (voiceBtns.length > 0) {
+    // Robust Multi-Device Voice Search (Web & Mobile with Interactive Modal)
+    let activeRecognition = null;
+
+    function getVoiceModal() {
+        const modalEl = document.getElementById('voiceSearchModal');
+        if (!modalEl) return null;
+        if (window.bootstrap && window.bootstrap.Modal) {
+            return window.bootstrap.Modal.getOrCreateInstance(modalEl);
+        }
+        return null;
+    }
+
+    function showVoiceModal() {
+        const modalEl = document.getElementById('voiceSearchModal');
+        const bsModal = getVoiceModal();
+        if (bsModal) {
+            bsModal.show();
+        } else if (modalEl) {
+            modalEl.classList.add('show');
+            modalEl.style.display = 'block';
+            document.body.classList.add('modal-open');
+        }
+    }
+
+    function hideVoiceModal() {
+        const modalEl = document.getElementById('voiceSearchModal');
+        const bsModal = getVoiceModal();
+        if (bsModal) {
+            bsModal.hide();
+        } else if (modalEl) {
+            modalEl.classList.remove('show');
+            modalEl.style.display = 'none';
+            document.body.classList.remove('modal-open');
+        }
+    }
+
+    function startVoiceSearch() {
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRec) {
-            let recognition = null;
-            let isListening = false;
+        const listeningState = document.getElementById('voiceListeningState');
+        const errorState = document.getElementById('voiceErrorState');
+        const liveTranscript = document.getElementById('voiceLiveTranscript');
+        const statusTitle = document.getElementById('voiceStatusTitle');
+        const statusSubtitle = document.getElementById('voiceStatusSubtitle');
+        const errorTitle = document.getElementById('voiceErrorTitle');
+        const errorMessage = document.getElementById('voiceErrorMessage');
 
-            try {
-                recognition = new SpeechRec();
-                recognition.lang = 'en-IN';
-                recognition.continuous = false;
-                recognition.interimResults = false;
-            } catch (e) {
-                recognition = null;
-            }
+        // Check browser support
+        if (!SpeechRec) {
+            showVoiceModal();
+            if (listeningState) listeningState.classList.add('d-none');
+            if (errorState) errorState.classList.remove('d-none');
+            if (errorTitle) errorTitle.textContent = 'Voice Search Not Supported';
+            if (errorMessage) errorMessage.textContent = 'Your current browser does not support speech recognition. Please use Google Chrome or Microsoft Edge.';
+            return;
+        }
 
-            if (recognition) {
-                function setMicState(listening) {
-                    isListening = listening;
-                    voiceBtns.forEach(btn => {
-                        if (listening) {
-                            btn.innerHTML = '<i class="bi bi-soundwave text-danger fs-5 animate-mic-pulse"></i>';
-                            btn.title = 'Listening... Speak now';
-                        } else {
-                            btn.innerHTML = '<i class="bi bi-mic-fill fs-6" style="color: #64748b;"></i>';
-                            btn.title = 'Search by voice';
-                        }
-                    });
+        // Reset UI to Listening
+        if (listeningState) listeningState.classList.remove('d-none');
+        if (errorState) errorState.classList.add('d-none');
+        if (liveTranscript) liveTranscript.innerHTML = '<span class="text-muted fst-italic">"Listening... Speak now"</span>';
+        if (statusTitle) statusTitle.textContent = 'Listening...';
+        if (statusSubtitle) statusSubtitle.textContent = 'Speak clearly into your microphone';
+
+        showVoiceModal();
+
+        // Abort previous session if any was active
+        if (activeRecognition) {
+            try { activeRecognition.abort(); } catch (e) {}
+            activeRecognition = null;
+        }
+
+        try {
+            // ALWAYS instantiate a FRESH SpeechRecognition per click
+            const recognition = new SpeechRec();
+            activeRecognition = recognition;
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.maxAlternatives = 1;
+            recognition.lang = navigator.language || 'en-IN';
+
+            let finalTranscript = '';
+            let recognizedAnySpeech = false;
+
+            recognition.onstart = function () {
+                if (statusTitle) statusTitle.textContent = 'Listening...';
+                if (statusSubtitle) statusSubtitle.textContent = 'Speak now';
+            };
+
+            recognition.onresult = function (event) {
+                let interim = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interim += event.results[i][0].transcript;
+                    }
                 }
 
-                voiceBtns.forEach(btn => {
-                    btn.addEventListener('click', function (e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (isListening) {
-                            try { recognition.stop(); } catch(err) {}
-                            setMicState(false);
-                            return;
-                        }
-
-                        try {
-                            recognition.start();
-                            setMicState(true);
-                        } catch (err) {
-                            setMicState(false);
-                        }
-                    });
-                });
-
-                recognition.onresult = function (event) {
-                    const transcript = event.results && event.results[0] && event.results[0][0] ? event.results[0][0].transcript : '';
-                    if (!transcript) return;
-                    const isMobile = window.innerWidth < 768;
-                    const targetInput = isMobile 
-                        ? (document.getElementById('mobileSearchInput') || document.getElementById('mainSearchInput'))
-                        : (document.getElementById('mainSearchInput') || document.getElementById('mobileSearchInput'));
-                    
-                    if (targetInput) {
-                        targetInput.value = transcript;
-                        targetInput.dispatchEvent(new Event('input', { bubbles: true }));
-                        targetInput.focus();
+                const displayTxt = finalTranscript || interim;
+                if (displayTxt) {
+                    recognizedAnySpeech = true;
+                    if (liveTranscript) {
+                        liveTranscript.innerHTML = `<span class="text-primary fw-bold">"${escapeHtml(displayTxt)}"</span>`;
                     }
-                    setMicState(false);
-                };
+                }
 
-                recognition.onerror = recognition.onend = function () {
-                    setMicState(false);
-                };
+                // If final speech transcript detected
+                if (finalTranscript.trim().length > 0) {
+                    const resultText = finalTranscript.trim();
+                    if (statusTitle) statusTitle.textContent = 'Searching...';
+                    
+                    const dInp = document.getElementById('mainSearchInput');
+                    const mInp = document.getElementById('mobileSearchInput');
+                    if (dInp) dInp.value = resultText;
+                    if (mInp) mInp.value = resultText;
+
+                    setTimeout(() => {
+                        hideVoiceModal();
+                        window.applySearchTerm(resultText);
+                    }, 450);
+                }
+            };
+
+            recognition.onerror = function (event) {
+                console.warn('SpeechRecognition error:', event.error);
+                if (listeningState) listeningState.classList.add('d-none');
+                if (errorState) errorState.classList.remove('d-none');
+
+                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                    if (errorTitle) errorTitle.textContent = 'Microphone Access Denied';
+                    if (errorMessage) errorMessage.innerHTML = 'Microphone permission was blocked. Please tap the lock / settings icon in your browser address bar and select <strong>Allow Microphone</strong>.';
+                } else if (event.error === 'no-speech') {
+                    if (errorTitle) errorTitle.textContent = 'No Speech Detected';
+                    if (errorMessage) errorMessage.textContent = "We couldn't hear anything. Tap 'Try Again' and speak closer to the microphone.";
+                } else if (event.error === 'network') {
+                    if (errorTitle) errorTitle.textContent = 'Network Offline';
+                    if (errorMessage) errorMessage.textContent = 'Speech recognition requires an internet connection. Please verify your connection.';
+                } else {
+                    if (errorTitle) errorTitle.textContent = 'Could Not Hear You';
+                    if (errorMessage) errorMessage.textContent = 'Speech stopped unexpectedly. Tap "Try Again" to speak.';
+                }
+            };
+
+            recognition.onend = function () {
+                // If it ended without recognizing any speech and without error UI shown:
+                if (!recognizedAnySpeech && listeningState && !listeningState.classList.contains('d-none')) {
+                    if (listeningState) listeningState.classList.add('d-none');
+                    if (errorState) errorState.classList.remove('d-none');
+                    if (errorTitle) errorTitle.textContent = 'No Speech Heard';
+                    if (errorMessage) errorMessage.textContent = "Did not catch that. Tap 'Try Again' to speak.";
+                }
+                activeRecognition = null;
+            };
+
+            recognition.start();
+        } catch (e) {
+            console.error('Speech recognition exception:', e);
+            if (listeningState) listeningState.classList.add('d-none');
+            if (errorState) errorState.classList.remove('d-none');
+            if (errorTitle) errorTitle.textContent = 'Voice Search Error';
+            if (errorMessage) errorMessage.textContent = 'Failed to access microphone. Please try again.';
+        }
+    }
+
+    // Bind click listeners to all voice search buttons
+    document.querySelectorAll('.btn-voice-search').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            startVoiceSearch();
+        });
+    });
+
+    // Retry button in modal
+    const retryBtn = document.getElementById('btnVoiceRetry');
+    if (retryBtn) {
+        retryBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            startVoiceSearch();
+        });
+    }
+
+    // Abort recognition when modal is closed
+    const voiceModalEl = document.getElementById('voiceSearchModal');
+    if (voiceModalEl) {
+        voiceModalEl.addEventListener('hidden.bs.modal', function () {
+            if (activeRecognition) {
+                try { activeRecognition.abort(); } catch (e) {}
+                activeRecognition = null;
             }
-        } else {
-            // Graceful fallback notice if browser does not support SpeechRecognition
-            voiceBtns.forEach(btn => {
-                btn.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    alert('Voice search is not supported in this browser. Please use Chrome or Edge.');
-                });
+        });
+        const closeBtn = document.getElementById('btnVoiceModalClose');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function () {
+                hideVoiceModal();
+                if (activeRecognition) {
+                    try { activeRecognition.abort(); } catch (e) {}
+                    activeRecognition = null;
+                }
             });
         }
     }
@@ -1419,6 +1564,55 @@ document.addEventListener('DOMContentLoaded', function() {
     setupSearch('mobileSearchInput', 'mobileSearchForm', 'mobileSearchSuggestions');
 })();
 </script>
+
+<!-- Google/Amazon Style Live Voice Search Modal -->
+<div class="modal fade" id="voiceSearchModal" tabindex="-1" aria-labelledby="voiceSearchModalLabel" aria-hidden="true" style="z-index: 1099;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content border-0 shadow-2xl rounded-4 overflow-hidden text-center p-4 p-md-5 position-relative" style="background: #ffffff;">
+            <!-- Close button -->
+            <button type="button" class="btn-close position-absolute top-0 end-0 m-3 shadow-none" data-bs-dismiss="modal" aria-label="Close" id="btnVoiceModalClose"></button>
+
+            <!-- State 1: Active Listening with Live Wave Rings -->
+            <div id="voiceListeningState">
+                <div class="voice-mic-wave-container mx-auto mb-3">
+                    <div class="voice-wave-ring ring-1"></div>
+                    <div class="voice-wave-ring ring-2"></div>
+                    <div class="voice-mic-circle d-flex align-items-center justify-content-center text-white shadow-lg mx-auto position-relative" 
+                         style="width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); z-index: 2;">
+                        <i class="bi bi-mic-fill fs-2"></i>
+                    </div>
+                </div>
+
+                <h5 class="fw-bold text-dark mb-1" id="voiceStatusTitle">Listening...</h5>
+                <p class="text-muted small mb-3" id="voiceStatusSubtitle">Speak into your microphone now</p>
+
+                <!-- Live Interim Speech Transcript -->
+                <div class="p-3 bg-light rounded-3 border mb-3 d-flex align-items-center justify-content-center" style="min-height: 70px; border-color: #e2e8f0 !important;">
+                    <span class="fs-5 text-break" id="voiceLiveTranscript" style="color: #0f172a;">"..."</span>
+                </div>
+                
+                <small class="text-muted d-block" style="font-size: 0.76rem;">Try saying <em>"Samsung"</em>, <em>"Mobiles"</em>, or <em>"Running Shoes"</em></small>
+            </div>
+
+            <!-- State 2: Error (Permission / Silence / Network) -->
+            <div id="voiceErrorState" class="d-none">
+                <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 text-warning bg-warning bg-opacity-10" style="width: 68px; height: 68px;">
+                    <i class="bi bi-mic-mute-fill fs-2"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-1" id="voiceErrorTitle">Microphone Issue</h5>
+                <p class="text-muted small mb-4 px-2" id="voiceErrorMessage">Microphone permission was denied or not detected.</p>
+                <div class="d-flex align-items-center justify-content-center gap-2">
+                    <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold btn-sm shadow-xs" id="btnVoiceRetry">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Try Again
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 btn-sm fw-semibold" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Delivery Location Selector Modal -->
 <div class="modal fade" id="deliveryLocationModal" tabindex="-1" aria-labelledby="deliveryLocationModalLabel" aria-hidden="true">
