@@ -384,8 +384,8 @@ class ProductController extends BaseApiController
             })
             ->with(['category:id,name,slug', 'brand:id,name,slug'])
             ->withAvg(['reviews' => fn($q) => $q->where('status', 'Approved')], 'rating')
-            ->take(3)
-            ->get(['id', 'name', 'slug', 'category_id', 'brand_id', 'price', 'sale_price', 'main_image']);
+            ->take(4)
+            ->get(['id', 'name', 'slug', 'category_id', 'brand_id', 'price', 'stock', 'main_image']);
 
         $this->offerService->applyOfferDiscountsToProducts($previewProducts);
 

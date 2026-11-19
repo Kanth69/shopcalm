@@ -213,50 +213,13 @@ class FcmNotificationService
      */
     public function sendOrderNotification(Order $order, string $status): bool
     {
-        $user = $order->user;
-        if (!$user) {
+        try {
+            $marketingService = app(MarketingAutomationService::class);
+            return $marketingService->triggerOrderEvent($order, $status);
+        } catch (\Throwable $e) {
+            Log::error("[FCM] Failed in automated order notification: " . $e->getMessage());
             return false;
         }
-
-        $orderNumber = $order->order_number ?? '#' . $order->id;
-
-        $templates = [
-            'confirmed' => [
-                'title' => '🎉 Order Confirmed!',
-                'body'  => "Your order {$orderNumber} is confirmed and is being packed.",
-            ],
-            'shipped' => [
-                'title' => '📦 Order Shipped!',
-                'body'  => "Your order {$orderNumber} has been dispatched with {$order->courier_name}.",
-            ],
-            'out_for_delivery' => [
-                'title' => '🚀 Out for Delivery!',
-                'body'  => "Our delivery partner is on the way with your order {$orderNumber}.",
-            ],
-            'delivered' => [
-                'title' => '✅ Order Delivered!',
-                'body'  => "Your order {$orderNumber} has been delivered. Enjoy your shopping!",
-            ],
-            'cancelled' => [
-                'title' => '⚠️ Order Cancelled',
-                'body'  => "Your order {$orderNumber} has been cancelled. Refunds if any will credit to your wallet.",
-            ],
-        ];
-
-        $statusKey = strtolower(str_replace([' ', '-'], '_', $status));
-        if (!isset($templates[$statusKey])) {
-            return false;
-        }
-
-        $info = $templates[$statusKey];
-        $data = [
-            'type'        => 'order_update',
-            'order_id'    => (string) $order->id,
-            'status'      => $status,
-            'screen'      => 'order_detail',
-        ];
-
-        return $this->sendToUser($user, $info['title'], $info['body'], $data) > 0;
     }
 
     /**

@@ -68,6 +68,9 @@ class AppServiceProvider extends ServiceProvider
         // Register User Policy
         Gate::policy(User::class, UserPolicy::class);
 
+        // Register Order Observer for zero-code dynamic automated lifecycle marketing
+        \App\Models\Order::observe(\App\Observers\OrderObserver::class);
+
         // Share dynamic Store Name globally across all views (cached)
         View::composer('*', function ($view) {
             $view->with('storeName', \App\Models\Setting::get('store_name', config('app.name', 'ShopCalm')));

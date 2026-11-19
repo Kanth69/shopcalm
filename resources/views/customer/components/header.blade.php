@@ -87,7 +87,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <nav class="d-none d-md-flex align-items-center gap-2.5 gap-lg-4 ms-1 ms-lg-2">
                     <a href="{{ route('home') }}" class="nav-clean-link {{ request()->routeIs('home') ? 'active text-primary fw-bold' : 'text-dark' }}" style="font-size: 0.88rem;">Home</a>
                     <a href="{{ route('shop') }}" class="nav-clean-link {{ request()->routeIs('shop') ? 'active text-primary fw-bold' : 'text-dark' }}" style="font-size: 0.88rem;">Shop</a>
-                    <a href="{{ route('categories.index') }}" class="nav-clean-link {{ request()->routeIs('categories.*') ? 'active text-primary fw-bold' : 'text-dark' }}" style="font-size: 0.88rem;">Categories</a>
                     <a href="{{ route('offers.index') }}" class="nav-clean-link {{ request()->routeIs('offers.*') ? 'active text-primary fw-bold' : 'text-dark' }}" style="font-size: 0.88rem;">Offers</a>
                 </nav>
 
@@ -111,31 +110,134 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
 
             @if(!$hideHeaderSearch)
-            <!-- Center: Desktop Clean Search Bar (App-Style Live Search) -->
-            <div class="flex-grow-1 d-none d-md-block mx-2 mx-xl-4 position-relative" style="max-width: 520px;">
-                <form action="{{ $headerSearchAction }}" method="GET" class="position-relative" id="mainSearchForm" autocomplete="off">
-                    <div class="input-group rounded-pill overflow-hidden border shadow-xs search-input-group position-relative" style="background: #f8fafc; border-color: #cbd5e1 !important; transition: border-color 0.2s ease, box-shadow 0.2s ease;">
-                        <span class="input-group-text bg-transparent border-0 ps-3 text-muted">
-                            <i class="bi bi-search text-primary" style="font-size: 0.9rem;"></i>
-                        </span>
-                        <input
-                            type="text"
-                            name="q"
-                            id="mainSearchInput"
-                            class="form-control bg-transparent border-0 shadow-none ps-2 py-2"
-                            placeholder="{{ $headerSearchPlaceholder }}"
-                            value="{{ request('q') }}"
-                            style="font-size: 0.88rem;"
-                            autocomplete="off"
-                        >
-                        <button type="button" class="btn btn-link text-secondary p-0 pe-3 d-none btn-clear-search" aria-label="Clear search" style="text-decoration: none; cursor: pointer; z-index: 5;">
-                            <i class="bi bi-x-circle-fill" style="font-size: 1.05rem;"></i>
+            <!-- Center: Amazon-Style Unified Search Command Center -->
+            <div class="flex-grow-1 d-none d-md-block mx-2 mx-xl-3 position-relative" style="max-width: 720px; z-index: 1061;">
+                <form action="{{ $headerSearchAction }}" method="GET" class="position-relative w-100" id="mainSearchForm" autocomplete="off">
+                    <div class="amazon-search-container d-flex align-items-stretch rounded-3" 
+                         style="height: 42px; background: #ffffff; border: 2px solid #cbd5e1; transition: border-color 0.2s, box-shadow 0.2s;">
+                        
+                        <!-- 1. Left: Scope Selector (Custom Dropdown Menu) -->
+                        <div class="dropdown flex-shrink-0 h-100">
+                            @php
+                                $selectedCatId = request('category')[0] ?? null;
+                                $selectedCat = $selectedCatId ? collect($menuCategories ?? [])->firstWhere('id', $selectedCatId) : null;
+                                if (!$selectedCat && isset($category) && $category instanceof \App\Models\Category) {
+                                    $selectedCat = $category;
+                                    $selectedCatId = $category->id;
+                                }
+                            @endphp
+                            <button type="button" 
+                                    class="btn amazon-search-scope d-flex align-items-center h-100 border-0 rounded-start-3 rounded-end-0 px-2.5 text-secondary" 
+                                    data-bs-toggle="dropdown" 
+                                    data-bs-display="static"
+                                    aria-expanded="false" 
+                                    id="searchCategoryDropdownBtn"
+                                    style="background: #f1f5f9; border-right: 1px solid #cbd5e1 !important; font-size: 0.8rem; font-weight: 600; cursor: pointer; user-select: none;"
+                                    title="Select department">
+                                <span id="searchCategoryLabel" class="text-truncate me-1 text-dark" style="max-width: 85px;">
+                                    {{ $selectedCat ? $selectedCat->name : 'All' }}
+                                </span>
+                                <i class="bi bi-caret-down-fill text-muted" style="font-size: 0.6rem;"></i>
+                            </button>
+
+                            <!-- Hidden Category ID Input for Form Submission -->
+                            <input type="hidden" name="category[]" id="searchCategoryInput" value="{{ $selectedCatId ?? '' }}">
+
+                            <!-- Custom High-End Dropdown Menu -->
+                            <ul class="dropdown-menu shadow-lg border rounded-3 p-1.5 mt-1" 
+                                style="min-width: 220px; max-height: 380px; overflow-y: auto; z-index: 1080; border-color: #e2e8f0 !important;" 
+                                aria-labelledby="searchCategoryDropdownBtn">
+                                <li class="px-2.5 py-1 text-uppercase fw-bold text-muted border-bottom mb-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">
+                                    Departments
+                                </li>
+                                <li>
+                                    <button type="button" 
+                                            class="dropdown-item d-flex align-items-center justify-content-between py-2 px-2.5 rounded-2 {{ empty($selectedCatId) ? 'active fw-bold' : '' }}" 
+                                            onclick="selectSearchCategory('', 'All', '{{ route('shop') }}', this)" 
+                                            style="font-size: 0.84rem;">
+                                        <span class="d-flex align-items-center gap-2">
+                                            <i class="bi bi-grid text-muted"></i>
+                                            <span>All Departments</span>
+                                        </span>
+                                        @if(empty($selectedCatId))
+                                            <i class="bi bi-check2 text-primary fw-bold fs-6 cat-check-icon"></i>
+                                        @endif
+                                    </button>
+                                </li>
+                                <li><hr class="dropdown-divider my-1"></li>
+                                @foreach($menuCategories ?? [] as $mCat)
+                                    @php
+                                        $isCatSelected = ($selectedCatId == $mCat->id);
+                                        $catLower = strtolower($mCat->name);
+                                        $catIcon = 'bi-tag';
+                                        if (str_contains($catLower, 'mobile') || str_contains($catLower, 'phone')) $catIcon = 'bi-phone';
+                                        elseif (str_contains($catLower, 'electr')) $catIcon = 'bi-laptop';
+                                        elseif (str_contains($catLower, 'fashion') || str_contains($catLower, 'cloth')) $catIcon = 'bi-bag';
+                                        elseif (str_contains($catLower, 'kitchen') || str_contains($catLower, 'home')) $catIcon = 'bi-house';
+                                        elseif (str_contains($catLower, 'sport')) $catIcon = 'bi-trophy';
+                                        elseif (str_contains($catLower, 'grocer')) $catIcon = 'bi-basket';
+                                        elseif (str_contains($catLower, 'beaut')) $catIcon = 'bi-stars';
+                                        elseif (str_contains($catLower, 'book')) $catIcon = 'bi-book';
+                                    @endphp
+                                    <li>
+                                        <button type="button" 
+                                                class="dropdown-item d-flex align-items-center justify-content-between py-2 px-2.5 rounded-2 {{ $isCatSelected ? 'active fw-bold' : '' }}" 
+                                                onclick="selectSearchCategory('{{ $mCat->id }}', '{{ addslashes($mCat->name) }}', '{{ route('category.products', $mCat->slug) }}', this)" 
+                                                style="font-size: 0.84rem;">
+                                            <span class="d-flex align-items-center gap-2 text-truncate">
+                                                <i class="bi {{ $catIcon }} text-muted"></i>
+                                                <span class="text-truncate">{{ $mCat->name }}</span>
+                                            </span>
+                                            @if($isCatSelected)
+                                                <i class="bi bi-check2 text-primary fw-bold fs-6 cat-check-icon"></i>
+                                            @endif
+                                        </button>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+
+                        <!-- 2. Center: Input Field (Spacious & Clean, Zero Ctrl K) -->
+                        <div class="position-relative flex-grow-1 d-flex align-items-center">
+                            <input
+                                type="text"
+                                name="q"
+                                id="mainSearchInput"
+                                class="form-control border-0 shadow-none px-3 py-0 search-core-input"
+                                placeholder="{{ $headerSearchPlaceholder }}"
+                                value="{{ request('q') }}"
+                                style="font-size: 0.9rem; font-weight: 500; height: 100%; color: #0f172a; background: #ffffff;"
+                                autocomplete="off"
+                                spellcheck="false"
+                            >
+                            <!-- Clear Button ✕ -->
+                            <button type="button" class="btn btn-link text-secondary p-0 d-none btn-clear-search" aria-label="Clear search" style="text-decoration: none; cursor: pointer; z-index: 5; margin-right: 8px;">
+                                <i class="bi bi-x-circle-fill text-muted" style="font-size: 1.05rem;"></i>
+                            </button>
+
+                            <!-- Desktop Voice Search Button (Mic Icon with comfortable breathing room) -->
+                            <button type="button" 
+                                    class="btn btn-link text-muted p-0 d-flex align-items-center justify-content-center border-0 btn-voice-search" 
+                                    id="btnDesktopVoiceSearch" 
+                                    aria-label="Voice Search" 
+                                    title="Search by voice" 
+                                    style="text-decoration: none; cursor: pointer; z-index: 5; margin-right: 14px; width: 30px; height: 30px; border-radius: 50%;">
+                                <i class="bi bi-mic-fill fs-6" style="color: #64748b;"></i>
+                            </button>
+                        </div>
+
+                        <!-- 3. Right: Solid Amazon Amber Search Button -->
+                        <button type="submit" 
+                                class="btn amazon-search-btn d-flex align-items-center justify-content-center flex-shrink-0 border-0 rounded-start-0 rounded-end-3" 
+                                style="background: #febd69; color: #111827; width: 48px; transition: background 0.15s ease;" 
+                                title="Search">
+                            <i class="bi bi-search fs-6 fw-bold"></i>
                         </button>
                     </div>
 
                     <!-- Live Suggestions Dropdown -->
-                    <div id="searchSuggestions" class="position-absolute bg-white border rounded-4 shadow-lg mt-2 d-none search-suggestions-box" 
-                         style="z-index: 1060; top: 100%; left: 0; right: 0; max-height: 520px; overflow-y: auto; -webkit-overflow-scrolling: touch;">
+                    <div id="searchSuggestions" class="position-absolute bg-white border rounded-3 shadow-xl mt-1.5 d-none search-suggestions-box" 
+                         style="z-index: 1070; top: 100%; left: 0; right: 0; width: 100%; max-height: 560px; overflow-y: auto; -webkit-overflow-scrolling: touch;">
                     </div>
                 </form>
             </div>
@@ -244,22 +346,45 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
 
         @if(!$hideHeaderSearch)
-        <!-- Mobile Search Bar (Clean Full Width App-Style Live Search) -->
-        <div class="d-block d-md-none pt-1.5 pb-0.5 position-relative">
+        <!-- Mobile Search Bar (Amazon Style with Amber Search Button + Voice Search) -->
+        <div class="d-block d-md-none pt-1.5 pb-0.5 position-relative" style="z-index: 1061;">
             <form action="{{ $headerSearchAction }}" method="GET" class="position-relative" id="mobileSearchForm" autocomplete="off">
-                <div class="input-group rounded-pill overflow-hidden border shadow-xs search-input-group position-relative" style="background: #f8fafc; border-color: #cbd5e1 !important;">
-                    <span class="input-group-text bg-transparent border-0 ps-3 text-muted">
-                        <i class="bi bi-search text-primary" style="font-size: 0.85rem;"></i>
-                    </span>
-                    <input type="text" name="q" id="mobileSearchInput" class="form-control bg-transparent border-0 shadow-none ps-1 py-2" placeholder="{{ $headerSearchPlaceholder }}" value="{{ request('q') }}" style="font-size: 0.86rem;" autocomplete="off">
-                    <button type="button" class="btn btn-link text-secondary p-0 pe-3 d-none btn-clear-search" aria-label="Clear search" style="text-decoration: none; cursor: pointer; z-index: 5;">
-                        <i class="bi bi-x-circle-fill" style="font-size: 1.05rem;"></i>
+                <input type="hidden" name="category[]" id="mobileSearchCategoryInput" value="{{ $selectedCatId ?? '' }}">
+                <div class="amazon-mobile-search-container d-flex align-items-stretch rounded-3 overflow-hidden" 
+                     style="height: 42px; background: #ffffff; border: 2px solid #cbd5e1; box-shadow: 0 1px 3px rgba(15,23,42,0.06); transition: border-color 0.2s, box-shadow 0.2s;">
+                    
+                    <div class="position-relative flex-grow-1 d-flex align-items-center">
+                        <input type="text" name="q" id="mobileSearchInput" class="form-control bg-transparent border-0 shadow-none ps-3 pe-2 py-0 search-core-input" 
+                               placeholder="{{ $headerSearchPlaceholder }}" value="{{ request('q') }}" style="font-size: 0.88rem; font-weight: 500; height: 100%; color: #0f172a;" autocomplete="off" spellcheck="false">
+                        
+                        <!-- Clear button -->
+                        <button type="button" class="btn btn-link text-secondary p-0 d-none btn-clear-search" aria-label="Clear search" style="text-decoration: none; cursor: pointer; z-index: 5; margin-right: 6px;">
+                            <i class="bi bi-x-circle-fill text-muted" style="font-size: 1rem;"></i>
+                        </button>
+
+                        <!-- Voice Search Button (Mic Icon) -->
+                        <button type="button" 
+                                class="btn btn-link text-muted p-0 d-flex align-items-center justify-content-center border-0 btn-voice-search" 
+                                id="btnVoiceSearch" 
+                                aria-label="Voice Search" 
+                                title="Search by voice" 
+                                style="text-decoration: none; cursor: pointer; z-index: 5; margin-right: 8px; width: 30px; height: 30px; border-radius: 50%;">
+                            <i class="bi bi-mic-fill fs-6" style="color: #64748b;"></i>
+                        </button>
+                    </div>
+
+                    <!-- Right: Solid Amazon Amber Search Button -->
+                    <button type="submit" 
+                            class="btn amazon-search-btn d-flex align-items-center justify-content-center flex-shrink-0 border-0 rounded-0" 
+                            style="background: #febd69; color: #111827; width: 46px; transition: background 0.15s ease;" 
+                            title="Search">
+                        <i class="bi bi-search fs-6 fw-bold"></i>
                     </button>
                 </div>
 
                 <!-- Mobile Live Suggestions Dropdown -->
-                <div id="mobileSearchSuggestions" class="position-absolute bg-white border rounded-4 shadow-lg mt-2 d-none search-suggestions-box" 
-                     style="z-index: 1070; top: 100%; left: 0; right: 0; max-height: 70vh; overflow-y: auto; -webkit-overflow-scrolling: touch;">
+                <div id="mobileSearchSuggestions" class="position-absolute bg-white border rounded-3 shadow-xl mt-1.5 d-none search-suggestions-box" 
+                     style="z-index: 1070; top: 100%; left: 0; right: 0; width: 100%; max-height: 75vh; overflow-y: auto; -webkit-overflow-scrolling: touch;">
                 </div>
             </form>
         </div>
@@ -511,68 +636,123 @@ document.addEventListener('DOMContentLoaded', function() {
         transform: translateX(3px);
     }
 
-    /* App-Style Product Search Dropdown Styling */
-    .search-input-group:focus-within {
-        border-color: #4f46e5 !important;
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12) !important;
-        background: #ffffff !important;
+    /* Amazon-Style Unified Search Command Center */
+    .amazon-search-container {
+        border-color: #cbd5e1 !important;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+    }
+    .amazon-search-container:hover {
+        border-color: #94a3b8 !important;
+    }
+    .amazon-search-container:focus-within {
+        border-color: #f3a847 !important;
+        box-shadow: 0 0 0 3px rgba(243, 168, 71, 0.35) !important;
+    }
+    .amazon-search-scope {
+        transition: background-color 0.15s ease;
+    }
+    .amazon-search-scope:hover {
+        background-color: #e2e8f0 !important;
+    }
+    .amazon-search-btn:hover {
+        background-color: #f3a847 !important;
+    }
+    .amazon-mobile-search-container {
+        transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+    }
+    .amazon-mobile-search-container:hover {
+        border-color: #94a3b8 !important;
+    }
+    .amazon-mobile-search-container:focus-within {
+        border-color: #f3a847 !important;
+        box-shadow: 0 0 0 3px rgba(243, 168, 71, 0.3) !important;
     }
     .search-suggestions-box {
         border: 1px solid #e2e8f0 !important;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
-        border-radius: 1rem !important;
+        box-shadow: 0 20px 35px -10px rgba(15, 23, 42, 0.16), 0 8px 12px -4px rgba(15, 23, 42, 0.05) !important;
+        border-radius: 0.85rem !important;
         overflow-y: auto !important;
         overflow-x: hidden !important;
         -webkit-overflow-scrolling: touch !important;
-        touch-action: pan-y !important;
-        overscroll-behavior: contain !important;
     }
     .search-suggestions-box,
     .search-suggestions-box * {
         user-select: none;
     }
-    .suggestion-query-row,
-    .suggestion-query-row * {
-        cursor: pointer !important;
-    }
-    .suggestion-query-row {
-        transition: all 0.15s ease;
-    }
-    .suggestion-query-row:hover, .suggestion-query-row.active {
-        background-color: #f5f3ff !important;
-    }
-    .suggestion-row-item,
-    .suggestion-row-item * {
-        cursor: pointer !important;
-    }
-    .suggestion-row-item {
-        transition: all 0.15s ease;
-    }
-    .suggestion-row-item:hover, .suggestion-row-item.active {
-        background-color: #f8fafc;
-    }
-    .suggestion-action-icon {
-        width: 26px;
-        height: 26px;
-        border-radius: 50%;
-        background-color: #f1f5f9;
-        color: #475569;
+    .search-chip {
         display: inline-flex;
         align-items: center;
-        justify-content: center;
+        gap: 0.35rem;
+        padding: 0.38rem 0.8rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 9999px;
         font-size: 0.82rem;
-        flex-shrink: 0;
+        font-weight: 500;
+        color: #334155;
+        cursor: pointer;
         transition: all 0.15s ease;
+        text-decoration: none;
+        white-space: nowrap;
     }
-    .suggestion-row-item:hover .suggestion-action-icon,
-    .suggestion-query-row:hover .suggestion-action-icon {
-        background-color: #e0e7ff;
+    .search-chip:hover {
+        background: #eef2ff;
+        border-color: #c7d2fe;
         color: #4338ca;
-        transform: scale(1.08);
+        transform: translateY(-1px);
     }
-    .suggestion-footer-btn,
-    .suggestion-footer-btn * {
-        cursor: pointer !important;
+    .search-chip-trending {
+        background: #fff7ed;
+        border-color: #ffedd5;
+        color: #c2410c;
+    }
+    .search-chip-trending:hover {
+        background: #ffedd5;
+        border-color: #fed7aa;
+        color: #9a3412;
+    }
+    .brand-spotlight-card {
+        background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+        border: 1px solid #dbeafe;
+        border-radius: 0.75rem;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    .brand-spotlight-card:hover {
+        border-color: #93c5fd;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+        transform: translateY(-1px);
+    }
+    .preview-product-card {
+        padding: 0.45rem 0.6rem;
+        border-radius: 0.65rem;
+        transition: background-color 0.15s ease, border-color 0.15s ease;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+        border: 1px solid transparent;
+    }
+    .preview-product-card:hover {
+        background-color: #f8fafc;
+        border-color: #e2e8f0;
+    }
+    .preview-product-card img {
+        width: 48px;
+        height: 48px;
+        object-fit: cover;
+        border-radius: 0.55rem;
+        border: 1px solid #f1f5f9;
+        background: #f8fafc;
+        flex-shrink: 0;
+    }
+    .search-query-row {
+        padding: 0.55rem 0.75rem;
+        border-radius: 0.5rem;
+        transition: background-color 0.12s ease;
+        cursor: pointer;
+    }
+    .search-query-row:hover, .search-query-row.active {
+        background-color: #f8fafc;
     }
     .suggestion-footer-btn {
         transition: all 0.2s ease;
@@ -584,23 +764,77 @@ document.addEventListener('DOMContentLoaded', function() {
     .suggestion-footer-btn:hover .footer-arrow-icon {
         transform: translateX(5px);
     }
-    .recent-search-item,
-    .recent-search-item * {
-        cursor: pointer !important;
+    .btn-voice-search {
+        transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
     }
-    .recent-search-item {
-        padding: 8px 12px;
-        border-radius: 8px;
-        transition: background 0.15s ease;
+    .btn-voice-search:hover {
+        background-color: #f1f5f9 !important;
     }
-    .recent-search-item:hover {
-        background: #f8fafc;
+    .btn-voice-search:hover i {
+        color: #d97706 !important;
+        transform: scale(1.1);
+    }
+    @keyframes mic-pulse {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.25); opacity: 0.7; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-mic-pulse {
+        animation: mic-pulse 1.2s infinite ease-in-out;
+        display: inline-block;
     }
 </style>
 
 <script>
 (function () {
     const STORAGE_KEY = 'wk_recent_searches';
+
+    // 1. Animated Typewriter/Rolling Placeholder
+    const placeholderPhrases = [
+        'Search "Smartphones & 5G"...',
+        'Search "Running Shoes"...',
+        'Search "Wireless Earbuds"...',
+        'Search "Summer T-Shirts"...',
+        'Search "Smartwatches"...',
+        'Search "Laptops & Accessories"...'
+    ];
+    let phraseIdx = 0;
+    setInterval(() => {
+        const desktopInp = document.getElementById('mainSearchInput');
+        const mobileInp  = document.getElementById('mobileSearchInput');
+        phraseIdx = (phraseIdx + 1) % placeholderPhrases.length;
+        const phrase = placeholderPhrases[phraseIdx];
+
+        if (desktopInp && document.activeElement !== desktopInp && !desktopInp.value.trim()) {
+            desktopInp.setAttribute('placeholder', phrase);
+        }
+        if (mobileInp && document.activeElement !== mobileInp && !mobileInp.value.trim()) {
+            mobileInp.setAttribute('placeholder', phrase);
+        }
+    }, 3200);
+
+    // 2. Global Hotkey (⌘K / Ctrl+K)
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    document.querySelectorAll('.hotkey-symbol').forEach(el => {
+        el.textContent = isMac ? '⌘' : 'Ctrl ';
+    });
+    document.addEventListener('keydown', function(e) {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            const mainInp = document.getElementById('mainSearchInput');
+            if (mainInp) {
+                mainInp.focus();
+                mainInp.select();
+            }
+        }
+    });
+
+    function closeAllSearchBoxes() {
+        const dBox = document.getElementById('searchSuggestions');
+        const mBox = document.getElementById('mobileSearchSuggestions');
+        if (dBox) dBox.classList.add('d-none');
+        if (mBox) mBox.classList.add('d-none');
+    }
 
     function getRecentSearches() {
         try {
@@ -615,7 +849,7 @@ document.addEventListener('DOMContentLoaded', function() {
         term = term.trim();
         let list = getRecentSearches().filter(item => item.toLowerCase() !== term.toLowerCase());
         list.unshift(term);
-        if (list.length > 5) list = list.slice(0, 5);
+        if (list.length > 6) list = list.slice(0, 6);
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
         } catch (e) {}
@@ -634,44 +868,82 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {}
     }
 
+    // 3. High-Converting Empty State (Trending + Recent + Top Categories)
     function renderEmptyState(box, input, form) {
         const recent = getRecentSearches();
-        if (recent.length === 0) {
-            box.classList.add('d-none');
-            box.innerHTML = '';
-            return;
+
+        let html = `
+            <div class="p-3.5 px-3 px-md-4 bg-white">
+                <!-- Trending Searches -->
+                <div class="mb-3.5">
+                    <div class="d-flex align-items-center gap-1.5 mb-2">
+                        <i class="bi bi-fire text-danger" style="font-size: 0.95rem;"></i>
+                        <span class="small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Trending Right Now</span>
+                    </div>
+                    <div class="d-flex flex-wrap gap-1.5">
+                        <span class="search-chip search-chip-trending" onclick="applySearchTerm('iPhone 15')">
+                            <i class="bi bi-graph-up-arrow" style="font-size: 0.75rem;"></i> iPhone 15
+                        </span>
+                        <span class="search-chip search-chip-trending" onclick="applySearchTerm('Wireless Earbuds')">
+                            <i class="bi bi-graph-up-arrow" style="font-size: 0.75rem;"></i> Wireless Earbuds
+                        </span>
+                        <span class="search-chip" onclick="applySearchTerm('Smartwatches')">Smartwatches</span>
+                        <span class="search-chip" onclick="applySearchTerm('Running Shoes')">Running Shoes</span>
+                        <span class="search-chip" onclick="applySearchTerm('T-Shirts')">T-Shirts</span>
+                        <span class="search-chip" onclick="applySearchTerm('5G Mobiles')">5G Mobiles</span>
+                    </div>
+                </div>
+        `;
+
+        if (recent.length > 0) {
+            html += `
+                <!-- Recent Searches -->
+                <div class="pt-3 border-top mb-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="d-flex align-items-center gap-1.5">
+                            <i class="bi bi-clock-history text-primary" style="font-size: 0.9rem;"></i>
+                            <span class="small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Recent Searches</span>
+                        </div>
+                        <button type="button" class="btn btn-link p-0 text-muted small text-decoration-none fw-semibold" style="font-size: 0.76rem;" id="clear-all-recent-btn">
+                            Clear All
+                        </button>
+                    </div>
+                    <div class="d-flex flex-wrap gap-1.5">
+                        ${recent.map(term => `
+                            <span class="search-chip pe-2">
+                                <span onclick="applySearchTerm('${escapeJs(term)}')">${escapeHtml(term)}</span>
+                                <i class="bi bi-x ms-1 text-muted opacity-75" onclick="removeSingleRecent(event, '${escapeJs(term)}')" style="font-size: 1rem; cursor: pointer;"></i>
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
         }
 
-        box.innerHTML = `
-            <div class="p-3.5 px-3 px-md-4 bg-white">
-                <div class="d-flex align-items-center justify-content-between mb-2.5 pb-1">
-                    <span class="small fw-bold text-muted text-uppercase" style="font-size: 0.74rem; letter-spacing: 0.6px;">
-                        <i class="bi bi-clock-history me-1.5 text-primary"></i> Recent Searches
-                    </span>
-                    <button type="button" class="btn btn-link p-0 text-muted small text-decoration-none fw-semibold" style="font-size: 0.78rem;" id="clear-all-recent-btn">
-                        Clear All
-                    </button>
-                </div>
-                <div class="d-flex flex-column gap-1.5">
-                    ${recent.map(term => `
-                        <div class="recent-search-item d-flex align-items-center justify-content-between text-dark" data-term="${escapeHtml(term)}">
-                            <div class="d-flex align-items-center gap-2.5 cursor-pointer flex-grow-1" onclick="applySearchTerm('${escapeJs(term)}')">
-                                <i class="bi bi-search text-muted opacity-50" style="font-size: 0.8rem;"></i>
-                                <span class="fw-medium" style="font-size: 0.88rem;">${escapeHtml(term)}</span>
-                            </div>
-                            <button type="button" class="btn btn-link text-muted p-1 px-2 border-0" onclick="removeSingleRecent(event, '${escapeJs(term)}')" title="Remove">
-                                <i class="bi bi-x fs-5"></i>
-                            </button>
-                        </div>
-                    `).join('')}
+        html += `
+                <!-- Quick Category Discovery -->
+                <div class="pt-3 border-top">
+                    <div class="d-flex align-items-center gap-1.5 mb-2">
+                        <i class="bi bi-grid-fill text-indigo" style="font-size: 0.88rem; color: #6366f1;"></i>
+                        <span class="small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Explore Categories</span>
+                    </div>
+                    <div class="d-flex flex-wrap gap-1.5">
+                        <a href="{{ route('category.products', 'mobiles') }}" class="search-chip"><i class="bi bi-phone"></i> Mobiles</a>
+                        <a href="{{ route('category.products', 'electronics') }}" class="search-chip"><i class="bi bi-laptop"></i> Electronics</a>
+                        <a href="{{ route('category.products', 'fashion') }}" class="search-chip"><i class="bi bi-bag"></i> Fashion</a>
+                        <a href="{{ route('category.products', 'sports') }}" class="search-chip"><i class="bi bi-trophy"></i> Sports</a>
+                        <a href="{{ route('category.products', 'grocery') }}" class="search-chip"><i class="bi bi-basket"></i> Grocery</a>
+                    </div>
                 </div>
             </div>
         `;
+
+        box.innerHTML = html;
         box.classList.remove('d-none');
 
-        const clearAllBtn = box.querySelector('#clear-all-recent-btn');
-        if (clearAllBtn) {
-            clearAllBtn.addEventListener('click', function (e) {
+        const clearBtn = box.querySelector('#clear-all-recent-btn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 clearAllRecentSearches();
                 renderEmptyState(box, input, form);
@@ -705,7 +977,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 input.focus();
                 if (typeof window.onHeaderSearchInput === 'function') {
                     window.onHeaderSearchInput('');
-                    box.classList.add('d-none');
+                    closeAllSearchBoxes();
                     return;
                 }
                 renderEmptyState(box, input, form);
@@ -714,12 +986,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
         form.addEventListener('submit', function (e) {
             const val = input.value.trim();
+            const catInp = form.querySelector('input[name="category[]"]');
+            const catVal = catInp ? catInp.value.trim() : '';
+
+            // Nothing typed and no category selected:
+            // Do NOT reload or navigate! Stay on that page only.
+            if (!val && !catVal) {
+                e.preventDefault();
+                input.focus();
+                return;
+            }
+
+            // Category selected but text is empty:
+            // Submit category filter cleanly without empty ?q=
+            if (!val && catVal) {
+                input.removeAttribute('name');
+                return;
+            }
+
             saveRecentSearch(val);
             if (typeof window.onHeaderSearchSubmit === 'function') {
                 const handled = window.onHeaderSearchSubmit(val);
                 if (handled) {
                     e.preventDefault();
-                    box.classList.add('d-none');
+                    closeAllSearchBoxes();
                     return;
                 }
             }
@@ -733,7 +1023,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (typeof window.onHeaderSearchInput === 'function') {
                 const handled = window.onHeaderSearchInput(q);
                 if (handled) {
-                    box.classList.add('d-none');
+                    closeAllSearchBoxes();
                     return;
                 }
             }
@@ -744,120 +1034,184 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             timer = setTimeout(() => {
-                fetch(`{{ route('shop') }}?q=${encodeURIComponent(q)}&suggestion=1`, {
+                const catInp = form.querySelector('input[name="category[]"]');
+                const catVal = catInp ? catInp.value.trim() : '';
+                let fetchUrl = `{{ route('shop') }}?q=${encodeURIComponent(q)}&suggestion=1`;
+                if (catVal) {
+                    fetchUrl += `&category%5B%5D=${encodeURIComponent(catVal)}`;
+                }
+
+                fetch(fetchUrl, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 })
                 .then(r => r.json())
                 .then(data => {
-                    const structured = data.structured || [];
-                    const totalCount = data.total_count || structured.length;
-                    const suggestions = structured.filter(s => s.type !== 'tag');
-                    const currentLower = q.toLowerCase();
-                    const matchingRecent = getRecentSearches().filter(term => term.toLowerCase().includes(currentLower));
+                    const totalCount = data.total_count || 0;
+                    const products   = data.products || [];
+                    const categories = data.categories || [];
+                    const scopes     = data.category_scopes || [];
+                    const brand      = data.brand_spotlight || null;
+                    const querySuggestions = data.suggestions || [];
 
-                    if (suggestions.length === 0 && matchingRecent.length === 0) {
+                    if (products.length === 0 && categories.length === 0 && !brand && querySuggestions.length === 0) {
                         box.innerHTML = `
                             <div class="p-4 text-center">
                                 <i class="bi bi-search display-6 text-muted opacity-25 mb-2 d-block"></i>
-                                <div class="fw-bold text-dark mb-1">No results found for "${escapeHtml(q)}"</div>
-                                <div class="text-muted small">Try checking your spelling or use general keywords like "mobiles", "samsung", "5g".</div>
+                                <div class="fw-bold text-dark mb-1">No products found for "${escapeHtml(q)}"</div>
+                                <div class="text-muted small">Try checking your spelling or use general keywords like "mobiles", "samsung", "t-shirt".</div>
                             </div>
                         `;
                     } else {
-                        let html = '';
+                        let html = '<div class="py-2.5 px-3 px-md-4 bg-white">';
 
-                        // 1. Direct Search Query Row
-                        html += `
-                            <div class="suggestion-query-row py-3 px-3 px-md-4 border-bottom d-flex align-items-center gap-3 text-dark" onclick="applySearchTerm('${escapeJs(q)}')">
-                                <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary flex-shrink-0" style="width: 32px; height: 32px;">
-                                    <i class="bi bi-search" style="font-size: 0.85rem;"></i>
-                                </div>
-                                <span style="font-size: 0.92rem;" class="min-w-0 text-truncate">Search for <strong class="text-primary">"${escapeHtml(q)}"</strong></span>
-                                <span class="suggestion-action-icon ms-auto" aria-hidden="true">
-                                    <i class="bi bi-arrow-up-right"></i>
-                                </span>
-                            </div>
-                        `;
-
-                        // 2. Matching Recent Searches
-                        if (matchingRecent.length > 0) {
+                        // 1. Brand Spotlight Card (If query matches an official brand)
+                        if (brand) {
                             html += `
-                                <div class="py-2.5 px-3 border-bottom">
-                                    <div class="px-3 pt-1 pb-2">
-                                        <span class="small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.6px;">
-                                            <i class="bi bi-clock-history me-1.5 text-primary"></i> Recent History
-                                        </span>
-                                    </div>
-                                    <div class="d-flex flex-column gap-1">
-                                        ${matchingRecent.slice(0, 3).map(term => `
-                                            <div class="d-flex align-items-center justify-content-between py-2 px-3 rounded-3 cursor-pointer suggestion-row-item" onclick="applySearchTerm('${escapeJs(term)}')">
-                                                <div class="d-flex align-items-center gap-2.5 gap-md-3 min-w-0">
-                                                    <i class="bi bi-clock-history text-muted" style="font-size: 0.88rem;"></i>
-                                                    <span class="fw-semibold text-dark text-truncate" style="font-size: 0.88rem;">${escapeHtml(term)}</span>
-                                                </div>
-                                                <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-2">
-                                                    <span class="badge rounded-pill" style="background: #eef2ff; color: #4338ca; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; padding: 4px 8px;">RECENT</span>
-                                                    <button type="button" class="btn btn-link p-0 text-muted border-0 d-inline-flex align-items-center justify-content-center" onclick="removeSingleRecent(event, '${escapeJs(term)}')" title="Remove" style="width: 24px; height: 24px;">
-                                                        <i class="bi bi-x fs-5"></i>
-                                                    </button>
-                                                </div>
+                                <div class="p-2.5 mb-3 brand-spotlight-card d-flex align-items-center justify-content-between" onclick="window.location.href='${escapeJs(brand.url)}'">
+                                    <div class="d-flex align-items-center gap-2.5 min-w-0">
+                                        <div class="rounded-circle bg-white border d-flex align-items-center justify-content-center shadow-xs flex-shrink-0" style="width: 38px; height: 38px; overflow: hidden;">
+                                            ${brand.logo_url 
+                                                ? `<img src="${brand.logo_url}" style="width: 100%; height: 100%; object-fit: contain;">` 
+                                                : `<i class="bi bi-patch-check-fill text-primary fs-5"></i>`}
+                                        </div>
+                                        <div class="min-w-0">
+                                            <div class="fw-bold text-dark d-flex align-items-center gap-1.5" style="font-size: 0.88rem;">
+                                                <span>${escapeHtml(brand.name)} Official Store</span>
+                                                <span class="badge bg-primary text-white" style="font-size: 9px; padding: 2px 6px;">VERIFIED</span>
                                             </div>
+                                            <div class="text-muted" style="font-size: 0.76rem; line-height: 1.25;">Explore authentic ${escapeHtml(brand.name)} collections & exclusive deals</div>
+                                        </div>
+                                    </div>
+                                    <span class="text-primary fw-semibold small d-flex align-items-center gap-1 flex-shrink-0 ms-2" style="font-size: 0.8rem;">
+                                        Visit Store <i class="bi bi-arrow-right"></i>
+                                    </span>
+                                </div>
+                            `;
+                        }
+
+                        // 2. Category Filter Chips (If category matches exist)
+                        if (categories.length > 0) {
+                            html += `
+                                <div class="mb-3">
+                                    <div class="small fw-bold text-muted text-uppercase mb-1.5" style="font-size: 0.7rem; letter-spacing: 0.5px;">Categories Matching "${escapeHtml(q)}"</div>
+                                    <div class="d-flex flex-wrap gap-1.5">
+                                        ${categories.map(c => `
+                                            <a href="${c.url}" class="search-chip">
+                                                <i class="bi bi-grid-fill text-primary" style="font-size: 0.78rem;"></i> ${escapeHtml(c.name)}
+                                            </a>
                                         `).join('')}
                                     </div>
                                 </div>
                             `;
                         }
 
-                        // 3. Autocomplete Rows (Matching Product Names, Brands, Categories)
-                        if (suggestions.length > 0) {
-                            html += `
-                                <div class="py-2">
-                                    <div class="d-flex flex-column gap-0.5">
-                                        ${suggestions.slice(0, 8).map(s => {
-                                            let iconClass = 'bi bi-search text-muted';
-                                            let badgeBg = '#f1f5f9';
-                                            let badgeFg = '#475569';
-                                            let clickHandler = s.url ? `selectSearchProduct('${escapeJs(s.url)}', '${escapeJs(q)}')` : `applySearchTerm('${escapeJs(s.text)}')`;
+                        // 3. Balanced Two-Column Layout (50/50 Desktop Split)
+                        html += '<div class="row g-3">';
 
-                                            if (s.type === 'category') {
-                                                iconClass = 'bi bi-grid-fill text-info';
-                                                badgeBg = '#e0f2fe';
-                                                badgeFg = '#0369a1';
-                                            } else if (s.type === 'brand') {
-                                                iconClass = 'bi bi-patch-check-fill text-warning';
-                                                badgeBg = '#fef3c7';
-                                                badgeFg = '#b45309';
-                                            } else if (s.type === 'product') {
-                                                iconClass = 'bi bi-box-seam text-primary';
-                                                badgeBg = '#eef2ff';
-                                                badgeFg = '#4338ca';
-                                            }
-
-                                            return `
-                                                <div class="d-flex align-items-center justify-content-between py-2.5 px-3 px-md-4 cursor-pointer suggestion-row-item" onclick="${clickHandler}">
-                                                    <div class="d-flex align-items-center gap-2.5 gap-md-3 min-w-0">
-                                                        <i class="${iconClass} fs-6 flex-shrink-0"></i>
-                                                        <span class="fw-medium text-dark text-truncate" style="font-size: 0.9rem;">${highlightMatch(s.text, q)}</span>
-                                                    </div>
-                                                    <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-2">
-                                                        <span class="badge rounded-pill" style="background: ${badgeBg}; color: ${badgeFg}; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; padding: 4px 8px;">${s.type.toUpperCase()}</span>
-                                                        <span class="suggestion-action-icon" aria-hidden="true" title="Open ${s.type}">
-                                                            <i class="bi bi-arrow-up-right"></i>
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            `;
-                                        }).join('')}
-                                    </div>
+                        // Left Column: Direct Search, Categories & Keyword Matches (No cutting off with ...)
+                        html += '<div class="col-12 col-md-6 border-end-0 border-md-end pe-md-3">';
+                        
+                        // Direct Query Row
+                        html += `
+                            <div class="search-query-row d-flex align-items-center gap-2 mb-1" onclick="applySearchTerm('${escapeJs(q)}')">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary flex-shrink-0" style="width: 28px; height: 28px;">
+                                    <i class="bi bi-search" style="font-size: 0.8rem;"></i>
                                 </div>
-                            `;
+                                <div class="min-w-0 flex-grow-1" style="font-size: 0.88rem; line-height: 1.3;">
+                                    <span>Search for <strong class="text-primary">"${escapeHtml(q)}"</strong></span>
+                                </div>
+                                <i class="bi bi-arrow-up-right text-muted small flex-shrink-0"></i>
+                            </div>
+                        `;
+
+                        // In-Category Scope Rows (Fully readable, no ...)
+                        if (scopes.length > 0) {
+                            scopes.forEach(sc => {
+                                html += `
+                                    <div class="search-query-row d-flex align-items-center gap-2.5 mb-1" onclick="window.location.href='${escapeJs(sc.url)}'">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center bg-light text-secondary flex-shrink-0" style="width: 30px; height: 30px;">
+                                            <i class="bi bi-funnel" style="font-size: 0.82rem;"></i>
+                                        </div>
+                                        <div class="min-w-0 flex-grow-1" style="font-size: 0.86rem; line-height: 1.35;">
+                                            <span>${escapeHtml(sc.text)}</span> <span class="text-muted" style="font-size: 0.78rem;">in</span> <strong class="text-dark">${escapeHtml(sc.category_name)}</strong>
+                                        </div>
+                                        <i class="bi bi-arrow-right text-muted small flex-shrink-0"></i>
+                                    </div>
+                                `;
+                            });
                         }
 
-                        // 4. View All Results Footer (Spacious, prominent, clean)
+                        // Query keyword autocompletions (Full product name visible, NO text-truncate dots ...)
+                        if (querySuggestions.length > 0) {
+                            querySuggestions.slice(0, 4).forEach(sText => {
+                                if (sText.toLowerCase() !== q.toLowerCase()) {
+                                    html += `
+                                        <div class="search-query-row d-flex align-items-center gap-2.5 mb-0.5" onclick="applySearchTerm('${escapeJs(sText)}')">
+                                            <i class="bi bi-search text-muted opacity-50 ms-1.5 me-1" style="font-size: 0.78rem;"></i>
+                                            <div class="flex-grow-1" style="font-size: 0.86rem; color: #334155; line-height: 1.35;">
+                                                ${highlightMatch(sText, q)}
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+                            });
+                        }
+
+                        html += '</div>'; // End Left Column
+
+                        // Right Column: Instant Product Cards with Real Photos & Prices
+                        html += '<div class="col-12 col-md-6 ps-md-3">';
                         html += `
-                            <div class="py-3 px-3 px-md-4 text-center cursor-pointer suggestion-footer-btn d-flex align-items-center justify-content-center gap-2.5 border-top" onclick="applySearchTerm('${escapeJs(q)}')">
-                                <span class="fw-semibold text-primary" style="font-size: 0.94rem;">
-                                    See all <span class="badge bg-primary rounded-pill px-2.5 py-1 mx-1 shadow-xs" style="font-size: 0.82rem; font-weight: 700;">${totalCount}</span> results for "${escapeHtml(q)}"
+                            <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+                                <span class="small fw-bold text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                    Instant Product Matches
+                                </span>
+                                <span class="badge rounded-pill bg-light text-muted border" style="font-size: 0.7rem;">${products.length} of ${totalCount}</span>
+                            </div>
+                        `;
+
+                        if (products.length > 0) {
+                            html += '<div class="d-flex flex-column gap-1">';
+                            products.forEach(p => {
+                                const sellingPriceRounded = Math.round(p.selling_price);
+                                const mrpRounded = Math.round(p.mrp);
+                                const sellingPriceFormatted = sellingPriceRounded.toLocaleString('en-IN');
+                                const mrpFormatted = mrpRounded.toLocaleString('en-IN');
+                                const hasDiscount = p.discount_percent > 0 && mrpRounded > sellingPriceRounded;
+                                const priceHtml = hasDiscount 
+                                    ? `<span class="fw-bold text-dark" style="font-size: 0.88rem;">₹${sellingPriceFormatted}</span>
+                                       <span class="text-muted text-decoration-line-through small ms-1" style="font-size: 0.75rem;">₹${mrpFormatted}</span>
+                                       <span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size: 0.68rem; font-weight: 700; padding: 2px 6px;">${p.discount_percent}% OFF</span>`
+                                    : `<span class="fw-bold text-dark" style="font-size: 0.88rem;">₹${sellingPriceFormatted}</span>`;
+
+                                html += `
+                                    <a href="${escapeJs(p.url)}" class="preview-product-card d-flex align-items-center gap-2.5" onclick="saveRecentSearch('${escapeJs(p.name)}')">
+                                        <img src="${escapeHtml(p.image_url)}" alt="${escapeHtml(p.name)}" onerror="this.src='/images/product-placeholder.png'" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; flex-shrink: 0; background: #f8fafc; border: 1px solid #e2e8f0;">
+                                        <div class="min-w-0 flex-grow-1">
+                                            <div class="fw-semibold text-dark mb-0.5" style="font-size: 0.85rem; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;" title="${escapeHtml(p.name)}">
+                                                ${highlightMatch(p.name, q)}
+                                            </div>
+                                            <div class="d-flex align-items-center flex-wrap gap-1">
+                                                ${priceHtml}
+                                            </div>
+                                        </div>
+                                    </a>
+                                `;
+                            });
+                            html += '</div>';
+                        } else {
+                            html += `<div class="text-muted small py-2">No direct product matches. Check query suggestions.</div>`;
+                        }
+
+                        html += '</div>'; // End Right Column
+                        html += '</div>'; // End Row
+                        html += '</div>'; // End Container
+
+                        // 4. View All Results Footer
+                        html += `
+                            <div class="py-2.5 px-3 px-md-4 text-center cursor-pointer suggestion-footer-btn d-flex align-items-center justify-content-center gap-2 border-top" onclick="applySearchTerm('${escapeJs(q)}')">
+                                <span class="fw-semibold text-primary" style="font-size: 0.9rem;">
+                                    View all <span class="badge bg-primary text-white rounded-pill px-2 py-0.5 mx-1" style="font-weight: 700;">${totalCount}</span> results for "${escapeHtml(q)}"
                                 </span>
                                 <i class="bi bi-arrow-right fs-6 text-primary fw-bold footer-arrow-icon"></i>
                             </div>
@@ -865,10 +1219,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         box.innerHTML = html;
                     }
+
                     box.classList.remove('d-none');
                 })
                 .catch(() => box.classList.add('d-none'));
-            }, 250);
+            }, 220);
         });
 
         input.addEventListener('focus', function () {
@@ -891,7 +1246,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         input.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
-                box.classList.add('d-none');
+                closeAllSearchBoxes();
                 this.blur();
             }
         });
@@ -918,24 +1273,144 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.applySearchTerm = function (term) {
         saveRecentSearch(term);
-        window.location.href = `{{ route('shop') }}?q=${encodeURIComponent(term)}`;
-    };
-
-    window.selectSearchProduct = function (url, term) {
-        saveRecentSearch(term);
-        window.location.href = url;
+        const catInp = document.getElementById('searchCategoryInput');
+        const catVal = catInp ? catInp.value.trim() : '';
+        let targetUrl = `{{ route('shop') }}?q=${encodeURIComponent(term)}`;
+        if (catVal) {
+            targetUrl += `&category%5B%5D=${encodeURIComponent(catVal)}`;
+        }
+        window.location.href = targetUrl;
     };
 
     window.removeSingleRecent = function (event, term) {
         event.stopPropagation();
         removeRecentSearch(term);
         const desktopBox = document.getElementById('searchSuggestions');
-        const mobileBox = document.getElementById('mobileSearchSuggestions');
+        const mobileBox  = document.getElementById('mobileSearchSuggestions');
         if (desktopBox && !desktopBox.classList.contains('d-none')) {
             renderEmptyState(desktopBox, document.getElementById('mainSearchInput'), document.getElementById('mainSearchForm'));
         }
         if (mobileBox && !mobileBox.classList.contains('d-none')) {
             renderEmptyState(mobileBox, document.getElementById('mobileSearchInput'), document.getElementById('mobileSearchForm'));
+        }
+    };
+
+    // Voice Search via Web Speech API (Desktop & Mobile)
+    const voiceBtns = document.querySelectorAll('.btn-voice-search');
+    if (voiceBtns.length > 0) {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRec) {
+            let recognition = null;
+            let isListening = false;
+
+            try {
+                recognition = new SpeechRec();
+                recognition.lang = 'en-IN';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+            } catch (e) {
+                recognition = null;
+            }
+
+            if (recognition) {
+                function setMicState(listening) {
+                    isListening = listening;
+                    voiceBtns.forEach(btn => {
+                        if (listening) {
+                            btn.innerHTML = '<i class="bi bi-soundwave text-danger fs-5 animate-mic-pulse"></i>';
+                            btn.title = 'Listening... Speak now';
+                        } else {
+                            btn.innerHTML = '<i class="bi bi-mic-fill fs-6" style="color: #64748b;"></i>';
+                            btn.title = 'Search by voice';
+                        }
+                    });
+                }
+
+                voiceBtns.forEach(btn => {
+                    btn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (isListening) {
+                            try { recognition.stop(); } catch(err) {}
+                            setMicState(false);
+                            return;
+                        }
+
+                        try {
+                            recognition.start();
+                            setMicState(true);
+                        } catch (err) {
+                            setMicState(false);
+                        }
+                    });
+                });
+
+                recognition.onresult = function (event) {
+                    const transcript = event.results && event.results[0] && event.results[0][0] ? event.results[0][0].transcript : '';
+                    if (!transcript) return;
+                    const isMobile = window.innerWidth < 768;
+                    const targetInput = isMobile 
+                        ? (document.getElementById('mobileSearchInput') || document.getElementById('mainSearchInput'))
+                        : (document.getElementById('mainSearchInput') || document.getElementById('mobileSearchInput'));
+                    
+                    if (targetInput) {
+                        targetInput.value = transcript;
+                        targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        targetInput.focus();
+                    }
+                    setMicState(false);
+                };
+
+                recognition.onerror = recognition.onend = function () {
+                    setMicState(false);
+                };
+            }
+        } else {
+            // Graceful fallback notice if browser does not support SpeechRecognition
+            voiceBtns.forEach(btn => {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    alert('Voice search is not supported in this browser. Please use Chrome or Edge.');
+                });
+            });
+        }
+    }
+
+    // Custom Category Scope Dropdown Selection (Approach A)
+    window.selectSearchCategory = function (id, name, url, btn) {
+        const label = document.getElementById('searchCategoryLabel');
+        const input = document.getElementById('searchCategoryInput');
+        const mainInp = document.getElementById('mainSearchInput');
+        
+        if (label) label.textContent = name || 'All';
+        if (input) input.value = id || '';
+
+        // Update active class in menu
+        const menu = btn ? btn.closest('.dropdown-menu') : null;
+        if (menu && btn) {
+            menu.querySelectorAll('.dropdown-item').forEach(item => {
+                item.classList.remove('active', 'fw-bold');
+                const check = item.querySelector('.cat-check-icon');
+                if (check) check.remove();
+            });
+            btn.classList.add('active', 'fw-bold');
+            btn.insertAdjacentHTML('beforeend', '<i class="bi bi-check2 text-primary fw-bold fs-6 cat-check-icon"></i>');
+        }
+
+        // APPROACH A:
+        const queryText = mainInp ? mainInp.value.trim() : '';
+        if (!queryText) {
+            // Search input is empty -> navigate immediately to category's product page or shop
+            if (url) {
+                window.location.href = url;
+            }
+            return;
+        }
+
+        // Search input has text -> stay on page, scope search & re-dispatch live suggestions
+        if (mainInp) {
+            mainInp.focus();
+            mainInp.dispatchEvent(new Event('input', { bubbles: true }));
         }
     };
 

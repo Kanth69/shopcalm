@@ -337,7 +337,13 @@ $registerStaffRoutes = function () {
         Route::middleware(['marketing.staff'])->group(function () {
             Route::get('/', [\App\Http\Controllers\Marketing\DashboardController::class, 'index']);
             Route::get('dashboard', [\App\Http\Controllers\Marketing\DashboardController::class, 'index'])->name('dashboard');
+            Route::get('notifications', [\App\Http\Controllers\Marketing\DashboardController::class, 'notifications'])->name('notifications.index');
             Route::post('notifications/send', [\App\Http\Controllers\Marketing\DashboardController::class, 'send'])->name('notifications.send');
+
+            // Marketing Automation Engine & Playbooks
+            Route::get('automations', [\App\Http\Controllers\Marketing\AutomationController::class, 'index'])->name('automations.index');
+            Route::post('automations/{automation}/toggle', [\App\Http\Controllers\Marketing\AutomationController::class, 'toggle'])->name('automations.toggle');
+            Route::put('automations/{automation}', [\App\Http\Controllers\Marketing\AutomationController::class, 'update'])->name('automations.update');
         });
     });
 };

@@ -146,10 +146,14 @@ class ShopController extends Controller
             $term = trim((string)($request->q ?? ''));
             if (mb_strlen($term) < 1) {
                 return response()->json([
-                    'term'        => '',
-                    'total_count' => 0,
-                    'structured'  => [],
-                    'products'    => [],
+                    'term'            => '',
+                    'total_count'     => 0,
+                    'categories'      => [],
+                    'category_scopes' => [],
+                    'brand_spotlight' => null,
+                    'products'        => [],
+                    'suggestions'     => [],
+                    'structured'      => [],
                 ]);
             }
 
@@ -157,38 +161,66 @@ class ShopController extends Controller
             $structured = [];
             $uniqueKeys = [];
 
-            // 1. Matches from Categories
+            // 1. Matches from Categories (Chips & In-Category Scopes)
             $categories = Category::where('status', 'Active')
                 ->where('name', 'like', "%{$term}%")
-                ->take(3)
+                ->take(4)
                 ->get(['id', 'name', 'slug']);
 
+            $categoryList = [];
+            $categoryScopes = [];
+
             foreach ($categories as $cat) {
+                $categoryList[] = [
+                    'id'   => $cat->id,
+                    'name' => $cat->name,
+                    'slug' => $cat->slug,
+                    'url'  => route('category.products', $cat->slug),
+                ];
+
+                $categoryScopes[] = [
+                    'text'          => $term,
+                    'category_name' => $cat->name,
+                    'category_id'   => $cat->id,
+                    'url'           => route('shop', ['q' => $term, 'category' => [$cat->id]]),
+                ];
+
                 $key = 'category:' . mb_strtolower($cat->name);
                 if (!isset($uniqueKeys[$key])) {
                     $uniqueKeys[$key] = true;
                     $structured[] = [
-                        'text'     => $cat->name,
-                        'type'     => 'category',
-                        'url'      => route('shop', ['q' => $cat->name]),
+                        'text' => $cat->name,
+                        'type' => 'category',
+                        'url'  => route('category.products', $cat->slug),
                     ];
                 }
             }
 
-            // 2. Matches from Brands
-            $brands = Brand::where('status', 1)
+            // 2. Brand Matches (Brand Spotlight)
+            $matchedBrand = Brand::where('status', 1)
                 ->where('name', 'like', "%{$term}%")
-                ->take(3)
-                ->get(['id', 'name', 'slug']);
+                ->first(['id', 'name', 'slug', 'logo', 'description']);
 
-            foreach ($brands as $b) {
-                $key = 'brand:' . mb_strtolower($b->name);
+            $brandSpotlight = null;
+            if ($matchedBrand) {
+                $logoUrl = $matchedBrand->logo ? asset('storage/' . $matchedBrand->logo) : null;
+                $brandProductCount = Product::where('status', 'Active')->where('brand_id', $matchedBrand->id)->count();
+                $brandSpotlight = [
+                    'id'             => $matchedBrand->id,
+                    'name'           => $matchedBrand->name,
+                    'slug'           => $matchedBrand->slug,
+                    'logo_url'       => $logoUrl,
+                    'products_count' => $brandProductCount,
+                    'url'            => route('brand.products', $matchedBrand->slug),
+                ];
+
+                $key = 'brand:' . mb_strtolower($matchedBrand->name);
                 if (!isset($uniqueKeys[$key])) {
                     $uniqueKeys[$key] = true;
                     $structured[] = [
-                        'text'     => $b->name,
-                        'type'     => 'brand',
-                        'url'      => route('shop', ['q' => $b->name]),
+                        'text' => $matchedBrand->name,
+                        'type' => 'brand',
+                        'url'  => route('brand.products', $matchedBrand->slug),
                     ];
                 }
             }
@@ -216,28 +248,81 @@ class ShopController extends Controller
                     }
                 });
 
+            if ($request->filled('category')) {
+                $scopedCat = array_filter((array)$request->category);
+                if (!empty($scopedCat)) {
+                    $productQuery->whereIn('category_id', $scopedCat);
+                }
+            }
+
             $totalCount = (clone $productQuery)->count();
 
-            $nameProducts = $productQuery
-                ->take(8)
-                ->get(['id', 'name', 'slug']);
+            // Instant Product Previews (with real thumbnail images and prices)
+            $previewProducts = (clone $productQuery)
+                ->with(['category:id,name,slug', 'brand:id,name,slug'])
+                ->take(4)
+                ->get(['id', 'name', 'slug', 'category_id', 'brand_id', 'price', 'stock', 'main_image']);
 
-            foreach ($nameProducts as $p) {
+            // Apply active promotional offer discounts
+            $offerService = app(\App\Services\OfferService::class);
+            $offerService->applyOfferDiscountsToProducts($previewProducts);
+
+            $formattedProducts = [];
+            foreach ($previewProducts as $p) {
+                $img = $p->main_image ?? null;
+                if ($img && !str_starts_with($img, 'http')) {
+                    $img = asset('storage/' . $img);
+                } elseif (!$img) {
+                    $img = asset('images/product-placeholder.png');
+                }
+
+                $sellingPrice = (float)($p->sale_price ?? $p->price);
+                $mrp = (float)$p->price;
+                $discountPercent = ($mrp > $sellingPrice && $mrp > 0) 
+                    ? (int)round((($mrp - $sellingPrice) / $mrp) * 100) 
+                    : 0;
+
+                $formattedProducts[] = [
+                    'id'               => $p->id,
+                    'name'             => $p->name,
+                    'slug'             => $p->slug,
+                    'url'              => route('product.show', $p->slug),
+                    'image_url'        => $img,
+                    'selling_price'    => $sellingPrice,
+                    'mrp'              => $mrp,
+                    'discount_percent' => $discountPercent,
+                    'category_name'    => $p->category->name ?? null,
+                    'brand_name'       => $p->brand->name ?? null,
+                    'in_stock'         => (int)($p->stock ?? 0) > 0,
+                ];
+
                 $key = 'product:' . mb_strtolower($p->name);
                 if (!isset($uniqueKeys[$key])) {
                     $uniqueKeys[$key] = true;
                     $structured[] = [
-                        'text'     => $p->name,
-                        'type'     => 'product',
-                        'url'      => route('product.show', $p->slug),
+                        'text' => $p->name,
+                        'type' => 'product',
+                        'url'  => route('product.show', $p->slug),
                     ];
                 }
             }
 
+            // Keyword suggestions (Top 5 product names)
+            $textSuggestions = [];
+            $nameSuggestions = (clone $productQuery)->take(5)->pluck('name');
+            foreach ($nameSuggestions as $sName) {
+                $textSuggestions[] = $sName;
+            }
+
             return response()->json([
-                'term'        => $term,
-                'total_count' => $totalCount,
-                'structured'  => $structured,
+                'term'            => $term,
+                'total_count'     => $totalCount,
+                'categories'      => $categoryList,
+                'category_scopes' => $categoryScopes,
+                'brand_spotlight' => $brandSpotlight,
+                'products'        => $formattedProducts,
+                'suggestions'     => $textSuggestions,
+                'structured'      => $structured,
             ]);
         }
 

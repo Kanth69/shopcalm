@@ -14,16 +14,12 @@ use Illuminate\View\View;
 class DashboardController extends Controller
 {
     /**
-     * Display the Marketing & Push Notifications Workspace.
+     * Display the Marketing Analytics Overview Dashboard.
      */
     public function index(): View
     {
         $user = auth('marketing')->user() ?? auth('admin')->user() ?? auth()->user();
         $isSuperAdmin = $user && method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin();
-
-        $notifications = AppNotification::with(['sender', 'category', 'approver'])
-            ->latest()
-            ->paginate(15);
 
         $totalActiveDevices = UserDevice::where('is_active', true)->whereNotNull('fcm_token')->count();
         $maleDevices = UserDevice::where('is_active', true)
@@ -34,16 +30,55 @@ class DashboardController extends Controller
             ->count();
         $totalBroadcasts = AppNotification::where('status', 'Approved')->count();
         $totalDelivered = (int) AppNotification::where('status', 'Approved')->sum('recipient_count');
+        $pendingApprovals = AppNotification::where('status', 'Pending_Approval')->count();
 
-        $categories = Category::orderBy('name')->get(['id', 'name']);
+        // Recent campaigns preview
+        $recentNotifications = AppNotification::with(['sender', 'category', 'approver'])
+            ->latest()
+            ->take(6)
+            ->get();
+
+        // Breakdown stats
+        $typeStats = AppNotification::selectRaw('campaign_type, count(*) as count, sum(recipient_count) as total_delivered')
+            ->groupBy('campaign_type')
+            ->get();
+
+        $languageStats = AppNotification::selectRaw('target_language, count(*) as count')
+            ->groupBy('target_language')
+            ->get();
 
         return view('marketing.dashboard', compact(
-            'notifications',
             'totalActiveDevices',
             'maleDevices',
             'femaleDevices',
             'totalBroadcasts',
             'totalDelivered',
+            'pendingApprovals',
+            'recentNotifications',
+            'typeStats',
+            'languageStats',
+            'isSuperAdmin'
+        ));
+    }
+
+    /**
+     * Display the Push Notifications Workspace (Composer & Sent Logs).
+     */
+    public function notifications(): View
+    {
+        $user = auth('marketing')->user() ?? auth('admin')->user() ?? auth()->user();
+        $isSuperAdmin = $user && method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin();
+
+        $notifications = AppNotification::with(['sender', 'category', 'approver'])
+            ->latest()
+            ->paginate(15);
+
+        $totalActiveDevices = UserDevice::where('is_active', true)->whereNotNull('fcm_token')->count();
+        $categories = Category::orderBy('name')->get(['id', 'name']);
+
+        return view('marketing.notifications', compact(
+            'notifications',
+            'totalActiveDevices',
             'categories',
             'isSuperAdmin'
         ));
@@ -119,7 +154,7 @@ class DashboardController extends Controller
                 'sent_by'          => $actorId,
             ]);
 
-            return redirect()->route('marketing.dashboard')
+            return redirect()->route('marketing.notifications.index')
                 ->with('success', "Push alert successfully broadcast to {$sentCount} active device(s)!");
         }
 
@@ -140,7 +175,7 @@ class DashboardController extends Controller
             'sent_by'          => $actorId,
         ]);
 
-        return redirect()->route('marketing.dashboard')
+        return redirect()->route('marketing.notifications.index')
             ->with('success', 'Push notification draft submitted for Super Admin review & approval. Once approved, it will be broadcast to customer devices.');
     }
 }

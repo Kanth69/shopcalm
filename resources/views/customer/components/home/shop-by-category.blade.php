@@ -39,7 +39,16 @@
                         @php 
                             $color = $colors[$index % count($colors)];
                             $hasImage = !empty($category->image) && file_exists(public_path('storage/' . $category->image));
-                            $initial = strtoupper(mb_substr($category->name, 0, 1));
+                            $catLower = strtolower($category->name);
+                            $catIcon = 'bi-grid';
+                            if (str_contains($catLower, 'mobile') || str_contains($catLower, 'phone')) $catIcon = 'bi-phone';
+                            elseif (str_contains($catLower, 'electr')) $catIcon = 'bi-laptop';
+                            elseif (str_contains($catLower, 'fashion') || str_contains($catLower, 'cloth')) $catIcon = 'bi-bag-heart';
+                            elseif (str_contains($catLower, 'kitchen') || str_contains($catLower, 'home')) $catIcon = 'bi-house';
+                            elseif (str_contains($catLower, 'sport')) $catIcon = 'bi-trophy';
+                            elseif (str_contains($catLower, 'grocer')) $catIcon = 'bi-basket';
+                            elseif (str_contains($catLower, 'beaut')) $catIcon = 'bi-stars';
+                            elseif (str_contains($catLower, 'book')) $catIcon = 'bi-book';
                         @endphp
                         <a href="{{ route('category.products', $category->slug) }}" class="text-decoration-none text-dark flex-shrink-0 d-flex flex-column align-items-center category-slider-item">
                             <div class="rounded-circle d-flex align-items-center justify-content-center mb-1.5 transition-all overflow-hidden category-avatar-box" 
@@ -47,7 +56,7 @@
                                 @if($hasImage)
                                     <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="w-100 h-100 object-fit-cover">
                                 @else
-                                    <span class="fw-bold category-avatar-initial user-select-none">{{ $initial }}</span>
+                                    <i class="bi {{ $catIcon }} category-avatar-icon text-white user-select-none"></i>
                                 @endif
                             </div>
                             <span class="fw-semibold text-dark text-truncate w-100 text-center category-title-text">{{ $category->name }}</span>
@@ -61,7 +70,16 @@
                         @php 
                             $color = $colors[$index % count($colors)];
                             $hasImage = !empty($category->image) && file_exists(public_path('storage/' . $category->image));
-                            $initial = strtoupper(mb_substr($category->name, 0, 1));
+                            $catLower = strtolower($category->name);
+                            $catIcon = 'bi-grid';
+                            if (str_contains($catLower, 'mobile') || str_contains($catLower, 'phone')) $catIcon = 'bi-phone';
+                            elseif (str_contains($catLower, 'electr')) $catIcon = 'bi-laptop';
+                            elseif (str_contains($catLower, 'fashion') || str_contains($catLower, 'cloth')) $catIcon = 'bi-bag-heart';
+                            elseif (str_contains($catLower, 'kitchen') || str_contains($catLower, 'home')) $catIcon = 'bi-house';
+                            elseif (str_contains($catLower, 'sport')) $catIcon = 'bi-trophy';
+                            elseif (str_contains($catLower, 'grocer')) $catIcon = 'bi-basket';
+                            elseif (str_contains($catLower, 'beaut')) $catIcon = 'bi-stars';
+                            elseif (str_contains($catLower, 'book')) $catIcon = 'bi-book';
                         @endphp
                         <a href="{{ route('category.products', $category->slug) }}" class="text-decoration-none text-dark flex-shrink-0 d-flex flex-column align-items-center category-slider-item" tabindex="-1">
                             <div class="rounded-circle d-flex align-items-center justify-content-center mb-1.5 transition-all overflow-hidden category-avatar-box" 
@@ -69,7 +87,7 @@
                                 @if($hasImage)
                                     <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="w-100 h-100 object-fit-cover">
                                 @else
-                                    <span class="fw-bold category-avatar-initial user-select-none">{{ $initial }}</span>
+                                    <i class="bi {{ $catIcon }} category-avatar-icon text-white user-select-none"></i>
                                 @endif
                             </div>
                             <span class="fw-semibold text-dark text-truncate w-100 text-center category-title-text">{{ $category->name }}</span>
@@ -129,9 +147,13 @@
     box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
     transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, border-color 0.25s ease;
 }
-.category-avatar-initial {
-    font-size: 1.4rem;
+.category-avatar-initial,
+.category-avatar-icon {
+    font-size: 1.45rem;
     color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 .category-title-text {
     font-size: 0.72rem;
@@ -156,8 +178,9 @@
         border: 3.5px solid #ffffff;
         box-shadow: 0 6px 18px rgba(15, 23, 42, 0.09);
     }
-    .category-avatar-initial {
-        font-size: 2rem;
+    .category-avatar-initial,
+    .category-avatar-icon {
+        font-size: 2.1rem;
     }
     .category-title-text {
         font-size: 0.86rem;

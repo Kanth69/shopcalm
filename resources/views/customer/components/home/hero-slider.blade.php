@@ -17,8 +17,8 @@
             <div class="carousel-inner h-100 rounded-4">
                 @foreach($banners as $index => $banner)
                     @php
-                        $hasDesktop = !empty($banner->desktop_image);
-                        $hasMobile  = !empty($banner->mobile_image);
+                        $hasDesktop = !empty($banner->desktop_image) && (str_starts_with($banner->desktop_image, 'http') || file_exists(public_path('storage/' . $banner->desktop_image)));
+                        $hasMobile  = !empty($banner->mobile_image) && (str_starts_with($banner->mobile_image, 'http') || file_exists(public_path('storage/' . $banner->mobile_image)));
                         $hasImage   = $hasDesktop || $hasMobile;
                         $desktopPath = $hasDesktop ? (str_starts_with($banner->desktop_image, 'http') ? $banner->desktop_image : asset('storage/' . $banner->desktop_image)) : null;
                         $mobilePath  = $hasMobile ? (str_starts_with($banner->mobile_image, 'http') ? $banner->mobile_image : asset('storage/' . $banner->mobile_image)) : $desktopPath;
@@ -48,7 +48,7 @@
                                         @if($hasMobile)
                                             <source media="(max-width: 767.98px)" srcset="{{ $mobilePath }}">
                                         @endif
-                                        <img src="{{ $desktopPath ?: $mobilePath }}" class="w-100 h-100 object-fit-cover" alt="{{ $banner->title }}">
+                                        <img src="{{ $desktopPath ?: $mobilePath }}" class="w-100 h-100 object-fit-cover" alt="{{ $banner->title }}" onerror="this.style.display='none'">
                                     </picture>
                                 @else
                                     {{-- No Image: Vibrant Gradient Card with Title & Button --}}
