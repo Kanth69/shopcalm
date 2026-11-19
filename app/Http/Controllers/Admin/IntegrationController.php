@@ -11,6 +11,7 @@ use App\Models\Setting;
 use App\Services\DeliveryService;
 use App\Services\EmailService;
 use App\Services\FulfillmentService;
+use App\Services\LocationiqService;
 use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -316,7 +317,10 @@ class IntegrationController extends Controller
 
         $settings = Setting::getAll();
         $locationiqKey = $settings['locationiq_api_key'] ?? config('services.locationiq.key');
-        $isConfigured = !empty($locationiqKey);
+        $keyPool = LocationiqService::getAllKeys();
+        $activeKeys = LocationiqService::getActiveKeys();
+        $isConfigured = !empty($activeKeys) || !empty($locationiqKey);
+        $totalDailyQuota = max(1, count($activeKeys)) * 5000;
 
         $hasAddressCoords = \Illuminate\Support\Facades\Schema::hasColumn('addresses', 'latitude');
         $hasOrderCoords = \Illuminate\Support\Facades\Schema::hasColumn('orders', 'shipping_latitude');
@@ -338,7 +342,7 @@ class IntegrationController extends Controller
                 ->get()
             : collect();
 
-        return view('admin.integrations.locationiq', compact('settings', 'locationiqKey', 'isConfigured', 'stats', 'recentGeocodedAddresses'));
+        return view('admin.integrations.locationiq', compact('settings', 'locationiqKey', 'isConfigured', 'stats', 'recentGeocodedAddresses', 'keyPool', 'activeKeys', 'totalDailyQuota'));
     }
 
     /**
@@ -516,23 +520,38 @@ class IntegrationController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        $key = trim((string) $request->locationiq_api_key) 
-            ?: (Setting::get('locationiq_api_key') ?: config('services.locationiq.key'));
+        $key = trim((string) ($request->key ?? $request->locationiq_api_key));
+
+        // If key_id is provided, look up key from pool
+        if (empty($key) && $request->filled('key_id')) {
+            $pool = LocationiqService::getAllKeys();
+            foreach ($pool as $item) {
+                if ($item['id'] === $request->key_id) {
+                    $key = $item['key'];
+                    break;
+                }
+            }
+        }
+
+        if (empty($key)) {
+            $key = LocationiqService::getActiveKey() ?: (Setting::get('locationiq_api_key') ?: config('services.locationiq.key'));
+        }
 
         if (empty($key)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Please enter a LocationIQ API token first.',
+                'message' => 'Please enter or select a LocationIQ API token first.',
             ], 422);
         }
 
-        $validation = $this->validateLocationiqToken($key);
+        $validation = LocationiqService::validateToken($key);
 
         if ($validation['valid']) {
             return response()->json([
                 'success'      => true,
                 'message'      => 'Connection Verified! Successfully reverse-geocoded sample coordinates with LocationIQ.',
                 'display_name' => $validation['display_name'],
+                'masked_key'   => LocationiqService::maskKey($key),
             ]);
         }
 
@@ -540,6 +559,87 @@ class IntegrationController extends Controller
             'success' => false,
             'message' => 'LocationIQ Error: ' . ($validation['error'] ?? 'Verification failed'),
         ], 400);
+    }
+
+    /**
+     * Add a new LocationIQ key to the active pool.
+     */
+    public function addLocationiqKey(Request $request)
+    {
+        $user = auth('admin')->user() ?? auth()->user();
+        if (!$user || !$user->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'key'   => 'required|string|max:255',
+            'label' => 'nullable|string|max:100',
+        ]);
+
+        $result = LocationiqService::addKey($request->key, $request->label);
+
+        if ($result['success']) {
+            $this->recordSecurityAudit($request, 'LocationIQ Key Added to Pool', [
+                'Label' => $result['entry']['label'],
+                'Key'   => LocationiqService::maskKey($request->key),
+            ]);
+            return response()->json($result);
+        }
+
+        return response()->json($result, 422);
+    }
+
+    /**
+     * Delete a LocationIQ key from the active pool.
+     */
+    public function deleteLocationiqKey(Request $request)
+    {
+        $user = auth('admin')->user() ?? auth()->user();
+        if (!$user || !$user->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $id = $request->input('id');
+        if (empty($id)) {
+            return response()->json(['success' => false, 'message' => 'Key ID required.'], 422);
+        }
+
+        $success = LocationiqService::deleteKey($id);
+        if ($success) {
+            $this->recordSecurityAudit($request, 'LocationIQ Key Removed from Pool', ['Key ID' => $id]);
+            return response()->json(['success' => true, 'message' => 'Key removed from pool successfully.']);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Key not found in pool.'], 404);
+    }
+
+    /**
+     * Toggle active status of a LocationIQ key in the pool.
+     */
+    public function toggleLocationiqKey(Request $request)
+    {
+        $user = auth('admin')->user() ?? auth()->user();
+        if (!$user || !$user->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $id = $request->input('id');
+        if (empty($id)) {
+            return response()->json(['success' => false, 'message' => 'Key ID required.'], 422);
+        }
+
+        $result = LocationiqService::toggleKey($id);
+        if ($result['success']) {
+            $statusText = $result['is_active'] ? 'Enabled' : 'Disabled';
+            $this->recordSecurityAudit($request, "LocationIQ Key {$statusText}", ['Key ID' => $id]);
+            return response()->json([
+                'success'   => true,
+                'is_active' => $result['is_active'],
+                'message'   => "Key {$statusText} successfully.",
+            ]);
+        }
+
+        return response()->json($result, 404);
     }
 
     /**

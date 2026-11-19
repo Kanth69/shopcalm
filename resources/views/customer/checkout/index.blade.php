@@ -731,23 +731,44 @@
 
 
 
-                            <!-- Delivery Notes Card (Compact & Clean on Mobile) -->
+                            <!-- Delivery Notes Card with Smart Single-Select Time Slot & Instructions -->
                             <div class="card checkout-delivery-notes-card shadow-xs">
                                 <div class="card-body p-3 p-sm-3.5">
+                                    <!-- 1. Preferred Delivery Time Header & Single-Select Pills -->
                                     <div class="d-flex align-items-center justify-content-between mb-2">
-                                        <label for="notes" class="fw-bold text-dark d-flex align-items-center gap-2 mb-0" style="font-size: 0.88rem;">
-                                            <i class="bi bi-chat-left-text-fill text-primary" style="font-size: 0.95rem;"></i>
-                                            <span>Delivery Notes</span>
-                                            <span class="text-muted fw-normal" style="font-size: 0.74rem;">(Optional)</span>
+                                        <div class="d-flex align-items-center gap-1.5">
+                                            <i class="bi bi-clock-history text-primary" style="font-size: 0.95rem;"></i>
+                                            <span class="fw-bold text-dark" style="font-size: 0.88rem;">Preferred Delivery Time</span>
+                                        </div>
+                                        <span id="delivery-addr-badge" class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-0.5 fw-bold" style="font-size: 0.68rem;">
+                                            <i class="bi bi-house-door-fill me-1"></i> Home
+                                        </span>
+                                    </div>
+
+                                    <!-- Single-Select Time Slot Pills (Exclusive Choice: Home / Office / Other) -->
+                                    <div class="mb-3">
+                                        <div class="d-flex flex-wrap gap-1.5" id="delivery-time-slots">
+                                            <!-- Dynamically populated based on active address type -->
+                                        </div>
+                                        <input type="hidden" name="preferred_time_slot" id="selected_time_slot" value="Anytime (7 AM - 9 PM)">
+                                    </div>
+
+                                    <!-- 2. Delivery Instructions (Optional Textarea for Don't ring bell, etc.) -->
+                                    <div class="d-flex align-items-center justify-content-between mb-1.5">
+                                        <label for="notes" class="fw-bold text-secondary d-flex align-items-center gap-1.5 mb-0" style="font-size: 0.82rem;">
+                                            <i class="bi bi-chat-left-text"></i>
+                                            <span>Delivery Instructions</span>
+                                            <span class="text-muted fw-normal" style="font-size: 0.72rem;">(Optional)</span>
                                         </label>
                                         <span id="notes-counter" class="badge rounded-pill bg-light text-secondary border font-monospace px-2 py-0.5" style="font-size: 0.68rem;">0 / 150</span>
                                     </div>
+
                                     <textarea class="form-control rounded-3 px-3 py-2" 
                                               id="notes" 
                                               name="notes" 
                                               rows="2" 
                                               maxlength="150" 
-                                              placeholder="e.g. Call before delivery, leave with security, landmark..." 
+                                              placeholder="e.g. Please don't ring the bell, leave package with security guard, baby sleeping, landmark..." 
                                               style="font-size: 0.84rem; line-height: 1.45; border: 1px solid #cbd5e1 !important; resize: none;"></textarea>
                                     <div class="text-end mt-1" id="notes-warning-wrap">
                                         <small id="notes-warning" class="text-danger fw-semibold" style="font-size: 0.72rem; display: none;">
@@ -2344,6 +2365,103 @@ document.addEventListener('DOMContentLoaded', function() {
         updateNotesCounter();
     }
 
+    // ==============================================================
+    // SMART CONTEXT-AWARE SINGLE-SELECT DELIVERY TIME SLOTS
+    // ==============================================================
+    const DELIVERY_TIME_SLOT_OPTIONS = {
+        home: {
+            badgeHtml: '<i class="bi bi-house-door-fill text-primary me-1"></i> Home',
+            badgeClass: 'badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25',
+            defaultSlot: 'Anytime (7 AM - 9 PM)',
+            slots: [
+                { id: 'home_anytime', text: '⚡ Anytime (7 AM - 9 PM)', value: 'Anytime (7 AM - 9 PM)' },
+                { id: 'home_morning', text: '🌅 Morning (7 AM - 12 PM)', value: 'Morning (7 AM - 12 PM)' },
+                { id: 'home_afternoon', text: '☀️ Afternoon (12 PM - 5 PM)', value: 'Afternoon (12 PM - 5 PM)' },
+                { id: 'home_evening', text: '🌆 Evening (5 PM - 9 PM)', value: 'Evening (5 PM - 9 PM)' },
+            ]
+        },
+        work: {
+            badgeHtml: '<i class="bi bi-briefcase-fill text-warning me-1"></i> Office',
+            badgeClass: 'badge bg-warning bg-opacity-20 text-dark border border-warning border-opacity-50',
+            defaultSlot: 'Office Hours (10 AM - 6 PM)',
+            slots: [
+                { id: 'work_allday', text: '🏢 Office Hours (10 AM - 6 PM)', value: 'Office Hours (10 AM - 6 PM)' },
+                { id: 'work_morning', text: '🌅 First Half (10 AM - 2 PM)', value: 'First Half (10 AM - 2 PM)' },
+                { id: 'work_afternoon', text: '🌇 Second Half (2 PM - 6 PM)', value: 'Second Half (2 PM - 6 PM)' },
+            ]
+        },
+        office: {
+            badgeHtml: '<i class="bi bi-briefcase-fill text-warning me-1"></i> Office',
+            badgeClass: 'badge bg-warning bg-opacity-20 text-dark border border-warning border-opacity-50',
+            defaultSlot: 'Office Hours (10 AM - 6 PM)',
+            slots: [
+                { id: 'work_allday', text: '🏢 Office Hours (10 AM - 6 PM)', value: 'Office Hours (10 AM - 6 PM)' },
+                { id: 'work_morning', text: '🌅 First Half (10 AM - 2 PM)', value: 'First Half (10 AM - 2 PM)' },
+                { id: 'work_afternoon', text: '🌇 Second Half (2 PM - 6 PM)', value: 'Second Half (2 PM - 6 PM)' },
+            ]
+        },
+        other: {
+            badgeHtml: '<i class="bi bi-geo-alt-fill text-success me-1"></i> Other',
+            badgeClass: 'badge bg-success bg-opacity-10 text-success border border-success border-opacity-25',
+            defaultSlot: 'Anytime (9 AM - 8 PM)',
+            slots: [
+                { id: 'other_anytime', text: '⚡ Anytime (9 AM - 8 PM)', value: 'Anytime (9 AM - 8 PM)' },
+                { id: 'other_morning', text: '🌅 Morning / Day (9 AM - 2 PM)', value: 'Morning / Day (9 AM - 2 PM)' },
+                { id: 'other_afternoon', text: '🌇 Afternoon / Evening (2 PM - 8 PM)', value: 'Afternoon / Evening (2 PM - 8 PM)' },
+            ]
+        }
+    };
+
+    window.selectedDeliveryTimeSlot = '';
+
+    window.renderDeliveryTimeSlots = function(addrType) {
+        const typeKey = (addrType || 'home').toLowerCase();
+        const config = DELIVERY_TIME_SLOT_OPTIONS[typeKey] || DELIVERY_TIME_SLOT_OPTIONS.other;
+
+        const badgeEl = document.getElementById('delivery-addr-badge');
+        const slotsContainer = document.getElementById('delivery-time-slots');
+        const hiddenSlotInput = document.getElementById('selected_time_slot');
+
+        if (badgeEl) {
+            badgeEl.className = `${config.badgeClass} rounded-pill px-2.5 py-0.5 fw-bold`;
+            badgeEl.innerHTML = config.badgeHtml;
+        }
+
+        if (!slotsContainer) return;
+        slotsContainer.innerHTML = '';
+
+        // Check if current selected slot is valid for this address type, else reset to default
+        const validValues = config.slots.map(s => s.value);
+        if (!validValues.includes(window.selectedDeliveryTimeSlot)) {
+            window.selectedDeliveryTimeSlot = config.defaultSlot;
+        }
+        if (hiddenSlotInput) {
+            hiddenSlotInput.value = window.selectedDeliveryTimeSlot;
+        }
+
+        config.slots.forEach(slot => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            const isSelected = (window.selectedDeliveryTimeSlot === slot.value);
+            btn.className = `btn btn-sm rounded-pill py-1 px-3 ${isSelected ? 'btn-primary text-white fw-bold shadow-xs' : 'btn-outline-secondary'}`;
+            btn.style.fontSize = '0.76rem';
+            btn.style.transition = 'all 0.15s ease';
+            btn.innerHTML = `${isSelected ? '<i class="bi bi-check2 me-1"></i>' : ''}${slot.text}`;
+
+            btn.onclick = function() {
+                window.selectedDeliveryTimeSlot = slot.value;
+                if (hiddenSlotInput) hiddenSlotInput.value = slot.value;
+                window.renderDeliveryTimeSlots(addrType);
+            };
+
+            slotsContainer.appendChild(btn);
+        });
+    };
+
+    // Initialize delivery time slots on DOM ready
+    const initialAddrType = @json($activeAddr ? ($activeAddr->type ?? 'home') : 'home');
+    window.renderDeliveryTimeSlots(initialAddrType);
+
     window.handleOrderSubmission = function(e) {
         if (e) e.preventDefault();
 
@@ -2426,6 +2544,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing...';
             }
         });
+
+        // Format preferred delivery time slot + custom instructions into notes
+        const notesInputEl = document.getElementById('notes');
+        const chosenSlot = window.selectedDeliveryTimeSlot || document.getElementById('selected_time_slot')?.value || '';
+        const userNotes = notesInputEl ? notesInputEl.value.trim() : '';
+        let finalNotes = '';
+        if (chosenSlot) {
+            finalNotes = `[Time: ${chosenSlot}]`;
+        }
+        if (userNotes && !userNotes.startsWith('[Time:')) {
+            finalNotes = finalNotes ? `${finalNotes} ${userNotes}` : userNotes;
+        } else if (userNotes && userNotes.startsWith('[Time:')) {
+            finalNotes = userNotes;
+        }
+        if (notesInputEl) {
+            notesInputEl.value = finalNotes.slice(0, 150);
+        }
 
         const checkoutForm = document.getElementById('checkout-form');
         const formData = new FormData(checkoutForm);
@@ -3070,6 +3205,10 @@ function applySelectedAddress(addr) {
     
     if (activeDetails) activeDetails.style.display = 'block';
     if (noAddrMsg) noAddrMsg.style.display = 'none';
+
+    if (window.renderDeliveryTimeSlots) {
+        window.renderDeliveryTimeSlots(addr.type || 'home');
+    }
 
     return checkPincodeServiceability(addr.zip);
 }
@@ -4142,9 +4281,10 @@ function updateCodAvailabilityUI(isAvailable, pincode) {
 }
 
 // ==============================================================
-// LEAFLET INTERACTIVE MAP & DUAL LOCATION PROVIDER (FREE OSM + LOCATIONIQ)
+// LEAFLET INTERACTIVE MAP & DUAL LOCATION PROVIDER (FREE OSM + MULTI-KEY LOCATIONIQ POOL)
 // ==============================================================
-const LOCATIONIQ_KEY = "{{ \App\Models\Setting::get('locationiq_api_key') ?: (config('services.locationiq.key') ?: 'pk.8fcbbfbdafcf2d840b41ffd3c60e443f') }}";
+const LOCATIONIQ_KEYS = @json(\App\Services\LocationiqService::getActiveKeys());
+const LOCATIONIQ_KEY = (Array.isArray(LOCATIONIQ_KEYS) && LOCATIONIQ_KEYS.length > 0) ? LOCATIONIQ_KEYS[0] : "{{ \App\Models\Setting::get('locationiq_api_key') ?: (config('services.locationiq.key') ?: 'pk.8fcbbfbdafcf2d840b41ffd3c60e443f') }}";
 let deliveryMap = null;
 let deliveryMarker = null;
 let currentMapCoords = { lat: 12.971599, lng: 77.594566 }; // Default Bengaluru (MG Road / Central)
@@ -4436,21 +4576,28 @@ async function reverseGeocode(lat, lng) {
 
     let addressData = null;
 
-    // 1. Try LocationIQ primary with STRICT English output (&accept-language=en)
-    if (LOCATIONIQ_KEY && LOCATIONIQ_KEY !== 'pk.your_api_key_here') {
+    // 1. Try LocationIQ key pool with automatic failover on 429 / network error
+    const candidateKeys = (Array.isArray(LOCATIONIQ_KEYS) && LOCATIONIQ_KEYS.length > 0) ? LOCATIONIQ_KEYS : (LOCATIONIQ_KEY ? [LOCATIONIQ_KEY] : []);
+    for (const key of candidateKeys) {
+        if (!key || key === 'pk.your_api_key_here') continue;
         try {
-            const url = 'https://us1.locationiq.com/v1/reverse?key=' + LOCATIONIQ_KEY + '&lat=' + lat + '&lon=' + lng + '&format=json&accept-language=en&addressdetails=1&normalizeaddress=1';
+            const url = 'https://us1.locationiq.com/v1/reverse?key=' + encodeURIComponent(key) + '&lat=' + lat + '&lon=' + lng + '&format=json&accept-language=en&addressdetails=1&normalizeaddress=1';
             const res = await fetch(url, {
                 headers: { 'Accept-Language': 'en' }
             });
+            if (res.status === 429) {
+                console.warn('LocationIQ key quota reached, trying next pooled key...');
+                continue;
+            }
             if (res.ok) {
                 const data = await res.json();
                 if (data && (data.address || data.display_name)) {
                     addressData = extractAddressComponents(data.address, data.display_name);
+                    break;
                 }
             }
         } catch (e) {
-            console.warn('LocationIQ reverse failed, falling back to OpenStreetMap Nominatim:', e);
+            console.warn('LocationIQ reverse failed, trying next pooled key:', e);
         }
     }
 
@@ -4503,19 +4650,26 @@ async function searchPlaces(query) {
 
     let list = [];
 
-    // 1. Try LocationIQ
-    if (LOCATIONIQ_KEY && LOCATIONIQ_KEY !== 'pk.your_api_key_here') {
+    // 1. Try LocationIQ key pool with automatic failover
+    const candidateSearchKeys = (Array.isArray(LOCATIONIQ_KEYS) && LOCATIONIQ_KEYS.length > 0) ? LOCATIONIQ_KEYS : (LOCATIONIQ_KEY ? [LOCATIONIQ_KEY] : []);
+    for (const key of candidateSearchKeys) {
+        if (!key || key === 'pk.your_api_key_here') continue;
         try {
-            const url = 'https://api.locationiq.com/v1/autocomplete?key=' + LOCATIONIQ_KEY + '&q=' + encodeURIComponent(query) + '&countrycodes=in&accept-language=en&limit=5&format=json';
+            const url = 'https://api.locationiq.com/v1/autocomplete?key=' + encodeURIComponent(key) + '&q=' + encodeURIComponent(query) + '&countrycodes=in&accept-language=en&limit=5&format=json';
             const res = await fetch(url);
+            if (res.status === 429) {
+                console.warn('LocationIQ autocomplete quota reached, trying next pooled key...');
+                continue;
+            }
             if (res.ok) {
                 const data = await res.json();
                 if (Array.isArray(data) && data.length > 0) {
                     list = data;
+                    break;
                 }
             }
         } catch (e) {
-            console.warn('LocationIQ search failed, falling back to OSM:', e);
+            console.warn('LocationIQ search failed, trying next pooled key:', e);
         }
     }
 

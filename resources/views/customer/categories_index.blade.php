@@ -56,7 +56,16 @@
             @php
                 $color = $palette[$index % count($palette)];
                 $hasImage = !empty($category->image) && file_exists(public_path('storage/' . $category->image));
-                $initial = strtoupper(mb_substr($category->name, 0, 1));
+                $catLower = strtolower($category->name);
+                $catIcon = 'bi-grid';
+                if (str_contains($catLower, 'mobile') || str_contains($catLower, 'phone')) $catIcon = 'bi-phone';
+                elseif (str_contains($catLower, 'electr')) $catIcon = 'bi-laptop';
+                elseif (str_contains($catLower, 'fashion') || str_contains($catLower, 'cloth')) $catIcon = 'bi-bag-heart';
+                elseif (str_contains($catLower, 'kitchen') || str_contains($catLower, 'home')) $catIcon = 'bi-house';
+                elseif (str_contains($catLower, 'sport')) $catIcon = 'bi-trophy';
+                elseif (str_contains($catLower, 'grocer')) $catIcon = 'bi-basket';
+                elseif (str_contains($catLower, 'beaut')) $catIcon = 'bi-stars';
+                elseif (str_contains($catLower, 'book')) $catIcon = 'bi-book';
             @endphp
             <div class="col category-item-col" data-name="{{ strtolower($category->name) }}">
                 <a href="{{ route('category.products', $category->slug) }}" class="text-decoration-none text-dark group category-pill-link h-100 d-block">
@@ -64,13 +73,13 @@
                          style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
                         <div class="card-body p-3 p-md-4 d-flex flex-column align-items-center justify-content-center">
                             
-                            {{-- Image OR Vibrant Color Circle --}}
+                            {{-- Image OR Dedicated Category Vector Icon --}}
                             <div class="rounded-circle d-flex align-items-center justify-content-center mb-2.5 transition-all category-avatar shadow-xs overflow-hidden" 
                                  style="width: 64px; height: 64px; min-width: 64px; @if(!$hasImage) background: {{ $color['bg'] }}; color: {{ $color['text'] }}; @endif">
                                 @if($hasImage)
                                     <img loading="lazy" decoding="async" src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="w-100 h-100 object-fit-cover">
                                 @else
-                                    <span class="fw-bold fs-3 text-white user-select-none">{{ $initial }}</span>
+                                    <i class="bi {{ $catIcon }} fs-2 text-white user-select-none"></i>
                                 @endif
                             </div>
 
@@ -79,9 +88,12 @@
                                 {{ $category->name }}
                             </h6>
 
-                            {{-- Product Count --}}
+                            {{-- Product Count & Price --}}
                             <span class="text-muted small" style="font-size: 0.72rem;">
                                 {{ $category->products_count ?? 0 }} {{ Str::plural('item', (int) ($category->products_count ?? 0)) }}
+                                @if(!empty($category->min_price) && $category->min_price > 0)
+                                    &bull; From ₹{{ number_format($category->min_price, 0) }}
+                                @endif
                             </span>
                         </div>
                     </div>
@@ -136,7 +148,8 @@
         height: 56px !important;
         min-width: 56px !important;
     }
-    .category-avatar span {
+    .category-avatar span,
+    .category-avatar i {
         font-size: 1.35rem !important;
     }
     .category-card {

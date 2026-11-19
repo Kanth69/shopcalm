@@ -23,6 +23,7 @@ class Setting extends Model
         'razorpay_key_secret',
         'brevo_api_key',
         'locationiq_api_key',
+        'locationiq_api_keys',
     ];
 
     /**

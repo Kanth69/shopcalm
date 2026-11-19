@@ -54,9 +54,17 @@ class LoginRequest extends FormRequest
 
         // Standardize failure messages to be generic (Security standard)
         if (!$user || !\Hash::check($this->input('password'), $user->password)) {
-             RateLimiter::hit($this->throttleKey());
+             RateLimiter::hit($this->throttleKey(), 7200); // Lock for 2 hours (7200 seconds)
+             $remaining = RateLimiter::remaining($this->throttleKey(), 5);
+
+             if ($remaining === 0) {
+                 throw ValidationException::withMessages([
+                     'login_identifier' => 'Account temporarily locked for 2 hours due to 5 consecutive failed login attempts.',
+                 ]);
+             }
+
              throw ValidationException::withMessages([
-                 'login_identifier' => $genericErrorMessage,
+                 'login_identifier' => "{$genericErrorMessage} {$remaining} " . ($remaining === 1 ? 'attempt' : 'attempts') . ' remaining before account is locked for 2 hours.',
              ]);
         }
 
@@ -84,7 +92,7 @@ class LoginRequest extends FormRequest
 
         // 3. Attempt actual login using the requested guard
         if (! Auth::guard($guard)->attempt($credentials, $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
+            RateLimiter::hit($this->throttleKey(), 7200); // Lock for 2 hours (7200 seconds)
             throw ValidationException::withMessages([
                 'login_identifier' => $genericErrorMessage,
             ]);
@@ -107,12 +115,14 @@ class LoginRequest extends FormRequest
         event(new Lockout($this));
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
+        $hours = floor($seconds / 3600);
+        $minutes = ceil(($seconds % 3600) / 60);
+        $timeRemainingText = $hours > 0
+            ? "{$hours} hr " . ($minutes > 0 ? "{$minutes} min" : "")
+            : "{$minutes} minutes";
 
         throw ValidationException::withMessages([
-            'login_identifier' => trans('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
+            'login_identifier' => "Account temporarily locked for 2 hours due to 5 consecutive failed login attempts. Please try again in {$timeRemainingText}.",
         ]);
     }
 

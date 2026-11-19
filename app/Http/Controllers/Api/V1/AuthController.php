@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rules;
 
 class AuthController extends BaseApiController
@@ -206,6 +207,9 @@ class AuthController extends BaseApiController
             $user->tokens()->delete();
             $token = $user->createToken('mobile_app_auth_token')->plainTextToken;
 
+            // Clear any previous password login lockout on verified WhatsApp OTP login
+            RateLimiter::clear('account_lockout:' . $user->id);
+
             return $this->sendResponse([
                 'token' => $token,
                 'user'  => [
@@ -263,6 +267,9 @@ class AuthController extends BaseApiController
         $user->password = Hash::make($request->password);
         $user->save();
 
+        // Clear any password login lockout after verified OTP reset
+        RateLimiter::clear('account_lockout:' . $user->id);
+
         // Generate new Sanctum token for instant auto-login after password reset
         $user->tokens()->delete();
         $token = $user->createToken('mobile_app_auth_token')->plainTextToken;
@@ -302,14 +309,57 @@ class AuthController extends BaseApiController
         ]);
 
         $user = $this->findUserByIdentifier($request->login_identifier);
+        $throttleKey = 'account_lockout:' . ($user ? $user->id : md5(strtolower(trim($request->login_identifier))));
+
+        // 1. Enforce 2-hour account lockout after 5 consecutive failed attempts
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            $hours = floor($seconds / 3600);
+            $minutes = ceil(($seconds % 3600) / 60);
+
+            $timeRemainingText = $hours > 0
+                ? "{$hours} hr " . ($minutes > 0 ? "{$minutes} min" : "")
+                : "{$minutes} minutes";
+
+            return $this->sendError(
+                "Account temporarily locked for 2 hours due to 5 consecutive failed login attempts. Please try again in {$timeRemainingText}, or reset your password via WhatsApp OTP to unlock immediately.",
+                [
+                    'locked'              => true,
+                    'retry_after_seconds' => $seconds,
+                    'time_remaining_text' => $timeRemainingText,
+                ],
+                429
+            );
+        }
 
         if (!$user || !Hash::check($request->password, $user->password)) {
-            return $this->sendError('Invalid login credentials.', [], 401);
+            RateLimiter::hit($throttleKey, 7200); // 2 hours = 7200 seconds
+            $remaining = RateLimiter::remaining($throttleKey, 5);
+
+            if ($remaining === 0) {
+                return $this->sendError(
+                    'Account temporarily locked for 2 hours due to 5 consecutive failed login attempts. You can reset your password via WhatsApp OTP to unlock immediately.',
+                    [
+                        'locked'              => true,
+                        'retry_after_seconds' => 7200,
+                    ],
+                    429
+                );
+            }
+
+            return $this->sendError(
+                "Invalid login credentials. {$remaining} " . ($remaining === 1 ? 'attempt' : 'attempts') . ' remaining before account is locked for 2 hours.',
+                ['attempts_remaining' => $remaining],
+                401
+            );
         }
 
         if (isset($user->status) && in_array(strtolower($user->status), ['blocked', 'deleted'])) {
             return $this->sendError('This account has been closed or blocked. Please contact customer support.', [], 403);
         }
+
+        // On successful password login, clear failed attempt counter
+        RateLimiter::clear($throttleKey);
 
         // Create Sanctum Bearer Token for Mobile App
         $token = $user->createToken('mobile_app_auth_token')->plainTextToken;

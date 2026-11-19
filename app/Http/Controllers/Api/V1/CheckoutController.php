@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Services\CartService;
 use App\Services\CheckoutService;
 use App\Services\CouponService;
+use App\Services\LocationiqService;
 use App\Services\OrderService;
 use App\Services\RazorpayService;
 use App\Services\WalletService;
@@ -41,16 +42,52 @@ class CheckoutController extends BaseApiController
     }
 
     /**
-     * Map configuration and keys from DB / .env
+     * Map configuration and keys from DB / .env (with Multi-Key Pool support & Delivery Time Slots)
      */
     public function getMapConfig(): JsonResponse
     {
-        $locationiqKey = Setting::get('locationiq_api_key', config('services.locationiq.key', env('LOCATIONIQ_API_KEY', '')));
+        $activeKey = LocationiqService::getActiveKey() ?: Setting::get('locationiq_api_key', config('services.locationiq.key', env('LOCATIONIQ_API_KEY', '')));
+        $allActiveKeys = LocationiqService::getActiveKeys();
+
         return $this->sendResponse([
-            'locationiq_key' => $locationiqKey,
-            'default_lat'    => 12.971599,
-            'default_lng'    => 77.594566,
-        ], 'Map configuration loaded successfully.');
+            'locationiq_key'      => $activeKey,
+            'locationiq_keys'     => !empty($allActiveKeys) ? $allActiveKeys : (!empty($activeKey) ? [$activeKey] : []),
+            'default_lat'         => 12.971599,
+            'default_lng'         => 77.594566,
+            'delivery_time_slots' => [
+                'home' => [
+                    'badge'        => 'Home Delivery',
+                    'window'       => '7:00 AM – 9:00 PM (All Days & Evenings)',
+                    'default_slot' => 'Anytime (7 AM - 9 PM)',
+                    'slots'        => [
+                        'Anytime (7 AM - 9 PM)',
+                        'Morning (7 AM - 12 PM)',
+                        'Afternoon (12 PM - 5 PM)',
+                        'Evening (5 PM - 9 PM)',
+                    ],
+                ],
+                'work' => [
+                    'badge'        => 'Office Delivery',
+                    'window'       => '10:00 AM – 6:00 PM (Mon – Sat)',
+                    'default_slot' => 'Office Hours (10 AM - 6 PM)',
+                    'slots'        => [
+                        'Office Hours (10 AM - 6 PM)',
+                        'First Half (10 AM - 2 PM)',
+                        'Second Half (2 PM - 6 PM)',
+                    ],
+                ],
+                'other' => [
+                    'badge'        => 'Other Location',
+                    'window'       => '9:00 AM – 8:00 PM',
+                    'default_slot' => 'Anytime (9 AM - 8 PM)',
+                    'slots'        => [
+                        'Anytime (9 AM - 8 PM)',
+                        'Morning / Day (9 AM - 2 PM)',
+                        'Afternoon / Evening (2 PM - 8 PM)',
+                    ],
+                ],
+            ],
+        ], 'Map and delivery configuration loaded successfully.');
     }
 
     /**
@@ -299,18 +336,31 @@ class CheckoutController extends BaseApiController
         ]);
 
         $validated = $request->validate([
-            'shipping_name'    => 'required|string|max:255',
-            'shipping_phone'   => 'required|string|max:15',
-            'shipping_email'   => 'nullable|email|max:255',
-            'shipping_address' => 'required|string|max:500',
-            'shipping_city'    => 'required|string|max:100',
-            'shipping_state'   => 'required|string|max:100',
-            'shipping_pincode' => 'required|string|size:6',
-            'payment_method'   => 'required|string|in:cod,online',
-            'use_wallet'       => 'nullable|boolean',
-            'coupon_code'      => 'nullable|string',
-            'notes'            => 'nullable|string|max:500',
+            'shipping_name'       => 'required|string|max:255',
+            'shipping_phone'      => 'required|string|max:15',
+            'shipping_email'      => 'nullable|email|max:255',
+            'shipping_address'    => 'required|string|max:500',
+            'shipping_city'       => 'required|string|max:100',
+            'shipping_state'      => 'required|string|max:100',
+            'shipping_pincode'    => 'required|string|size:6',
+            'payment_method'      => 'required|string|in:cod,online',
+            'use_wallet'          => 'nullable|boolean',
+            'coupon_code'         => 'nullable|string',
+            'notes'               => 'nullable|string|max:500',
+            'preferred_time_slot' => 'nullable|string|max:100',
         ]);
+
+        // Auto-merge preferred_time_slot into notes if passed separately by Mobile app
+        $timeSlot = trim((string) $request->input('preferred_time_slot'));
+        $rawNotes = trim((string) ($validated['notes'] ?? ''));
+        if (!empty($timeSlot)) {
+            $slotPrefix = "[Time: {$timeSlot}]";
+            if (!empty($rawNotes) && !str_starts_with($rawNotes, '[Time:')) {
+                $validated['notes'] = "{$slotPrefix} {$rawNotes}";
+            } elseif (empty($rawNotes)) {
+                $validated['notes'] = $slotPrefix;
+            }
+        }
 
         // Standardize shipping PIN code for checkout service
         $validated['shipping_zip'] = $validated['shipping_pincode'];

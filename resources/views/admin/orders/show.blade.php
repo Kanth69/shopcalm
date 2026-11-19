@@ -225,6 +225,15 @@
                         <span class="fw-bold text-dark"><i class="bi bi-pin-map-fill me-1 text-danger"></i>PIN: {{ $order->shipping_zip }}</span>
                         <span class="badge bg-light text-dark border px-2 py-0.5" style="font-size: 0.7rem;">{{ $order->shipping_country ?? 'India' }}</span>
                     </div>
+
+                    @if(!empty($order->notes))
+                    <div class="mt-2.5 p-2.5 rounded-3 border" style="background: #eef2ff; border-color: #c7d2fe !important; font-size: 0.78rem;">
+                        <div class="fw-bold text-primary mb-1 d-flex align-items-center gap-1.5">
+                            <i class="bi bi-clock-history"></i> Preferred Delivery Timing &amp; Instructions:
+                        </div>
+                        <div class="text-dark fw-medium">{{ $order->notes }}</div>
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>

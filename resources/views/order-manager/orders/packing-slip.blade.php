@@ -74,6 +74,11 @@
                         <strong>{{ $order->shipping_city }}, {{ $order->shipping_state }} - {{ $order->shipping_zip }}</strong><br>
                         Phone: <strong>{{ $order->shipping_phone }}</strong>
                     </div>
+                    @if(!empty($order->notes))
+                    <div class="mt-2 pt-2 border-top small text-primary fw-bold" style="font-size: 0.82rem;">
+                        <i class="bi bi-clock-history me-1"></i> Delivery Note: <span class="text-dark fw-semibold">{{ $order->notes }}</span>
+                    </div>
+                    @endif
                 </div>
                 <div class="col-4 border-start text-end">
                     <div class="small fw-bold text-uppercase text-muted mb-1">Package Info:</div>

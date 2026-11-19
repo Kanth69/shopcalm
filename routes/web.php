@@ -140,6 +140,9 @@ $registerStaffRoutes = function () {
             Route::post('locationiq/update', [\App\Http\Controllers\Admin\IntegrationController::class, 'updateLocationiq'])->name('locationiq.update');
             Route::post('locationiq/test', [\App\Http\Controllers\Admin\IntegrationController::class, 'testLocationiq'])->name('locationiq.test');
             Route::post('locationiq/test-osm', [\App\Http\Controllers\Admin\IntegrationController::class, 'testOsm'])->name('locationiq.test-osm');
+            Route::post('locationiq/keys/add', [\App\Http\Controllers\Admin\IntegrationController::class, 'addLocationiqKey'])->name('locationiq.keys.add');
+            Route::post('locationiq/keys/delete', [\App\Http\Controllers\Admin\IntegrationController::class, 'deleteLocationiqKey'])->name('locationiq.keys.delete');
+            Route::post('locationiq/keys/toggle', [\App\Http\Controllers\Admin\IntegrationController::class, 'toggleLocationiqKey'])->name('locationiq.keys.toggle');
             Route::get('pincodes', [\App\Http\Controllers\Admin\IntegrationController::class, 'pincodes'])->name('pincodes');
             Route::post('pincodes/test-lookup', [\App\Http\Controllers\Admin\IntegrationController::class, 'testPincodeLookup'])->name('pincodes.test-lookup');
             Route::get('firebase', [\App\Http\Controllers\Admin\IntegrationController::class, 'firebase'])->name('firebase');

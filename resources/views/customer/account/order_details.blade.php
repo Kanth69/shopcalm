@@ -712,6 +712,12 @@
                 <div class="ps-4 text-muted small d-flex flex-column gap-1.5" style="font-size: 0.8rem;">
                     <div><i class="bi bi-envelope me-2 text-info"></i>{{ $order->shipping_email }}</div>
                     <div><i class="bi bi-telephone-fill me-2 text-success"></i>{{ $order->shipping_phone }}</div>
+                    @if(!empty($order->notes))
+                    <div class="mt-2 p-2 rounded-3 bg-light border text-dark" style="font-size: 0.78rem;">
+                        <span class="text-primary fw-bold d-block mb-0.5"><i class="bi bi-clock-history me-1"></i> Delivery Preference:</span>
+                        <span>{{ $order->notes }}</span>
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>
