@@ -1363,7 +1363,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const circleIcon = document.getElementById('amazonVoiceCircleIcon');
         const wave1 = document.getElementById('voiceWave1');
         const wave2 = document.getElementById('voiceWave2');
-        const actionArea = document.getElementById('amazonVoiceActionArea');
 
         if (state === 'listening') {
             isVoiceListening = true;
@@ -1372,12 +1371,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (transcript) transcript.innerHTML = '<span class="text-muted fst-italic">"..."</span>';
             if (circleBtn) {
                 circleBtn.style.background = 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)';
-                circleBtn.style.boxShadow = '0 10px 25px -5px rgba(14, 165, 233, 0.4)';
+                circleBtn.style.boxShadow = '0 10px 25px -5px rgba(14, 165, 233, 0.45)';
             }
             if (circleIcon) circleIcon.className = 'bi bi-mic-fill fs-2';
             if (wave1) wave1.style.display = 'block';
             if (wave2) wave2.style.display = 'block';
-            if (actionArea) actionArea.classList.add('d-none');
         } else if (state === 'searching') {
             isVoiceListening = false;
             if (heading) heading.textContent = 'Searching...';
@@ -1389,12 +1387,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (circleIcon) circleIcon.className = 'bi bi-check-lg fs-2';
             if (wave1) wave1.style.display = 'none';
             if (wave2) wave2.style.display = 'none';
-            if (actionArea) actionArea.classList.add('d-none');
         } else if (state === 'no-speech') {
             isVoiceListening = false;
             if (heading) heading.textContent = "Didn't catch that";
-            if (subheading) subheading.textContent = 'Tap the microphone to try speaking again';
-            if (transcript) transcript.innerHTML = '<span class="text-muted small">No voice detected</span>';
+            if (subheading) subheading.textContent = 'Tap the microphone to speak again';
+            if (transcript) transcript.innerHTML = '<span class="text-muted small">Tap mic to speak</span>';
             if (circleBtn) {
                 circleBtn.style.background = 'linear-gradient(135deg, #64748b 0%, #475569 100%)';
                 circleBtn.style.boxShadow = '0 10px 25px -5px rgba(100, 116, 139, 0.3)';
@@ -1402,24 +1399,22 @@ document.addEventListener('DOMContentLoaded', function() {
             if (circleIcon) circleIcon.className = 'bi bi-arrow-clockwise fs-2';
             if (wave1) wave1.style.display = 'none';
             if (wave2) wave2.style.display = 'none';
-            if (actionArea) actionArea.classList.add('d-none');
-        } else if (state === 'blocked') {
+        } else if (state === 'need-permission') {
             isVoiceListening = false;
-            if (heading) heading.textContent = 'Microphone Access Needed';
-            if (subheading) subheading.innerHTML = 'Please tap <strong>Allow</strong> when your browser prompts, or tap the 🔒 icon in the address bar to enable microphone.';
-            if (transcript) transcript.innerHTML = '<span class="text-warning small fw-semibold"><i class="bi bi-shield-lock me-1"></i>Microphone permission required</span>';
+            if (heading) heading.textContent = 'Tap to Speak';
+            if (subheading) subheading.innerHTML = 'Please tap <strong>Allow</strong> if Chrome prompts for microphone access.';
+            if (transcript) transcript.innerHTML = '<span class="text-primary small fw-semibold">Tap mic to allow & speak</span>';
             if (circleBtn) {
-                circleBtn.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
-                circleBtn.style.boxShadow = '0 10px 25px -5px rgba(245, 158, 11, 0.4)';
+                circleBtn.style.background = 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)';
+                circleBtn.style.boxShadow = '0 10px 25px -5px rgba(14, 165, 233, 0.35)';
             }
-            if (circleIcon) circleIcon.className = 'bi bi-mic-mute-fill fs-2';
+            if (circleIcon) circleIcon.className = 'bi bi-mic-fill fs-2';
             if (wave1) wave1.style.display = 'none';
             if (wave2) wave2.style.display = 'none';
-            if (actionArea) actionArea.classList.remove('d-none');
         } else if (state === 'unsupported') {
             isVoiceListening = false;
             if (heading) heading.textContent = 'Voice Search Not Supported';
-            if (subheading) subheading.textContent = 'Your current browser does not support voice search. Please try Google Chrome or Microsoft Edge.';
+            if (subheading) subheading.textContent = 'Your current browser does not support voice search. Please try Google Chrome or Edge.';
             if (transcript) transcript.innerHTML = '<span class="text-danger small">Browser unsupported</span>';
             if (circleBtn) {
                 circleBtn.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
@@ -1428,11 +1423,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (circleIcon) circleIcon.className = 'bi bi-x-circle fs-2';
             if (wave1) wave1.style.display = 'none';
             if (wave2) wave2.style.display = 'none';
-            if (actionArea) actionArea.classList.add('d-none');
         }
     }
 
-    async function startAmazonVoiceListening() {
+    function startAmazonVoice() {
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 
         if (!SpeechRec) {
@@ -1441,7 +1435,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Show Amazon Modal in listening state immediately for responsive feedback
+        // Show Amazon Voice Modal in listening state immediately
         showAmazonVoiceModal();
         setAmazonVoiceState('listening');
 
@@ -1451,22 +1445,8 @@ document.addEventListener('DOMContentLoaded', function() {
             activeSpeechRec = null;
         }
 
-        // Request browser/OS microphone permission via getUserMedia
-        // This is standard across Chrome mobile & desktop to invoke the native OS/browser permission prompt
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                // Immediately release raw media stream so SpeechRecognition has exclusive audio input
-                stream.getTracks().forEach(t => t.stop());
-            } catch (permErr) {
-                console.warn('Microphone permission not granted:', permErr);
-                setAmazonVoiceState('blocked');
-                return;
-            }
-        }
-
         try {
-            // Fresh SpeechRecognition instance
+            // Direct synchronous SpeechRecognition start to keep active user activation token
             const recognition = new SpeechRec();
             activeSpeechRec = recognition;
             recognition.continuous = false;
@@ -1475,7 +1455,7 @@ document.addEventListener('DOMContentLoaded', function() {
             recognition.lang = navigator.language || 'en-IN';
 
             let finalTranscript = '';
-            let transcriptEl = document.getElementById('amazonVoiceTranscript');
+            const transcriptEl = document.getElementById('amazonVoiceTranscript');
 
             recognition.onstart = function () {
                 setAmazonVoiceState('listening');
@@ -1513,16 +1493,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     setTimeout(() => {
                         hideAmazonVoiceModal();
                         window.applySearchTerm(cleanVal);
-                    }, 450);
+                    }, 400);
                 }
             };
 
             recognition.onerror = function (event) {
                 console.warn('SpeechRecognition error:', event.error);
-                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-                    setAmazonVoiceState('blocked');
-                } else if (event.error === 'no-speech') {
-                    setAmazonVoiceState('no-speech');
+                if (event.error === 'not-allowed') {
+                    // Directly prompt Chrome via getUserMedia if needed
+                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                        navigator.mediaDevices.getUserMedia({ audio: true })
+                            .then(stream => {
+                                stream.getTracks().forEach(t => t.stop());
+                                setAmazonVoiceState('listening');
+                                try { recognition.start(); } catch (err) {}
+                            })
+                            .catch(err => {
+                                setAmazonVoiceState('need-permission');
+                            });
+                    } else {
+                        setAmazonVoiceState('need-permission');
+                    }
                 } else {
                     setAmazonVoiceState('no-speech');
                 }
@@ -1542,30 +1533,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Bind Voice Search buttons (Desktop & Mobile)
+    // Bind Voice Search buttons (Desktop & Mobile search bars)
     document.querySelectorAll('.btn-voice-search').forEach(btn => {
         btn.addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
-            startAmazonVoiceListening();
+            startAmazonVoice();
         });
     });
 
-    // Tap mic circle inside modal to speak or retry
+    // Tap mic circle inside modal to speak
     const circleBtn = document.getElementById('amazonVoiceCircleBtn');
     if (circleBtn) {
         circleBtn.addEventListener('click', function (e) {
             e.preventDefault();
-            startAmazonVoiceListening();
-        });
-    }
-
-    // Blocked retry / allow button
-    const retryPermissionBtn = document.getElementById('btnVoiceRetryPermission');
-    if (retryPermissionBtn) {
-        retryPermissionBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            startAmazonVoiceListening();
+            startAmazonVoice();
         });
     }
 
@@ -1671,22 +1653,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
             <!-- Title & Status -->
             <h5 class="fw-bold text-dark mb-1 mt-1" id="amazonVoiceHeading">Listening...</h5>
-            <p class="text-muted small mb-3" id="amazonVoiceSubheading" style="font-size: 0.82rem; min-height: 20px;">Speak into your microphone</p>
+            <p class="text-muted small mb-3" id="amazonVoiceSubheading" style="font-size: 0.82rem; min-height: 20px;">Speak into your microphone now</p>
 
             <!-- Live Spoken Words Transcript Card -->
             <div class="p-3 rounded-3 border mb-3 d-flex align-items-center justify-content-center text-center" 
+                 id="amazonVoiceTranscriptBox"
                  style="min-height: 72px; border-color: #e2e8f0 !important; background: #f8fafc !important;">
                 <span class="fs-5 fw-semibold text-break" id="amazonVoiceTranscript" style="color: #0f172a;">"..."</span>
-            </div>
-
-            <!-- Blocked State Action Area (Hidden by default, shown if permission blocked) -->
-            <div id="amazonVoiceActionArea" class="d-none mb-3">
-                <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold shadow-xs d-inline-flex align-items-center gap-2" id="btnVoiceRetryPermission" style="font-size: 0.88rem;">
-                    <i class="bi bi-mic-fill"></i> <span>Allow Microphone</span>
-                </button>
-                <div class="text-muted mt-2" style="font-size: 0.72rem; line-height: 1.4;">
-                    If blocked: tap <strong>🔒</strong> in address bar &rarr; <strong>Permissions</strong> &rarr; turn on <strong>Microphone</strong>
-                </div>
             </div>
 
             <!-- Suggestion Quick Pills -->
