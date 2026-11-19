@@ -211,18 +211,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 spellcheck="false"
                             >
                             <!-- Clear Button ✕ -->
-                            <button type="button" class="btn btn-link text-secondary p-0 d-none btn-clear-search" aria-label="Clear search" style="text-decoration: none; cursor: pointer; z-index: 5; margin-right: 8px;">
+                            <button type="button" class="btn btn-link text-secondary p-0 d-none btn-clear-search" aria-label="Clear search" style="text-decoration: none; cursor: pointer; z-index: 5; margin-right: 12px;">
                                 <i class="bi bi-x-circle-fill text-muted" style="font-size: 1.05rem;"></i>
-                            </button>
-
-                            <!-- Desktop Voice Search Button (Mic Icon with comfortable breathing room) -->
-                            <button type="button" 
-                                    class="btn btn-link text-muted p-0 d-flex align-items-center justify-content-center border-0 btn-voice-search" 
-                                    id="btnDesktopVoiceSearch" 
-                                    aria-label="Voice Search" 
-                                    title="Search by voice" 
-                                    style="text-decoration: none; cursor: pointer; z-index: 5; margin-right: 14px; width: 30px; height: 30px; border-radius: 50%;">
-                                <i class="bi bi-mic-fill fs-6" style="color: #64748b;"></i>
                             </button>
                         </div>
 
@@ -346,7 +336,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
 
         @if(!$hideHeaderSearch)
-        <!-- Mobile Search Bar (Amazon Style with Amber Search Button + Voice Search) -->
+        <!-- Mobile Search Bar (Amazon Style with Amber Search Button) -->
         <div class="d-block d-md-none pt-1.5 pb-0.5 position-relative" style="z-index: 1061;">
             <form action="{{ $headerSearchAction }}" method="GET" class="position-relative" id="mobileSearchForm" autocomplete="off">
                 <input type="hidden" name="category[]" id="mobileSearchCategoryInput" value="{{ $selectedCatId ?? '' }}">
@@ -358,18 +348,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                placeholder="{{ $headerSearchPlaceholder }}" value="{{ request('q') }}" style="font-size: 0.88rem; font-weight: 500; height: 100%; color: #0f172a;" autocomplete="off" spellcheck="false">
                         
                         <!-- Clear button -->
-                        <button type="button" class="btn btn-link text-secondary p-0 d-none btn-clear-search" aria-label="Clear search" style="text-decoration: none; cursor: pointer; z-index: 5; margin-right: 6px;">
+                        <button type="button" class="btn btn-link text-secondary p-0 d-none btn-clear-search" aria-label="Clear search" style="text-decoration: none; cursor: pointer; z-index: 5; margin-right: 10px;">
                             <i class="bi bi-x-circle-fill text-muted" style="font-size: 1rem;"></i>
-                        </button>
-
-                        <!-- Voice Search Button (Mic Icon) -->
-                        <button type="button" 
-                                class="btn btn-link text-muted p-0 d-flex align-items-center justify-content-center border-0 btn-voice-search" 
-                                id="btnVoiceSearch" 
-                                aria-label="Voice Search" 
-                                title="Search by voice" 
-                                style="text-decoration: none; cursor: pointer; z-index: 5; margin-right: 8px; width: 30px; height: 30px; border-radius: 50%;">
-                            <i class="bi bi-mic-fill fs-6" style="color: #64748b;"></i>
                         </button>
                     </div>
 
@@ -763,48 +743,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     .suggestion-footer-btn:hover .footer-arrow-icon {
         transform: translateX(5px);
-    }
-    .btn-voice-search {
-        transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
-    }
-    .btn-voice-search:hover {
-        background-color: #f1f5f9 !important;
-    }
-    .btn-voice-search:hover i {
-        color: #d97706 !important;
-        transform: scale(1.1);
-    }
-    @keyframes mic-pulse {
-        0% { transform: scale(1); opacity: 1; }
-        50% { transform: scale(1.25); opacity: 0.7; }
-        100% { transform: scale(1); opacity: 1; }
-    }
-    .animate-mic-pulse {
-        animation: mic-pulse 1.2s infinite ease-in-out;
-        display: inline-block;
-    }
-    .voice-mic-wave-container {
-        position: relative;
-        width: 104px;
-        height: 104px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .voice-wave-ring {
-        position: absolute;
-        width: 76px;
-        height: 76px;
-        border-radius: 50%;
-        background: rgba(14, 165, 233, 0.28);
-        animation: voiceRipple 1.8s infinite ease-out;
-    }
-    .voice-wave-ring.ring-2 {
-        animation-delay: 0.6s;
-    }
-    @keyframes voiceRipple {
-        0% { transform: scale(0.9); opacity: 0.85; }
-        100% { transform: scale(1.65); opacity: 0; }
     }
 </style>
 
@@ -1318,271 +1256,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Amazon-Style Voice Search Modal & Engine (Desktop & Mobile)
-    let activeSpeechRec = null;
-    let isVoiceListening = false;
-
-    function getAmazonVoiceModal() {
-        const modalEl = document.getElementById('amazonVoiceModal');
-        if (!modalEl) return null;
-        if (window.bootstrap && window.bootstrap.Modal) {
-            return window.bootstrap.Modal.getOrCreateInstance(modalEl);
-        }
-        return null;
-    }
-
-    function showAmazonVoiceModal() {
-        const modalEl = document.getElementById('amazonVoiceModal');
-        const bsModal = getAmazonVoiceModal();
-        if (bsModal) {
-            bsModal.show();
-        } else if (modalEl) {
-            modalEl.classList.add('show');
-            modalEl.style.display = 'block';
-            document.body.classList.add('modal-open');
-        }
-    }
-
-    function hideAmazonVoiceModal() {
-        const modalEl = document.getElementById('amazonVoiceModal');
-        const bsModal = getAmazonVoiceModal();
-        if (bsModal) {
-            bsModal.hide();
-        } else if (modalEl) {
-            modalEl.classList.remove('show');
-            modalEl.style.display = 'none';
-            document.body.classList.remove('modal-open');
-        }
-    }
-
-    function setAmazonVoiceState(state) {
-        const heading = document.getElementById('amazonVoiceHeading');
-        const subheading = document.getElementById('amazonVoiceSubheading');
-        const transcript = document.getElementById('amazonVoiceTranscript');
-        const circleBtn = document.getElementById('amazonVoiceCircleBtn');
-        const circleIcon = document.getElementById('amazonVoiceCircleIcon');
-        const wave1 = document.getElementById('voiceWave1');
-        const wave2 = document.getElementById('voiceWave2');
-
-        if (state === 'listening') {
-            isVoiceListening = true;
-            if (heading) heading.textContent = 'Listening...';
-            if (subheading) subheading.textContent = 'Speak into your microphone now';
-            if (transcript) transcript.innerHTML = '<span class="text-muted fst-italic">"..."</span>';
-            if (circleBtn) {
-                circleBtn.style.background = 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)';
-                circleBtn.style.boxShadow = '0 10px 25px -5px rgba(14, 165, 233, 0.45)';
-            }
-            if (circleIcon) circleIcon.className = 'bi bi-mic-fill fs-2';
-            if (wave1) wave1.style.display = 'block';
-            if (wave2) wave2.style.display = 'block';
-        } else if (state === 'searching') {
-            isVoiceListening = false;
-            if (heading) heading.textContent = 'Searching...';
-            if (subheading) subheading.textContent = 'Finding matches for you';
-            if (circleBtn) {
-                circleBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                circleBtn.style.boxShadow = '0 10px 25px -5px rgba(16, 185, 129, 0.4)';
-            }
-            if (circleIcon) circleIcon.className = 'bi bi-check-lg fs-2';
-            if (wave1) wave1.style.display = 'none';
-            if (wave2) wave2.style.display = 'none';
-        } else if (state === 'no-speech') {
-            isVoiceListening = false;
-            if (heading) heading.textContent = "Didn't catch that";
-            if (subheading) subheading.textContent = 'Tap the microphone to speak again';
-            if (transcript) transcript.innerHTML = '<span class="text-muted small">Tap mic to speak</span>';
-            if (circleBtn) {
-                circleBtn.style.background = 'linear-gradient(135deg, #64748b 0%, #475569 100%)';
-                circleBtn.style.boxShadow = '0 10px 25px -5px rgba(100, 116, 139, 0.3)';
-            }
-            if (circleIcon) circleIcon.className = 'bi bi-arrow-clockwise fs-2';
-            if (wave1) wave1.style.display = 'none';
-            if (wave2) wave2.style.display = 'none';
-        } else if (state === 'need-permission') {
-            isVoiceListening = false;
-            if (heading) heading.textContent = 'Tap to Speak';
-            if (subheading) subheading.innerHTML = 'Please tap <strong>Allow</strong> if Chrome prompts for microphone access.';
-            if (transcript) transcript.innerHTML = '<span class="text-primary small fw-semibold">Tap mic to allow & speak</span>';
-            if (circleBtn) {
-                circleBtn.style.background = 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)';
-                circleBtn.style.boxShadow = '0 10px 25px -5px rgba(14, 165, 233, 0.35)';
-            }
-            if (circleIcon) circleIcon.className = 'bi bi-mic-fill fs-2';
-            if (wave1) wave1.style.display = 'none';
-            if (wave2) wave2.style.display = 'none';
-        } else if (state === 'unsupported') {
-            isVoiceListening = false;
-            if (heading) heading.textContent = 'Voice Search Not Supported';
-            if (subheading) subheading.textContent = 'Your current browser does not support voice search. Please try Google Chrome or Edge.';
-            if (transcript) transcript.innerHTML = '<span class="text-danger small">Browser unsupported</span>';
-            if (circleBtn) {
-                circleBtn.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
-                circleBtn.style.boxShadow = 'none';
-            }
-            if (circleIcon) circleIcon.className = 'bi bi-x-circle fs-2';
-            if (wave1) wave1.style.display = 'none';
-            if (wave2) wave2.style.display = 'none';
-        }
-    }
-
-    function startAmazonVoice() {
-        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-        if (!SpeechRec) {
-            showAmazonVoiceModal();
-            setAmazonVoiceState('unsupported');
-            return;
-        }
-
-        // Show Amazon Voice Modal in listening state immediately
-        showAmazonVoiceModal();
-        setAmazonVoiceState('listening');
-
-        // Stop any previous active speech session
-        if (activeSpeechRec) {
-            try { activeSpeechRec.abort(); } catch (e) {}
-            activeSpeechRec = null;
-        }
-
-        try {
-            // Direct synchronous SpeechRecognition start to keep active user activation token
-            const recognition = new SpeechRec();
-            activeSpeechRec = recognition;
-            recognition.continuous = false;
-            recognition.interimResults = true;
-            recognition.maxAlternatives = 1;
-            recognition.lang = navigator.language || 'en-IN';
-
-            let finalTranscript = '';
-            const transcriptEl = document.getElementById('amazonVoiceTranscript');
-
-            recognition.onstart = function () {
-                setAmazonVoiceState('listening');
-            };
-
-            recognition.onresult = function (event) {
-                let interim = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) {
-                        finalTranscript += event.results[i][0].transcript;
-                    } else {
-                        interim += event.results[i][0].transcript;
-                    }
-                }
-
-                const currentText = finalTranscript || interim;
-                if (currentText && transcriptEl) {
-                    transcriptEl.innerHTML = `<span class="text-primary fw-bold">"${escapeHtml(currentText)}"</span>`;
-                }
-
-                // If final sentence is ready
-                if (finalTranscript.trim().length > 0) {
-                    const cleanVal = finalTranscript.trim();
-                    setAmazonVoiceState('searching');
-                    if (transcriptEl) {
-                        transcriptEl.innerHTML = `<span class="text-success fw-bold">"${escapeHtml(cleanVal)}"</span>`;
-                    }
-
-                    // Fill search inputs on desktop and mobile
-                    const dInp = document.getElementById('mainSearchInput');
-                    const mInp = document.getElementById('mobileSearchInput');
-                    if (dInp) dInp.value = cleanVal;
-                    if (mInp) mInp.value = cleanVal;
-
-                    setTimeout(() => {
-                        hideAmazonVoiceModal();
-                        window.applySearchTerm(cleanVal);
-                    }, 400);
-                }
-            };
-
-            recognition.onerror = function (event) {
-                console.warn('SpeechRecognition error:', event.error);
-                if (event.error === 'not-allowed') {
-                    // Directly prompt Chrome via getUserMedia if needed
-                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                        navigator.mediaDevices.getUserMedia({ audio: true })
-                            .then(stream => {
-                                stream.getTracks().forEach(t => t.stop());
-                                setAmazonVoiceState('listening');
-                                try { recognition.start(); } catch (err) {}
-                            })
-                            .catch(err => {
-                                setAmazonVoiceState('need-permission');
-                            });
-                    } else {
-                        setAmazonVoiceState('need-permission');
-                    }
-                } else {
-                    setAmazonVoiceState('no-speech');
-                }
-            };
-
-            recognition.onend = function () {
-                if (isVoiceListening && !finalTranscript.trim()) {
-                    setAmazonVoiceState('no-speech');
-                }
-                activeSpeechRec = null;
-            };
-
-            recognition.start();
-        } catch (e) {
-            console.error('Speech recognition exception:', e);
-            setAmazonVoiceState('no-speech');
-        }
-    }
-
-    // Bind Voice Search buttons (Desktop & Mobile search bars)
-    document.querySelectorAll('.btn-voice-search').forEach(btn => {
-        btn.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            startAmazonVoice();
-        });
-    });
-
-    // Tap mic circle inside modal to speak
-    const circleBtn = document.getElementById('amazonVoiceCircleBtn');
-    if (circleBtn) {
-        circleBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            startAmazonVoice();
-        });
-    }
-
-    // Modal Close Cleanup
-    const amazonModalEl = document.getElementById('amazonVoiceModal');
-    if (amazonModalEl) {
-        amazonModalEl.addEventListener('hidden.bs.modal', function () {
-            if (activeSpeechRec) {
-                try { activeSpeechRec.abort(); } catch (e) {}
-                activeSpeechRec = null;
-            }
-            isVoiceListening = false;
-        });
-        const closeBtn = document.getElementById('btnAmazonVoiceClose');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', function () {
-                hideAmazonVoiceModal();
-                if (activeSpeechRec) {
-                    try { activeSpeechRec.abort(); } catch (e) {}
-                    activeSpeechRec = null;
-                }
-                isVoiceListening = false;
-            });
-        }
-    }
-
-    window.applyVoiceQuickChip = function(phrase) {
-        hideAmazonVoiceModal();
-        const dInp = document.getElementById('mainSearchInput');
-        const mInp = document.getElementById('mobileSearchInput');
-        if (dInp) dInp.value = phrase;
-        if (mInp) mInp.value = phrase;
-        window.applySearchTerm(phrase);
-    };
-
     // Custom Category Scope Dropdown Selection (Approach A)
     window.selectSearchCategory = function (id, name, url, btn) {
         const label = document.getElementById('searchCategoryLabel');
@@ -1626,54 +1299,6 @@ document.addEventListener('DOMContentLoaded', function() {
     setupSearch('mobileSearchInput', 'mobileSearchForm', 'mobileSearchSuggestions');
 })();
 </script>
-
-<!-- Amazon-Style Voice Search Modal (Desktop & Mobile) -->
-<div class="modal fade" id="amazonVoiceModal" tabindex="-1" aria-labelledby="amazonVoiceModalLabel" aria-hidden="true" style="z-index: 1099;">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
-        <div class="modal-content border-0 shadow-2xl rounded-4 overflow-hidden text-center p-4 position-relative" style="background: #ffffff;">
-            <!-- Top Right Close Button -->
-            <button type="button" class="btn-close position-absolute top-0 end-0 m-3 shadow-none" data-bs-dismiss="modal" aria-label="Close" id="btnAmazonVoiceClose"></button>
-
-            <!-- Brand Header -->
-            <div class="d-flex align-items-center justify-content-center gap-1.5 mb-2 text-muted small" style="font-size: 0.72rem; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 700;">
-                <i class="bi bi-mic text-primary"></i> Voice Search
-            </div>
-
-            <!-- Pulsing Mic Animation Area -->
-            <div class="amazon-voice-wave-wrapper mx-auto my-2 position-relative" style="width: 100px; height: 100px; display: flex; align-items: center; justify-content: center;">
-                <div class="voice-wave-ring ring-1" id="voiceWave1"></div>
-                <div class="voice-wave-ring ring-2" id="voiceWave2"></div>
-                <button type="button" class="btn p-0 border-0 shadow-lg position-relative d-flex align-items-center justify-content-center text-white" 
-                        id="amazonVoiceCircleBtn" 
-                        style="width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); z-index: 3; transition: transform 0.2s, background 0.2s;" 
-                        title="Tap to speak">
-                    <i class="bi bi-mic-fill fs-2" id="amazonVoiceCircleIcon"></i>
-                </button>
-            </div>
-
-            <!-- Title & Status -->
-            <h5 class="fw-bold text-dark mb-1 mt-1" id="amazonVoiceHeading">Listening...</h5>
-            <p class="text-muted small mb-3" id="amazonVoiceSubheading" style="font-size: 0.82rem; min-height: 20px;">Speak into your microphone now</p>
-
-            <!-- Live Spoken Words Transcript Card -->
-            <div class="p-3 rounded-3 border mb-3 d-flex align-items-center justify-content-center text-center" 
-                 id="amazonVoiceTranscriptBox"
-                 style="min-height: 72px; border-color: #e2e8f0 !important; background: #f8fafc !important;">
-                <span class="fs-5 fw-semibold text-break" id="amazonVoiceTranscript" style="color: #0f172a;">"..."</span>
-            </div>
-
-            <!-- Suggestion Quick Pills -->
-            <div class="pt-2 border-top">
-                <div class="text-muted small mb-1.5" style="font-size: 0.72rem;">Try saying:</div>
-                <div class="d-flex align-items-center justify-content-center flex-wrap gap-1.5">
-                    <span class="badge bg-white text-secondary border rounded-pill px-2.5 py-1" style="cursor: pointer; font-size: 0.74rem;" onclick="applyVoiceQuickChip('Mobiles')">Mobiles</span>
-                    <span class="badge bg-white text-secondary border rounded-pill px-2.5 py-1" style="cursor: pointer; font-size: 0.74rem;" onclick="applyVoiceQuickChip('Samsung Galaxy')">Samsung Galaxy</span>
-                    <span class="badge bg-white text-secondary border rounded-pill px-2.5 py-1" style="cursor: pointer; font-size: 0.74rem;" onclick="applyVoiceQuickChip('Running Shoes')">Running Shoes</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Delivery Location Selector Modal -->
 <div class="modal fade" id="deliveryLocationModal" tabindex="-1" aria-labelledby="deliveryLocationModalLabel" aria-hidden="true">
