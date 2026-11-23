@@ -267,7 +267,7 @@
                         <h6 class="fw-bold text-dark mb-0.5" style="font-size: 0.96rem;">Package Packed &bull; Ready for Logistics Handover</h6>
                         <div class="text-secondary small" style="font-size: 0.8rem;">
                             @if($order->isLocalBengaluruDelivery())
-                                Assign a local fleet rider below to move order into <strong>Out for Delivery</strong>.
+                                Assign a local delivery partner below to mark as <strong>Shipped (Manifest)</strong>.
                             @else
                                 Enter courier tracking details below to mark order as <strong>Shipped</strong>.
                             @endif
@@ -292,12 +292,11 @@
                             <span class="badge bg-warning text-dark fw-bold rounded-pill px-2.5 py-0.5 small">⚡ OUT FOR DELIVERY</span>
                             <strong class="text-dark" style="font-size: 0.96rem;">Rider: {{ $order->rider_name ?? 'In-House Fleet' }}</strong>
                             <span class="badge rounded-pill bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-0.5" style="font-size: 0.72rem;">
-                                <i class="bi bi-shield-lock-fill me-1"></i> Awaiting Rider OTP Handover
+                                <i class="bi bi-bicycle me-1"></i> In Transit
                             </span>
                         </div>
                         <div class="text-secondary small" style="font-size: 0.82rem;">
-                            Customer Handover OTP: <strong class="badge bg-light text-dark border font-monospace fs-6 px-2.5 py-0.5">{{ $order->delivery_otp }}</strong>
-                            &bull; Handover completion is restricted to the delivery partner portal upon verifying this OTP at doorstep.
+                            Assigned to {{ $order->rider_name ?? 'In-House Fleet' }} &bull; Delivery partner will confirm handover upon doorstep arrival.
                         </div>
                     </div>
                 </div>
@@ -418,7 +417,7 @@
                 <div class="fw-bold text-danger small"><i class="bi bi-megaphone-fill me-1"></i> Issue:</div>
                 <div class="text-dark fw-bold mt-1" style="font-size: 0.9rem;">{{ $order->fulfillment->delivery_issue }}</div>
                 <div class="text-secondary small mt-1 font-monospace" style="font-size: 0.75rem;">
-                    Reported by <strong>{{ $order->fulfillment->rider?->name ?? ($order->rider_name ?? 'Fleet Rider') }}</strong> &bull; {{ $order->fulfillment->delivery_issue_at?->diffForHumans() ?? 'Recently' }}
+                    Reported by <strong>{{ $order->fulfillment->rider?->name ?? ($order->rider_name ?? 'Delivery Partner') }}</strong> &bull; {{ $order->fulfillment->delivery_issue_at?->diffForHumans() ?? 'Recently' }}
                 </div>
             </div>
 
@@ -515,7 +514,7 @@
                                 <div class="col-sm-6">
                                     <label class="form-label fw-bold text-dark small mb-1">Delivery Window Slot</label>
                                     <select id="selectDeliverySlot" name="delivery_slot" class="form-select form-select-sm">
-                                        <option value="Next-Day Express Delivery (1-2 Days)" {{ ($order->delivery_slot === 'Next-Day Express Delivery (1-2 Days)' || !$order->delivery_slot) ? 'selected' : '' }}>⚡ Next-Day Express (1-2 Days)</option>
+                                        <option value="Express Delivery" {{ ($order->delivery_slot === 'Express Delivery' || !$order->delivery_slot) ? 'selected' : '' }}>⚡ Express Delivery (Today)</option>
                                         <option value="Morning Slot (10:00 AM - 02:00 PM)" {{ $order->delivery_slot === 'Morning Slot (10:00 AM - 02:00 PM)' ? 'selected' : '' }}>🌅 Morning (10 AM - 2 PM)</option>
                                         <option value="Evening Slot (04:00 PM - 08:00 PM)" {{ $order->delivery_slot === 'Evening Slot (04:00 PM - 08:00 PM)' ? 'selected' : '' }}>🌆 Evening (4 PM - 8 PM)</option>
                                         <option value="Standard Local Delivery (2-3 Days)" {{ $order->delivery_slot === 'Standard Local Delivery (2-3 Days)' ? 'selected' : '' }}>📦 Standard Local (2-3 Days)</option>
@@ -530,8 +529,8 @@
 
                                 <div class="col-12 pt-2">
                                     <button type="submit" id="btnSubmitRider" class="btn text-white w-100 fw-bold rounded-pill shadow-xs py-2 d-inline-flex align-items-center justify-content-center gap-2" style="background: #0284c7; border: none; font-size: 0.88rem;">
-                                        <i class="bi bi-send-fill"></i>
-                                        <span>Assign Rider & Mark Out for Delivery</span>
+                                        <i class="bi bi-box-seam-fill"></i>
+                                        <span>Assign Delivery Partner & Mark Shipped</span>
                                     </button>
                                 </div>
                             </div>
@@ -812,32 +811,23 @@
 
     {{-- ── RIGHT COLUMN (5 Cols) — Customer, Location & Security ── --}}
     <div class="col-lg-5">
-        {{-- Card 1: Handover OTP & Doorstep Payment Security --}}
-        @if($order->delivery_otp && !$isCancelled)
+        {{-- Card 1: Doorstep Collection Summary --}}
+        @if(!$isCancelled)
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: #ffffff; border: 1.5px solid #cbd5e1 !important;">
                 <div class="card-header bg-dark text-white py-2.5 px-3.5 d-flex align-items-center justify-content-between">
                     <span class="small fw-bold text-uppercase d-flex align-items-center gap-1.5" style="font-size: 0.74rem; letter-spacing: 0.04em;">
-                        <i class="bi bi-shield-lock-fill text-warning"></i> Customer Handover Code
+                        <i class="bi bi-wallet2 text-warning"></i> Doorstep Payment Status
                     </span>
-                    <span class="badge bg-warning text-dark rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.65rem;">
-                        Doorstep OTP
+                    <span class="badge bg-light text-dark rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.65rem;">
+                        {{ strtoupper($order->payment_method ?? 'COD') }}
                     </span>
                 </div>
                 <div class="card-body p-3.5">
                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                         <div>
-                            <div class="text-secondary small mb-1" style="font-size: 0.74rem;">Share code with rider upon handover:</div>
-                            <div class="d-flex align-items-center gap-1.5">
-                                @foreach(str_split((string) $order->delivery_otp) as $digit)
-                                    <span class="d-inline-flex align-items-center justify-content-center fw-extrabold rounded-2 bg-light border text-dark shadow-2xs font-monospace" 
-                                          style="width: 36px; height: 40px; font-size: 1.35rem; border-color: #94a3b8 !important;">
-                                        {{ $digit }}
-                                    </span>
-                                @endforeach
-                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 text-secondary fw-semibold ms-1" 
-                                        onclick="navigator.clipboard.writeText('{{ $order->delivery_otp }}'); this.innerText = 'Copied!'; setTimeout(() => this.innerHTML = '<i class=\'bi bi-copy\'></i>', 1500);" style="font-size: 0.74rem;" title="Copy OTP">
-                                    <i class="bi bi-copy"></i>
-                                </button>
+                            <div class="text-secondary small mb-0.5" style="font-size: 0.74rem;">Rider Collection Mode:</div>
+                            <div class="fw-bold text-dark font-monospace" style="font-size: 0.88rem;">
+                                {{ $order->payment_method === 'cod' ? 'Cash on Delivery (Cash in Hand)' : ($order->payment_method === 'doorstep_upi' ? 'Doorstep UPI QR' : 'Prepaid Online') }}
                             </div>
                         </div>
 
@@ -908,6 +898,35 @@
                     </div>
                 </div>
 
+                {{-- Customer Special Delivery Instructions Note (From Checkout) --}}
+                @php
+                    $rawCustomerNotes = $order->notes ?? '';
+                    $prefTimeSlot = '';
+                    $cleanInstruction = $rawCustomerNotes;
+                    if (preg_match('/\[Time:\s*([^\]]+)\]/i', $rawCustomerNotes, $noteMatches)) {
+                        $prefTimeSlot = trim($noteMatches[1]);
+                        $cleanInstruction = trim(str_replace($noteMatches[0], '', $rawCustomerNotes));
+                    }
+                @endphp
+                @if(!empty($cleanInstruction) || !empty($prefTimeSlot))
+                    <div class="mb-3 p-3 rounded-3 border" style="background: #fffbeb; border-color: #fde68a !important;">
+                        <div class="d-flex align-items-center gap-1.5 fw-bold small mb-1" style="color: #92400e;">
+                            <i class="bi bi-chat-left-quote-fill text-warning"></i>
+                            <span>Customer Delivery Instruction:</span>
+                        </div>
+                        @if(!empty($cleanInstruction))
+                            <div class="fw-bold text-dark small" style="font-size: 0.88rem; line-height: 1.45;">
+                                "{{ $cleanInstruction }}"
+                            </div>
+                        @endif
+                        @if(!empty($prefTimeSlot))
+                            <div class="mt-1.5 small text-secondary">
+                                <i class="bi bi-clock-history me-1"></i> Preferred Time: <span class="badge bg-white text-dark border px-2 py-0.5 rounded-pill fw-semibold">{{ $prefTimeSlot }}</span>
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
                 {{-- Map Coordinates Link (If Lat/Lng Present) --}}
                 @if($order->shipping_latitude && $order->shipping_longitude)
                     <div class="p-2.5 rounded-3 border d-flex align-items-center justify-content-between mb-2" style="background: #f0fdf4; border-color: #bbf7d0 !important;">
@@ -949,7 +968,7 @@
                         @elseif($order->wallet_amount_used > 0)
                             💳 ShopCalm Wallet (₹{{ number_format($order->wallet_amount_used, 2) }}) + {{ $order->payment_method === 'online' ? '⚡ Razorpay PG (' . ($payment?->method_display ?? 'Online UPI') . ')' : ($order->payment_method === 'doorstep_upi' ? '📲 Doorstep UPI (Razorpay QR)' : '💵 Cash on Delivery (COD)') }}
                         @elseif($order->payment_method === 'doorstep_upi')
-                            📲 Doorstep UPI &bull; Paid via Razorpay Dynamic QR to Fleet Rider
+                            📲 Doorstep UPI &bull; Paid via Razorpay Dynamic QR to Delivery Partner
                             @if($order->cod_fee > 0)
                                 <div class="small fw-normal text-muted mt-0.5">Originally ordered as COD &bull; Settled digitally at doorstep</div>
                             @endif
@@ -1180,12 +1199,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         icon: 'success',
                         title: data.message || 'Rider assigned & dispatched successfully!'
                     });
-                    updateProgressTracker(data.status || 'out for delivery');
+                    updateProgressTracker(data.status || 'shipped');
                     const riderInfo = document.getElementById('topLogisticsInfo');
                     if (riderInfo) {
-                        riderInfo.innerHTML = `Bengaluru Local Fleet: Rider <strong>${data.rider_name}</strong> (${data.rider_phone})`;
+                        riderInfo.innerHTML = `Bengaluru Local Fleet: Rider <strong>${data.rider_name}</strong> (${data.rider_phone}) [Shipped]`;
                     }
-                    prependTimeline('out for delivery', `Assigned rider: ${data.rider_name} (${data.rider_phone}) [${data.delivery_slot}]`);
+                    prependTimeline('shipped', `Assigned rider: ${data.rider_name} (${data.rider_phone}) [${data.delivery_slot}] - Shipped, awaiting hub bag scan`);
                 } else {
                     Toast.fire({
                         icon: 'error',

@@ -61,7 +61,8 @@ class IntegrationController extends Controller
         $serviceablePincodesCount = Pincode::where('is_serviceable', true)->count();
 
         // 6. Firebase Cloud Messaging (FCM) Health
-        $hasFirebase = !empty($settings['firebase_service_account_json'] ?? env('FIREBASE_SERVICE_ACCOUNT_JSON'));
+        $hasFirebase = !empty($settings['firebase_service_account_json'] ?? env('FIREBASE_SERVICE_ACCOUNT_JSON'))
+            || file_exists(storage_path('app/firebase-service-account.json'));
         $activeDevicesCount = \App\Models\UserDevice::where('is_active', true)->count();
 
         return view('admin.integrations.index', compact(
@@ -216,9 +217,12 @@ class IntegrationController extends Controller
 
         $validated = $request->validate([
             'whatsapp_phone_number_id'          => 'nullable|string|max:255',
+            'whatsapp_updates_phone_number_id'  => 'nullable|string|max:255',
             'whatsapp_api_token'                => 'nullable|string|max:500',
             'whatsapp_template_name'            => 'nullable|string|max:255',
             'whatsapp_template_order_confirmed' => 'nullable|string|max:255',
+            'whatsapp_template_out_for_delivery'=> 'nullable|string|max:255',
+            'whatsapp_template_delivered'       => 'nullable|string|max:255',
         ]);
 
         $changed = [];
@@ -802,8 +806,16 @@ class IntegrationController extends Controller
     public function firebase()
     {
         $settings = Setting::getAll();
-        $hasServiceAccount = !empty($settings['firebase_service_account_json'] ?? env('FIREBASE_SERVICE_ACCOUNT_JSON'));
+        $localFile = storage_path('app/firebase-service-account.json');
+        $hasLocalFile = file_exists($localFile);
+        $hasServiceAccount = !empty($settings['firebase_service_account_json'] ?? env('FIREBASE_SERVICE_ACCOUNT_JSON')) || $hasLocalFile;
         $firebaseStatus = $hasServiceAccount ? 'ACTIVE' : 'CONFIG_NEEDED';
+
+        // Auto-detect project ID from local file if not saved in settings
+        if (empty($settings['firebase_project_id']) && $hasLocalFile) {
+            $localContent = json_decode(file_get_contents($localFile), true);
+            $settings['firebase_project_id'] = $localContent['project_id'] ?? 'shopcalm-775d8';
+        }
 
         $totalDevices = \App\Models\UserDevice::count();
         $activeDevices = \App\Models\UserDevice::where('is_active', true)->count();
@@ -812,6 +824,7 @@ class IntegrationController extends Controller
         return view('admin.integrations.firebase', compact(
             'settings',
             'hasServiceAccount',
+            'hasLocalFile',
             'firebaseStatus',
             'totalDevices',
             'activeDevices',

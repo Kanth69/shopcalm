@@ -34,6 +34,8 @@ class OrderFulfillment extends Model
         'assigned_at',
         'dispatched_at',
         'delivered_at',
+        'returned_at',
+        'returned_to',
         'assigned_by',
         'notes',
     ];
@@ -42,6 +44,7 @@ class OrderFulfillment extends Model
         'assigned_at'                => 'datetime',
         'dispatched_at'              => 'datetime',
         'delivered_at'               => 'datetime',
+        'returned_at'                => 'datetime',
         'delivery_issue_at'          => 'datetime',
         'delivery_issue_resolved_at' => 'datetime',
         'cod_deposited_at'           => 'datetime',
@@ -60,6 +63,11 @@ class OrderFulfillment extends Model
     public function assignedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_by');
+    }
+
+    public function returnedTo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'returned_to');
     }
 
     public function settlement(): BelongsTo

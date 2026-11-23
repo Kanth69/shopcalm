@@ -16,9 +16,14 @@
 
 <!-- Filter Status Tabs -->
 <div class="d-flex align-items-center gap-2 overflow-auto pb-2 mb-4">
+    <a href="{{ route('order-manager.orders.today') }}" 
+       class="btn btn-sm rounded-pill px-3.5 py-1.5 fw-bold btn-warning text-dark shadow-xs" 
+       title="Open Dedicated Today's Placed Orders Hub">
+        <i class="bi bi-calendar2-check-fill me-1"></i> 📅 Today's Orders
+    </a>
     <a href="{{ route('order-manager.orders.index') }}" 
-       class="btn btn-sm rounded-pill px-3.5 py-1.5 fw-bold {{ !request()->filled('status') ? 'btn-primary' : 'btn-light border text-secondary' }}" 
-       style="{{ !request()->filled('status') ? 'background: #0284c7; border-color: #0284c7;' : '' }}">
+       class="btn btn-sm rounded-pill px-3.5 py-1.5 fw-bold {{ !request()->filled('status') && !request()->filled('zone') ? 'btn-primary' : 'btn-light border text-secondary' }}" 
+       style="{{ !request()->filled('status') && !request()->filled('zone') ? 'background: #0284c7; border-color: #0284c7;' : '' }}">
         All Orders ({{ $statusCounts['all'] }})
     </a>
     <a href="{{ route('order-manager.orders.index', ['zone' => 'bengaluru']) }}" 
@@ -90,8 +95,11 @@
             </select>
         </div>
 
-        <div class="col-md-2 col-lg-3 text-end d-flex gap-2 justify-content-end">
+        <div class="col-md-2 col-lg-3 text-end d-flex gap-2 justify-content-end align-items-center">
             <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold" style="background: #0284c7; border-color: #0284c7;">Filter</button>
+            <a href="{{ route('order-manager.orders.export-csv', request()->query()) }}" class="btn btn-outline-success btn-sm rounded-pill px-2.5 fw-bold" title="Export Current List to Excel">
+                <i class="bi bi-file-earmark-excel-fill text-success me-0.5"></i> Excel
+            </a>
             @if(request()->anyFilled(['search', 'payment_method', 'date']))
                 <a href="{{ route('order-manager.orders.index', ['status' => request('status')]) }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2.5">
                     <i class="bi bi-x-circle"></i> Clear
@@ -267,17 +275,53 @@
     @endif
 </div>
 
-<!-- Floating Bulk Label Action Bar -->
-<div id="bulkPrintBar" class="position-fixed bottom-0 start-50 translate-middle-x mb-4 shadow-lg p-2.5 bg-dark text-white rounded-pill d-none align-items-center gap-3" style="z-index: 1050; border: 2px solid #0284c7;">
-    <div class="d-flex align-items-center gap-2 ps-3">
-        <span class="badge bg-primary rounded-pill px-2.5 py-1 fw-bold font-monospace" id="selectedCountBadge">0</span>
-        <span class="small fw-semibold text-white">Orders Selected</span>
+<!-- Floating Bulk Super-Bar -->
+<div id="bulkSuperBar" class="position-fixed bottom-0 start-50 translate-middle-x mb-4 shadow-lg p-3 bg-dark text-white rounded-4 d-none align-items-center gap-3 flex-wrap" style="z-index: 1050; border: 2px solid #0284c7; min-width: 720px; max-width: 95vw;">
+    <div class="d-flex align-items-center gap-2 border-end pe-3">
+        <span class="badge bg-primary rounded-pill px-2.5 py-1 fw-bold font-monospace fs-6" id="bulkSelectedCount">0</span>
+        <span class="small fw-bold text-white text-nowrap">Selected</span>
     </div>
-    <div class="d-flex align-items-center gap-2 pe-2">
-        <button type="button" class="btn btn-sm btn-primary rounded-pill px-3.5 py-1.5 fw-bold shadow-xs d-flex align-items-center gap-1.5" onclick="submitBulkPrint()">
-            <i class="bi bi-tag-fill text-warning"></i> Print Batch Labels (4x6)
+
+    <!-- 1. Bulk Status Update Form -->
+    <form action="{{ route('order-manager.orders.bulk-update-status') }}" method="POST" id="formBulkStatus" class="d-flex align-items-center gap-1.5">
+        @csrf
+        <input type="hidden" name="order_ids" class="bulk-order-ids-input" value="">
+        <select name="new_status" class="form-select form-select-sm bg-secondary text-white border-0 fw-semibold" style="width: 160px; font-size: 0.78rem;">
+            <option value="confirmed">Mark Confirmed</option>
+            <option value="processing">Mark Processing</option>
+            <option value="packed">Mark Packed</option>
+            <option value="out for delivery">Mark Out for Delivery</option>
+            <option value="delivered">Mark Delivered</option>
+        </select>
+        <button type="submit" class="btn btn-sm btn-primary rounded-3 px-3 py-1 fw-bold text-nowrap" style="font-size: 0.78rem;">
+            Apply Status
         </button>
-        <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2.5 py-1" onclick="clearSelection()" title="Deselect All">
+    </form>
+
+    <!-- 2. Bulk Assign Rider Form -->
+    <form action="{{ route('order-manager.orders.bulk-assign-rider') }}" method="POST" id="formBulkRider" class="d-flex align-items-center gap-1.5 border-start ps-3">
+        @csrf
+        <input type="hidden" name="order_ids" class="bulk-order-ids-input" value="">
+        <select name="rider_id" class="form-select form-select-sm bg-secondary text-white border-0 fw-semibold" style="width: 150px; font-size: 0.78rem;">
+            <option value="">Choose Rider...</option>
+            @foreach($riders as $r)
+                <option value="{{ $r->id }}">{{ $r->name }}</option>
+            @endforeach
+        </select>
+        <button type="submit" class="btn btn-sm btn-warning text-dark rounded-3 px-3 py-1 fw-bold text-nowrap" style="font-size: 0.78rem;">
+            Assign Rider
+        </button>
+    </form>
+
+    <!-- 3. Direct Print & Export Buttons -->
+    <div class="d-flex align-items-center gap-1.5 border-start ps-3 ms-auto">
+        <button type="button" class="btn btn-sm btn-outline-warning rounded-3 px-2.5 py-1 fw-bold" onclick="submitBulkPrint()" title="Print 4x6 Thermal Barcodes for Selected">
+            <i class="bi bi-tag-fill"></i> Print Stickers
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-info rounded-3 px-2.5 py-1 fw-bold" onclick="submitBulkManifest()" title="Print Manifest for Selected">
+            <i class="bi bi-printer-fill"></i> Manifest
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-light rounded-circle ms-2" onclick="clearSelection()" title="Deselect All">
             <i class="bi bi-x-lg"></i>
         </button>
     </div>
@@ -287,19 +331,22 @@
     document.addEventListener('DOMContentLoaded', function() {
         const selectAll = document.getElementById('selectAllOrders');
         const checkboxes = document.querySelectorAll('.order-checkbox');
-        const bulkBar = document.getElementById('bulkPrintBar');
-        const countBadge = document.getElementById('selectedCountBadge');
+        const bulkBar = document.getElementById('bulkSuperBar');
+        const countBadge = document.getElementById('bulkSelectedCount');
+        const inputs = document.querySelectorAll('.bulk-order-ids-input');
 
         function updateBulkBar() {
-            const checked = document.querySelectorAll('.order-checkbox:checked');
+            const checked = Array.from(document.querySelectorAll('.order-checkbox:checked')).map(cb => cb.value);
             const count = checked.length;
             if (count > 0) {
                 bulkBar.classList.remove('d-none');
                 bulkBar.classList.add('d-flex');
                 countBadge.textContent = count;
+                inputs.forEach(inp => inp.value = checked.join(','));
             } else {
                 bulkBar.classList.remove('d-flex');
                 bulkBar.classList.add('d-none');
+                inputs.forEach(inp => inp.value = '');
             }
         }
 
@@ -330,6 +377,14 @@
             if (checked.length === 0) return;
 
             const url = "{{ route('order-manager.orders.bulk-shipping-labels') }}?order_ids=" + checked.join(',');
+            window.open(url, '_blank');
+        };
+
+        window.submitBulkManifest = function() {
+            const checked = Array.from(document.querySelectorAll('.order-checkbox:checked')).map(cb => cb.value);
+            if (checked.length === 0) return;
+
+            const url = "{{ route('order-manager.orders.daily-manifest') }}?order_ids=" + checked.join(',');
             window.open(url, '_blank');
         };
     });

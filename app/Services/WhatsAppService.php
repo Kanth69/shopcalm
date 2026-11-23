@@ -13,10 +13,15 @@ use Illuminate\Support\Facades\Log;
 class WhatsAppService
 {
     /**
-     * Send Meta WhatsApp Cloud API Template Message (Authentication OTP or Order Confirmation).
+     * Send Meta WhatsApp Cloud API Template Message (Authentication OTP or Order Confirmation / Tracking).
      */
-    public function sendTemplateMessage(string $mobileNumber, string $templateKey = 'whatsapp_template_name', array $bodyParameters = [], array $buttonParameters = []): bool
-    {
+    public function sendTemplateMessage(
+        string $mobileNumber, 
+        string $templateKey = 'whatsapp_template_name', 
+        array $bodyParameters = [], 
+        array $buttonParameters = [],
+        string $channel = 'auth'
+    ): bool {
         $cleanPhone = preg_replace('/\D/', '', $mobileNumber);
         if (strlen($cleanPhone) === 11 && str_starts_with($cleanPhone, '0')) {
             $cleanPhone = '91' . substr($cleanPhone, 1);
@@ -27,12 +32,30 @@ class WhatsAppService
         $apiToken = Setting::get('whatsapp_api_token') 
             ?: (env('WHATSAPP_CLOUD_API_TOKEN') ?: env('WHATSAPP_API_TOKEN'));
 
-        $phoneNumberId = Setting::get('whatsapp_phone_number_id') 
+        // Auto-detect channel from template key if not explicitly set
+        if ($channel === 'auth' && in_array($templateKey, ['whatsapp_template_order_confirmed', 'whatsapp_template_out_for_delivery'])) {
+            $channel = 'updates';
+        }
+
+        // Determine Phone Number ID based on channel with seamless fallback
+        $authPhoneId = Setting::get('whatsapp_phone_number_id') 
             ?: (env('WHATSAPP_CLOUD_PHONE_NUMBER_ID') ?: env('WHATSAPP_PHONE_NUMBER_ID'));
 
-        $defaultTemplate = ($templateKey === 'whatsapp_template_order_confirmed') 
-            ? 'shopcalm_order_confirmed' 
-            : 'shopcalm_otp';
+        $updatesPhoneId = Setting::get('whatsapp_updates_phone_number_id')
+            ?: (env('WHATSAPP_UPDATES_PHONE_NUMBER_ID') ?: env('WHATSAPP_CLOUD_UPDATES_PHONE_NUMBER_ID'));
+
+        // If updates channel is targeted and updates phone ID is configured, use it. Otherwise fallback gracefully to primary ID.
+        if ($channel === 'updates' && !empty($updatesPhoneId)) {
+            $phoneNumberId = $updatesPhoneId;
+        } else {
+            $phoneNumberId = $authPhoneId;
+        }
+
+        $defaultTemplate = match ($templateKey) {
+            'whatsapp_template_order_confirmed'  => 'shopcalm_order_confirmed',
+            'whatsapp_template_out_for_delivery' => 'shopcalm_out_for_delivery',
+            default                              => 'shopcalm_otp',
+        };
 
         $templateName = Setting::get($templateKey) 
             ?: (env(strtoupper($templateKey)) ?: $defaultTemplate);
@@ -41,7 +64,7 @@ class WhatsAppService
             ?: (env('WHATSAPP_TEMPLATE_LANGUAGE') ?: 'en_US');
 
         if (empty($apiToken) || empty($phoneNumberId)) {
-            Log::info("LOCAL DEV FALLBACK: WhatsApp Message [Template: {$templateName}] for {$cleanPhone} (Params: " . json_encode($bodyParameters) . ")");
+            Log::info("LOCAL DEV FALLBACK: WhatsApp Message [Channel: {$channel}, PhoneID: {$phoneNumberId}, Template: {$templateName}] for {$cleanPhone} (Params: " . json_encode($bodyParameters) . ")");
             return true;
         }
 
@@ -224,11 +247,18 @@ class WhatsAppService
     }
 
     /**
-     * Send Order Confirmation Notification via Meta WhatsApp Cloud API (Utility Category).
-     * Compulsory notification sent to the customer's phone number upon order placement.
+     * Send Order Confirmation Notification.
+     * Handled via In-App FCM Push Notification, Email & Website Checkout Screen.
+     * WhatsApp notification is disabled to avoid customer inbox fatigue and save Meta conversation costs.
      */
     public function sendOrderConfirmation(Order $order): bool
     {
+        $enabled = Setting::get('whatsapp_notify_order_confirmed', '0') === '1';
+        if (!$enabled) {
+            Log::info("[WhatsAppService] WhatsApp Order Confirmation is disabled (handled via App Push Notification & Email). Order #{$order->order_number}");
+            return true;
+        }
+
         // Prioritize the user's main registration mobile number (given & verified via OTP during registration)
         $phone = $order->user?->mobile_number 
             ?: ($order->user?->phone 
@@ -242,9 +272,6 @@ class WhatsAppService
         $customerName = trim($order->user?->name ?: ($order->shipping_name ?: 'Customer'));
         $orderNumber  = (string) $order->order_number;
 
-        // Parameters matching approved Meta Utility Order Confirmation template (2 variables):
-        // {{1}} = Customer Name
-        // {{2}} = Order Number
         return $this->sendTemplateMessage(
             $phone,
             'whatsapp_template_order_confirmed',
@@ -255,12 +282,60 @@ class WhatsAppService
         );
     }
 
+    /**
+     * Send Out for Delivery Notification via Meta WhatsApp Cloud API (Utility Category).
+     * Compulsory notification dispatched automatically when the delivery partner scans the tote bag at hub morning dispatch.
+     */
+    public function sendOutForDeliveryLocal(Order $order): bool
+    {
+        $phone = $order->user?->mobile_number 
+            ?: ($order->user?->phone 
+            ?: ($order->shipping_phone ?: null));
+
+        if (empty($phone)) {
+            Log::info("[WhatsAppService] Order #{$order->order_number} has no mobile phone. Skipping Out for Delivery WhatsApp.");
+            return false;
+        }
+
+        $customerName = trim($order->user?->name ?: ($order->shipping_name ?: 'Customer'));
+        $orderNumber  = (string) $order->order_number;
+        $riderName    = trim($order->fulfillment?->rider_name ?: 'Delivery Partner');
+        $trackingUrl  = url("/orders/{$order->id}");
+
+        // Parameters matching approved Meta Utility Out for Delivery template:
+        // {{1}} = Customer Name
+        // {{2}} = Order Number
+        // {{3}} = Delivery Partner Name
+        // {{4}} = Live Tracking Link
+        return $this->sendTemplateMessage(
+            $phone,
+            'whatsapp_template_out_for_delivery',
+            [
+                $customerName,
+                $orderNumber,
+                $riderName,
+                $trackingUrl,
+            ],
+            [],
+            'updates'
+        );
+    }
+
+    /**
+     * Order Delivery Notification.
+     * Handled via In-App FCM Push Notification & physical delivery slip handover by delivery partner.
+     * WhatsApp delivery receipt is disabled to keep customer messaging lean and save Meta fees.
+     */
+    public function sendOrderDelivered(Order $order): bool
+    {
+        Log::info("[WhatsAppService] Order #{$order->order_number} delivered. Skipping WhatsApp message (handled by In-App FCM Push & physical delivery slip).");
+        return true;
+    }
+
     // =========================================================================
     // LEGACY STUBS: Kept as safe no-ops to prevent MethodNotFoundException
     // =========================================================================
-    public function sendOutForDeliveryLocal($order): bool { return false; }
     public function sendDispatchedCourier($order): bool { return false; }
-    public function sendOrderDelivered($order): bool { return false; }
     public function sendOrderCancelled($cancellation): bool { return false; }
     public function sendRefundProcessed($cancellation): bool { return false; }
 }

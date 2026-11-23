@@ -36,7 +36,7 @@ class FulfillmentService
             [
                 'type'         => $zoneType,
                 'status'       => 'pending',
-                'delivery_otp' => (string) random_int(1000, 9999),
+                'delivery_otp' => null,
             ]
         );
     }
@@ -48,34 +48,34 @@ class FulfillmentService
     {
         return DB::transaction(function () use ($order, $data, $staffId) {
             $fulfillment = $order->fulfillment ?: new OrderFulfillment(['order_id' => $order->id]);
-            $otp = $order->delivery_otp ?: (string) random_int(1000, 9999);
 
             $fulfillment->fill([
                 'type'          => 'local_fleet',
-                'status'        => 'out_for_delivery',
+                'status'        => 'assigned',
                 'rider_id'      => $data['rider_id'] ?? null,
                 'rider_name'    => $data['rider_name'],
                 'rider_phone'   => $data['rider_phone'],
                 'delivery_slot' => $data['delivery_slot'] ?? null,
-                'delivery_otp'  => $otp,
+                'delivery_otp'  => null,
                 'notes'         => $data['notes'] ?? null,
                 'assigned_by'   => $staffId,
                 'assigned_at'   => now(),
-                'dispatched_at' => now(),
+                'dispatched_at' => null,
             ]);
             $fulfillment->save();
 
-            // Advance Order status to 'out for delivery'
+            // Advance Order status to 'shipped' (Manifested) awaiting physical bag-scan dispatch by the rider
             $previousStatus = $order->status;
+            $newStatus = in_array($previousStatus, ['shipped', 'out for delivery']) ? $previousStatus : 'shipped';
             $order->update([
-                'status' => 'out for delivery',
+                'status' => $newStatus,
             ]);
 
             $order->statusHistories()->create([
                 'previous_status' => $previousStatus,
-                'current_status'  => 'out for delivery',
+                'current_status'  => $newStatus,
                 'changed_by'      => $staffId,
-                'notes'           => "Bengaluru Local Delivery: Assigned to {$data['rider_name']} ({$data['rider_phone']}). Slot: " . ($data['delivery_slot'] ?? 'Express') . " [OTP: {$otp}]",
+                'notes'           => "Bengaluru Local Delivery: Assigned to {$data['rider_name']} ({$data['rider_phone']}). Marked as Shipped. Awaiting hub bag scan to dispatch. Slot: " . ($data['delivery_slot'] ?? 'Express'),
             ]);
 
             return $fulfillment;

@@ -1,134 +1,142 @@
 @extends('admin.layouts.app')
 
-@section('header', 'Meta WhatsApp OTP Authentication Hub')
+@section('header', 'WhatsApp Integration')
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('admin.integrations.index') }}">Integrations Hub</a></li>
-    <li class="breadcrumb-item active" aria-current="page">WhatsApp OTP Authentication</li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.integrations.index') }}">Integrations</a></li>
+    <li class="breadcrumb-item active" aria-current="page">WhatsApp</li>
 @endsection
 
 @section('content')
-<div class="row g-4 mb-4">
-    <!-- Header Summary Card -->
+<div class="row g-4 mb-3">
     <div class="col-12">
-        <div class="card border-0 shadow-sm rounded-4 text-white overflow-hidden" style="background: linear-gradient(135deg, #16a34a 0%, #059669 100%);">
-            <div class="card-body p-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div class="card border-0 shadow-sm rounded-4 text-white overflow-hidden" style="background: linear-gradient(135deg, #15803d 0%, #047857 100%);">
+            <div class="card-body p-3.5 d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <div>
-                    <h4 class="fw-bold mb-1"><i class="bi bi-whatsapp me-2"></i>Meta WhatsApp Authentication OTP Control Center</h4>
-                    <p class="mb-0 text-white-50 small">Manage Meta WhatsApp Cloud API credentials and the official Authentication OTP template used exclusively for Customer Registration and Password Resets.</p>
+                    <h5 class="fw-bold mb-0.5"><i class="bi bi-whatsapp me-2"></i>Meta WhatsApp API Integration</h5>
+                    <p class="mb-0 text-white-50 small">Configure your WhatsApp numbers for Customer Login OTP and Delivery WhatsApp Alerts.</p>
                 </div>
-                <div class="d-flex gap-2">
-                    <a href="{{ route('admin.integrations.index') }}" class="btn btn-light rounded-pill px-3 py-2 fw-bold text-dark shadow-sm">
-                        <i class="bi bi-arrow-left me-1"></i> Integrations Hub
-                    </a>
-                </div>
+                <a href="{{ route('admin.integrations.index') }}" class="btn btn-sm btn-light rounded-pill px-3 fw-bold text-dark shadow-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Integrations
+                </a>
             </div>
         </div>
     </div>
 </div>
 
 <div class="row g-4">
-    <!-- Left Column: API Configuration & OTP Template -->
+    <!-- Left Column: Simple Clean Form -->
     <div class="col-lg-6">
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
             <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
-                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-key-fill text-success me-2"></i>Meta WhatsApp Cloud API Credentials</h6>
-                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 fw-bold" style="font-size: 0.72rem;">Authentication Service</span>
+                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-sliders text-success me-2"></i>WhatsApp Configuration</h6>
+                @php
+                    $hasToken = !empty($settings['whatsapp_api_token'] ?? env('WHATSAPP_API_TOKEN', ''));
+                @endphp
+                @if($hasToken)
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small fw-bold">
+                        <i class="bi bi-check-circle-fill me-1"></i> Connected
+                    </span>
+                @else
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2.5 py-1 small fw-bold">
+                        <i class="bi bi-exclamation-circle me-1"></i> Not Connected
+                    </span>
+                @endif
             </div>
+
             <div class="card-body p-4">
                 <form action="{{ route('admin.integrations.whatsapp.update') }}" method="POST">
                     @csrf
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark small">WhatsApp Business Phone Number ID <span class="text-danger">*</span></label>
+
+                    <!-- 1. Permanent Access Token -->
+                    <div class="mb-3.5">
+                        <label class="form-label fw-bold text-dark small mb-1">
+                            System User Access Token <span class="text-danger">*</span>
+                        </label>
                         <div class="input-group">
-                            <span class="input-group-text bg-light text-muted"><i class="bi bi-telephone"></i></span>
-                            <input type="text" name="whatsapp_phone_number_id" class="form-control font-monospace" value="{{ $settings['whatsapp_phone_number_id'] ?? env('WHATSAPP_PHONE_NUMBER_ID', '') }}" placeholder="e.g. 1251262481410456" required>
+                            <span class="input-group-text bg-light text-muted"><i class="bi bi-key-fill"></i></span>
+                            <input type="password" name="whatsapp_api_token" id="whatsapp_api_token" class="form-control font-monospace form-control-sm"
+                                   placeholder="{{ $hasToken ? '•••••••••••••••• (Configured — leave blank to keep)' : 'Paste EAAG... access token' }}" autocomplete="new-password">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="togglePasswordVisibility('whatsapp_api_token', this)">
+                                <i class="bi bi-eye"></i>
+                            </button>
                         </div>
-                        <div class="form-text text-muted" style="font-size: 0.71rem;">Meta App Console &rarr; WhatsApp &rarr; API Setup &rarr; Phone Number ID</div>
+                        <div class="form-text text-muted small" style="font-size: 0.72rem;">Meta Business Manager permanent System User Token.</div>
                     </div>
 
-                    @php
-                        $hasWhatsAppToken = !empty($settings['whatsapp_api_token'] ?? env('WHATSAPP_API_TOKEN', ''));
-                    @endphp
+                    <hr class="my-3 text-muted opacity-25">
+
+                    <!-- 2. Phone Numbers -->
+                    <h6 class="fw-bold text-dark small mb-2.5"><i class="bi bi-telephone-fill text-primary me-1"></i> Phone Numbers (Sender IDs)</h6>
+
                     <div class="mb-3">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <label class="form-label fw-bold text-dark small mb-0">Permanent System User Access Token <span class="text-danger">*</span></label>
-                            @if($hasWhatsAppToken)
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
-                                    <i class="bi bi-shield-check me-1"></i>Configured &amp; Encrypted
-                                </span>
-                            @else
-                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
-                                    <i class="bi bi-exclamation-triangle me-1"></i>Not Set
-                                </span>
-                            @endif
-                        </div>
+                        <label class="form-label fw-semibold text-dark small mb-1">
+                            Channel 1: Auth / Login OTP Phone ID <span class="text-danger">*</span>
+                        </label>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-muted"><i class="bi bi-shield-lock"></i></span>
-                            <input type="password" name="whatsapp_api_token" id="whatsapp_api_token" class="form-control font-monospace" value="" placeholder="{{ $hasWhatsAppToken ? '•••••••••••••••• (Configured — leave blank to keep current)' : 'Paste System User Access Token (EAAO2o...)' }}" autocomplete="new-password">
-                            <button type="button" class="btn btn-outline-secondary" onclick="togglePasswordVisibility('whatsapp_api_token', this)" title="Toggle view token"><i class="bi bi-eye"></i></button>
+                            <input type="text" name="whatsapp_phone_number_id" class="form-control font-monospace form-control-sm"
+                                   value="{{ $settings['whatsapp_phone_number_id'] ?? env('WHATSAPP_PHONE_NUMBER_ID', '') }}"
+                                   placeholder="e.g. 1251262481410456" required>
                         </div>
-                        <div class="form-text text-muted" style="font-size: 0.71rem;">
-                            {{ $hasWhatsAppToken ? '✓ Access token is securely masked and encrypted in the database. Leave blank to keep existing token.' : 'Enter Meta permanent system user access token.' }}
-                        </div>
+                        <div class="form-text text-muted small" style="font-size: 0.72rem;">Primary number for Customer Login &amp; Register OTPs.</div>
                     </div>
 
-                    <hr class="my-3 border-secondary-subtle">
-                    <div class="fw-bold text-dark mb-3 small"><i class="bi bi-file-earmark-code text-primary me-1"></i> Approved Meta Template Registry:</div>
-
-                    <!-- 1. Authentication OTP Template -->
-                    <div class="mb-3">
+                    <div class="mb-3.5">
                         <div class="d-flex align-items-center justify-content-between mb-1">
-                            <label class="form-label fw-bold text-dark small mb-0">1. Authentication OTP Template</label>
-                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
-                                Category: AUTHENTICATION
-                            </span>
+                            <label class="form-label fw-semibold text-dark small mb-0">
+                                Channel 2: Orders &amp; Delivery Phone ID
+                            </label>
+                            <span class="text-muted" style="font-size: 0.70rem;">Optional</span>
                         </div>
                         <div class="input-group">
-                            <span class="input-group-text bg-light text-muted"><i class="bi bi-shield-check"></i></span>
-                            <input type="text" name="whatsapp_template_name" class="form-control font-monospace" value="{{ $settings['whatsapp_template_name'] ?? 'shopcalm_otp' }}" placeholder="shopcalm_otp" required>
+                            <span class="input-group-text bg-light text-muted"><i class="bi bi-bicycle"></i></span>
+                            <input type="text" name="whatsapp_updates_phone_number_id" class="form-control font-monospace form-control-sm"
+                                   value="{{ $settings['whatsapp_updates_phone_number_id'] ?? env('WHATSAPP_UPDATES_PHONE_NUMBER_ID', '') }}"
+                                   placeholder="Leave blank to automatically use Channel 1">
                         </div>
-                        <div class="form-text text-muted" style="font-size: 0.72rem;">
-                            Used for customer <strong>Registration OTP</strong> & <strong>Password Reset OTP</strong>.
+                        <div class="form-text text-muted small" style="font-size: 0.72rem;">If left blank, delivery alerts safely route through Channel 1.</div>
+                    </div>
+
+                    <hr class="my-3 text-muted opacity-25">
+
+                    <!-- 3. Approved Meta Template Names -->
+                    <h6 class="fw-bold text-dark small mb-2.5"><i class="bi bi-chat-quote-fill text-success me-1"></i> Meta Approved Templates</h6>
+
+                    <div class="row g-2.5 mb-3">
+                        <div class="col-sm-6">
+                            <label class="form-label text-dark small fw-semibold mb-1">Channel 1 Template (OTP)</label>
+                            <input type="text" name="whatsapp_template_name" class="form-control form-control-sm font-monospace"
+                                   value="{{ $settings['whatsapp_template_name'] ?? 'shopcalm_otp' }}" placeholder="shopcalm_otp" required>
+                            <div class="form-text text-muted" style="font-size: 0.68rem;">Customer Authentication</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label text-dark small fw-semibold mb-1">Channel 2 Template (Delivery)</label>
+                            <input type="text" name="whatsapp_template_out_for_delivery" class="form-control form-control-sm font-monospace"
+                                   value="{{ $settings['whatsapp_template_out_for_delivery'] ?? 'shopcalm_out_for_delivery' }}" placeholder="shopcalm_out_for_delivery">
+                            <div class="form-text text-muted" style="font-size: 0.68rem;">Out for Delivery Alert</div>
                         </div>
                     </div>
 
-                    <!-- 2. Order Confirmation Template -->
-                    <div class="mb-4">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <label class="form-label fw-bold text-dark small mb-0">2. Order Confirmation Template</label>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
-                                Category: UTILITY
-                            </span>
-                        </div>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light text-muted"><i class="bi bi-bag-check"></i></span>
-                            <input type="text" name="whatsapp_template_order_confirmed" class="form-control font-monospace" value="{{ $settings['whatsapp_template_order_confirmed'] ?? 'shopcalm_order_confirmed' }}" placeholder="shopcalm_order_confirmed">
-                        </div>
-                        <div class="form-text text-muted" style="font-size: 0.72rem;">
-                            Compulsory notification sent to customer when order is confirmed (COD, Wallet, or Online UPI).
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-success rounded-pill w-100 fw-bold">
-                        <i class="bi bi-check-circle me-1"></i> Save WhatsApp API Credentials
+                    <button type="submit" class="btn btn-success rounded-pill w-100 fw-bold py-2 mt-2">
+                        <i class="bi bi-check-circle me-1"></i> Save WhatsApp Settings
                     </button>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Right Column: Recent OTP Logs Activity -->
+    <!-- Right Column: Clean OTP Verification Activity Logs -->
     <div class="col-lg-6">
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100">
             <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
                 <div>
-                    <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-clock-history text-success me-2"></i>Recent OTP Verifications Activity</h6>
-                    <span class="text-muted" style="font-size: 0.72rem;">Customer Registration & Password Reset Requests</span>
+                    <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-clock-history text-success me-2"></i>Recent OTP Verifications</h6>
+                    <span class="text-muted" style="font-size: 0.72rem;">Live registration &amp; login requests</span>
                 </div>
                 <span class="badge bg-light text-dark border rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
-                    {{ count($recentOtpLogs) }} Recent Logs
+                    {{ count($recentOtpLogs) }} Logs
                 </span>
             </div>
             <div class="card-body p-0">
@@ -139,7 +147,7 @@
                                 <th class="ps-3">Mobile Number</th>
                                 <th>Purpose</th>
                                 <th>Status</th>
-                                <th class="text-end pe-3">Requested At</th>
+                                <th class="text-end pe-3">Time</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -150,20 +158,20 @@
                                     </td>
                                     <td>
                                         @if($otpLog->purpose === 'REGISTER')
-                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-0.5 fw-bold">Customer Registration</span>
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-0.5 fw-semibold">Register</span>
                                         @elseif($otpLog->purpose === 'RESET_PASSWORD')
-                                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill px-2 py-0.5 fw-bold">Password Reset</span>
+                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2 py-0.5 fw-semibold">Reset</span>
                                         @else
-                                            <span class="badge bg-secondary rounded-pill px-2 py-0.5 fw-bold">{{ $otpLog->purpose }}</span>
+                                            <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-0.5 fw-semibold">{{ $otpLog->purpose }}</span>
                                         @endif
                                     </td>
                                     <td>
                                         @if($otpLog->verified_at)
-                                            <span class="badge bg-success rounded-pill px-2 py-0.5">Verified ✓</span>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5">Verified ✓</span>
                                         @elseif($otpLog->expires_at && $otpLog->expires_at->isPast())
-                                            <span class="badge bg-secondary bg-opacity-10 text-muted rounded-pill px-2 py-0.5">Expired</span>
+                                            <span class="badge bg-light text-muted border rounded-pill px-2 py-0.5">Expired</span>
                                         @else
-                                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill px-2 py-0.5">Active (Pending)</span>
+                                            <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2 py-0.5">Pending</span>
                                         @endif
                                     </td>
                                     <td class="text-end pe-3 text-muted">

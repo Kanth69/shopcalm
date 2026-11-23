@@ -99,13 +99,22 @@
                             <label class="form-label fw-bold small text-muted mb-0">SERVICE ACCOUNT PRIVATE KEY JSON</label>
                             @if($hasServiceAccount)
                                 <span class="badge bg-success-subtle text-success border border-success-subtle fw-semibold">
-                                    <i class="bi bi-shield-lock-fill me-1"></i>Key Configured
+                                    <i class="bi bi-shield-lock-fill me-1"></i>Key Configured &amp; Active
+                                    @if(!empty($hasLocalFile) && empty($settings['firebase_service_account_json']))
+                                        (via storage file)
+                                    @endif
                                 </span>
                             @endif
                         </div>
                         <textarea name="firebase_service_account_json" rows="8" class="form-control font-monospace rounded-3" 
-                                  placeholder='Paste entire contents of your Firebase service-account.json here:&#10;{&#10;  "type": "service_account",&#10;  "project_id": "...",&#10;  "private_key_id": "...",&#10;  "private_key": "-----BEGIN PRIVATE KEY-----...",&#10;  "client_email": "..."&#10;}'>{{ $settings['firebase_service_account_json'] ?? '' }}</textarea>
-                        <small class="text-muted d-block mt-1">Download from: <strong>Firebase Console ➔ Project Settings ➔ Service Accounts ➔ Generate New Private Key</strong>.</small>
+                                  placeholder='@if(!empty($hasLocalFile))•••••••• (Service account JSON is loaded and active from storage/app/firebase-service-account.json — leave blank to keep)@else Paste entire contents of your Firebase service-account.json here:&#10;{&#10;  "type": "service_account",&#10;  "project_id": "...",&#10;  "private_key_id": "...",&#10;  "private_key": "-----BEGIN PRIVATE KEY-----...",&#10;  "client_email": "..."&#10;}@endif'>{{ $settings['firebase_service_account_json'] ?? '' }}</textarea>
+                        <small class="text-muted d-block mt-1">
+                            @if(!empty($hasLocalFile) && empty($settings['firebase_service_account_json']))
+                                <i class="bi bi-check-circle-fill text-success me-1"></i> Using active private key from <code>storage/app/firebase-service-account.json</code> (OAuth2 HTTP v1 connected).
+                            @else
+                                Download from: <strong>Firebase Console ➔ Project Settings ➔ Service Accounts ➔ Generate New Private Key</strong>.
+                            @endif
+                        </small>
                     </div>
 
                     <button type="submit" class="btn btn-warning text-dark fw-bold rounded-pill px-4 py-2 shadow-sm">

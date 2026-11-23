@@ -32,6 +32,7 @@ class EnsureDomainIsolation
             $path === '/order-manager' || str_starts_with($path, '/order-manager/') ||
             $path === '/product-manager' || str_starts_with($path, '/product-manager/') ||
             $path === '/support' || str_starts_with($path, '/support/') ||
+            $path === '/marketing' || str_starts_with($path, '/marketing/') ||
             $path === '/delivery' || str_starts_with($path, '/delivery/') ||
             $path === '/rider'
         );

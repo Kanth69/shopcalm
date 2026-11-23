@@ -197,19 +197,11 @@
                                                                         </label>
                                                                     </div>
 
-                                                                    <div class="form-check p-3 rounded-3 border mb-2 bg-white">
+                                                                    <div class="form-check p-3 rounded-3 border bg-white">
                                                                         <input class="form-check-input" type="radio" name="resolution_action" id="actionReturn{{ $fulf->id }}" value="return_warehouse" onchange="toggleResolveOptions('{{ $fulf->id }}', 'return')">
                                                                         <label class="form-check-label fw-bold text-dark" for="actionReturn{{ $fulf->id }}">
                                                                             🔄 3. Undeliverable — Return to Warehouse Inventory
                                                                             <div class="text-secondary small fw-normal">Marks order returned and restocks parcel products.</div>
-                                                                        </label>
-                                                                    </div>
-
-                                                                    <div class="form-check p-3 rounded-3 border bg-white">
-                                                                        <input class="form-check-input" type="radio" name="resolution_action" id="actionCancel{{ $fulf->id }}" value="cancel" onchange="toggleResolveOptions('{{ $fulf->id }}', 'cancel')">
-                                                                        <label class="form-check-label fw-bold text-dark" for="actionCancel{{ $fulf->id }}">
-                                                                            ❌ 4. Customer Refused — Cancel Order
-                                                                            <div class="text-secondary small fw-normal">Cancels order immediately.</div>
                                                                         </label>
                                                                     </div>
                                                                 </div>
@@ -219,7 +211,7 @@
                                                                     <div class="mb-2">
                                                                         <label class="form-label small fw-bold text-dark">New Delivery Slot</label>
                                                                         <select name="delivery_slot" class="form-select form-select-sm">
-                                                                            <option value="Next-Day Express Delivery (1-2 Days)">⚡ Next-Day Express Delivery (Tomorrow)</option>
+                                                                            <option value="Express Delivery (Tomorrow)">⚡ Express Delivery (Tomorrow)</option>
                                                                             <option value="Morning Slot (10:00 AM - 02:00 PM)">🌅 Morning Slot (10:00 AM - 02:00 PM)</option>
                                                                             <option value="Evening Slot (04:00 PM - 08:00 PM)">🌆 Evening Slot (04:00 PM - 08:00 PM)</option>
                                                                         </select>

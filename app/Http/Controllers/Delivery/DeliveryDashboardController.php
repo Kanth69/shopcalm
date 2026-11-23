@@ -343,7 +343,7 @@ class DeliveryDashboardController extends Controller
         $sent = app(\App\Services\WhatsAppService::class)->sendOutForDeliveryLocal($order);
 
         $msg = $sent 
-            ? "Handover OTP ({$order->delivery_otp}) has been sent to customer's WhatsApp."
+            ? "Out for Delivery notification has been sent to customer's WhatsApp."
             : "Could not send automated message. Please tap the WhatsApp button to chat directly.";
 
         if ($request->ajax() || $request->wantsJson()) {
@@ -372,22 +372,8 @@ class DeliveryDashboardController extends Controller
         }
 
         $request->validate([
-            'otp'   => ['nullable', 'string'],
             'notes' => ['nullable', 'string', 'max:255'],
         ]);
-
-        // If order has an OTP, verify it unless bypassed with valid reason
-        if ($order->delivery_otp && $request->filled('otp')) {
-            if (trim($request->otp) !== trim($order->delivery_otp)) {
-                if ($request->ajax() || $request->wantsJson()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Invalid OTP entered. Please ask customer for the 4-digit code.',
-                    ], 422);
-                }
-                return back()->withErrors(['otp' => 'Invalid OTP. Please check with customer.']);
-            }
-        }
 
         DB::transaction(function () use ($order, $rider, $request) {
             $previousStatus = $order->status;

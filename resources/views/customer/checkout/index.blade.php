@@ -731,10 +731,10 @@
 
 
 
-                            <!-- Delivery Notes Card with Smart Single-Select Time Slot & Instructions -->
-                            <div class="card checkout-delivery-notes-card shadow-xs">
+                            <!-- Delivery Notes Card with Clean Dropdown & Quick Instructions -->
+                            <div class="card checkout-delivery-notes-card shadow-xs mb-3 border-0 rounded-3" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
                                 <div class="card-body p-3 p-sm-3.5">
-                                    <!-- 1. Preferred Delivery Time Header & Single-Select Pills -->
+                                    <!-- 1. Preferred Delivery Time Header & Dropdown -->
                                     <div class="d-flex align-items-center justify-content-between mb-2">
                                         <div class="d-flex align-items-center gap-1.5">
                                             <i class="bi bi-clock-history text-primary" style="font-size: 0.95rem;"></i>
@@ -745,19 +745,24 @@
                                         </span>
                                     </div>
 
-                                    <!-- Single-Select Time Slot Pills (Exclusive Choice: Home / Office / Other) -->
+                                    <!-- Clean Mobile & Desktop Dropdown for Time Slot -->
                                     <div class="mb-3">
-                                        <div class="d-flex flex-wrap gap-1.5" id="delivery-time-slots">
-                                            <!-- Dynamically populated based on active address type -->
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-end-0 text-primary" style="border-color: #cbd5e1;">
+                                                <i class="bi bi-alarm-fill"></i>
+                                            </span>
+                                            <select id="delivery_time_select" name="preferred_time_slot" class="form-select fw-medium border-start-0" style="border-color: #cbd5e1; font-size: 0.85rem; height: 42px; cursor: pointer;">
+                                                <!-- Dynamically populated based on active address type -->
+                                            </select>
                                         </div>
-                                        <input type="hidden" name="preferred_time_slot" id="selected_time_slot" value="Anytime (7 AM - 9 PM)">
+                                        <input type="hidden" id="selected_time_slot" value="Anytime (7 AM - 9 PM)">
                                     </div>
 
-                                    <!-- 2. Delivery Instructions (Optional Textarea for Don't ring bell, etc.) -->
+                                    <!-- 2. Delivery Instructions (Optional Textarea with 1-Tap Quick Chips) -->
                                     <div class="d-flex align-items-center justify-content-between mb-1.5">
                                         <label for="notes" class="fw-bold text-secondary d-flex align-items-center gap-1.5 mb-0" style="font-size: 0.82rem;">
                                             <i class="bi bi-chat-left-text"></i>
-                                            <span>Delivery Instructions</span>
+                                            <span>Delivery Instructions / Notes</span>
                                             <span class="text-muted fw-normal" style="font-size: 0.72rem;">(Optional)</span>
                                         </label>
                                         <span id="notes-counter" class="badge rounded-pill bg-light text-secondary border font-monospace px-2 py-0.5" style="font-size: 0.68rem;">0 / 150</span>
@@ -770,6 +775,7 @@
                                               maxlength="150" 
                                               placeholder="e.g. Please don't ring the bell, leave package with security guard, baby sleeping, landmark..." 
                                               style="font-size: 0.84rem; line-height: 1.45; border: 1px solid #cbd5e1 !important; resize: none;"></textarea>
+
                                     <div class="text-end mt-1" id="notes-warning-wrap">
                                         <small id="notes-warning" class="text-danger fw-semibold" style="font-size: 0.72rem; display: none;">
                                             <i class="bi bi-exclamation-circle me-1"></i>Max 150 characters reached
@@ -2419,7 +2425,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const config = DELIVERY_TIME_SLOT_OPTIONS[typeKey] || DELIVERY_TIME_SLOT_OPTIONS.other;
 
         const badgeEl = document.getElementById('delivery-addr-badge');
-        const slotsContainer = document.getElementById('delivery-time-slots');
+        const timeSelect = document.getElementById('delivery_time_select');
         const hiddenSlotInput = document.getElementById('selected_time_slot');
 
         if (badgeEl) {
@@ -2427,8 +2433,8 @@ document.addEventListener('DOMContentLoaded', function() {
             badgeEl.innerHTML = config.badgeHtml;
         }
 
-        if (!slotsContainer) return;
-        slotsContainer.innerHTML = '';
+        if (!timeSelect) return;
+        timeSelect.innerHTML = '';
 
         // Check if current selected slot is valid for this address type, else reset to default
         const validValues = config.slots.map(s => s.value);
@@ -2440,22 +2446,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         config.slots.forEach(slot => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            const isSelected = (window.selectedDeliveryTimeSlot === slot.value);
-            btn.className = `btn btn-sm rounded-pill py-1 px-3 ${isSelected ? 'btn-primary text-white fw-bold shadow-xs' : 'btn-outline-secondary'}`;
-            btn.style.fontSize = '0.76rem';
-            btn.style.transition = 'all 0.15s ease';
-            btn.innerHTML = `${isSelected ? '<i class="bi bi-check2 me-1"></i>' : ''}${slot.text}`;
-
-            btn.onclick = function() {
-                window.selectedDeliveryTimeSlot = slot.value;
-                if (hiddenSlotInput) hiddenSlotInput.value = slot.value;
-                window.renderDeliveryTimeSlots(addrType);
-            };
-
-            slotsContainer.appendChild(btn);
+            const opt = document.createElement('option');
+            opt.value = slot.value;
+            opt.textContent = slot.text;
+            if (slot.value === window.selectedDeliveryTimeSlot) {
+                opt.selected = true;
+            }
+            timeSelect.appendChild(opt);
         });
+
+        timeSelect.onchange = function() {
+            window.selectedDeliveryTimeSlot = this.value;
+            if (hiddenSlotInput) hiddenSlotInput.value = this.value;
+        };
     };
 
     // Initialize delivery time slots on DOM ready
@@ -2547,7 +2550,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Format preferred delivery time slot + custom instructions into notes
         const notesInputEl = document.getElementById('notes');
-        const chosenSlot = window.selectedDeliveryTimeSlot || document.getElementById('selected_time_slot')?.value || '';
+        const chosenSlot = document.getElementById('delivery_time_select')?.value || window.selectedDeliveryTimeSlot || document.getElementById('selected_time_slot')?.value || '';
         const userNotes = notesInputEl ? notesInputEl.value.trim() : '';
         let finalNotes = '';
         if (chosenSlot) {

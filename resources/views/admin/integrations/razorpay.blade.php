@@ -134,7 +134,11 @@
                             @forelse($recentPayments as $pay)
                                 <tr>
                                     <td class="ps-3 fw-bold">
-                                        <a href="{{ route('admin.orders.show', $pay->order_id) }}" class="text-decoration-none text-primary">#{{ $pay->order_number }}</a>
+                                        @if($pay->order_id)
+                                            <a href="{{ route('admin.orders.show', $pay->order_id) }}" class="text-decoration-none text-primary">#{{ $pay->order_number ?: ($pay->order?->order_number ?: $pay->order_id) }}</a>
+                                        @else
+                                            <span class="text-muted font-monospace">{{ $pay->order_number ? '#' . $pay->order_number : 'N/A' }}</span>
+                                        @endif
                                     </td>
                                     <td>
                                         <div class="fw-bold text-dark">{{ $pay->order?->shipping_name ?? ($pay->user?->name ?? 'Customer') }}</div>
@@ -168,8 +172,13 @@
                 </div>
             </div>
             @if($recentPayments->hasPages())
-                <div class="card-footer bg-white py-2 border-top">
-                    {{ $recentPayments->links() }}
+                <div class="card-footer bg-white py-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="text-muted small">
+                        Showing {{ $recentPayments->firstItem() ?? 0 }} to {{ $recentPayments->lastItem() ?? 0 }} of {{ $recentPayments->total() }} payments
+                    </div>
+                    <div>
+                        {{ $recentPayments->withQueryString()->links('pagination::bootstrap-5') }}
+                    </div>
                 </div>
             @endif
         </div>

@@ -440,6 +440,34 @@
                                 &bull; Handed over by <span class="fw-semibold text-dark">{{ $order->rider_name }}</span>
                             @endif
                         </div>
+                        @php
+                            $podPhoto = null;
+                            $dropType = null;
+                            if ($order->fulfillment && preg_match('/\[POD_PHOTO:(.*?)\]/', $order->fulfillment->notes ?? '', $mPhoto)) {
+                                $podPhoto = $mPhoto[1];
+                            }
+                            if ($order->fulfillment && preg_match('/\[DROP_TYPE:(.*?)\]/', $order->fulfillment->notes ?? '', $mDrop)) {
+                                $dropType = $mDrop[1];
+                            }
+                            $dropLabels = [
+                                'security_guard' => 'Building Security Guard / Reception',
+                                'doorstep'       => 'Doorstep / Shoe Rack',
+                                'neighbor'       => 'Neighbor / Flatmate',
+                            ];
+                            $dropLabel = $dropLabels[$dropType] ?? 'Contactless Safe Drop';
+                        @endphp
+                        @if($podPhoto)
+                            <div class="mt-2 pt-2 border-top border-success-subtle d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-1.5">
+                                    <span class="badge bg-light text-dark border border-secondary-subtle px-2 py-1 small">
+                                        <i class="bi bi-camera-fill text-primary me-1"></i> Left at: {{ $dropLabel }}
+                                    </span>
+                                </div>
+                                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-1 fw-bold d-inline-flex align-items-center gap-1 shadow-xs" data-bs-toggle="modal" data-bs-target="#modalPodPhoto" style="font-size: 0.74rem;">
+                                    <i class="bi bi-image"></i> View Photo Proof
+                                </button>
+                            </div>
+                        @endif
                     </div>
                 </div>
 
@@ -474,25 +502,33 @@
                                 {{ $order->rider_name }}
                             </div>
                             <div class="text-secondary small text-break mt-0.5" style="font-size: 0.75rem; line-height: 1.35;">
-                                <i class="bi bi-clock-history me-1 text-muted"></i>{{ $order->delivery_slot ?: ($isOutForDelivery ? 'Arriving today at your address' : 'Preparing for dispatch') }}
+                                @php
+                                    $deliveryStatusText = '⚡ Arriving today at your doorstep';
+                                    if ($order->fulfillment?->hasActiveDeliveryIssue()) {
+                                        $deliveryStatusText = '⚠️ Delivery Attempted — Delivery partner will re-attempt soon';
+                                    } elseif (str_contains(strtolower($order->delivery_slot ?? ''), 'tomorrow') || str_contains(strtolower($order->fulfillment?->delivery_slot ?? ''), 'tomorrow')) {
+                                        $deliveryStatusText = '📅 Rescheduled — Arriving tomorrow at your doorstep';
+                                    }
+                                @endphp
+                                <i class="bi bi-clock-history me-1 text-muted"></i>{{ $isOutForDelivery ? $deliveryStatusText : ($order->delivery_slot ?: 'Preparing for dispatch') }}
                             </div>
                         </div>
                     @else
-                        {{-- Unassigned Rider Icon --}}
-                        <div style="width: 42px; height: 42px; min-width: 42px; border-radius: 12px; background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
-                            <i class="bi bi-person-badge"></i>
+                        {{-- Preparing for Dispatch State --}}
+                        <div style="width: 42px; height: 42px; min-width: 42px; border-radius: 12px; background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
+                            <i class="bi bi-box-seam"></i>
                         </div>
                         <div style="min-width: 0; flex: 1 1 auto; overflow: hidden; word-break: break-word;">
                             <div class="d-flex align-items-center gap-1.5 mb-1 flex-wrap">
-                                <span class="badge rounded-pill px-2.5 py-1 fw-bold bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle" style="font-size: 0.65rem; letter-spacing: 0.03em;">
-                                    <i class="bi bi-clock-history me-1"></i> ASSIGNING SOON
+                                <span class="badge rounded-pill px-2.5 py-1 fw-bold bg-primary bg-opacity-10 text-primary border border-primary-subtle" style="font-size: 0.65rem; letter-spacing: 0.03em;">
+                                    <i class="bi bi-hourglass-split me-1"></i> ORDER IN PROGRESS
                                 </span>
                             </div>
                             <div class="fw-bold text-dark text-break" style="font-size: 0.92rem; line-height: 1.35;">
-                                Delivery Partner: <span class="text-secondary fw-semibold">Unassigned</span>
+                                Preparing for Dispatch
                             </div>
                             <div class="text-secondary small text-break mt-0.5" style="font-size: 0.75rem; line-height: 1.35;">
-                                A local delivery partner will be assigned shortly
+                                Our warehouse team is packing your items for fast doorstep delivery
                             </div>
                         </div>
                     @endif
@@ -506,80 +542,53 @@
                         </a>
                     @elseif(!$order->rider_name)
                         <span class="badge rounded-pill px-2.5 py-1 bg-light text-muted border small d-inline-flex align-items-center gap-1" style="font-size: 0.7rem; white-space: nowrap;">
-                            <i class="bi bi-hourglass-split"></i> <span class="d-none d-sm-inline">Awaiting Assignment</span><span class="d-inline d-sm-none">Pending</span>
+                            <i class="bi bi-box-seam"></i> <span class="d-none d-sm-inline">In Packing</span><span class="d-inline d-sm-none">Packing</span>
                         </span>
                     @endif
                 </div>
             </div>
 
-            {{-- Bottom Row: Clean OTP Box & Payment summary --}}
-            @if($order->delivery_otp)
-                <div class="pt-3">
-                    <div class="p-3 rounded-3" style="background: #f8fafc; border: 1.5px dashed #cbd5e1; max-width: 100%;">
-                        {{-- Top Row: Handover OTP and digits --}}
-                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2.5">
-                            <div>
-                                <div class="d-flex align-items-center gap-1.5 mb-1.5 flex-wrap">
-                                    <span class="badge bg-dark rounded-pill px-2.5 py-1 text-warning fw-bold small" style="font-size: 0.68rem; letter-spacing: 0.4px;">
-                                        <i class="bi bi-shield-lock-fill me-1"></i> HANDOVER OTP
+            {{-- Bottom Row: High-Contrast Payment Status Pill --}}
+            <div class="pt-3">
+                <div class="p-3 rounded-3" style="background: #f8fafc; border: 1.5px solid #e2e8f0; max-width: 100%;">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2.5">
+                        @if($order->payment_status === 'paid')
+                            <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill shadow-xs" style="background: #ecfdf5; border: 1.5px solid #86efac;">
+                                <span class="fw-bold font-monospace d-inline-flex align-items-center" style="font-size: 0.84rem; color: #15803d !important;">
+                                    <i class="bi bi-check-circle-fill me-2 fs-6 text-success" style="font-size: 1rem !important;"></i>
+                                    <span>
+                                        @if($order->payment_method === 'doorstep_upi')
+                                            Paid via Doorstep UPI &bull; Collect ₹0
+                                        @elseif($order->payment_method === 'cod')
+                                            Cash Paid at Doorstep &bull; Collect ₹0
+                                        @elseif($order->payment_method === 'wallet')
+                                            Paid via ShopCalm Wallet &bull; Collect ₹0
+                                        @else
+                                            Paid Online &bull; Collect ₹0
+                                        @endif
                                     </span>
-                                    <span class="text-secondary small" style="font-size: 0.78rem;">Share with delivery agent upon parcel delivery</span>
-                                </div>
-                                <div class="d-flex align-items-center gap-1.5 mt-1 flex-wrap">
-                                    @foreach(str_split((string) $order->delivery_otp) as $digit)
-                                        <span class="d-inline-flex align-items-center justify-content-center fw-extrabold rounded-2 bg-white border text-dark shadow-xs" 
-                                              style="width: 34px; height: 38px; font-size: 1.25rem; font-family: monospace; border-color: #94a3b8 !important;">
-                                            {{ $digit }}
-                                        </span>
-                                    @endforeach
-                                    <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 text-secondary fw-semibold ms-1 shadow-xs" 
-                                            onclick="navigator.clipboard.writeText('{{ $order->delivery_otp }}'); this.innerText = 'Copied!'; setTimeout(() => this.innerHTML = '<i class=\'bi bi-copy\'></i> Copy', 1500);" style="font-size: 0.74rem;">
-                                        <i class="bi bi-copy"></i> Copy
-                                    </button>
-                                </div>
+                                </span>
                             </div>
-                        </div>
-
-                        {{-- Directly Under Handover OTP: High-Contrast Payment Status Pill --}}
-                        <div class="pt-2.5 mt-2.5 border-top d-flex align-items-center justify-content-between flex-wrap gap-2.5" style="border-color: #e2e8f0 !important;">
-                            @if($order->payment_status === 'paid')
-                                <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill shadow-xs" style="background: #ecfdf5; border: 1.5px solid #86efac;">
-                                    <span class="fw-bold font-monospace d-inline-flex align-items-center" style="font-size: 0.84rem; color: #15803d !important;">
-                                        <i class="bi bi-check-circle-fill me-2 fs-6 text-success" style="font-size: 1rem !important;"></i>
-                                        <span>
-                                            @if($order->payment_method === 'doorstep_upi')
-                                                Paid via Doorstep UPI &bull; Collect ₹0
-                                            @elseif($order->payment_method === 'cod')
-                                                Cash Paid at Doorstep &bull; Collect ₹0
-                                            @elseif($order->payment_method === 'wallet')
-                                                Paid via ShopCalm Wallet &bull; Collect ₹0
-                                            @else
-                                                Paid Online &bull; Collect ₹0
-                                            @endif
-                                        </span>
-                                    </span>
-                                </div>
-                                <span class="text-secondary fw-semibold small ps-1" style="font-size: 0.74rem;">
-                                    <i class="bi bi-shield-check text-success me-1"></i> Zero amount to pay at doorstep
+                            <span class="text-secondary fw-semibold small ps-1" style="font-size: 0.74rem;">
+                                <i class="bi bi-shield-check text-success me-1"></i> Zero amount to pay at doorstep
+                            </span>
+                        @else
+                            <div class="d-inline-flex align-items-center gap-2.5 px-3 py-1.5 rounded-pill shadow-xs" style="background: #fffbeb; border: 1.5px solid #fde68a;">
+                                <span class="fw-bold d-inline-flex align-items-center text-uppercase" style="font-size: 0.76rem; color: #b45309 !important; letter-spacing: 0.3px;">
+                                    <i class="bi bi-cash-stack me-2 fs-5" style="color: #b45309 !important; line-height: 1;"></i>
+                                    <span>Payable at Doorstep:</span>
                                 </span>
-                            @else
-                                <div class="d-inline-flex align-items-center gap-2.5 px-3 py-1.5 rounded-pill shadow-xs" style="background: #fffbeb; border: 1.5px solid #fde68a;">
-                                    <span class="fw-bold d-inline-flex align-items-center text-uppercase" style="font-size: 0.76rem; color: #b45309 !important; letter-spacing: 0.3px;">
-                                        <i class="bi bi-cash-stack me-2 fs-5" style="color: #b45309 !important; line-height: 1;"></i>
-                                        <span>Payable at Doorstep:</span>
-                                    </span>
-                                    <span class="fw-extrabold text-dark font-monospace ps-1" style="font-size: 0.95rem;">
-                                        ₹{{ number_format($order->total_amount, 2) }}
-                                    </span>
-                                </div>
-                                <span class="text-muted small ps-1" style="font-size: 0.74rem;">
-                                    <i class="bi bi-info-circle me-1 text-secondary"></i> Cash or Instant UPI QR to Rider
+                                <span class="fw-extrabold text-dark font-monospace ps-1" style="font-size: 0.95rem;">
+                                    ₹{{ number_format($order->total_amount, 2) }}
                                 </span>
-                            @endif
-                        </div>
+                            </div>
+                            <span class="text-muted small ps-1" style="font-size: 0.74rem;">
+                                <i class="bi bi-info-circle me-1 text-secondary"></i> Cash or Instant UPI QR to Rider
+                            </span>
+                        @endif
                     </div>
                 </div>
-            @endif
+            </div>
         </div>
     @endif
 @elseif(($order->courier_partner || $order->tracking_number || in_array($order->status, ['shipped', 'out for delivery', 'delivered'])) && $s !== 'cancelled')
@@ -603,7 +612,7 @@
                         @if($order->status === 'delivered')
                             Delivered on <span class="fw-semibold text-dark">{{ $order->delivered_at?->format('d M, Y \a\t h:i A') ?? $order->updated_at->format('d M, Y \a\t h:i A') }}</span>
                         @elseif($order->tracking_number)
-                            AWB Tracking #: <span class="font-monospace fw-bold text-dark px-1.5 py-0.5 rounded bg-light border text-break">{{ $order->tracking_number }}</span>
+                            Tracking ID: <span class="font-monospace fw-bold text-dark px-1.5 py-0.5 rounded bg-light border text-break">{{ $order->tracking_number }}</span>
                         @else
                             Dispatched & In-Transit with Logistics Partner
                         @endif
@@ -1079,6 +1088,31 @@
         </div>
     </div>
 </div>
+
+{{-- ── Contactless Delivery Proof Modal ── --}}
+@if(isset($podPhoto) && $podPhoto)
+<div class="modal fade" id="modalPodPhoto" tabindex="-1" aria-labelledby="modalPodPhotoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom py-3 px-4">
+                <h6 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modalPodPhotoLabel">
+                    <i class="bi bi-camera-fill text-primary"></i> Contactless Delivery Proof
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 text-center">
+                <img src="{{ asset('storage/' . $podPhoto) }}" alt="Delivery Proof" class="img-fluid rounded-3 shadow-sm border" style="max-height: 420px; width: auto; object-fit: contain;">
+                <div class="mt-2 text-muted small">
+                    <i class="bi bi-geo-alt-fill text-danger me-1"></i> {{ $dropLabel ?? 'Contactless Drop' }} &bull; Watermarked at Delivery
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-3 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-4 fw-semibold text-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 
 {{-- ── Order Delivery Experience Feedback Modal ── --}}
 @if($order->status === 'delivered')

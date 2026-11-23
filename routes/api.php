@@ -106,4 +106,30 @@ Route::prefix('v1')->group(function () {
         Route::post('/products/{product}/reviews', [\App\Http\Controllers\Customer\ProductReviewController::class, 'store']);
     });
 
+    // ── 5. RIDER / DELIVERY PARTNER MOBILE APP API ──
+    Route::prefix('rider')->group(function () {
+        Route::post('/login', [\App\Http\Controllers\Api\V1\RiderController::class, 'login']);
+        Route::get('/ping', [\App\Http\Controllers\Api\V1\RiderController::class, 'ping']);
+        Route::post('/webhook/razorpay', [\App\Http\Controllers\Api\V1\RiderController::class, 'handleRazorpayWebhook']);
+
+        Route::middleware(['auth:sanctum'])->group(function () {
+            Route::get('/dashboard', [\App\Http\Controllers\Api\V1\RiderController::class, 'dashboard']);
+            Route::get('/orders/{order}', [\App\Http\Controllers\Api\V1\RiderController::class, 'show']);
+            Route::get('/orders/{order}/payment-status', [\App\Http\Controllers\Api\V1\RiderController::class, 'paymentStatus']);
+            Route::post('/orders/{order}/complete', [\App\Http\Controllers\Api\V1\RiderController::class, 'completeDelivery']);
+            Route::post('/orders/{order}/deliver', [\App\Http\Controllers\Api\V1\RiderController::class, 'completeDelivery']);
+            Route::post('/orders/{order}/complete-contactless', [\App\Http\Controllers\Api\V1\RiderController::class, 'completeContactless']);
+            Route::post('/orders/{order}/confirm-upi', [\App\Http\Controllers\Api\V1\RiderController::class, 'confirmDoorstepUpi']);
+            Route::post('/orders/{order}/doorstep-upi', [\App\Http\Controllers\Api\V1\RiderController::class, 'confirmDoorstepUpi']);
+            Route::post('/orders/{order}/report-issue', [\App\Http\Controllers\Api\V1\RiderController::class, 'reportIssue']);
+            Route::post('/orders/{order}/issue', [\App\Http\Controllers\Api\V1\RiderController::class, 'reportIssue']);
+            Route::post('/bag-load/verify', [\App\Http\Controllers\Api\V1\RiderController::class, 'verifyBagLoad']);
+            Route::get('/settlements', [\App\Http\Controllers\Api\V1\RiderController::class, 'settlements']);
+            Route::get('/settlement-qr', [\App\Http\Controllers\Api\V1\RiderController::class, 'settlementQr']);
+            Route::get('/settlement-status', [\App\Http\Controllers\Api\V1\RiderController::class, 'settlementStatus']);
+            Route::get('/completed', [\App\Http\Controllers\Api\V1\RiderController::class, 'completed']);
+            Route::post('/logout', [\App\Http\Controllers\Api\V1\RiderController::class, 'logout']);
+        });
+    });
+
 });

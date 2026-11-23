@@ -147,7 +147,9 @@ class OrderController extends Controller
             'cancelled'        => Order::whereIn('status', ['cancelled', 'returned'])->count(),
         ];
 
-        return view('order-manager.orders.index', compact('orders', 'statusCounts'));
+        $riders = User::deliveryPartners()->orderBy('name')->get();
+
+        return view('order-manager.orders.index', compact('orders', 'statusCounts', 'riders'));
     }
 
     /**
@@ -279,7 +281,7 @@ class OrderController extends Controller
 
         $customerPhone = $order->shipping_phone ?? $order->user?->mobile_number ?? 'Customer';
         $msg = $sent 
-            ? "WhatsApp Out for Delivery notification with OTP ({$order->delivery_otp}) has been sent to {$customerPhone}."
+            ? "WhatsApp Out for Delivery notification has been sent to {$customerPhone}."
             : "Could not send automated WhatsApp message. Please check API credentials or use the 1-click WhatsApp button.";
 
         if ($request->ajax() || $request->wantsJson()) {
@@ -325,7 +327,7 @@ class OrderController extends Controller
             $order->refresh();
             return response()->json([
                 'success' => true,
-                'message' => "Assigned to {$request->rider_name} ({$request->rider_phone}). Order #{$order->order_number} is now Out for Delivery!",
+                'message' => "Assigned to {$request->rider_name} ({$request->rider_phone}). Order #{$order->order_number} is now Shipped (Awaiting Hub Bag Scan)!",
                 'status' => $order->status,
                 'status_label' => ucfirst(str_replace('_', ' ', $order->status)),
                 'rider_name' => $order->rider_name,
@@ -337,8 +339,8 @@ class OrderController extends Controller
 
         return redirect()->route('order-manager.orders.show', $order)->with('toast', [
             'type'    => 'success',
-            'title'   => 'Local Rider Dispatched',
-            'message' => "Assigned to {$request->rider_name} ({$request->rider_phone}). Order #{$order->order_number} is now Out for Delivery!",
+            'title'   => 'Delivery Partner Assigned',
+            'message' => "Assigned to {$request->rider_name} ({$request->rider_phone}). Order #{$order->order_number} is now Shipped (Awaiting Hub Bag Scan)!",
         ]);
     }
 
@@ -407,7 +409,7 @@ class OrderController extends Controller
     public function resolveException(Request $request, Order $order): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $request->validate([
-            'resolution_action' => ['required', 'in:re-attempt,reschedule,return_warehouse,cancel'],
+            'resolution_action' => ['required', 'in:re-attempt,reschedule,return_warehouse'],
             'resolution_notes'  => ['nullable', 'string', 'max:500'],
             'rider_id'          => ['nullable', 'exists:users,id'],
             'delivery_slot'     => ['nullable', 'string', 'max:100'],
@@ -436,7 +438,7 @@ class OrderController extends Controller
             ]);
             $msg = "Order #{$order->order_number} marked for immediate doorstep re-attempt!";
         } elseif ($action === 'reschedule') {
-            $slot = $request->delivery_slot ?? 'Next-Day Express Delivery (1-2 Days)';
+            $slot = $request->delivery_slot ?? 'Express Delivery';
             $riderData = [
                 'rider_id'      => $request->rider_id ?: $order->rider_id,
                 'rider_name'    => $order->rider_name,
@@ -481,22 +483,6 @@ class OrderController extends Controller
                 'notes'           => "Delivery Exception Resolved [Return to Warehouse]: {$notes}",
             ]);
             $msg = "Order #{$order->order_number} marked as Returned to Warehouse inventory.";
-        } elseif ($action === 'cancel') {
-            $order->update(['status' => 'cancelled']);
-            if ($order->fulfillment) {
-                $order->fulfillment->update([
-                    'status'                     => 'failed',
-                    'delivery_issue_resolved_at' => now(),
-                    'delivery_issue_resolution'  => "Cancelled: {$notes}",
-                ]);
-            }
-            $order->statusHistories()->create([
-                'previous_status' => $previousStatus,
-                'current_status'  => 'cancelled',
-                'changed_by'      => $staffId,
-                'notes'           => "Delivery Exception Resolved [Cancelled]: {$notes}",
-            ]);
-            $msg = "Order #{$order->order_number} has been cancelled.";
         }
 
         if ($request->ajax() || $request->wantsJson()) {
@@ -575,5 +561,258 @@ class OrderController extends Controller
             ->get();
 
         return view('order-manager.orders.bulk-shipping-labels', compact('orders'));
+    }
+
+    /**
+     * Display today's placed orders & quick dispatch hub.
+     */
+    public function todayOrders(Request $request): View
+    {
+        $query = Order::with(['user', 'items.product', 'fulfillment'])
+            ->whereDate('created_at', today())
+            ->latest('created_at');
+
+        if ($request->filled('status')) {
+            $statuses = explode(',', $request->status);
+            $query->whereIn('status', $statuses);
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('order_number', 'like', "%{$search}%")
+                  ->orWhere('shipping_name', 'like', "%{$search}%")
+                  ->orWhere('shipping_phone', 'like', "%{$search}%")
+                  ->orWhere('shipping_city', 'like', "%{$search}%");
+            });
+        }
+
+        $orders = $query->paginate(30)->withQueryString();
+
+        $todayAll = Order::whereDate('created_at', today())->get();
+        $metrics = [
+            'total_orders'     => $todayAll->count(),
+            'total_revenue'    => (float) $todayAll->whereNotIn('status', ['cancelled', 'returned'])->sum('total_amount'),
+            'needs_action'     => $todayAll->whereIn('status', ['pending', 'confirmed', 'processing'])->count(),
+            'out_for_delivery' => $todayAll->whereIn('status', ['shipped', 'out for delivery'])->count(),
+            'delivered'        => $todayAll->where('status', 'delivered')->count(),
+            'cod_count'        => $todayAll->where('payment_method', 'cod')->count(),
+            'prepaid_count'    => $todayAll->where('payment_method', '!=', 'cod')->count(),
+        ];
+
+        $riders = User::deliveryPartners()->orderBy('name')->get();
+
+        return view('order-manager.orders.today', compact('orders', 'metrics', 'riders'));
+    }
+
+    /**
+     * Export Orders to CSV / Excel spreadsheet.
+     */
+    public function exportCsv(Request $request)
+    {
+        $query = Order::with(['user', 'items.product', 'fulfillment', 'rider']);
+
+        if ($request->filled('order_ids')) {
+            $ids = explode(',', $request->order_ids);
+            $query->whereIn('id', array_map('intval', $ids));
+        } elseif ($request->get('date') === 'today' || $request->has('today_only')) {
+            $query->whereDate('created_at', today());
+        } elseif ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+            if ($request->filled('date_to')) {
+                $query->whereDate('created_at', '<=', $request->date_to);
+            }
+        }
+
+        if ($request->filled('status')) {
+            $query->whereIn('status', explode(',', $request->status));
+        }
+
+        $orders = $query->latest('created_at')->get();
+        $filename = 'ShopCalm-Orders-' . ($request->has('today_only') || $request->get('date') === 'today' ? 'Today-' : '') . date('Y-m-d-His') . '.csv';
+
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        return response()->streamDownload(function () use ($orders) {
+            $output = fopen('php://output', 'w');
+            fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            fputcsv($output, [
+                'Order Number',
+                'Date Placed',
+                'Time',
+                'Customer Name',
+                'Customer Phone',
+                'Customer Email',
+                'Shipping Address',
+                'City',
+                'Pincode',
+                'Items Count',
+                'Products Ordered',
+                'Total Amount (INR)',
+                'Payment Mode',
+                'Payment Status',
+                'Order Status',
+                'Assigned Rider / Courier',
+                'Delivery Notes / Slot',
+            ]);
+
+            foreach ($orders as $o) {
+                $itemsSummary = $o->items->map(function ($it) {
+                    return "{$it->product_name} (x{$it->quantity})";
+                })->implode('; ');
+
+                fputcsv($output, [
+                    $o->order_number,
+                    $o->created_at->format('Y-m-d'),
+                    $o->created_at->format('h:i A'),
+                    $o->shipping_name,
+                    $o->shipping_phone,
+                    $o->shipping_email,
+                    $o->shipping_address,
+                    $o->shipping_city,
+                    $o->shipping_zip,
+                    $o->items->sum('quantity'),
+                    $itemsSummary,
+                    number_format($o->total_amount, 2, '.', ''),
+                    strtoupper($o->payment_method),
+                    strtoupper($o->payment_status ?? 'pending'),
+                    ucwords($o->status),
+                    $o->rider_name ?? ($o->courier_partner ? "{$o->courier_partner} ({$o->tracking_number})" : 'Unassigned'),
+                    $o->notes ?? '',
+                ]);
+            }
+
+            fclose($output);
+        }, $filename, $headers);
+    }
+
+    /**
+     * Generate printable daily dispatch run-sheet manifest for today's orders.
+     */
+    public function dailyManifest(Request $request): View
+    {
+        $query = Order::with(['user', 'items.product', 'fulfillment', 'rider']);
+
+        if ($request->filled('order_ids')) {
+            $ids = explode(',', $request->order_ids);
+            $query->whereIn('id', array_map('intval', $ids));
+        } else {
+            $query->whereDate('created_at', today());
+        }
+
+        $orders = $query->latest('created_at')->get();
+        return view('order-manager.orders.daily-manifest', compact('orders'));
+    }
+
+    /**
+     * Bulk update order status for multiple selected orders.
+     */
+    public function bulkUpdateStatus(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'order_ids'  => ['required', 'string'],
+            'new_status' => ['required', 'in:confirmed,processing,packed,shipped,out for delivery,delivered'],
+        ]);
+
+        $ids = array_filter(array_map('intval', explode(',', $request->order_ids)));
+        if (empty($ids)) {
+            return back()->with('toast', [
+                'type'    => 'error',
+                'title'   => 'No Orders Selected',
+                'message' => 'Please select at least one order to update.',
+            ]);
+        }
+
+        $staffId = Auth::guard('order_manager')->id() ?? Auth::guard('admin')->id() ?? Auth::id();
+        $newStatus = $request->new_status;
+        $updatedCount = 0;
+
+        $orders = Order::whereIn('id', $ids)->get();
+        foreach ($orders as $order) {
+            $oldStatus = $order->status;
+            $order->update(['status' => $newStatus]);
+
+            if ($order->fulfillment) {
+                $fulfStatus = match($newStatus) {
+                    'packed'           => 'packed',
+                    'shipped'          => 'assigned',
+                    'out for delivery' => 'out_for_delivery',
+                    'delivered'        => 'delivered',
+                    default            => 'processing',
+                };
+                $fulfData = ['status' => $fulfStatus];
+                if ($newStatus === 'out for delivery' && empty($order->fulfillment->dispatched_at)) {
+                    $fulfData['dispatched_at'] = now();
+                }
+                $order->fulfillment->update($fulfData);
+            }
+
+            $order->statusHistories()->create([
+                'previous_status' => $oldStatus,
+                'current_status'  => $newStatus,
+                'changed_by'      => $staffId,
+                'notes'           => "Bulk Status Update: Order moved to {$newStatus} by Order Manager.",
+            ]);
+
+            $updatedCount++;
+        }
+
+        return back()->with('toast', [
+            'type'    => 'success',
+            'title'   => 'Bulk Update Successful',
+            'message' => "Successfully updated {$updatedCount} orders to {$newStatus}!",
+        ]);
+    }
+
+    /**
+     * Bulk assign selected orders to a specific delivery partner.
+     */
+    public function bulkAssignRider(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'order_ids' => ['required', 'string'],
+            'rider_id'  => ['required', 'exists:users,id'],
+        ]);
+
+        $ids = array_filter(array_map('intval', explode(',', $request->order_ids)));
+        if (empty($ids)) {
+            return back()->with('toast', [
+                'type'    => 'error',
+                'title'   => 'No Orders Selected',
+                'message' => 'Please select at least one order to assign.',
+            ]);
+        }
+
+        $rider = User::findOrFail($request->rider_id);
+        $staffId = Auth::guard('order_manager')->id() ?? Auth::guard('admin')->id() ?? Auth::id();
+
+        $riderData = [
+            'rider_id'      => $rider->id,
+            'rider_name'    => $rider->name,
+            'rider_phone'   => $rider->mobile_number,
+            'delivery_slot' => 'Express Delivery (Today)',
+            'notes'         => 'Assigned via Bulk Dispatch',
+        ];
+
+        $assignedCount = 0;
+        $orders = Order::whereIn('id', $ids)->get();
+
+        foreach ($orders as $order) {
+            $this->fulfillmentService->assignLocalRider($order, $riderData, $staffId);
+            $assignedCount++;
+        }
+
+        return back()->with('toast', [
+            'type'    => 'success',
+            'title'   => 'Bulk Rider Assignment Complete',
+            'message' => "Assigned {$assignedCount} orders to {$rider->name}! Active in Rider App.",
+        ]);
     }
 }

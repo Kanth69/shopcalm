@@ -307,6 +307,11 @@
             <i class="bi bi-speedometer2"></i>
             <span>Operations Dashboard</span>
         </a>
+        <a href="{{ route('order-manager.orders.today') }}" class="nav-link {{ request()->routeIs('order-manager.orders.today') ? 'active' : '' }}">
+            <i class="bi bi-calendar2-check-fill text-warning"></i>
+            <span>Today's Orders &amp; Dispatch</span>
+            <span class="nav-badge" style="background: #f59e0b; color: #000; font-weight: 800;">Today</span>
+        </a>
 
         <div class="nav-header">Live Fleet Monitor</div>
         <a href="{{ route('order-manager.alerts') }}" class="nav-link {{ request()->routeIs('order-manager.alerts') ? 'active' : '' }}">

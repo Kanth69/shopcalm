@@ -4,55 +4,20 @@
 
 @push('styles')
 <style>
-    .order-task-card {
-        background: #ffffff;
-        border-radius: 1rem;
-        border: 1px solid #e2e8f0;
-        margin-bottom: 0.75rem;
-        overflow: hidden;
-    }
-
-    .btn-rider-action {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.4rem;
-        height: 44px;
-        border-radius: 0.65rem;
-        font-weight: 700;
-        font-size: 0.85rem;
-        text-decoration: none;
-        border: 1px solid transparent;
-        transition: transform 0.1s ease;
-    }
-    .btn-rider-action:active {
-        transform: scale(0.97);
-    }
-    .btn-action-nav {
-        background: #eff6ff;
-        color: #1d4ed8;
-        border-color: #bfdbfe;
-    }
-    .btn-action-phone {
-        background: #ecfdf5;
-        color: #047857;
-        border-color: #a7f3d0;
-    }
-
-    /* 4-Box OTP input */
+    /* 4-Box Large Touch OTP input */
     .otp-grid {
         display: flex;
-        gap: 0.6rem;
+        gap: 0.75rem;
         justify-content: center;
-        margin: 1rem 0;
+        margin: 1.25rem 0;
     }
     .otp-box {
-        width: 56px;
-        height: 60px;
+        width: 60px;
+        height: 64px;
         border: 2px solid #cbd5e1;
-        border-radius: 0.85rem;
+        border-radius: 1rem;
         text-align: center;
-        font-size: 1.6rem;
+        font-size: 1.85rem;
         font-weight: 800;
         font-family: 'JetBrains Mono', monospace;
         background: #f8fafc;
@@ -74,12 +39,13 @@
         border: none;
         border-radius: 0.85rem;
         font-weight: 800;
-        font-size: 0.95rem;
+        font-size: 0.96rem;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
         box-shadow: 0 4px 16px rgba(79, 70, 229, 0.25);
+        transition: transform 0.15s ease;
     }
     .btn-confirm-delivery:active {
         transform: scale(0.98);
@@ -87,36 +53,36 @@
 
     .btn-report-issue {
         width: 100%;
-        height: 44px;
+        height: 46px;
         background: #fff1f2;
         color: #e11d48;
-        border: 1px solid #fecdd3;
-        border-radius: 0.75rem;
+        border: 1.5px solid #fecdd3;
+        border-radius: 0.85rem;
         font-weight: 700;
-        font-size: 0.85rem;
+        font-size: 0.86rem;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 0.4rem;
-        transition: transform 0.1s ease;
+        gap: 0.45rem;
+        transition: transform 0.15s ease;
     }
     .btn-report-issue:active {
         transform: scale(0.98);
     }
 
-    /* Mobile Option Tile Radio */
+    /* Modal Touch Tile Radio */
     .issue-option-label {
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        padding: 0.75rem 1rem;
+        padding: 0.85rem 1rem;
         border: 1.5px solid #e2e8f0;
-        border-radius: 0.75rem;
+        border-radius: 0.85rem;
         cursor: pointer;
         background: #ffffff;
         transition: all 0.15s ease;
-        margin-bottom: 0.5rem;
-        font-size: 0.85rem;
+        margin-bottom: 0.6rem;
+        font-size: 0.86rem;
         font-weight: 600;
         color: #1e293b;
     }
@@ -134,172 +100,184 @@
 
 @section('content')
 
-<!-- Back and Order ID -->
-<div class="d-flex align-items-center justify-content-between mb-2.5">
-    <a href="{{ route('delivery.dashboard') }}" class="btn btn-sm btn-white border bg-white rounded-pill px-3 py-1 text-dark fw-bold" style="font-size: 0.78rem;">
-        <i class="bi bi-arrow-left me-1"></i> Run-Sheet
+@php
+    $timeSlot = '';
+    $customerNotes = $order->notes ?? '';
+    if (preg_match('/\[Time:\s*([^\]]+)\]/i', $customerNotes, $matches)) {
+        $timeSlot = trim($matches[1]);
+        $customerNotes = trim(str_replace($matches[0], '', $customerNotes));
+    }
+@endphp
+
+<!-- ── 1. Top Bar: Back to Manifest + Order Number ── -->
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <a href="{{ route('delivery.dashboard') }}" class="btn btn-sm btn-white border bg-white rounded-pill px-3 py-1.5 text-dark fw-bold d-inline-flex align-items-center gap-1 shadow-xs" style="font-size: 0.8rem;">
+        <i class="bi bi-arrow-left"></i> Run-Sheet
     </a>
-    <span class="badge bg-white text-secondary border rounded-pill px-2.5 py-1 font-monospace fw-bold" style="font-size: 0.75rem;">
-        #{{ $order->order_number }}
-    </span>
+    <div class="d-flex align-items-center gap-1.5 font-monospace fw-bold text-dark fs-6">
+        <span>#{{ $order->order_number }}</span>
+        <button type="button" class="btn btn-xs btn-link text-muted p-0 border-0" onclick="navigator.clipboard.writeText('{{ $order->order_number }}'); Swal.fire({toast: true, position: 'top', icon: 'success', title: 'Order # copied', showConfirmButton: false, timer: 1000});">
+            <i class="bi bi-copy fs-6"></i>
+        </button>
+    </div>
 </div>
 
 @if($order->fulfillment?->hasActiveDeliveryIssue())
-    <div class="alert alert-warning border-0 rounded-4 p-3.5 mb-3 shadow-xs d-flex align-items-start gap-2.5" style="background: #fffbeb; border: 1.5px solid #fde68a !important;">
-        <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px; font-size: 0.85rem;">
+    <!-- Active Issue Warning -->
+    <div class="alert alert-warning border-0 rounded-4 p-3 mb-3 shadow-xs d-flex align-items-start gap-2.5" style="background: #fffbeb; border: 1.5px solid #fde68a !important;">
+        <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center flex-shrink-0" style="width: 30px; height: 30px; font-size: 0.9rem;">
             <i class="bi bi-exclamation-triangle-fill"></i>
         </div>
         <div>
-            <div class="fw-bolder text-dark small" style="font-size: 0.85rem;">Delivery Issue Logged &bull; On Hold</div>
-            <div class="text-secondary small mt-0.5" style="font-size: 0.76rem; line-height: 1.35;">
-                Reported: <strong>{{ $order->fulfillment->delivery_issue }}</strong>. Warehouse Order Manager is contacting the customer. If customer arrives, enter OTP below to complete.
+            <div class="fw-bolder text-dark" style="font-size: 0.88rem;">Delivery Issue Logged &bull; On Hold</div>
+            <div class="text-secondary small mt-0.5" style="font-size: 0.78rem; line-height: 1.4;">
+                Reason: <strong>{{ $order->fulfillment->delivery_issue }}</strong>. If customer arrives or calls, enter the 4-digit code below to deliver.
             </div>
         </div>
     </div>
 @endif
 
-<!-- 1. Payment Requirement Bar -->
+<!-- ── 2. Doorstep Payment Requirement Module ── -->
 @if($order->payment_status === 'paid')
-    <div id="paymentRequirementCard" class="order-task-card p-3 border-start border-4 border-success" style="border-left-width: 5px !important;">
+    <!-- Online Paid Status -->
+    <div id="paymentRequirementCard" class="card border-0 rounded-4 p-3.5 bg-white shadow-xs mb-3" style="border-left: 5px solid #10b981 !important; border-color: #e2e8f0;">
         <div class="d-flex align-items-center justify-content-between">
             <div>
-                <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.65rem;">Payment Requirement</div>
-                <div class="fw-bolder text-success" style="font-size: 0.95rem;">
-                    ✅ Paid {{ $order->payment_method === 'doorstep_upi' ? 'via Doorstep UPI' : 'Online' }} &bull; Collect ₹0
+                <span class="text-secondary small fw-bold text-uppercase d-block" style="font-size: 0.65rem; letter-spacing: 0.04em;">Payment Status</span>
+                <div class="fw-bolder text-success fs-5">
+                    ✅ Paid {{ $order->payment_method === 'doorstep_upi' ? 'via Doorstep UPI' : 'Online' }}
                 </div>
-                <div class="text-secondary small" style="font-size: 0.72rem;">Do not collect any cash from customer</div>
+                <div class="text-secondary small" style="font-size: 0.78rem;">Collect ₹0 cash &bull; Zero liability</div>
             </div>
-            <div class="text-end">
-                <span class="badge bg-success rounded-pill px-2.5 py-1 fw-bold">PAID</span>
-            </div>
+            <span class="badge bg-success rounded-pill px-3 py-1.5 fw-bold">PAID</span>
         </div>
     </div>
 @else
-    <div id="paymentRequirementCard" class="order-task-card p-3 border-start border-4 border-warning" style="border-left-width: 5px !important;">
+    <!-- Cash on Delivery (COD) Requirement -->
+    <div id="paymentRequirementCard" class="card border-0 rounded-4 p-3.5 bg-white shadow-xs mb-3" style="border-left: 5px solid #f59e0b !important; border-color: #e2e8f0;">
         <div class="d-flex align-items-center justify-content-between mb-2.5">
             <div>
-                <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.65rem;">Payment Requirement</div>
-                <div id="paymentStatusHeading" class="fw-bolder text-dark" style="font-size: 0.95rem;">💵 Payment Pending from Customer</div>
-                <div id="paymentStatusSub" class="text-secondary small" style="font-size: 0.72rem;">Customer can pay with physical Cash or UPI QR</div>
+                <span class="text-secondary small fw-bold text-uppercase d-block" style="font-size: 0.65rem; letter-spacing: 0.04em;">Cash to Collect at Doorstep</span>
+                <div id="paymentStatusHeading" class="fw-bolder text-dark fs-4 font-monospace lh-1">
+                    ₹{{ number_format($order->total_amount, 2) }}
+                </div>
             </div>
-            <div class="text-end">
-                <div class="h4 fw-bolder text-dark mb-0 font-monospace" style="font-size: 1.35rem;">₹{{ number_format($order->total_amount, 2) }}</div>
-            </div>
+            <span class="badge bg-warning text-dark rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.74rem;">💵 COD</span>
         </div>
 
-        <!-- 2 Payment Choice Options for Rider -->
+        <!-- 2 Payment Choice Buttons for Rider -->
         <div class="row g-2 pt-2 border-top" id="paymentOptionsRow">
             <div class="col-6">
-                <div class="p-2 rounded-3 border text-center" style="background: #fffbeb; border-color: #fde68a !important;">
-                    <div class="fw-bold text-dark small" style="font-size: 0.78rem;"><i class="bi bi-cash text-warning me-1"></i> Cash COD</div>
-                    <div class="text-muted" style="font-size: 0.68rem;">Collect exact notes</div>
+                <div class="p-2.5 rounded-3 border text-center bg-light h-100 d-flex flex-column justify-content-center" style="border-color: #cbd5e1 !important;">
+                    <span class="fw-bold text-dark small" style="font-size: 0.8rem;"><i class="bi bi-cash text-warning me-1"></i> Cash Notes</span>
+                    <span class="text-secondary" style="font-size: 0.7rem;">Collect physical cash</span>
                 </div>
             </div>
             <div class="col-6">
-                <button type="button" class="btn btn-sm btn-primary w-100 fw-bold py-2 rounded-3 d-flex flex-column align-items-center justify-content-center shadow-xs" 
+                <button type="button" class="btn btn-primary w-100 fw-bold py-2 rounded-3 d-flex flex-column align-items-center justify-content-center shadow-xs" 
                         data-bs-toggle="modal" data-bs-target="#modalDoorstepUpi" 
-                        style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none; min-height: 44px;">
-                    <span style="font-size: 0.78rem;"><i class="bi bi-qr-code-scan me-1"></i> Collect via UPI</span>
-                    <span class="text-white-50" style="font-size: 0.65rem;">GPay / PhonePe / Paytm</span>
+                        style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none; min-height: 48px;">
+                    <span style="font-size: 0.82rem;"><i class="bi bi-qr-code-scan me-1"></i> Collect via UPI</span>
+                    <span class="text-white-50" style="font-size: 0.68rem;">GPay / PhonePe / Paytm</span>
                 </button>
             </div>
         </div>
     </div>
 @endif
 
-<!-- 2. Customer & Address Card with Fast Action Buttons -->
-<div class="order-task-card p-3.5 mb-3">
+<!-- ── 3. Customer & Address Details ── -->
+<div class="card border-0 rounded-4 p-3.5 bg-white shadow-xs mb-3" style="border: 1.5px solid #e2e8f0 !important;">
     <!-- Customer Header -->
     <div class="d-flex align-items-center justify-content-between mb-3">
-        <div>
-            <h5 class="fw-bolder text-dark mb-0.5" style="font-size: 1.1rem; letter-spacing: -0.02em;">{{ $order->shipping_name }}</h5>
-            <div class="text-secondary small font-monospace" style="font-size: 0.74rem;">
-                <i class="bi bi-telephone-fill text-success me-1"></i>{{ $order->shipping_phone }}
+        <div class="d-flex align-items-center gap-2.5">
+            <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold shadow-xs flex-shrink-0" 
+                 style="width: 44px; height: 44px; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); font-size: 1.1rem;">
+                {{ strtoupper(substr($order->shipping_name ?? 'C', 0, 1)) }}
+            </div>
+            <div>
+                <h5 class="fw-bolder text-dark mb-0 fs-5" style="letter-spacing: -0.01em;">
+                    {{ $order->shipping_name }}
+                </h5>
+                <small class="text-muted" style="font-size: 0.78rem;">Customer</small>
             </div>
         </div>
-        <span class="badge bg-light text-secondary border rounded-pill px-3 py-1.5 fw-semibold" style="font-size: 0.7rem;">
-            <i class="bi bi-lightning-charge-fill text-warning me-1"></i>{{ $order->delivery_slot ?? 'Express' }}
-        </span>
+        <a href="tel:{{ $order->shipping_phone }}" class="btn btn-success rounded-pill px-3.5 py-2 fw-bold d-inline-flex align-items-center gap-1.5 shadow-xs" style="font-size: 0.85rem;">
+            <i class="bi bi-telephone-fill"></i> <span>Call</span>
+        </a>
     </div>
 
-    <!-- Address Box with Generous Padding & Hierarchy -->
-    <div class="p-3 rounded-3 bg-light border mb-3 text-dark shadow-xs" style="font-size: 0.86rem; line-height: 1.45;">
-        <div class="text-secondary small fw-bold text-uppercase mb-1" style="font-size: 0.65rem; letter-spacing: 0.04em;">
-            <i class="bi bi-geo-alt-fill text-danger me-1"></i> Delivery Address
-        </div>
-        <div class="fw-bold text-dark mb-1">
-            {{ $order->shipping_address }}
-        </div>
-        <div class="text-secondary" style="font-size: 0.8rem;">
-            {{ $order->shipping_city }} &bull; PIN: <strong>{{ $order->shipping_zip }}</strong>
+    <!-- Address Box with Generous Padding -->
+    <div class="p-3 rounded-3 bg-light border mb-3 text-dark shadow-xs" style="border-color: #e2e8f0 !important;">
+        <div class="d-flex align-items-start gap-2.5">
+            <i class="bi bi-geo-alt-fill text-danger flex-shrink-0 mt-0.5 fs-5"></i>
+            <div style="line-height: 1.5;">
+                <div class="fw-semibold text-dark" style="font-size: 0.94rem;">
+                    {{ $order->shipping_address }}
+                </div>
+                <div class="text-secondary small mt-0.5" style="font-size: 0.82rem;">
+                    {{ $order->shipping_city }} - <strong class="text-dark">{{ $order->shipping_zip }}</strong>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Delivery Notes / Customer Instructions -->
-    @if(!empty($order->notes))
-    <div class="p-3 rounded-3 mb-3 border d-flex align-items-start gap-2.5 shadow-xs" style="background: #fff7ed; border: 1.5px solid #fdba74 !important;">
-        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 text-white" style="width: 28px; height: 28px; background: #ea580c; font-size: 0.8rem;">
-            <i class="bi bi-sticky-fill"></i>
+    <!-- Preferred Time Slot & Special Instructions -->
+    @if(!empty($timeSlot) || !empty($customerNotes))
+        <div class="mb-3">
+            @if(!empty($timeSlot))
+                <div class="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-1.5 fw-bold font-monospace mb-2 d-inline-flex align-items-center gap-1.5" style="font-size: 0.78rem;">
+                    <i class="bi bi-clock-history"></i> Preferred Slot: {{ $timeSlot }}
+                </div>
+            @endif
+
+            @if(!empty($customerNotes))
+                <div class="p-3 rounded-3 border d-flex align-items-start gap-2.5 shadow-xs" style="background: #fff7ed; border: 1.5px solid #fdba74 !important;">
+                    <i class="bi bi-chat-left-text-fill text-warning flex-shrink-0 mt-0.5 fs-5"></i>
+                    <div>
+                        <span class="fw-bold text-uppercase d-block mb-0.5" style="font-size: 0.72rem; color: #c2410c; letter-spacing: 0.04em;">
+                            Customer Instructions:
+                        </span>
+                        <div class="fw-bold text-dark" style="font-size: 0.88rem; line-height: 1.4;">
+                            "{{ $customerNotes }}"
+                        </div>
+                    </div>
+                </div>
+            @endif
         </div>
-        <div class="flex-grow-1 min-w-0">
-            <div class="fw-bold text-uppercase mb-0.5" style="font-size: 0.72rem; color: #c2410c; letter-spacing: 0.03em;">
-                <i class="bi bi-chat-left-text-fill me-1"></i> Customer Delivery Instructions:
-            </div>
-            <div class="fw-bolder text-dark" style="font-size: 0.88rem; line-height: 1.35;">
-                "{{ $order->notes }}"
-            </div>
-        </div>
-    </div>
-    @else
-    <div class="p-2.5 px-3 rounded-3 mb-3 border d-flex align-items-center gap-2 text-muted shadow-xs" style="background: #f8fafc; font-size: 0.76rem;">
-        <i class="bi bi-info-circle text-secondary"></i>
-        <span>No special delivery instructions provided.</span>
-    </div>
     @endif
 
-    <!-- 2 Action Buttons (Maps, Call) -->
-    <div class="row g-2.5 pt-1">
-        <div class="col-6">
-            <a href="https://www.google.com/maps/dir/?api=1&destination={{ urlencode($order->shipping_address . ', ' . $order->shipping_city . ' ' . $order->shipping_zip) }}" 
-               target="_blank" class="btn-rider-action btn-action-nav w-100 shadow-xs" style="height: 46px; font-size: 0.85rem;">
-                <i class="bi bi-map-fill"></i> Google Maps
-            </a>
-        </div>
-        <div class="col-6">
-            <a href="tel:{{ $order->shipping_phone }}" class="btn-rider-action btn-action-phone w-100 shadow-xs" style="height: 46px; font-size: 0.85rem;">
-                <i class="bi bi-telephone-fill"></i> Call Customer
-            </a>
-        </div>
-    </div>
+    <!-- Maps Navigation Button -->
+    <a href="https://www.google.com/maps/dir/?api=1&destination={{ urlencode($order->shipping_address . ', ' . $order->shipping_city . ' ' . $order->shipping_zip) }}" 
+       target="_blank" class="btn btn-outline-primary w-100 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-1.5 shadow-xs" style="height: 48px; font-size: 0.9rem;">
+        <i class="bi bi-map-fill"></i> <span>Navigate in Google Maps</span>
+    </a>
 </div>
 
-<!-- 3. Items To Handover -->
-<div class="order-task-card p-3">
-    <div class="d-flex align-items-center justify-content-between mb-2">
-        <div class="fw-bold text-dark small" style="font-size: 0.8rem; text-transform: uppercase;">
-            Items in Package ({{ $order->items->sum('quantity') }} total)
-        </div>
+<!-- ── 4. Package Contents ── -->
+<div class="card border-0 rounded-4 p-3 bg-white shadow-xs mb-3" style="border: 1.5px solid #e2e8f0 !important;">
+    <div class="text-secondary small fw-bold text-uppercase mb-2" style="font-size: 0.68rem; letter-spacing: 0.04em;">
+        📦 Items in Package ({{ $order->items->sum('quantity') }} Total)
     </div>
 
-    <div class="divide-y">
+    <div>
         @foreach($order->items as $item)
             <div class="d-flex align-items-center justify-content-between py-2 {{ !$loop->last ? 'border-bottom' : '' }}">
-                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                <div class="d-flex align-items-center gap-2.5 overflow-hidden">
                     @php $riderThumb = $item->display_image ?? $item->product?->main_image; @endphp
                     @if($riderThumb)
                         <img src="{{ asset('storage/' . $riderThumb) }}" alt="{{ $item->product_name }}" 
-                             class="rounded-2 border object-fit-cover flex-shrink-0" style="width: 36px; height: 36px;">
+                             class="rounded-2 border object-fit-cover flex-shrink-0" style="width: 40px; height: 40px;">
                     @else
-                        <div class="rounded-2 bg-light border d-flex align-items-center justify-content-center text-secondary flex-shrink-0" style="width: 36px; height: 36px;">
-                            <i class="bi bi-box"></i>
+                        <div class="rounded-2 bg-light border d-flex align-items-center justify-content-center text-secondary flex-shrink-0" style="width: 40px; height: 40px;">
+                            <i class="bi bi-box fs-5"></i>
                         </div>
                     @endif
                     <div class="overflow-hidden">
-                        <div class="fw-bold text-dark small text-truncate" style="font-size: 0.82rem;">{{ $item->product_name }}</div>
-                        <div class="text-secondary small font-monospace" style="font-size: 0.68rem;">SKU: {{ $item->product?->sku ?? 'N/A' }}</div>
+                        <div class="fw-bold text-dark text-truncate" style="font-size: 0.86rem;">{{ $item->product_name }}</div>
+                        <div class="text-secondary small font-monospace" style="font-size: 0.72rem;">SKU: {{ $item->product?->sku ?? 'N/A' }}</div>
                     </div>
                 </div>
-                <span class="badge bg-light text-dark border px-2 py-1 rounded-pill fw-bold ms-2" style="font-size: 0.72rem;">
+                <span class="badge bg-light text-dark border px-2.5 py-1 rounded-pill fw-bold ms-2 font-monospace" style="font-size: 0.74rem;">
                     {{ $item->quantity }}x
                 </span>
             </div>
@@ -307,34 +285,25 @@
     </div>
 </div>
 
-<!-- 4. OTP Verification & Handover Card -->
+<!-- ── 5. Customer Handover & 1-Tap Delivery Confirmation ── -->
 @if($order->status !== 'delivered')
-    <div class="order-task-card p-3.5 text-center">
-        <div class="fw-bolder text-dark mb-0.5" style="font-size: 0.95rem;">Enter Customer 4-Digit OTP</div>
-        <div class="text-secondary small mb-2" style="font-size: 0.75rem;">
-            Ask the customer for the code sent to their phone
+    <div class="card border-0 rounded-4 p-3.5 bg-white shadow-sm text-center mb-3" style="border: 1.5px solid #cbd5e1 !important;">
+        <div class="fw-bolder text-dark mb-0.5 fs-5">Doorstep Handover</div>
+        <div class="text-secondary small mb-3" style="font-size: 0.78rem;">
+            Confirm physical parcel handover to customer
         </div>
 
         <form id="formOrderComplete" action="{{ route('delivery.orders.complete', $order) }}" method="POST">
             @csrf
-            
-            <div class="otp-grid">
-                <input type="text" maxlength="1" class="otp-box" id="box1" inputmode="numeric" autocomplete="one-time-code">
-                <input type="text" maxlength="1" class="otp-box" id="box2" inputmode="numeric">
-                <input type="text" maxlength="1" class="otp-box" id="box3" inputmode="numeric">
-                <input type="text" maxlength="1" class="otp-box" id="box4" inputmode="numeric">
-            </div>
 
-            <input type="hidden" name="otp" id="finalOtpValue">
-
-            <!-- Primary Action: Complete Delivery -->
-            <button type="submit" id="btnSubmitOtp" class="btn-confirm-delivery mt-2">
+            <!-- Primary Action: Confirm Delivery -->
+            <button type="submit" id="btnSubmitOtp" class="btn-confirm-delivery">
                 <i class="bi bi-check2-circle fs-5"></i>
-                <span>Complete Delivery</span>
+                <span>Confirm Delivery & Handover</span>
             </button>
         </form>
 
-        <!-- Dedicated Mobile Report Issue Button (Perfect Alignment) -->
+        <!-- Report Issue Button -->
         <div class="pt-3 mt-3 border-top">
             <button type="button" class="btn-report-issue" data-bs-toggle="modal" data-bs-target="#modalReportIssue">
                 <i class="bi bi-exclamation-octagon-fill"></i>
@@ -343,11 +312,11 @@
         </div>
     </div>
 @else
-    <div class="order-task-card p-4 text-center">
-        <div class="rounded-circle d-inline-flex align-items-center justify-content-center text-success mb-2" style="width: 48px; height: 48px; background: #ecfdf5; font-size: 1.6rem;">
-            <i class="bi bi-check2"></i>
+    <div class="card border-0 rounded-4 p-4 bg-white text-center shadow-xs mb-3" style="border: 1.5px solid #bbf7d0 !important;">
+        <div class="rounded-circle d-inline-flex align-items-center justify-content-center text-success mb-2" style="width: 52px; height: 52px; background: #ecfdf5; font-size: 1.8rem;">
+            <i class="bi bi-check2-all"></i>
         </div>
-        <h5 class="fw-bolder text-dark mb-1">Package Delivered</h5>
+        <h5 class="fw-bolder text-dark mb-1">Package Delivered 🎉</h5>
         <div class="text-secondary small">Delivered on {{ $order->delivered_at?->format('d M Y, h:i A') }}</div>
     </div>
 @endif
@@ -360,10 +329,10 @@
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-qr-code-scan text-warning fs-5"></i>
                     <div>
-                        <h6 class="modal-title fw-bold text-white mb-0" id="modalDoorstepUpiLabel" style="font-size: 0.92rem;">
+                        <h6 class="modal-title fw-bold text-white mb-0" id="modalDoorstepUpiLabel" style="font-size: 0.94rem;">
                             Doorstep UPI Payment
                         </h6>
-                        <small class="text-white-50" style="font-size: 0.68rem;">Scan with GPay / PhonePe / Paytm</small>
+                        <small class="text-white-50" style="font-size: 0.7rem;">Scan with GPay / PhonePe / Paytm</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.75rem;"></button>
@@ -371,7 +340,7 @@
 
             <div class="modal-body p-3.5 text-center">
                 <!-- Amount Pill -->
-                <div class="bg-light p-2 rounded-3 border mb-3">
+                <div class="bg-light p-2.5 rounded-3 border mb-3">
                     <div class="text-muted small text-uppercase fw-bold" style="font-size: 0.65rem;">Payable Amount</div>
                     <div class="h3 fw-extrabold text-primary mb-0 font-monospace">₹{{ number_format($order->total_amount, 2) }}</div>
                 </div>
@@ -395,28 +364,25 @@
                     </div>
                 </div>
 
-                <!-- Razorpay Trust & Supported Apps -->
                 <div class="mb-2">
-                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2.5 py-1 font-monospace" style="font-size: 0.7rem;">
+                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2.5 py-1 font-monospace" style="font-size: 0.72rem;">
                         <i class="bi bi-shield-check text-primary me-1"></i> Razorpay Auto-Verified Gateway
                     </span>
                 </div>
 
-                <!-- Supported Apps Pills -->
-                <div class="d-flex align-items-center justify-content-center gap-1.5 mb-2.5 text-muted" style="font-size: 0.72rem;">
+                <div class="d-flex align-items-center justify-content-center gap-1.5 mb-2.5 text-muted" style="font-size: 0.74rem;">
                     <span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-google text-primary me-1"></i>GPay</span>
                     <span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-phone text-purple me-1"></i>PhonePe</span>
                     <span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-wallet2 text-info me-1"></i>Paytm</span>
                 </div>
 
-                <!-- Live Auto-Detection Pulse -->
-                <div id="upiStatusIndicator" class="alert alert-light border d-flex align-items-center justify-content-center gap-2 py-1.5 px-2 mb-2 rounded-3 text-secondary" style="font-size: 0.75rem;">
+                <div id="upiStatusIndicator" class="alert alert-light border d-flex align-items-center justify-content-center gap-2 py-2 px-2.5 mb-2.5 rounded-3 text-secondary" style="font-size: 0.78rem;">
                     <span class="spinner-grow spinner-grow-sm text-primary" role="status"></span>
                     <span>Waiting for customer to pay on phone...</span>
                 </div>
 
                 <!-- 1-Click Instant Confirm Button -->
-                <button type="button" id="btnConfirmUpiPayment" class="btn btn-sm btn-success w-100 py-2 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-1.5 shadow-xs">
+                <button type="button" id="btnConfirmUpiPayment" class="btn btn-sm btn-success w-100 py-2.5 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-1.5 shadow-xs">
                     <i class="bi bi-check2-circle fs-6"></i>
                     <span>Confirm UPI Payment Received</span>
                 </button>
@@ -425,7 +391,7 @@
     </div>
 </div>
 
-<!-- Native Mobile Bottom Sheet Modal for Reporting Issues -->
+<!-- Modal: Reporting Delivery Issues -->
 <div class="modal fade" id="modalReportIssue" tabindex="-1" aria-labelledby="modalReportIssueLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm modal-dialog-scrollable">
         <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
@@ -444,11 +410,11 @@
             <form id="formReportIssue" action="{{ route('delivery.orders.report-issue', $order) }}" method="POST" class="d-flex flex-column h-100" style="min-height: 0; overflow: hidden; flex: 1 1 auto;">
                 @csrf
                 <div class="modal-body p-3.5">
-                    <p class="text-secondary small mb-3" style="font-size: 0.78rem;">
-                        Select the reason why you cannot deliver this parcel right now:
+                    <p class="text-secondary small mb-3" style="font-size: 0.8rem;">
+                        Select the reason why this parcel cannot be delivered:
                     </p>
 
-                    <!-- Clean Touch Tiles for Reasons -->
+                    <!-- Touch Tiles for Reasons -->
                     <div class="issue-options-list">
                         <input type="radio" class="d-none issue-option-radio" name="reason" id="r1" value="Customer phone switched off / unreachable" required checked>
                         <label class="issue-option-label" for="r1">
@@ -483,10 +449,10 @@
                 </div>
 
                 <div class="modal-footer bg-light py-2.5 px-3.5 border-top d-flex gap-2" style="flex-shrink: 0; position: sticky; bottom: 0; z-index: 10; background: #ffffff !important;">
-                    <button type="button" class="btn btn-light border bg-white flex-grow-1 fw-bold" data-bs-dismiss="modal" style="font-size: 0.85rem; height: 42px;">
+                    <button type="button" class="btn btn-light border bg-white flex-grow-1 fw-bold" data-bs-dismiss="modal" style="font-size: 0.86rem; height: 44px;">
                         Cancel
                     </button>
-                    <button type="submit" id="btnSubmitIssue" class="btn btn-danger flex-grow-1 fw-bold" style="font-size: 0.85rem; height: 42px;">
+                    <button type="submit" id="btnSubmitIssue" class="btn btn-danger flex-grow-1 fw-bold" style="font-size: 0.86rem; height: 44px;">
                         <i class="bi bi-send me-1"></i> Log Issue
                     </button>
                 </div>
@@ -544,22 +510,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (formComplete) {
         formComplete.addEventListener('submit', async function (e) {
             e.preventDefault();
-            updateOtp();
-
-            if (finalOtp.value.length < 4) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Enter 4-Digit OTP',
-                    text: 'Please enter the 4-digit code provided by the customer.'
-                });
-                boxes[0].focus();
-                return;
-            }
 
             const btn = document.getElementById('btnSubmitOtp');
             const originalText = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Verifying...';
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Confirming...';
 
             const formData = new FormData(formComplete);
 
@@ -630,7 +585,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const data = await res.json();
                 if (res.ok && data.success) {
-                    // Close modal
                     const modalEl = document.getElementById('modalReportIssue');
                     const modalObj = bootstrap.Modal.getInstance(modalEl);
                     if (modalObj) modalObj.hide();
@@ -680,14 +634,14 @@ document.addEventListener('DOMContentLoaded', function () {
             osc.connect(gain);
             gain.connect(ctx.destination);
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-            osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12); // A5
+            osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+            osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12);
             gain.gain.setValueAtTime(0.3, ctx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
             osc.start();
             osc.stop(ctx.currentTime + 0.6);
         } catch (e) {
-            console.log('Audio chime not supported or muted');
+            console.log('Audio chime not supported');
         }
     }
 
@@ -708,21 +662,19 @@ document.addEventListener('DOMContentLoaded', function () {
             const modalObj = bootstrap.Modal.getInstance(modalUpiEl);
             if (modalObj) modalObj.hide();
 
-            // Update Main Screen Payment Card to Green
             if (paymentReqCard) {
-                paymentReqCard.className = 'order-task-card p-3 border-start border-4 border-success';
+                paymentReqCard.className = 'card border-0 rounded-4 p-3.5 bg-white shadow-xs mb-3';
+                paymentReqCard.style.borderLeft = '5px solid #10b981';
                 paymentReqCard.innerHTML = `
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.65rem;">Payment Requirement</div>
-                            <div class="fw-bolder text-success" style="font-size: 0.95rem;">
+                            <span class="text-secondary small fw-bold text-uppercase d-block" style="font-size: 0.65rem;">Payment Status</span>
+                            <div class="fw-bolder text-success fs-5">
                                 ✅ Paid via Razorpay UPI &bull; Collect ₹0 Cash
                             </div>
-                            <div class="text-secondary small" style="font-size: 0.72rem;">Zero cash liability on rider &bull; Verified via Razorpay</div>
+                            <div class="text-secondary small" style="font-size: 0.76rem;">Verified via Razorpay &bull; Zero liability</div>
                         </div>
-                        <div class="text-end">
-                            <span class="badge bg-success rounded-pill px-2.5 py-1 fw-bold">PAID</span>
-                        </div>
+                        <span class="badge bg-success rounded-pill px-3 py-1.5 fw-bold">PAID</span>
                     </div>
                 `;
             }
@@ -743,7 +695,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (modalUpiEl) {
         modalUpiEl.addEventListener('shown.bs.modal', function () {
-            // Start live polling every 1.8 seconds for instant detection
             if (upiPollInterval) clearInterval(upiPollInterval);
             upiPollInterval = setInterval(async () => {
                 try {

@@ -224,11 +224,21 @@ $registerStaffRoutes = function () {
             Route::get('alerts', [\App\Http\Controllers\OrderManager\DashboardController::class, 'alerts'])->name('alerts');
             Route::get('rider-performance', [\App\Http\Controllers\OrderManager\RiderPerformanceController::class, 'index'])->name('rider-performance.index');
             Route::get('settlements', [\App\Http\Controllers\OrderManager\SettlementController::class, 'index'])->name('settlements.index');
+            Route::get('settlements-lookup', [\App\Http\Controllers\OrderManager\SettlementController::class, 'lookup'])->name('settlements.lookup');
+            Route::post('settlements/receive-box', [\App\Http\Controllers\OrderManager\SettlementController::class, 'receiveReturnBox'])->name('settlements.receive-box');
             Route::post('settlements', [\App\Http\Controllers\OrderManager\SettlementController::class, 'store'])->name('settlements.store');
             Route::get('settlements/{settlement}', [\App\Http\Controllers\OrderManager\SettlementController::class, 'show'])->name('settlements.show');
 
             // Orders Lifecycle Management
             Route::get('orders', [\App\Http\Controllers\OrderManager\OrderController::class, 'index'])->name('orders.index');
+            Route::get('orders/today', [\App\Http\Controllers\OrderManager\OrderController::class, 'todayOrders'])->name('orders.today');
+            Route::get('orders/export/csv', [\App\Http\Controllers\OrderManager\OrderController::class, 'exportCsv'])->name('orders.export-csv');
+            Route::get('orders/manifest/daily', [\App\Http\Controllers\OrderManager\OrderController::class, 'dailyManifest'])->name('orders.daily-manifest');
+            Route::post('orders/bulk/update-status', [\App\Http\Controllers\OrderManager\OrderController::class, 'bulkUpdateStatus'])->name('orders.bulk-update-status');
+            Route::post('orders/bulk/assign-rider', [\App\Http\Controllers\OrderManager\OrderController::class, 'bulkAssignRider'])->name('orders.bulk-assign-rider');
+            Route::match(['get', 'post'], 'orders/bulk/shipping-labels', [\App\Http\Controllers\OrderManager\OrderController::class, 'bulkShippingLabels'])->name('orders.bulk-shipping-labels');
+            Route::post('orders/auto-assign-riders', [\App\Http\Controllers\OrderManager\OrderController::class, 'autoAssignRiders'])->name('orders.auto-assign-riders');
+
             Route::get('orders/{order}', [\App\Http\Controllers\OrderManager\OrderController::class, 'show'])->name('orders.show');
             Route::match(['get', 'post'], 'orders/{order}/status', function (\Illuminate\Http\Request $request, \App\Models\Order $order) {
                 if ($request->isMethod('get')) {
@@ -254,8 +264,6 @@ $registerStaffRoutes = function () {
             Route::get('orders/{order}/packing-slip', [\App\Http\Controllers\OrderManager\OrderController::class, 'packingSlip'])->name('orders.packing-slip');
             Route::get('orders/{order}/shipping-label', [\App\Http\Controllers\OrderManager\OrderController::class, 'shippingLabel'])->name('orders.shipping-label');
             Route::post('orders/{order}/send-otp-whatsapp', [\App\Http\Controllers\OrderManager\OrderController::class, 'sendOtpWhatsApp'])->name('orders.send-otp-whatsapp');
-            Route::match(['get', 'post'], 'orders/bulk/shipping-labels', [\App\Http\Controllers\OrderManager\OrderController::class, 'bulkShippingLabels'])->name('orders.bulk-shipping-labels');
-            Route::post('orders/auto-assign-riders', [\App\Http\Controllers\OrderManager\OrderController::class, 'autoAssignRiders'])->name('orders.auto-assign-riders');
             Route::get('live-orders', [\App\Http\Controllers\StaffNotificationController::class, 'liveOrders'])->name('live-orders');
 
             // Order Manager Refund Processing

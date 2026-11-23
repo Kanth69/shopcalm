@@ -130,7 +130,7 @@
             <div class="d-flex align-items-center gap-3">
                 <div class="rider-avatar">
                     {{ strtoupper(substr($r['name'], 0, 1)) }}
-                    <span class="status-dot" title="Active Fleet Rider"></span>
+                    <span class="status-dot" title="Active Delivery Partner"></span>
                 </div>
                 <div>
                     <div class="d-flex align-items-center gap-2 mb-0.5 flex-wrap">

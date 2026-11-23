@@ -324,6 +324,18 @@
                         @if($order->shipping_email)
                             &bull; <i class="bi bi-envelope-fill me-1 text-muted small"></i> {{ $order->shipping_email }}
                         @endif
+                        @php
+                            $invRawNotes = $order->notes ?? '';
+                            $invCleanNote = $invRawNotes;
+                            if (preg_match('/\[Time:\s*([^\]]+)\]/i', $invRawNotes, $invM)) {
+                                $invCleanNote = trim(str_replace($invM[0], '', $invRawNotes));
+                            }
+                        @endphp
+                        @if(!empty($invCleanNote))
+                            <div class="mt-2 pt-1 border-top border-warning-subtle text-dark fw-bold" style="font-size: 0.76rem; color: #92400e !important;">
+                                <i class="bi bi-chat-left-quote-fill text-warning me-1"></i> Delivery Note: "{{ $invCleanNote }}"
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -352,7 +364,7 @@
                         @elseif($order->wallet_amount_used > 0)
                             💳 ShopCalm Wallet (₹{{ number_format($order->wallet_amount_used, 2) }}) + {{ $order->payment_method === 'online' ? '⚡ Razorpay PG (' . ($payment?->method_display ?? 'Online UPI') . ')' : ($order->payment_method === 'doorstep_upi' ? '📲 Doorstep UPI (Razorpay QR)' : '💵 Cash on Delivery (COD)') }}
                         @elseif($order->payment_method === 'doorstep_upi')
-                            📲 Doorstep UPI &bull; Paid via Razorpay Dynamic QR to Fleet Rider
+                            📲 Doorstep UPI &bull; Paid via Razorpay Dynamic QR to Delivery Partner
                         @elseif($order->payment_method === 'online')
                             ⚡ Razorpay PG ({{ $payment?->method_display ?? 'Online UPI' }})
                         @elseif($order->payment_method === 'cod')

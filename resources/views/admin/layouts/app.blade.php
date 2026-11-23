@@ -532,11 +532,13 @@
                 </li>
 
                 @php
+                    $adminAuthUser = auth('admin')->user() ?? auth()->user();
+                    $isSuperAdminUser = optional($adminAuthUser)->isSuperAdmin() ?? false;
                     $globalPendingProductsCount = \App\Models\Product::where('status', 'Pending_Approval')->count();
                 @endphp
 
                 <li class="nav-header">Catalog & Approvals</li>
-                @if(optional(auth()->user())->isSuperAdmin())
+                @if($isSuperAdminUser)
                 <li class="nav-item">
                     <a class="nav-link has-submenu {{ request()->routeIs('admin.products.*') || request()->routeIs('admin.categories.*') || request()->routeIs('admin.brands.*') ? '' : 'collapsed' }}"
                        data-bs-toggle="collapse" href="#catalogSubmenu" role="button"
@@ -641,11 +643,17 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('admin.banners.*') ? 'active' : '' }}" href="{{ route('admin.banners.index') }}">Banners</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center justify-content-between" href="{{ route('marketing.dashboard') }}" target="_blank" style="color: #f43f5e;">
+                                    <span><i class="bi bi-megaphone me-1"></i> Marketing Portal</span>
+                                    <i class="bi bi-box-arrow-up-right small text-muted"></i>
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </li>
 
-                @if(optional(auth()->user())->isSuperAdmin())
+                @if($isSuperAdminUser)
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}" href="{{ route('admin.notifications.index') }}">
                         <i class="bi bi-bell"></i>
@@ -654,7 +662,7 @@
                 </li>
                 @endif
 
-                @if(optional(auth()->user())->isSuperAdmin())
+                @if($isSuperAdminUser)
                 <li class="nav-header">Finance & Unit Economics</li>
                 <li class="nav-item">
                     <a class="nav-link has-submenu {{ request()->routeIs('admin.finance.*') || request()->routeIs('admin.reports.*') ? '' : 'collapsed' }}"
@@ -688,7 +696,7 @@
                 @endif
 
                 <li class="nav-header">Governance & Control</li>
-                @if(optional(auth()->user())->isSuperAdmin())
+                @if($isSuperAdminUser)
                 <li class="nav-item">
                     <a class="nav-link has-submenu {{ request()->routeIs('admin.roles.*') || request()->routeIs('admin.pages.*') ? '' : 'collapsed' }}"
                        data-bs-toggle="collapse" href="#governanceSubmenu" role="button"
@@ -709,7 +717,7 @@
                 </li>
                 @endif
 
-                @if(optional(auth()->user())->isSuperAdmin())
+                @if($isSuperAdminUser)
                 <li class="nav-header">Logistics & Delivery</li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.pincodes.*') ? 'active' : '' }}" href="{{ route('admin.pincodes.index') }}">
@@ -718,7 +726,7 @@
                 </li>
                 @endif
 
-                @if(optional(auth()->user())->isSuperAdmin())
+                @if($isSuperAdminUser)
                 <li class="nav-header">All Portals</li>
                 <li class="nav-item">
                     <a class="nav-link has-submenu {{ request()->routeIs('product-manager.*') || request()->routeIs('order-manager.*') || request()->routeIs('support.*') || request()->routeIs('marketing.*') || request()->routeIs('delivery.*') ? '' : 'collapsed' }}"
@@ -765,7 +773,7 @@
                 @endif
 
                 <li class="nav-header">System Settings</li>
-                @if(optional(auth()->user())->isSuperAdmin())
+                @if($isSuperAdminUser)
                 <li class="nav-item">
                     <a class="nav-link has-submenu {{ request()->routeIs('admin.integrations.*') ? '' : 'collapsed' }}"
                        data-bs-toggle="collapse" href="#integrationsSubmenu" role="button"
@@ -806,7 +814,7 @@
                     </a>
                     <div class="collapse {{ request()->routeIs('admin.settings.*') || request()->routeIs('admin.profile.*') ? 'show' : '' }}" id="settingsSubmenu">
                         <ul class="nav flex-column submenu">
-                            @if(optional(auth()->user())->isSuperAdmin())
+                            @if($isSuperAdminUser)
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}" href="{{ route('admin.settings.index') }}">Store Settings</a>
                             </li>

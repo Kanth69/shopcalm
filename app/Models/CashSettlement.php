@@ -23,7 +23,7 @@ class CashSettlement extends Model
     ];
 
     protected $casts = [
-        'total_amount' => 'decimal:2',
+        'total_amount' => 'float',
         'order_count'  => 'integer',
     ];
 

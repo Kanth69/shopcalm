@@ -30,9 +30,9 @@
             ];
         @endphp
 
-        <!-- 🚀 Unified Smooth Circular Category Moving Auto-Slider (Mobile + Tablet + Laptop) -->
-        <div class="category-marquee-container position-relative overflow-hidden py-1 py-md-2">
-            <div class="category-marquee-wrapper">
+        <!-- 🚀 Smooth Touch-Swipeable & Auto-Moving Category Track (Mobile Swipe + Desktop Drag + Auto Glide) -->
+        <div class="category-marquee-container position-relative py-1 py-md-2" id="categoryScrollContainer">
+            <div class="category-marquee-wrapper" id="categoryScrollWrapper">
                 {{-- Group 1 --}}
                 <div class="category-marquee-group">
                     @foreach($categories as $index => $category)
@@ -54,7 +54,7 @@
                             <div class="rounded-circle d-flex align-items-center justify-content-center mb-1.5 transition-all overflow-hidden category-avatar-box" 
                                  style="@if(!$hasImage) background: {{ $color['bg'] }}; color: {{ $color['text'] }}; @endif">
                                 @if($hasImage)
-                                    <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="w-100 h-100 object-fit-cover">
+                                    <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="w-100 h-100 object-fit-cover" draggable="false">
                                 @else
                                     <i class="bi {{ $catIcon }} category-avatar-icon text-white user-select-none"></i>
                                 @endif
@@ -64,7 +64,7 @@
                     @endforeach
                 </div>
 
-                {{-- Group 2 (Infinite clone for seamless loop) --}}
+                {{-- Group 2 (Clone for infinite seamless loop) --}}
                 <div class="category-marquee-group" aria-hidden="true">
                     @foreach($categories as $index => $category)
                         @php 
@@ -85,7 +85,7 @@
                             <div class="rounded-circle d-flex align-items-center justify-content-center mb-1.5 transition-all overflow-hidden category-avatar-box" 
                                  style="@if(!$hasImage) background: {{ $color['bg'] }}; color: {{ $color['text'] }}; @endif">
                                 @if($hasImage)
-                                    <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="w-100 h-100 object-fit-cover">
+                                    <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="w-100 h-100 object-fit-cover" draggable="false">
                                 @else
                                     <i class="bi {{ $catIcon }} category-avatar-icon text-white user-select-none"></i>
                                 @endif
@@ -100,15 +100,29 @@
 </section>
 
 <style>
-/* Continuous Smooth Auto-Slider (Infinite Ticker) */
+/* Continuous Smooth Auto-Slider with Full Native Swipe & Touch Drag Support */
 .category-marquee-container {
-    mask-image: linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%);
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    touch-action: pan-x pan-y !important;
+    mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%);
+    cursor: grab;
+    scroll-behavior: auto;
+}
+.category-marquee-container::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 .category-marquee-wrapper {
     display: flex;
     width: max-content;
     user-select: none;
+    -webkit-user-select: none;
 }
 .category-marquee-group {
     display: flex;
@@ -116,23 +130,6 @@
     gap: 1rem;
     padding-right: 1rem;
     flex-shrink: 0;
-    will-change: transform;
-    animation: categoryMarqueeSlider 24s linear infinite;
-}
-
-/* Pause on Hover so users can easily click on laptop & mobile */
-.category-marquee-wrapper:hover .category-marquee-group,
-.category-marquee-wrapper:active .category-marquee-group {
-    animation-play-state: paused;
-}
-
-@keyframes categoryMarqueeSlider {
-    from {
-        transform: translateX(0);
-    }
-    to {
-        transform: translateX(-100%);
-    }
 }
 
 /* Item Sizing & Styling - Default (Mobile) */
@@ -166,7 +163,6 @@
     .category-marquee-group {
         gap: 1.75rem;
         padding-right: 1.75rem;
-        animation-duration: 32s; /* Slower, ultra-smooth glide on laptop screens */
     }
     .category-slider-item {
         width: 108px;
@@ -205,4 +201,88 @@
     transform: scale(0.94);
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('categoryScrollContainer');
+    if (!container) return;
+
+    let isDown = false;
+    let startX = 0;
+    let scrollStart = 0;
+    let isInteracting = false;
+    let resumeTimeout = null;
+    let animId = null;
+    const scrollSpeed = 0.65; // Smooth pixels per frame
+
+    function autoGlide() {
+        if (!isInteracting && container) {
+            container.scrollLeft += scrollSpeed;
+            // Seamless infinite wrap: when half of content has scrolled past, reset smoothly
+            const half = container.scrollWidth / 2;
+            if (half > 0 && container.scrollLeft >= half) {
+                container.scrollLeft -= half;
+            }
+        }
+        animId = requestAnimationFrame(autoGlide);
+    }
+
+    function pause() {
+        isInteracting = true;
+        if (resumeTimeout) clearTimeout(resumeTimeout);
+    }
+
+    function resume(delay = 1800) {
+        if (resumeTimeout) clearTimeout(resumeTimeout);
+        resumeTimeout = setTimeout(() => {
+            isInteracting = false;
+        }, delay);
+    }
+
+    // Touch events for Mobile Web (swiping with hand/finger)
+    container.addEventListener('touchstart', function() {
+        pause();
+    }, { passive: true });
+
+    container.addEventListener('touchend', function() {
+        resume(2000);
+    }, { passive: true });
+
+    container.addEventListener('touchcancel', function() {
+        resume(2000);
+    }, { passive: true });
+
+    // Mouse drag for Desktop
+    container.addEventListener('mousedown', function(e) {
+        isDown = true;
+        pause();
+        container.style.cursor = 'grabbing';
+        startX = e.pageX - container.offsetLeft;
+        scrollStart = container.scrollLeft;
+    });
+
+    window.addEventListener('mouseup', function() {
+        if (isDown) {
+            isDown = false;
+            if (container) container.style.cursor = 'grab';
+            resume(2000);
+        }
+    });
+
+    container.addEventListener('mousemove', function(e) {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - container.offsetLeft;
+        const walk = (x - startX) * 1.5;
+        container.scrollLeft = scrollStart - walk;
+    });
+
+    container.addEventListener('mouseenter', pause);
+    container.addEventListener('mouseleave', function() {
+        resume(1200);
+    });
+
+    animId = requestAnimationFrame(autoGlide);
+});
+</script>
 @endif
