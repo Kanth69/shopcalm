@@ -471,12 +471,18 @@
                     </div>
                 </div>
 
-                <div class="ms-auto ms-sm-2 flex-shrink-0 align-self-start align-self-sm-center">
+                <div class="ms-auto ms-sm-2 flex-shrink-0 align-self-start align-self-sm-center d-flex align-items-center gap-1.5 flex-wrap">
                     <button type="button" class="btn btn-sm {{ $order->feedback ? 'btn-outline-success' : 'btn-warning text-dark' }} rounded-pill px-3 py-1.5 fw-bold shadow-xs d-inline-flex align-items-center gap-1" 
                             data-bs-toggle="modal" data-bs-target="#modalOrderFeedback" style="font-size: 0.78rem; white-space: nowrap;">
                         <i class="bi {{ $order->feedback ? 'bi-star-fill text-warning' : 'bi-star-fill' }}"></i> 
                         <span>{{ $order->feedback ? 'Feedback (' . $order->feedback->delivery_rating . '★)' : 'Rate Delivery' }}</span>
                     </button>
+                    <form action="{{ route('account.orders.reorder', $order) }}" method="POST" class="d-inline m-0 p-0">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 py-1.5 fw-bold shadow-xs d-inline-flex align-items-center gap-1" style="font-size: 0.78rem; white-space: nowrap;">
+                            <i class="bi bi-arrow-repeat"></i> <span>Buy Again</span>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -627,6 +633,12 @@
                         <i class="bi {{ $order->feedback ? 'bi-star-fill text-warning' : 'bi-star-fill' }}"></i> 
                         <span>{{ $order->feedback ? 'Feedback (' . $order->feedback->delivery_rating . '★)' : 'Rate Delivery' }}</span>
                     </button>
+                    <form action="{{ route('account.orders.reorder', $order) }}" method="POST" class="d-inline m-0 p-0">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 py-1.5 fw-bold shadow-xs d-inline-flex align-items-center gap-1" style="font-size: 0.78rem; white-space: nowrap;">
+                            <i class="bi bi-arrow-repeat"></i> <span>Buy Again</span>
+                        </button>
+                    </form>
                 @elseif($order->tracking_url)
                     <a href="{{ $order->tracking_url }}" target="_blank" class="btn btn-sm btn-primary rounded-pill px-3 py-1.5 fw-bold shadow-sm" style="background: #0284c7; border: none; font-size: 0.78rem; white-space: nowrap;">
                         <i class="bi bi-geo-alt-fill me-1"></i> Track on Courier <i class="bi bi-box-arrow-up-right ms-0.5 small"></i>
@@ -639,6 +651,153 @@
             </div>
         </div>
     </div>
+@endif
+
+{{-- ── 2-Way Synchronized Delivery Decisions Card (Customer Exception Action) ── --}}
+@if($order->fulfillment?->hasActiveDeliveryIssue() && !$isDelivered && $s !== 'cancelled')
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 p-3 p-sm-4" style="background: #fffbeb; border: 1.5px solid #fde68a !important; max-width: 100%;">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 pb-2 border-bottom border-warning-subtle">
+            <span class="badge rounded-pill bg-warning text-dark fw-bold px-2.5 py-1 font-monospace" style="font-size: 0.72rem; letter-spacing: 0.02em;">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i> DELIVERY ACTION REQUIRED
+            </span>
+            <span class="small text-secondary fw-semibold" style="font-size: 0.78rem;">
+                Reported by Partner: <span class="text-dark fw-bold">{{ $order->fulfillment->delivery_issue }}</span>
+            </span>
+        </div>
+        <h6 class="fw-extrabold text-dark mb-1" style="font-size: 0.96rem;">How would you like us to proceed with your delivery?</h6>
+        <p class="text-secondary small mb-3" style="font-size: 0.8rem;">
+            Select your preferred instruction below. Your choice will automatically reschedule your package and synchronize instantly with our dispatch hub and delivery partner.
+        </p>
+
+        <form action="{{ route('account.orders.delivery-decision', $order) }}" method="POST" id="formDeliveryDecision">
+            @csrf
+            <div class="row g-2 mb-3">
+                <div class="col-12 col-md-4">
+                    <label class="card h-100 p-2.5 rounded-3 border bg-white cursor-pointer decision-opt-card" style="border-color: #cbd5e1; cursor: pointer;">
+                        <div class="form-check p-0 d-flex align-items-start gap-2 m-0">
+                            <input class="form-check-input ms-0 mt-1 flex-shrink-0" type="radio" name="decision" value="reschedule_tomorrow" id="dec_tomorrow" checked onchange="handleDecisionChange('reschedule_tomorrow')">
+                            <div class="w-100">
+                                <div class="fw-bold text-dark small"><i class="bi bi-calendar-event text-primary me-1"></i> Deliver Tomorrow</div>
+                                <div class="text-muted" style="font-size: 0.72rem;">Choose morning or evening window</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                <div class="col-12 col-md-4">
+                    <label class="card h-100 p-2.5 rounded-3 border bg-white cursor-pointer decision-opt-card" style="border-color: #cbd5e1; cursor: pointer;">
+                        <div class="form-check p-0 d-flex align-items-start gap-2 m-0">
+                            <input class="form-check-input ms-0 mt-1 flex-shrink-0" type="radio" name="decision" value="leave_security_neighbor" id="dec_security" onchange="handleDecisionChange('leave_security_neighbor')">
+                            <div class="w-100">
+                                <div class="fw-bold text-dark small"><i class="bi bi-building text-success me-1"></i> Security / Neighbor</div>
+                                <div class="text-muted" style="font-size: 0.72rem;">Safe contactless drop with guard</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                <div class="col-12 col-md-4">
+                    <label class="card h-100 p-2.5 rounded-3 border bg-white cursor-pointer decision-opt-card" style="border-color: #cbd5e1; cursor: pointer;">
+                        <div class="form-check p-0 d-flex align-items-start gap-2 m-0">
+                            <input class="form-check-input ms-0 mt-1 flex-shrink-0" type="radio" name="decision" value="reattempt_today" id="dec_home" onchange="handleDecisionChange('reattempt_today')">
+                            <div class="w-100">
+                                <div class="fw-bold text-dark small"><i class="bi bi-geo-alt-fill text-warning me-1"></i> I Am Home Now</div>
+                                <div class="text-muted" style="font-size: 0.72rem;">Ready for doorstep handover today</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            {{-- Reschedule Tomorrow Slot Selector --}}
+            <div id="sectionRescheduleSlot" class="mb-3 p-2.5 rounded-3 bg-white border border-secondary-subtle">
+                <label class="form-label small fw-bold text-dark mb-1.5 d-block">Select Tomorrow's Preferred Delivery Window:</label>
+                <div class="d-flex gap-2 flex-wrap">
+                    <label class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold slot-btn active" style="font-size: 0.78rem;">
+                        <input type="radio" name="delivery_slot" value="Tomorrow Morning (8:00 AM - 12:00 PM)" class="d-none" checked onchange="selectSlotBtn(this)">
+                        <i class="bi bi-sunrise me-1"></i> Morning: 8:00 AM – 12:00 PM
+                    </label>
+                    <label class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold slot-btn" style="font-size: 0.78rem;">
+                        <input type="radio" name="delivery_slot" value="Tomorrow Evening (4:00 PM - 8:00 PM)" class="d-none" onchange="selectSlotBtn(this)">
+                        <i class="bi bi-sunset me-1"></i> Evening: 4:00 PM – 8:00 PM
+                    </label>
+                </div>
+            </div>
+
+            {{-- Security / Neighbor Custom Instructions --}}
+            <div id="sectionNeighborNote" class="mb-3 p-2.5 rounded-3 bg-white border border-secondary-subtle" style="display: none;">
+                <label class="form-label small fw-bold text-dark mb-1.5 d-block">Drop Instructions for Delivery Partner:</label>
+                <input type="text" name="instructions" class="form-control form-control-sm rounded-pill px-3" placeholder="e.g. Please leave with Security Guard at Tower A gate, or Flat 204 neighbor" style="font-size: 0.82rem;">
+            </div>
+
+            <button type="submit" class="btn btn-warning btn-sm text-dark fw-bold rounded-pill px-4 py-2 shadow-xs d-inline-flex align-items-center gap-1.5" style="font-size: 0.82rem;">
+                <i class="bi bi-arrow-repeat"></i> <span>Confirm & Update Delivery Instructions</span>
+            </button>
+        </form>
+    </div>
+@elseif($order->fulfillment?->delivery_issue_resolved_at && !$isDelivered && $s !== 'cancelled')
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 p-3 d-flex flex-row align-items-center justify-content-between flex-wrap gap-2.5" style="background: #ecfdf5; border: 1.5px solid #86efac !important; max-width: 100%;">
+        <div class="d-flex align-items-center gap-2.5">
+            <div style="width: 38px; height: 38px; border-radius: 10px; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0;">
+                <i class="bi bi-check-circle-fill text-success"></i>
+            </div>
+            <div>
+                <span class="fw-bold text-dark small d-block" style="font-size: 0.88rem;">Delivery Schedule Synchronized</span>
+                <span class="text-secondary small" style="font-size: 0.78rem;">{{ $order->fulfillment->delivery_issue_resolution }}</span>
+            </div>
+        </div>
+        <span class="badge bg-white text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.72rem;">
+            <i class="bi bi-check2-all me-1"></i> Synced with Hub & Rider
+        </span>
+    </div>
+@endif
+
+{{-- ── Prominent Delivery Experience 5-Star Rating Card (Delivered State) ── --}}
+@if($isDelivered)
+    @if(!$order->feedback)
+        <div class="card border-0 shadow-sm rounded-4 mb-4 p-4 text-center overflow-hidden" style="background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%); border: 1.5px solid #86efac !important; max-width: 100%;">
+            <div class="d-inline-flex align-items-center justify-content-center mx-auto mb-2 shadow-xs" style="width: 48px; height: 48px; border-radius: 14px; background: #dcfce7; color: #16a34a; font-size: 1.35rem;">
+                <i class="bi bi-star-fill text-warning"></i>
+            </div>
+            <h5 class="fw-extrabold text-dark mb-1" style="font-size: 1.05rem;">How was your delivery experience with {{ $order->rider_name ?: 'our delivery partner' }}?</h5>
+            <p class="text-secondary small mb-3 mx-auto" style="max-width: 460px; font-size: 0.8rem;">Your 5-star rating evaluates delivery punctuality, polite behavior, and careful package handling.</p>
+            <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
+                @for($star = 1; $star <= 5; $star++)
+                    <button type="button" class="btn btn-light rounded-circle shadow-xs border-0 star-quick-btn" style="width: 44px; height: 44px; font-size: 1.4rem; color: #f59e0b; background: #fffbeb; display: flex; align-items: center; justify-content: center; transition: transform 0.15s ease;" onclick="openFeedbackWithRating({{ $star }})" title="Rate {{ $star }} Stars">
+                        ★
+                    </button>
+                @endfor
+            </div>
+            <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 py-2 fw-bold shadow-xs mx-auto d-inline-flex align-items-center gap-1.5" data-bs-toggle="modal" data-bs-target="#modalOrderFeedback" style="font-size: 0.82rem;">
+                <i class="bi bi-pencil-square"></i> <span>Write Detailed Review / Add Tags</span>
+            </button>
+        </div>
+    @else
+        <div class="card border-0 shadow-sm rounded-4 mb-4 p-3.5 d-flex flex-row align-items-center justify-content-between flex-wrap gap-2.5 overflow-hidden" style="background: #f0fdf4; border: 1.5px solid #86efac !important; max-width: 100%;">
+            <div class="d-flex align-items-center gap-2.5">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0;">
+                    <i class="bi bi-patch-check-fill text-success"></i>
+                </div>
+                <div>
+                    <div class="fw-bold text-dark small" style="font-size: 0.88rem;">
+                        You rated this delivery:
+                        <span class="text-warning fw-extrabold font-monospace">
+                            @for($i = 1; $i <= $order->feedback->delivery_rating; $i++)★@endfor
+                        </span>
+                        <span class="text-muted">({{ $order->feedback->delivery_rating }}/5)</span>
+                    </div>
+                    @if(!empty($order->feedback->tags))
+                        <div class="d-flex gap-1 flex-wrap mt-1">
+                            @foreach($order->feedback->tags as $t)
+                                <span class="badge bg-white text-success border border-success-subtle px-2 py-0.5 rounded-pill" style="font-size: 0.68rem;">{{ $t }}</span>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1.5 fw-bold shadow-xs d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#modalOrderFeedback" style="font-size: 0.78rem;">
+                <i class="bi bi-pencil"></i> <span>Edit Feedback</span>
+            </button>
+        </div>
+    @endif
 @endif
 
 {{-- Order Details Grid (Order Summary & Shipping Address) --}}
@@ -721,10 +880,34 @@
                 <div class="ps-4 text-muted small d-flex flex-column gap-1.5" style="font-size: 0.8rem;">
                     <div><i class="bi bi-envelope me-2 text-info"></i>{{ $order->shipping_email }}</div>
                     <div><i class="bi bi-telephone-fill me-2 text-success"></i>{{ $order->shipping_phone }}</div>
-                    @if(!empty($order->notes))
-                    <div class="mt-2 p-2 rounded-3 bg-light border text-dark" style="font-size: 0.78rem;">
-                        <span class="text-primary fw-bold d-block mb-0.5"><i class="bi bi-clock-history me-1"></i> Delivery Preference:</span>
-                        <span>{{ $order->notes }}</span>
+                    @php
+                        $rawCustomerNotes = $order->notes ?? '';
+                        $prefTimeSlot = '';
+                        $cleanInstruction = $rawCustomerNotes;
+                        if (preg_match('/\[Time:\s*([^\]]+)\]/i', $rawCustomerNotes, $noteMatches)) {
+                            $prefTimeSlot = trim($noteMatches[1]);
+                            $cleanInstruction = trim(str_replace($noteMatches[0], '', $rawCustomerNotes));
+                        }
+                    @endphp
+                    @if(!empty($cleanInstruction) || !empty($prefTimeSlot))
+                    <div class="mt-2.5 p-2.5 rounded-3 border" style="background: #fffbeb; border-color: #fde68a !important;">
+                        <div class="d-flex align-items-center gap-1.5 fw-bold small mb-1" style="font-size: 0.8rem; color: #92400e !important;">
+                            <i class="bi bi-pin-angle-fill text-warning"></i>
+                            <span>Your Delivery Instruction (Recorded):</span>
+                        </div>
+                        @if(!empty($cleanInstruction))
+                            <div class="fw-semibold text-dark" style="font-size: 0.82rem; line-height: 1.4;">
+                                "{{ $cleanInstruction }}"
+                            </div>
+                        @endif
+                        @if(!empty($prefTimeSlot))
+                            <div class="mt-1 small text-secondary" style="font-size: 0.74rem;">
+                                <i class="bi bi-clock-history me-1"></i> Preferred Window: <span class="badge bg-white text-dark border px-2 py-0.5 rounded-pill fw-semibold">{{ $prefTimeSlot }}</span>
+                            </div>
+                        @endif
+                        <div class="text-muted small mt-1" style="font-size: 0.7rem;">
+                            <i class="bi bi-shield-check text-success me-1"></i> Transmitted directly to your delivery partner and dispatch hub.
+                        </div>
                     </div>
                     @endif
                 </div>
@@ -1372,6 +1555,68 @@ function toggleFeedbackTag(btn, tag) {
         container.appendChild(input);
     }
 }
+
+function openFeedbackWithRating(star) {
+    const starBtn = document.querySelector(`.star-btn[data-rating="${star}"]`);
+    if (starBtn) starBtn.click();
+    const modalEl = document.getElementById('modalOrderFeedback');
+    if (modalEl && window.bootstrap) {
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    }
+}
+
+function handleDecisionChange(val) {
+    const secSlot = document.getElementById('sectionRescheduleSlot');
+    const secNote = document.getElementById('sectionNeighborNote');
+    if (secSlot) secSlot.style.display = (val === 'reschedule_tomorrow') ? 'block' : 'none';
+    if (secNote) secNote.style.display = (val === 'leave_security_neighbor') ? 'block' : 'none';
+}
+
+function selectSlotBtn(radio) {
+    document.querySelectorAll('.slot-btn').forEach(l => l.classList.remove('active'));
+    if (radio && radio.closest('.slot-btn')) {
+        radio.closest('.slot-btn').classList.add('active');
+    }
+}
+</script>
+@endif
+
+{{-- ── 15-Second Real-Time Auto-Refresh Poller (Active Delivery States) ── --}}
+@if(!$isDelivered && $s !== 'cancelled')
+<script>
+(function() {
+    let currentStatus = "{{ $order->status }}";
+    let currentHasIssue = {{ $order->fulfillment?->hasActiveDeliveryIssue() ? 'true' : 'false' }};
+    let currentSlot = "{{ $order->fulfillment?->delivery_slot ?: ($order->delivery_slot ?: '') }}";
+
+    const pollInterval = setInterval(() => {
+        if (document.hidden) return; // Pause when tab is in background
+
+        fetch("{{ route('account.orders.status-poll', $order) }}", {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) return;
+
+            const statusChanged = data.status !== currentStatus;
+            const issueChanged = Boolean(data.has_active_issue) !== currentHasIssue;
+            const slotChanged = Boolean(data.delivery_slot) && data.delivery_slot !== currentSlot;
+
+            if (statusChanged || issueChanged || slotChanged) {
+                clearInterval(pollInterval);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 800);
+            }
+        })
+        .catch(() => {});
+    }, 15000);
+})();
 </script>
 @endif
 

@@ -261,6 +261,14 @@
                             @endif
                         </div>
                     </div>
+                    @if($order->status === 'delivered')
+                        <form action="{{ route('account.orders.reorder', $order) }}" method="POST" class="d-inline m-0 p-0">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1 shadow-xs" style="font-size:0.82rem; white-space:nowrap;">
+                                <i class="bi bi-arrow-repeat"></i> <span>Buy Again</span>
+                            </button>
+                        </form>
+                    @endif
                     <a href="{{ route('account.orders.show', $order) }}"
                        class="btn btn-sm fw-semibold rounded-pill px-3.5 py-2 text-decoration-none d-inline-flex align-items-center gap-1.5 text-white shadow-xs"
                        style="background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%); border:none; font-size:0.82rem; white-space:nowrap; box-shadow:0 2px 8px rgba(99,102,241,0.25);">

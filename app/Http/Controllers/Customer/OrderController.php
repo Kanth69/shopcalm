@@ -156,4 +156,168 @@ class OrderController extends Controller
             return redirect()->back()->with('error', $e->getMessage());
         }
     }
+
+    /**
+     * Handle Customer Delivery Decision / Exception Resolution (2-Way Sync with Hub & Fleet).
+     */
+    public function deliveryDecision(Request $request, Order $order)
+    {
+        $user = Auth::guard('customer')->user() ?? Auth::user();
+        if (!$user || (int)$order->user_id !== (int)$user->id) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized access.'], 403);
+        }
+
+        $validated = $request->validate([
+            'decision'      => 'required|string|in:reschedule_tomorrow,leave_security_neighbor,reattempt_today',
+            'delivery_slot' => 'nullable|string|max:100',
+            'instructions'  => 'nullable|string|max:300',
+        ]);
+
+        $decision = $validated['decision'];
+        $fulfillment = $order->fulfillment;
+        $resolutionNote = '';
+
+        if ($decision === 'reschedule_tomorrow') {
+            $slot = $validated['delivery_slot'] ?? 'Tomorrow Morning (8:00 AM - 12:00 PM)';
+            $resolutionNote = "Rescheduled by Customer to {$slot}";
+
+            if ($fulfillment) {
+                $fulfillment->update([
+                    'delivery_slot'              => $slot,
+                    'delivery_issue_resolved_at' => now(),
+                    'delivery_issue_resolution'  => $resolutionNote,
+                    'notes'                      => trim(($fulfillment->notes ?? '') . " | [Customer Rescheduled: {$slot}]"),
+                ]);
+            }
+
+            // Sync delivery slot to order model as well
+            $order->update(['delivery_slot' => $slot]);
+        } elseif ($decision === 'leave_security_neighbor') {
+            $customNote = $validated['instructions'] ?: 'Please leave package with building security or next-door neighbor';
+            $resolutionNote = "Customer Handover Instruction: {$customNote}";
+
+            if ($fulfillment) {
+                $fulfillment->update([
+                    'delivery_issue_resolved_at' => now(),
+                    'delivery_issue_resolution'  => $resolutionNote,
+                    'notes'                      => trim(($fulfillment->notes ?? '') . " | [Customer: {$customNote}]"),
+                ]);
+            }
+        } elseif ($decision === 'reattempt_today') {
+            $resolutionNote = 'Customer is at home now — ready for doorstep handover';
+
+            if ($fulfillment) {
+                $fulfillment->update([
+                    'delivery_issue_resolved_at' => now(),
+                    'delivery_issue_resolution'  => $resolutionNote,
+                    'notes'                      => trim(($fulfillment->notes ?? '') . ' | [Customer: Home now, ready for re-attempt]'),
+                ]);
+            }
+        }
+
+        // Record in Order Status Audit History for Order Manager visibility
+        $order->statusHistories()->create([
+            'previous_status' => $order->status,
+            'current_status'  => $order->status,
+            'notes'           => "Customer Delivery Action: {$resolutionNote}",
+        ]);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Your delivery decision has been synchronized with the dispatch hub and assigned delivery partner.',
+                'resolution' => $resolutionNote,
+                'delivery_slot' => $order->fresh()->delivery_slot,
+            ]);
+        }
+
+        return back()->with('toast', [
+            'type'    => 'success',
+            'title'   => 'Instructions Updated',
+            'message' => 'Your delivery decision has been sent to our dispatch hub and delivery partner.',
+        ]);
+    }
+
+    /**
+     * Real-time Lightweight Poller Endpoint for Order Tracking (15s Heartbeat).
+     */
+    public function statusPoll(Order $order)
+    {
+        $user = Auth::guard('customer')->user() ?? Auth::user();
+        if (!$user || (int)$order->user_id !== (int)$user->id) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $order->load(['fulfillment', 'feedback']);
+        $fulfillment = $order->fulfillment;
+
+        return response()->json([
+            'success'            => true,
+            'order_id'           => $order->id,
+            'order_number'       => $order->order_number,
+            'status'             => $order->status,
+            'status_label'       => ucfirst($order->status),
+            'payment_status'     => $order->payment_status,
+            'is_out_for_delivery'=> $order->status === 'out for delivery',
+            'is_delivered'       => $order->status === 'delivered',
+            'is_cancelled'       => $order->status === 'cancelled',
+            'has_active_issue'   => (bool)($fulfillment?->hasActiveDeliveryIssue()),
+            'issue_reason'       => $fulfillment?->delivery_issue,
+            'delivery_slot'      => $fulfillment?->delivery_slot ?: ($order->delivery_slot ?: 'Fast Doorstep Delivery'),
+            'rider_name'         => $order->rider_name,
+            'rider_phone'        => $order->rider_phone,
+            'feedback_submitted' => (bool)$order->feedback,
+        ]);
+    }
+
+    /**
+     * 1-Tap "Buy Again" / Re-Order All Items into Customer Shopping Bag.
+     */
+    public function reorder(Order $order)
+    {
+        $user = Auth::guard('customer')->user() ?? Auth::user();
+        if (!$user || (int)$order->user_id !== (int)$user->id) {
+            abort(403);
+        }
+
+        $cartService = app(\App\Services\CartService::class);
+        $order->load('items.product');
+
+        $addedCount = 0;
+        $failedCount = 0;
+
+        foreach ($order->items as $item) {
+            if ($item->product && $item->product->status === 'Active') {
+                $qty = max(1, (int)$item->quantity);
+                $opt = $item->selected_option;
+                $res = $cartService->addProduct((int)$item->product_id, $qty, $opt);
+                if (is_array($res) && ($res['success'] ?? false)) {
+                    $addedCount++;
+                } else {
+                    $failedCount++;
+                }
+            } else {
+                $failedCount++;
+            }
+        }
+
+        if ($addedCount === 0) {
+            return back()->with('toast', [
+                'type'    => 'error',
+                'title'   => 'Unavailable',
+                'message' => 'Items from this order are currently out of stock or inactive.',
+            ]);
+        }
+
+        $msg = "Added {$addedCount} item(s) from Order #{$order->order_number} to your shopping bag.";
+        if ($failedCount > 0) {
+            $msg .= " ({$failedCount} item(s) were out of stock).";
+        }
+
+        return redirect()->route('cart.index')->with('toast', [
+            'type'    => 'success',
+            'title'   => 'Bag Updated! 🛍️',
+            'message' => $msg,
+        ]);
+    }
 }

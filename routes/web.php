@@ -457,6 +457,9 @@ $registerCustomerRoutes = function () {
             Route::post('/orders/{order}/cancel', [CustomerOrderController::class, 'cancel'])->name('orders.cancel');
             Route::get('/orders/{order}', [AccountController::class, 'showOrder'])->name('orders.show');
             Route::post('/orders/{order}/feedback', [\App\Http\Controllers\Customer\OrderFeedbackController::class, 'store'])->name('orders.feedback.store');
+            Route::post('/orders/{order}/delivery-decision', [CustomerOrderController::class, 'deliveryDecision'])->name('orders.delivery-decision');
+            Route::get('/orders/{order}/status-poll', [CustomerOrderController::class, 'statusPoll'])->name('orders.status-poll');
+            Route::post('/orders/{order}/reorder', [CustomerOrderController::class, 'reorder'])->name('orders.reorder');
             Route::get('/orders/{order}/invoice', [AccountController::class, 'invoice'])->name('orders.invoice');
             Route::get('/wallet', [\App\Http\Controllers\Customer\WalletController::class, 'index'])->name('wallet');
             Route::get('/reviews', [AccountController::class, 'reviews'])->name('reviews');
