@@ -149,7 +149,7 @@
     $s = strtolower(str_replace([' ', '-'], '_', $order->status));
     $map = [
         'delivered'        => ['bg'=>'#d1fae5','color'=>'#065f46','border'=>'#6ee7b7','stripe'=>'#10b981','icon'=>'bi-check-circle-fill','label'=>'Delivered'],
-        'out_for_delivery' => ['bg'=>'#fef3c7','color'=>'#b45309','border'=>'#fcd34d','stripe'=>'#f59e0b','icon'=>'bi-bicycle','label'=>'Out for Delivery'],
+        'out_for_delivery' => ['bg'=>'#e0f2fe','color'=>'#0369a1','border'=>'#7dd3fc','stripe'=>'#0284c7','icon'=>'bi-bicycle','label'=>'Out for Delivery'],
         'shipped'          => ['bg'=>'#f3e8ff','color'=>'#6b21a8','border'=>'#c4b5fd','stripe'=>'#8b5cf6','icon'=>'bi-truck','label'=>'Shipped'],
         'packed'           => ['bg'=>'#dbeafe','color'=>'#1e40af','border'=>'#93c5fd','stripe'=>'#3b82f6','icon'=>'bi-box-seam-fill','label'=>'Packed'],
         'confirmed'        => ['bg'=>'#dbeafe','color'=>'#1e40af','border'=>'#93c5fd','stripe'=>'#3b82f6','icon'=>'bi-check2-square','label'=>'Confirmed'],

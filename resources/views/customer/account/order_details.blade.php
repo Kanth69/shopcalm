@@ -8,7 +8,7 @@
     $s = strtolower(str_replace([' ', '-'], '_', $order->status));
     $map = [
         'delivered'        => ['bg'=>'#d1fae5','color'=>'#065f46','border'=>'#a7f3d0','stripe'=>'#10b981','icon'=>'bi-check-circle-fill','label'=>'Delivered'],
-        'out_for_delivery' => ['bg'=>'#fef3c7','color'=>'#b45309','border'=>'#fcd34d','stripe'=>'#f59e0b','icon'=>'bi-bicycle','label'=>'Out for Delivery'],
+        'out_for_delivery' => ['bg'=>'#e0f2fe','color'=>'#0369a1','border'=>'#7dd3fc','stripe'=>'#0284c7','icon'=>'bi-bicycle','label'=>'Out for Delivery'],
         'shipped'          => ['bg'=>'#f3e8ff','color'=>'#6b21a8','border'=>'#d8b4fe','stripe'=>'#8b5cf6','icon'=>'bi-truck','label'=>'Shipped'],
         'packed'           => ['bg'=>'#dbeafe','color'=>'#1e40af','border'=>'#93c5fd','stripe'=>'#3b82f6','icon'=>'bi-box-seam-fill','label'=>'Packed'],
         'confirmed'        => ['bg'=>'#dbeafe','color'=>'#1e40af','border'=>'#93c5fd','stripe'=>'#3b82f6','icon'=>'bi-check2-square','label'=>'Confirmed'],
@@ -494,12 +494,12 @@
                 <div class="d-flex align-items-start align-items-sm-center gap-2.5" style="min-width: 0; flex: 1 1 auto;">
                     @if($order->rider_name)
                         {{-- Assigned Rider Icon --}}
-                        <div style="width: 42px; height: 42px; min-width: 42px; border-radius: 12px; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
+                        <div style="width: 42px; height: 42px; min-width: 42px; border-radius: 12px; background: {{ $isOutForDelivery ? '#e0f2fe' : '#ecfdf5' }}; color: {{ $isOutForDelivery ? '#0284c7' : '#059669' }}; border: 1px solid {{ $isOutForDelivery ? '#7dd3fc' : '#a7f3d0' }}; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
                             <i class="bi bi-bicycle"></i>
                         </div>
                         <div style="min-width: 0; flex: 1 1 auto; overflow: hidden; word-break: break-word;">
                             <div class="d-flex align-items-center gap-1.5 mb-1 flex-wrap">
-                                <span class="badge rounded-pill px-2.5 py-1 fw-bold text-uppercase" style="background: {{ $isOutForDelivery ? '#f59e0b' : '#059669' }}; color: #ffffff; font-size: 0.65rem; letter-spacing: 0.03em;">
+                                <span class="badge rounded-pill px-2.5 py-1 fw-bold text-uppercase" style="background: {{ $isOutForDelivery ? '#0284c7' : '#059669' }}; color: #ffffff; font-size: 0.65rem; letter-spacing: 0.03em;">
                                     <i class="bi {{ $isOutForDelivery ? 'bi-lightning-charge-fill' : 'bi-check2-circle' }} me-1"></i>
                                     {{ $isOutForDelivery ? 'OUT FOR DELIVERY' : 'RIDER ASSIGNED' }}
                                 </span>
