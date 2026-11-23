@@ -84,6 +84,10 @@ Route::prefix('v1')->group(function () {
             Route::get('/orders/{order}', [AccountController::class, 'orderDetails']);
             Route::get('/orders/{order}/cancellation-summary', [AccountController::class, 'cancellationSummary']);
             Route::post('/orders/{order}/cancel', [AccountController::class, 'cancelOrder']);
+            Route::post('/orders/{order}/delivery-decision', [AccountController::class, 'deliveryDecision']);
+            Route::post('/orders/{order}/feedback', [AccountController::class, 'orderFeedback']);
+            Route::post('/orders/{order}/reorder', [AccountController::class, 'reorder']);
+            Route::get('/orders/{order}/status-poll', [AccountController::class, 'statusPoll']);
             Route::get('/wallet', [AccountController::class, 'wallet']);
             Route::get('/addresses', [AccountController::class, 'addresses']);
             Route::post('/addresses', [AccountController::class, 'storeAddress']);

@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Models\Address;
 use App\Models\Order;
+use App\Models\OrderFeedback;
 use App\Models\Setting;
+use App\Services\CartService;
 use App\Services\OrderService;
 use App\Services\WalletService;
 use Illuminate\Http\JsonResponse;
@@ -142,12 +144,35 @@ class AccountController extends BaseApiController
         $canCustomerCancel = !in_array($order->status, ['cancelled', 'delivered']) &&
             ($isPendingUnpaid || ($allowCancellationSetting && in_array($order->status, ['confirmed', 'processing'])));
 
+        $rawNotes = $order->notes ?? '';
+        $prefTimeSlot = '';
+        $cleanInstruction = $rawNotes;
+        if (preg_match('/\[Time:\s*([^\]]+)\]/i', $rawNotes, $noteMatches)) {
+            $prefTimeSlot = trim($noteMatches[1]);
+            $cleanInstruction = trim(str_replace($noteMatches[0], '', $rawNotes));
+        }
+
+        $fulfillment = $order->fulfillment;
+        $podPhoto = null;
+        $dropType = null;
+        if ($fulfillment && preg_match('/\[POD_PHOTO:(.*?)\]/', $fulfillment->notes ?? '', $mPhoto)) {
+            $podPhoto = asset('storage/' . $mPhoto[1]);
+        }
+        if ($fulfillment && preg_match('/\[DROP_TYPE:(.*?)\]/', $fulfillment->notes ?? '', $mDrop)) {
+            $dropType = $mDrop[1];
+        }
+
+        $order->loadMissing('feedback');
+
         return $this->sendResponse([
             'id'                          => $order->id,
             'order_number'                => $order->order_number,
             'invoice_number'              => 'INV-' . $order->order_number,
             'invoice_url'                 => url('/orders/' . $order->id . '/tax-invoice'),
             'status'                      => $order->status,
+            'is_out_for_delivery'         => $order->status === 'out for delivery' || $order->status === 'out_for_delivery',
+            'is_delivered'                => $order->status === 'delivered',
+            'is_cancelled'                => $order->status === 'cancelled',
             'payment_method'              => $order->payment_method,
             'payment_status'              => $order->payment_status,
             'bank_reference'              => $order->primaryPayment?->bank_reference,
@@ -159,6 +184,24 @@ class AccountController extends BaseApiController
             'coupon_discount'             => (float) $order->coupon_discount_amount,
             'wallet_amount_used'          => (float) $order->wallet_amount_used,
             'total_amount'                => (float) $order->total_amount,
+            'notes'                       => $rawNotes,
+            'delivery_instructions'       => $cleanInstruction,
+            'preferred_time_slot'         => $prefTimeSlot,
+            'pod_photo_url'               => $podPhoto,
+            'drop_type'                   => $dropType,
+            'customer_delivery_decision'  => $fulfillment ? [
+                'has_issue'    => (bool) $fulfillment->hasActiveDeliveryIssue(),
+                'issue_reason' => $fulfillment->delivery_issue,
+                'resolution'   => $fulfillment->delivery_issue_resolution,
+                'resolved_at'  => $fulfillment->delivery_issue_resolved_at?->format('d M, Y h:i A'),
+                'delivery_slot'=> $fulfillment->delivery_slot ?: ($order->delivery_slot ?: 'Fast Doorstep Delivery'),
+            ] : null,
+            'delivery_feedback'           => $order->feedback ? [
+                'delivery_rating' => (int) $order->feedback->delivery_rating,
+                'product_rating'  => (int) $order->feedback->product_rating,
+                'tags'            => $order->feedback->tags ?? [],
+                'comment'         => $order->feedback->comment,
+            ] : null,
             'shipping_name'               => $order->shipping_name,
             'shipping_email'              => $order->shipping_email,
             'shipping_phone'              => $order->shipping_phone,
@@ -634,6 +677,192 @@ class AccountController extends BaseApiController
             });
 
         return $this->sendResponse($tickets, 'Tickets retrieved successfully.');
+    }
+
+    /**
+     * Mobile REST: Customer Delivery Decision / Exception Resolution (2-Way Sync).
+     */
+    public function deliveryDecision(Request $request, Order $order): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user || (int)$order->user_id !== (int)$user->id) {
+            return $this->sendError('Unauthorized access to this order.', [], 403);
+        }
+
+        $validated = $request->validate([
+            'decision'      => 'required|string|in:reschedule_tomorrow,leave_security_neighbor,reattempt_today',
+            'delivery_slot' => 'nullable|string|max:100',
+            'instructions'  => 'nullable|string|max:300',
+        ]);
+
+        $decision = $validated['decision'];
+        $fulfillment = $order->fulfillment;
+        $resolutionNote = '';
+
+        if ($decision === 'reschedule_tomorrow') {
+            $slot = $validated['delivery_slot'] ?? 'Tomorrow Morning (8:00 AM - 12:00 PM)';
+            $resolutionNote = "Rescheduled by Customer to {$slot}";
+
+            if ($fulfillment) {
+                $fulfillment->update([
+                    'delivery_slot'              => $slot,
+                    'delivery_issue_resolved_at' => now(),
+                    'delivery_issue_resolution'  => $resolutionNote,
+                    'notes'                      => trim(($fulfillment->notes ?? '') . " | [Customer Rescheduled: {$slot}]"),
+                ]);
+            }
+            $order->update(['delivery_slot' => $slot]);
+        } elseif ($decision === 'leave_security_neighbor') {
+            $customNote = $validated['instructions'] ?: 'Please leave package with building security or next-door neighbor';
+            $resolutionNote = "Customer Handover Instruction: {$customNote}";
+
+            if ($fulfillment) {
+                $fulfillment->update([
+                    'delivery_issue_resolved_at' => now(),
+                    'delivery_issue_resolution'  => $resolutionNote,
+                    'notes'                      => trim(($fulfillment->notes ?? '') . " | [Customer: {$customNote}]"),
+                ]);
+            }
+        } elseif ($decision === 'reattempt_today') {
+            $resolutionNote = 'Customer is at home now — ready for doorstep handover';
+
+            if ($fulfillment) {
+                $fulfillment->update([
+                    'delivery_issue_resolved_at' => now(),
+                    'delivery_issue_resolution'  => $resolutionNote,
+                    'notes'                      => trim(($fulfillment->notes ?? '') . ' | [Customer: Home now, ready for re-attempt]'),
+                ]);
+            }
+        }
+
+        $order->statusHistories()->create([
+            'previous_status' => $order->status,
+            'current_status'  => $order->status,
+            'notes'           => "Customer Delivery Action: {$resolutionNote}",
+        ]);
+
+        return $this->sendResponse([
+            'resolution'    => $resolutionNote,
+            'delivery_slot' => $order->fresh()->delivery_slot,
+        ], 'Your delivery decision has been synchronized with the dispatch hub and assigned delivery partner.');
+    }
+
+    /**
+     * Mobile REST: 5-Star Delivery Experience Feedback.
+     */
+    public function orderFeedback(Request $request, Order $order): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user || (int)$order->user_id !== (int)$user->id) {
+            return $this->sendError('Unauthorized access.', [], 403);
+        }
+
+        if ($order->status !== 'delivered') {
+            return $this->sendError('Feedback can only be provided for delivered orders.', [], 422);
+        }
+
+        $validated = $request->validate([
+            'delivery_rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'product_rating'  => ['nullable', 'integer', 'min:1', 'max:5'],
+            'tags'            => ['nullable', 'array'],
+            'tags.*'          => ['string', 'max:50'],
+            'comment'         => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $riderId = $order->fulfillment?->rider_id;
+
+        $feedback = OrderFeedback::updateOrCreate(
+            ['order_id' => $order->id],
+            [
+                'user_id'         => $user->id,
+                'rider_id'        => $riderId,
+                'delivery_rating' => $validated['delivery_rating'],
+                'product_rating'  => $validated['product_rating'] ?? $validated['delivery_rating'],
+                'tags'            => $validated['tags'] ?? [],
+                'comment'         => $validated['comment'] ?? null,
+            ]
+        );
+
+        return $this->sendResponse([
+            'feedback' => $feedback,
+        ], 'Thank you for rating your delivery partner!');
+    }
+
+    /**
+     * Mobile REST: 1-Tap "Buy Again" / Re-Order All Items.
+     */
+    public function reorder(Request $request, Order $order): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user || (int)$order->user_id !== (int)$user->id) {
+            return $this->sendError('Unauthorized access.', [], 403);
+        }
+
+        $cartService = app(CartService::class);
+        $order->loadMissing('items.product');
+
+        $addedCount = 0;
+        $failedCount = 0;
+
+        foreach ($order->items as $item) {
+            if ($item->product && $item->product->status === 'Active') {
+                $qty = max(1, (int)$item->quantity);
+                $opt = $item->selected_option;
+                $res = $cartService->addProduct((int)$item->product_id, $qty, $opt);
+                if (is_array($res) && ($res['success'] ?? false)) {
+                    $addedCount++;
+                } else {
+                    $failedCount++;
+                }
+            } else {
+                $failedCount++;
+            }
+        }
+
+        if ($addedCount === 0) {
+            return $this->sendError('Could not re-order items. Products may currently be out of stock or inactive.', [], 422);
+        }
+
+        return $this->sendResponse([
+            'added_count'  => $addedCount,
+            'failed_count' => $failedCount,
+        ], "{$addedCount} " . ($addedCount === 1 ? 'item' : 'items') . " added to your cart!");
+    }
+
+    /**
+     * Mobile REST: 15-Second Background Status Poller.
+     */
+    public function statusPoll(Request $request, Order $order): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user || (int)$order->user_id !== (int)$user->id) {
+            return $this->sendError('Unauthorized.', [], 403);
+        }
+
+        $order->loadMissing(['fulfillment', 'feedback']);
+        $fulfillment = $order->fulfillment;
+
+        $podPhoto = null;
+        if ($fulfillment && preg_match('/\[POD_PHOTO:(.*?)\]/', $fulfillment->notes ?? '', $mPhoto)) {
+            $podPhoto = asset('storage/' . $mPhoto[1]);
+        }
+
+        return $this->sendResponse([
+            'order_id'            => $order->id,
+            'order_number'        => $order->order_number,
+            'status'              => $order->status,
+            'payment_status'      => $order->payment_status,
+            'is_out_for_delivery' => $order->status === 'out for delivery' || $order->status === 'out_for_delivery',
+            'is_delivered'        => $order->status === 'delivered',
+            'is_cancelled'        => $order->status === 'cancelled',
+            'has_active_issue'    => (bool)($fulfillment?->hasActiveDeliveryIssue()),
+            'issue_reason'        => $fulfillment?->delivery_issue,
+            'delivery_slot'       => $fulfillment?->delivery_slot ?: ($order->delivery_slot ?: 'Fast Doorstep Delivery'),
+            'rider_name'          => $order->rider_name,
+            'rider_phone'         => $order->rider_phone,
+            'pod_photo_url'       => $podPhoto,
+            'feedback_submitted'  => (bool)$order->feedback,
+        ], 'Status retrieved.');
     }
 }
 
