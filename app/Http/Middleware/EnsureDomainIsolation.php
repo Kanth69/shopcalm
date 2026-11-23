@@ -17,7 +17,7 @@ class EnsureDomainIsolation
     {
         $host = strtolower($request->getHost());
         $configuredHub = strtolower(config('app.staff_hub_domain', 'hub.shopcalm.in'));
-        $isHubHost = ($host === $configuredHub || $host === 'hub.localhost' || str_starts_with($host, 'hub.'));
+        $isHubHost = ($host === $configuredHub || $host === 'hub.shopcalm.in' || $host === 'hub.localhost' || str_starts_with($host, 'hub.'));
 
         $path = '/' . ltrim($request->path(), '/');
 
@@ -45,15 +45,10 @@ class EnsureDomainIsolation
             }
         } else {
             // ── 2. MAIN CUSTOMER DOMAIN ISOLATION ──
-            // If attempting to access staff paths on Main domain, return 404 (stealth security rule)
+            // If attempting to access staff paths on Main customer domain (shopcalm.in),
+            // silently redirect to customer home page so admin login remains 100% cloaked & invisible to public.
             if ($isStaffPath) {
-                // In local dev when accessing via IP/localhost, allow staff routes directly
-                if (app()->environment('local') && ($host === '127.0.0.1' || $host === 'localhost')) {
-                    return $next($request);
-                }
-
-                // Modern Web Security Rule: Never disclose internal staff hub URL via redirect. Return 404.
-                abort(404);
+                return redirect('/');
             }
         }
 
