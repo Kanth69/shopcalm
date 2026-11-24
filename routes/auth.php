@@ -26,6 +26,8 @@ Route::middleware('guest:customer')->group(function () {
                 ->name('login');
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
+    Route::post('auth/login-otp', [AuthenticatedSessionController::class, 'loginWithOtp'])
+                ->name('auth.login-otp');
 
     // WhatsApp OTP Password Reset Routes (Zero Email Reset Links)
     Route::get('forgot-password', [WhatsAppPasswordResetController::class, 'showForgotPasswordForm'])

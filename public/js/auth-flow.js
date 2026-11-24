@@ -356,6 +356,130 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Web 1-Tap WhatsApp OTP Login
+    const webLoginOtpBtn = document.getElementById('web-login-otp-btn');
+    const webLoginOtpSection = document.getElementById('web-login-otp-section');
+    const webPasswordSection = document.getElementById('web-password-section');
+    const webLoginDivider = document.getElementById('web-login-divider');
+    const webCancelOtpBtn = document.getElementById('web-cancel-otp-btn');
+    const webLoginVerifyBtn = document.getElementById('web-login-verify-btn');
+    const webLoginResendBtn = document.getElementById('web-login-resend-btn');
+    const webLoginOtpInput = document.getElementById('web-login-otp-input');
+    const webLoginCountdown = document.getElementById('web-login-countdown');
+    let webOtpTimer = null;
+
+    function startWebOtpCountdown() {
+        let sec = 60;
+        if (webLoginCountdown) webLoginCountdown.textContent = sec + 's';
+        if (webLoginResendBtn) webLoginResendBtn.style.display = 'none';
+        if (webOtpTimer) clearInterval(webOtpTimer);
+        webOtpTimer = setInterval(() => {
+            sec--;
+            if (webLoginCountdown) webLoginCountdown.textContent = sec + 's';
+            if (sec <= 0) {
+                clearInterval(webOtpTimer);
+                if (webLoginCountdown) webLoginCountdown.textContent = 'Expired';
+                if (webLoginResendBtn) webLoginResendBtn.style.display = 'inline-block';
+            }
+        }, 1000);
+    }
+
+    if (webLoginOtpBtn) {
+        webLoginOtpBtn.addEventListener('click', function() {
+            const originalBtn = webLoginOtpBtn.innerHTML;
+            webLoginOtpBtn.disabled = true;
+            webLoginOtpBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending WhatsApp OTP...';
+
+            fetch('/api/v1/auth/send-whatsapp-otp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    identifier: currentIdentifier,
+                    type: 'LOGIN'
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('WhatsApp OTP sent successfully!', 'success');
+                    if (webLoginOtpSection) webLoginOtpSection.style.display = 'block';
+                    if (webPasswordSection) webPasswordSection.style.display = 'none';
+                    if (webLoginDivider) webLoginDivider.style.display = 'none';
+                    if (webLoginOtpBtn) webLoginOtpBtn.style.display = 'none';
+                    startWebOtpCountdown();
+                    if (webLoginOtpInput) webLoginOtpInput.focus();
+                } else {
+                    showToast(data.message || 'Failed to send WhatsApp OTP.', 'error');
+                }
+            })
+            .catch(() => showToast('Network error while sending OTP.', 'error'))
+            .finally(() => {
+                webLoginOtpBtn.disabled = false;
+                webLoginOtpBtn.innerHTML = originalBtn;
+            });
+        });
+    }
+
+    if (webCancelOtpBtn) {
+        webCancelOtpBtn.addEventListener('click', function() {
+            if (webLoginOtpSection) webLoginOtpSection.style.display = 'none';
+            if (webPasswordSection) webPasswordSection.style.display = 'block';
+            if (webLoginDivider) webLoginDivider.style.display = 'flex';
+            if (webLoginOtpBtn) webLoginOtpBtn.style.display = 'block';
+        });
+    }
+
+    if (webLoginResendBtn) {
+        webLoginResendBtn.addEventListener('click', function() {
+            if (webLoginOtpBtn) webLoginOtpBtn.click();
+        });
+    }
+
+    if (webLoginVerifyBtn) {
+        webLoginVerifyBtn.addEventListener('click', function() {
+            const otpVal = webLoginOtpInput ? webLoginOtpInput.value.trim() : '';
+            if (otpVal.length !== 6) {
+                showToast('Please enter the 6-digit WhatsApp OTP.', 'error');
+                return;
+            }
+
+            const originalBtn = webLoginVerifyBtn.innerHTML;
+            webLoginVerifyBtn.disabled = true;
+            webLoginVerifyBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
+
+            fetch('/auth/login-otp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    mobile_number: currentIdentifier,
+                    otp: otpVal
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Login successful! Redirecting...', 'success');
+                    window.location.href = data.redirect || '/';
+                } else {
+                    showToast(data.message || 'Invalid or expired OTP. Please try again.', 'error');
+                }
+            })
+            .catch(() => showToast('Network error while verifying OTP.', 'error'))
+            .finally(() => {
+                webLoginVerifyBtn.disabled = false;
+                webLoginVerifyBtn.innerHTML = originalBtn;
+            });
+        });
+    }
+
     // Step 1: Send WhatsApp OTP for Forgot Password (Masked Confirmation Flow)
     const forgotSendOtpBtn = document.getElementById('forgot-send-otp-btn');
     if (forgotSendOtpBtn) {
@@ -882,20 +1006,41 @@ document.addEventListener('DOMContentLoaded', function() {
             if (status === 200 && body.success) {
                 regData.otp = otpVal;
 
-                // Populate hidden inputs in final step form
-                const fName = document.getElementById('final_reg_name');
-                const fMob = document.getElementById('final_reg_mobile');
-                const fEmail = document.getElementById('final_reg_email');
-                const fRef = document.getElementById('final_reg_referral');
-                const fOtp = document.getElementById('final_reg_otp');
-
-                if (fName) fName.value = regData.name;
-                if (fMob) fMob.value = regData.mobile_number;
-                if (fEmail) fEmail.value = regData.email;
-                if (fRef) fRef.value = regData.referral_code;
-                if (fOtp) fOtp.value = regData.otp;
-
-                transitionRegSubstep('password');
+                // Direct 1-Step Passwordless Registration
+                verifyOtpBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating Your Account...';
+                
+                fetch('/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': getCsrfToken(),
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: regData.name,
+                        mobile_number: regData.mobile_number,
+                        email: regData.email,
+                        referral_code: regData.referral_code,
+                        otp: otpVal
+                    })
+                })
+                .then(r => r.json())
+                .then(regResult => {
+                    if (regResult.success || regResult.redirect) {
+                        showToast('Account created successfully! Welcome to ShopCalm.', 'success');
+                        window.location.href = regResult.redirect || '/';
+                    } else {
+                        showRegAlert('otp', regResult.message || 'Registration failed. Please try again.', 'error');
+                        verifyOtpBtn.disabled = false;
+                        verifyOtpBtn.innerHTML = originalText;
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    showRegAlert('otp', 'Network error creating account. Please try again.', 'error');
+                    verifyOtpBtn.disabled = false;
+                    verifyOtpBtn.innerHTML = originalText;
+                });
             } else {
                 showRegAlert('otp', body.message || 'Invalid or expired code. Please try again.', 'error');
                 otpBoxes.forEach(b => {

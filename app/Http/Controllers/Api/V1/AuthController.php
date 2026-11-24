@@ -377,24 +377,32 @@ class AuthController extends BaseApiController
     }
 
     /**
-     * Register Customer Account Endpoint (Email Optional).
+     * Register Customer Account Endpoint (Passwordless OTP or Password).
      */
     public function register(Request $request): JsonResponse
     {
-        if (!$request->has('password_confirmation') && $request->has('password')) {
+        if ($request->filled('password') && !$request->has('password_confirmation')) {
             $request->merge(['password_confirmation' => $request->password]);
         }
 
-        $request->validate([
+        $rules = [
             'name'          => 'required|string|max:255',
             'mobile_number' => 'required|string|max:15',
             'email'         => 'nullable|string|email|max:255',
-            'password'      => ['required', 'confirmed', Rules\Password::defaults()],
             'referral_code' => 'nullable|string|max:50',
-        ], [
+        ];
+
+        if ($request->filled('password')) {
+            $rules['password'] = ['required', 'confirmed', Rules\Password::defaults()];
+        } else {
+            $rules['otp'] = 'required|string|max:6';
+        }
+
+        $request->validate($rules, [
             'name.required'          => 'Please enter your full name.',
             'mobile_number.required' => 'Please enter your mobile number.',
             'email.email'            => 'Please enter a valid email address.',
+            'otp.required'           => 'Please enter the 6-digit WhatsApp OTP.',
             'password.required'      => 'Please set a secure password.',
             'password.confirmed'     => 'Password confirmation does not match.',
         ]);
@@ -416,13 +424,25 @@ class AuthController extends BaseApiController
             }
         }
 
+        // Verify OTP if passwordless flow
+        if (!$request->filled('password')) {
+            $isValidOtp = $this->whatsAppService->verifyOtp($request->mobile_number, $request->otp, 'REGISTER');
+            if (!$isValidOtp) {
+                return $this->sendError('Invalid or expired WhatsApp OTP code.', [], 422);
+            }
+            $rawPassword = \Illuminate\Support\Str::random(32);
+        } else {
+            $rawPassword = $request->password;
+        }
+
         $user = User::create([
-            'name'          => $request->name,
-            'mobile_number' => $request->mobile_number,
-            'email'         => $request->filled('email') ? strtolower(trim($request->email)) : null,
-            'password'      => Hash::make($request->password),
-            'role_id'       => User::ROLE_CUSTOMER,
-            'status'        => 'Active',
+            'name'               => $request->name,
+            'mobile_number'      => $request->mobile_number,
+            'email'              => $request->filled('email') ? strtolower(trim($request->email)) : null,
+            'password'           => Hash::make($rawPassword),
+            'role_id'            => User::ROLE_CUSTOMER,
+            'status'             => 'Active',
+            'mobile_verified_at' => now(),
         ]);
 
         if ($request->filled('referral_code')) {

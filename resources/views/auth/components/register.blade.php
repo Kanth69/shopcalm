@@ -22,17 +22,12 @@
             <div class="step-connector"></div>
             <div class="step-pill">
                 <span class="step-dot">2</span>
-                <span>Verify</span>
-            </div>
-            <div class="step-connector"></div>
-            <div class="step-pill">
-                <span class="step-dot">3</span>
-                <span>Password</span>
+                <span>Verify & Shop</span>
             </div>
         </div>
 
         <h2 class="auth-title">Create Account</h2>
-        <p class="auth-subtitle">Step 1: Tell us about yourself</p>
+        <p class="auth-subtitle">Fast 2-step registration (No password needed!)</p>
     </div>
 
     <!-- Alert Banner -->
@@ -104,12 +99,7 @@
             <div class="step-connector active"></div>
             <div class="step-pill active">
                 <span class="step-dot">2</span>
-                <span>Verify</span>
-            </div>
-            <div class="step-connector"></div>
-            <div class="step-pill">
-                <span class="step-dot">3</span>
-                <span>Password</span>
+                <span>Verify & Shop</span>
             </div>
         </div>
 
@@ -163,7 +153,7 @@
         </div>
 
         <button type="button" id="reg-verify-otp-btn" class="auth-submit-btn">
-            <span>Verify & Continue</span>
+            <span>Verify & Start Shopping (Get ₹25 Bonus) 🛍️</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>

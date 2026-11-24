@@ -106,13 +106,18 @@ class RegisteredUserController extends Controller
             $request->merge(['email' => strtolower(trim($request->email))]);
         }
 
-        $request->validate([
+        $rules = [
             'name'          => ['required', 'string', 'max:255'],
             'mobile_number' => ['required', 'string', 'digits:10'],
             'email'         => ['nullable', 'string', 'email', 'max:255'],
             'otp'           => ['required', 'string', 'max:6'],
-            'password'      => ['required', 'confirmed', Rules\Password::defaults()],
-        ], [
+        ];
+
+        if ($request->filled('password')) {
+            $rules['password'] = ['required', 'confirmed', Rules\Password::defaults()];
+        }
+
+        $request->validate($rules, [
             'name.required'          => 'Please enter your full name.',
             'mobile_number.required' => 'Please enter your mobile number.',
             'mobile_number.digits'   => 'Please enter a valid 10-digit mobile number.',
@@ -169,12 +174,14 @@ class RegisteredUserController extends Controller
 
         $request->session()->forget('verified_registration_mobile');
 
+        $rawPassword = $request->filled('password') ? $request->password : \Illuminate\Support\Str::random(32);
+
         $user = User::create([
             'name'               => $request->name,
             'email'              => $request->email ?: null,
             'mobile_number'      => $request->mobile_number,
             'mobile_verified_at' => now(),
-            'password'           => Hash::make($request->password),
+            'password'           => Hash::make($rawPassword),
             'role_id'            => User::ROLE_CUSTOMER,
         ]);
 
