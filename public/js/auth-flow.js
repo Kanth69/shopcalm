@@ -137,24 +137,17 @@ document.addEventListener('DOMContentLoaded', function() {
     function checkUserAndProceed() {
         hideInitialAlert();
 
-        const identifier = initialInput ? initialInput.value.trim() : '';
-        if (!identifier) {
-            showInitialAlert('Please enter an email address or mobile number.');
+        const rawVal = initialInput ? initialInput.value.trim() : '';
+        if (!rawVal) {
+            showInitialAlert('Please enter your 10-digit mobile number.');
             return;
         }
 
-        // Strict format validation
-        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-        const hasLetters = /[a-zA-Z]/.test(identifier);
-        const cleanPhone = identifier.replace(/[\s\-\(\)]/g, '');
-        const phoneRegex = /^(\+?\d{1,3})?[6-9]\d{9}$/;
-        const internationalPhoneRegex = /^\+?[1-9]\d{9,14}$/;
+        const cleanDigits = rawVal.replace(/\D/g, '');
+        const phone10 = cleanDigits.length > 10 ? cleanDigits.slice(-10) : cleanDigits;
 
-        const isEmail = emailRegex.test(identifier);
-        const isPhone = !hasLetters && (phoneRegex.test(cleanPhone) || internationalPhoneRegex.test(cleanPhone));
-
-        if (!isEmail && !isPhone) {
-            showInitialAlert('Please enter a valid Email (e.g. name@example.com) or 10-digit Mobile number.');
+        if (phone10.length !== 10 || !/^[6-9]\d{9}$/.test(phone10)) {
+            showInitialAlert('Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.');
             if (initialInput) initialInput.focus();
             return;
         }
@@ -185,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': getCsrfToken()
             },
-            body: JSON.stringify({ identifier: identifier })
+            body: JSON.stringify({ identifier: phone10 })
         })
         .then(res => {
             if (!res.ok) {
@@ -203,65 +196,39 @@ document.addEventListener('DOMContentLoaded', function() {
             const isUserExisting = (data.exists === true) || (data.data && data.data.exists === true);
 
             if (isUserExisting) {
-                // Registered user -> Show Password / Login Screen
+                // Registered user -> Show Password / OTP Login Screen
                 currentUserData = (data && data.data) ? data.data : {};
                 const loginIdHidden = document.getElementById('login_identifier_for_login');
                 const loginIdDisplay = document.getElementById('login_identifier_display');
-                if (loginIdHidden) loginIdHidden.value = identifier;
-                if (loginIdDisplay) loginIdDisplay.value = identifier;
+                if (loginIdHidden) loginIdHidden.value = phone10;
+                if (loginIdDisplay) loginIdDisplay.value = '+91 ' + phone10;
 
                 const loginPw = document.getElementById('password_for_login');
                 if (loginPw) loginPw.value = '';
 
                 resetButtonState();
-                transitionTo('login', identifier);
+                transitionTo('login', phone10);
             } else {
-                // New user -> Show Registration Form & Auto-fill entered value
-                const isEmailType = identifier.includes('@');
-                const regEmail = document.getElementById('register_email');
+                // New user -> Show Registration Form & Auto-fill mobile number
                 const regMobile = document.getElementById('register_mobile');
                 const changeMobileBtn = document.getElementById('change-identifier-from-register');
-                const changeEmailBtn = document.getElementById('change-email-from-register');
 
-                if (isEmailType) {
-                    if (regEmail) {
-                        regEmail.value = identifier;
-                        regEmail.readOnly = true;
-                        regEmail.classList.add('readonly-input');
-                    }
-                    if (changeEmailBtn) changeEmailBtn.style.display = 'inline-block';
-                    if (regMobile) {
-                        regMobile.readOnly = false;
-                        regMobile.classList.remove('readonly-input');
-                        regMobile.value = '';
-                    }
-                    if (changeMobileBtn) changeMobileBtn.style.display = 'none';
-                } else {
-                    const clean10 = identifier.replace(/\D/g, '').slice(-10);
-                    if (regMobile) {
-                        regMobile.value = clean10;
-                        regMobile.readOnly = true;
-                        regMobile.classList.add('readonly-input');
-                    }
-                    if (changeMobileBtn) changeMobileBtn.style.display = 'inline-block';
-                    if (regEmail) {
-                        regEmail.readOnly = false;
-                        regEmail.classList.remove('readonly-input');
-                    }
-                    if (changeEmailBtn) changeEmailBtn.style.display = 'none';
+                if (regMobile) {
+                    regMobile.value = phone10;
+                    regMobile.readOnly = true;
+                    regMobile.classList.add('readonly-input');
                 }
+                if (changeMobileBtn) changeMobileBtn.style.display = 'inline-block';
 
                 // Reset to step 1 (details)
                 regCurrentSubstep = 'details';
                 if (regSubsteps.details) regSubsteps.details.style.display = 'block';
                 if (regSubsteps.otp) regSubsteps.otp.style.display = 'none';
-                if (regSubsteps.password) regSubsteps.password.style.display = 'none';
                 hideRegAlert('details');
                 hideRegAlert('otp');
-                hideRegAlert('password');
 
                 resetButtonState();
-                transitionTo('register', identifier);
+                transitionTo('register', phone10);
             }
         })
         .catch(err => {
@@ -656,15 +623,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Registration Multi-Step State Management
     const regSubsteps = {
         details: document.getElementById('reg-substep-details'),
-        otp: document.getElementById('reg-substep-otp'),
-        password: document.getElementById('reg-substep-password'),
+        otp: document.getElementById('reg-substep-otp')
     };
 
     let regCurrentSubstep = 'details';
     let regData = {
         name: '',
         mobile_number: '',
-        email: '',
         referral_code: '',
         otp: ''
     };
@@ -729,16 +694,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const nameInp = document.getElementById('name');
             const mobileInp = document.getElementById('register_mobile');
-            const emailInp = document.getElementById('register_email');
             const refInp = document.getElementById('referral_code');
 
             const name = nameInp ? nameInp.value.trim() : '';
             const mobile = mobileInp ? mobileInp.value.trim() : '';
-            const email = emailInp ? emailInp.value.trim() : '';
             const ref = refInp ? refInp.value.trim() : '';
 
             // Reset field errors
-            [nameInp, mobileInp, emailInp].forEach(inp => inp && inp.classList.remove('is-invalid'));
+            [nameInp, mobileInp].forEach(inp => inp && inp.classList.remove('is-invalid'));
 
             if (!name) {
                 showRegAlert('details', 'Please enter your full name.');
@@ -747,22 +710,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             const cleanPhone = mobile.replace(/\D/g, '').slice(-10);
-            if (!cleanPhone || cleanPhone.length !== 10) {
-                showRegAlert('details', 'Please enter a valid 10-digit mobile number.');
+            if (!cleanPhone || cleanPhone.length !== 10 || !/^[6-9]\d{9}$/.test(cleanPhone)) {
+                showRegAlert('details', 'Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.');
                 if (mobileInp) { mobileInp.classList.add('is-invalid'); mobileInp.focus(); }
-                return;
-            }
-
-            if (email && (!email.includes('@') || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
-                showRegAlert('details', 'Please enter a valid email address.');
-                if (emailInp) { emailInp.classList.add('is-invalid'); emailInp.focus(); }
                 return;
             }
 
             // Save details
             regData.name = name;
             regData.mobile_number = cleanPhone;
-            regData.email = email;
             regData.referral_code = ref;
 
             // Trigger OTP send
@@ -1073,15 +1029,8 @@ document.addEventListener('DOMContentLoaded', function() {
             regMobile.readOnly = false;
             regMobile.classList.remove('readonly-input');
         }
-        const regEmail = document.getElementById('register_email');
-        if (regEmail) {
-            regEmail.readOnly = false;
-            regEmail.classList.remove('readonly-input');
-        }
         const changeMobileBtn = document.getElementById('change-identifier-from-register');
         if (changeMobileBtn) changeMobileBtn.style.display = 'none';
-        const changeEmailBtn = document.getElementById('change-email-from-register');
-        if (changeEmailBtn) changeEmailBtn.style.display = 'none';
 
         hideRegAlert('details');
         hideRegAlert('otp');
@@ -1113,11 +1062,6 @@ document.addEventListener('DOMContentLoaded', function() {
         changeRegBtn.addEventListener('click', returnToInitialScreen);
     }
 
-    const changeEmailBtn = document.getElementById('change-email-from-register');
-    if (changeEmailBtn) {
-        changeEmailBtn.addEventListener('click', returnToInitialScreen);
-    }
-
     const regTopBackBtn = document.getElementById('register-top-back-btn');
     if (regTopBackBtn) {
         regTopBackBtn.addEventListener('click', returnToInitialScreen);
@@ -1136,8 +1080,8 @@ document.addEventListener('DOMContentLoaded', function() {
         editEmailBtn.addEventListener('click', function() {
             hideRegAlert('otp');
             transitionRegSubstep('details');
-            const emailInp = document.getElementById('register_email');
-            if (emailInp) emailInp.focus();
+            const mobileInp = document.getElementById('register_mobile');
+            if (mobileInp) mobileInp.focus();
         });
     }
 
