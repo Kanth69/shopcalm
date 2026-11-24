@@ -59,6 +59,7 @@ class WalletController extends Controller
             'min_order_spend'     => WalletService::getMinOrderSpend(),
             'referral_enabled'    => WalletService::isReferralProgramActive(),
             'signup_bonus_enabled'=> WalletService::isSignupBonusActive(),
+            'max_usage_percentage'=> WalletService::getMaxUsagePercentage(),
         ];
 
         return view('admin.wallets.index', compact(
@@ -85,6 +86,7 @@ class WalletController extends Controller
             'wallet_first_order_reward'     => 'required|numeric|min:0',
             'wallet_second_order_reward'    => 'required|numeric|min:0',
             'wallet_third_order_reward'     => 'required|numeric|min:0',
+            'wallet_max_usage_percentage'   => 'required|numeric|min:1|max:100',
             'wallet_min_order_reward_spend' => 'nullable|numeric|min:0',
             'wallet_referral_enabled'       => 'nullable|boolean',
             'wallet_signup_bonus_enabled'   => 'nullable|boolean',
@@ -94,6 +96,7 @@ class WalletController extends Controller
         \App\Models\Setting::set('wallet_first_order_reward', (float) $validated['wallet_first_order_reward']);
         \App\Models\Setting::set('wallet_second_order_reward', (float) $validated['wallet_second_order_reward']);
         \App\Models\Setting::set('wallet_third_order_reward', (float) $validated['wallet_third_order_reward']);
+        \App\Models\Setting::set('wallet_max_usage_percentage', (float) $validated['wallet_max_usage_percentage']);
         \App\Models\Setting::set('wallet_min_order_reward_spend', (float) ($validated['wallet_min_order_reward_spend'] ?? 0));
         \App\Models\Setting::set('wallet_referral_enabled', $request->has('wallet_referral_enabled') ? '1' : '0');
         \App\Models\Setting::set('wallet_signup_bonus_enabled', $request->has('wallet_signup_bonus_enabled') ? '1' : '0');

@@ -203,14 +203,14 @@ class CheckoutController extends BaseApiController
         $walletBalance = (float) $wallet->balance;
         $useWallet = (bool) $request->input('use_wallet', false);
 
-        $payableBeforeWallet = max(0, $subtotal - $couponDiscount + $deliveryCharge);
+        $netSubtotal = max(0, $subtotal - $couponDiscount);
         $walletUsed = 0.00;
 
         if ($useWallet && $walletBalance > 0) {
-            $walletUsed = min($walletBalance, $payableBeforeWallet);
+            $walletUsed = WalletService::calculateUsableWalletAmount($walletBalance, $netSubtotal);
         }
 
-        $grandTotal = max(0, $payableBeforeWallet - $walletUsed);
+        $grandTotal = max(0, $netSubtotal - $walletUsed) + $deliveryCharge;
 
         // Calculate Total MRP, Offer Discount, and Total Savings (matching Web CheckoutController)
         $totalMrp = 0.00;
@@ -287,6 +287,7 @@ class CheckoutController extends BaseApiController
             'delivery_charge'         => round($deliveryCharge, 2),
             'cod_fee'                 => round($codFee, 2),
             'wallet_balance'          => round($walletBalance, 2),
+            'wallet_max_usage_percentage' => WalletService::getMaxUsagePercentage(),
             'wallet_amount_used'      => round($walletUsed, 2),
             'grand_total'             => round($grandTotal, 2),
             'grand_total_with_cod'    => round($grandTotal + $codFee, 2),
@@ -432,13 +433,16 @@ class CheckoutController extends BaseApiController
                 }
                 $freeShippingMin = (float) Setting::get('free_shipping_min', 499);
                 $shippingFee = ($subtotalAmount >= $freeShippingMin) ? 0.00 : (float) ($pincodeCheck['delivery_charge'] ?? 0.00);
-                $payableBeforeWallet = max(0, $subtotalAmount - $discountAmount - $offerDiscount + $shippingFee);
-
+                $netSubtotalAmount = max(0, $subtotalAmount - $discountAmount - $offerDiscount);
                 $useWallet = !empty($validated['use_wallet']);
                 $userWallet = $this->walletService->getOrCreateWallet($user);
                 $walletBalance = ($userWallet && $userWallet->status === 'active') ? (float) $userWallet->balance : 0.00;
+                $usableWallet = ($useWallet && $walletBalance > 0)
+                    ? WalletService::calculateUsableWalletAmount($walletBalance, $netSubtotalAmount)
+                    : 0.00;
+                $finalPayableAmount = max(0, $netSubtotalAmount - $usableWallet) + $shippingFee;
 
-                if ($useWallet && $walletBalance >= $payableBeforeWallet) {
+                if ($finalPayableAmount <= 0.00) {
                     $order = $this->checkoutService->placeOrder($validated);
 
                     return $this->sendResponse([
@@ -450,7 +454,7 @@ class CheckoutController extends BaseApiController
                         'payment_method' => 'wallet',
                         'payment_status' => 'paid',
                         'created_at'     => $order->created_at->format('Y-m-d H:i:s'),
-                    ], 'Order paid 100% via ShopCalm Wallet and confirmed!', 201);
+                    ], 'Order paid via ShopCalm Wallet and confirmed!', 201);
                 }
 
                 // Online Payment Flow: Create Pending Order + Razorpay Gateway Order

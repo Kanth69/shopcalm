@@ -17,10 +17,34 @@ class WalletService
     const DEFAULT_FIRST_ORDER_REWARD = 100.00;
     const DEFAULT_SECOND_ORDER_REWARD = 50.00;
     const DEFAULT_THIRD_ORDER_REWARD = 25.00;
+    const DEFAULT_MAX_USAGE_PERCENTAGE = 25.00;
 
     /**
      * Dynamic Rule Getters (read from Setting model with fallback defaults)
      */
+    public static function getMaxUsagePercentage(): float
+    {
+        return (float) \App\Models\Setting::get('wallet_max_usage_percentage', self::DEFAULT_MAX_USAGE_PERCENTAGE);
+    }
+
+    /**
+     * Calculate allowable wallet deduction for an order.
+     * Enforces:
+     * 1. Max usage percentage (e.g. 25% of Net Items Subtotal)
+     * 2. Wallet applies strictly to Net Items Subtotal (Subtotal - Coupon Discount), NOT Delivery or COD fees.
+     */
+    public static function calculateUsableWalletAmount(float $walletBalance, float $netItemsSubtotal): float
+    {
+        if ($walletBalance <= 0 || $netItemsSubtotal <= 0) {
+            return 0.00;
+        }
+
+        $maxPercent = self::getMaxUsagePercentage();
+        $maxAllowed = round(($netItemsSubtotal * $maxPercent) / 100, 2);
+
+        return (float) max(0.00, min($walletBalance, $maxAllowed, $netItemsSubtotal));
+    }
+
     public static function getSignupBonus(): float
     {
         return (float) \App\Models\Setting::get('wallet_signup_bonus', self::DEFAULT_SIGNUP_BONUS);

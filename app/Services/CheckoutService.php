@@ -105,28 +105,22 @@ class CheckoutService
 
             // Handle Offer Discount
             $offerDiscount = app(\App\Services\OfferService::class)->calculateCheckoutOfferDiscount($cart);
-            $payableBeforeWalletAndCod = max(0, $subtotalAmount - $discountAmount - $offerDiscount + $shippingFee);
+            $netSubtotalAmount = max(0, $subtotalAmount - $discountAmount - $offerDiscount);
 
-            // Handle Wallet Deduction
+            // Handle Wallet Deduction (Capped to max usage % of Net Items Subtotal; never covers shipping or COD fee)
             $useWallet = !empty($data['use_wallet']) || Session::get('use_wallet', false);
             $walletAmountUsed = 0.00;
             if ($useWallet && $user) {
                 $userWallet = app(\App\Services\WalletService::class)->getOrCreateWallet($user);
                 if ($userWallet->status === 'active' && $userWallet->balance > 0) {
-                    $walletAmountUsed = min((float) $userWallet->balance, $payableBeforeWalletAndCod + $rawCodFee);
+                    $walletAmountUsed = \App\Services\WalletService::calculateUsableWalletAmount((float) $userWallet->balance, $netSubtotalAmount);
                 }
             }
 
-            $isFullyPaidByWallet = ($useWallet && $walletAmountUsed >= $payableBeforeWalletAndCod);
-            $codFee = $isFullyPaidByWallet ? 0.00 : $rawCodFee;
-            $payableBeforeWallet = $payableBeforeWalletAndCod + $codFee;
-            
-            if ($isFullyPaidByWallet) {
-                $walletAmountUsed = $payableBeforeWalletAndCod;
-            }
-
-            $totalAmount = max(0, $payableBeforeWallet - $walletAmountUsed);
-            $isZeroOrder = $isFullyPaidByWallet || ($totalAmount <= 0);
+            $codFee = $rawCodFee;
+            $itemsPayable = max(0, $netSubtotalAmount - $walletAmountUsed);
+            $totalAmount = round($itemsPayable + $shippingFee + $codFee, 2);
+            $isZeroOrder = ($totalAmount <= 0.00);
             $finalPaymentMethod = $isZeroOrder ? ($walletAmountUsed > 0 ? 'wallet' : 'coupon') : 'cod';
             $finalPaymentStatus = $isZeroOrder ? 'paid' : 'pending';
 
@@ -336,21 +330,22 @@ class CheckoutService
             $baseDeliveryCharge = isset($pincodeCheck['delivery_charge']) ? (float) $pincodeCheck['delivery_charge'] : $defaultShippingFee;
             $shippingFee = ($subtotalAmount >= $freeShippingMin) ? 0.00 : $baseDeliveryCharge;
 
-            // Handle Offer Discount
+            // Handle Offer Discount & Net Subtotal
             $offerDiscount = app(\App\Services\OfferService::class)->calculateCheckoutOfferDiscount($cart);
-            $payableBeforeWallet = max(0, $subtotalAmount - $discountAmount - $offerDiscount + $shippingFee);
+            $netSubtotalAmount = max(0, $subtotalAmount - $discountAmount - $offerDiscount);
 
-            // Handle Wallet Deduction
+            // Handle Wallet Deduction (Capped to max usage % of Net Items Subtotal, never covers shipping fee)
             $useWallet = !empty($data['use_wallet']) || Session::get('use_wallet', false);
             $walletAmountUsed = 0.00;
             if ($useWallet && $user) {
                 $userWallet = app(\App\Services\WalletService::class)->getOrCreateWallet($user);
                 if ($userWallet->status === 'active' && $userWallet->balance > 0) {
-                    $walletAmountUsed = min((float) $userWallet->balance, $payableBeforeWallet);
+                    $walletAmountUsed = \App\Services\WalletService::calculateUsableWalletAmount((float) $userWallet->balance, $netSubtotalAmount);
                 }
             }
 
-            $totalAmount = max(0, $payableBeforeWallet - $walletAmountUsed);
+            $itemsPayable = max(0, $netSubtotalAmount - $walletAmountUsed);
+            $totalAmount = round($itemsPayable + $shippingFee, 2);
 
             // Save address to user's address book if new
             $existingAddress = $user->addresses()

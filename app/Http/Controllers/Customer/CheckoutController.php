@@ -71,7 +71,7 @@ class CheckoutController extends Controller
             }
         }
 
-        $payableBeforeWallet = max(0, $subtotal - $discountAmount - $offerDiscount + $shippingFee);
+        $netSubtotal = max(0, $subtotal - $discountAmount - $offerDiscount);
 
         $userWallet = $user ? app(\App\Services\WalletService::class)->getOrCreateWallet($user) : null;
         $isWalletFrozen = ($userWallet && $userWallet->status === 'frozen');
@@ -86,10 +86,10 @@ class CheckoutController extends Controller
         $walletDiscount = 0.00;
 
         if ($useWallet && $walletBalance > 0) {
-            $walletDiscount = min($walletBalance, $payableBeforeWallet);
+            $walletDiscount = \App\Services\WalletService::calculateUsableWalletAmount($walletBalance, $netSubtotal);
         }
 
-        $grandTotal = max(0, $payableBeforeWallet - $walletDiscount);
+        $grandTotal = max(0, $netSubtotal - $walletDiscount) + $shippingFee;
         $totalSavings = $totalDiscount + $discountAmount + $offerDiscount + $walletDiscount;
 
         return [

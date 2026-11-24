@@ -547,6 +547,26 @@
                         </div>
                     </div>
 
+                    {{-- Wallet Checkout Utilization Cap Rule --}}
+                    <div class="p-3 bg-light rounded-4 border mb-3">
+                        <div class="row align-items-center g-3">
+                            <div class="col-md-7">
+                                <h6 class="fw-bold text-dark mb-1">
+                                    <i class="bi bi-percent text-primary me-1"></i>Max Wallet Usage per Order
+                                </h6>
+                                <small class="text-secondary d-block" style="font-size: 0.78rem;">
+                                    Cap maximum wallet deduction against Net Product Subtotal. Delivery & COD fees must always be paid directly by customer.
+                                </small>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="input-group">
+                                    <input type="number" step="1" min="1" max="100" name="wallet_max_usage_percentage" class="form-control font-monospace fw-bold text-end" value="{{ $rules['max_usage_percentage'] ?? 25 }}" required>
+                                    <span class="input-group-text bg-white fw-bold">% of Subtotal</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {{-- 3-Tier Repeat Rewards --}}
                     <div class="card border rounded-4 p-3.5 bg-light mb-3">
                         <div class="d-flex align-items-center justify-content-between mb-3">
