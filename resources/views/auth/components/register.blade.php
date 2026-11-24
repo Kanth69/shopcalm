@@ -95,7 +95,7 @@
             </div>
         </div>
 
-        <h2 class="auth-title">Verify WhatsApp OTP 📱</h2>
+        <h2 class="auth-title">Verify WhatsApp OTP</h2>
         <p class="auth-subtitle mb-2">Enter the 6-digit code sent to your mobile number</p>
 
         <!-- Clean Centered Phone Pill -->
@@ -145,7 +145,7 @@
         </div>
 
         <button type="button" id="reg-verify-otp-btn" class="auth-submit-btn">
-            <span>Verify & Start Shopping (Get ₹25 Bonus) 🛍️</span>
+            <span>Verify & Create Account</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
