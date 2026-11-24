@@ -17,7 +17,7 @@
         <span id="initial-alert-msg"></span>
     </div>
 
-    <div class="form-group" style="margin-bottom: 14px;">
+    <div class="form-group">
         <label for="initial_identifier">Mobile Number</label>
         <input
             id="initial_identifier"
@@ -32,10 +32,10 @@
             autocomplete="tel-national"
             placeholder="Enter 10-digit mobile number"
         >
-        <span class="field-hint" style="display: block; margin-top: 5px; font-size: 12px; color: #64748b;">We'll check if you already have an account</span>
+        <span class="field-hint">We'll check if you already have an account</span>
     </div>
 
-    <button type="button" id="initial-continue-btn" class="auth-submit-btn">
+    <button type="button" id="initial-continue-btn" class="auth-submit-btn" style="margin-top: 0;">
         <span class="btn-text">Continue</span>
         <span class="btn-spinner" style="display:none;">
             <svg class="spin-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="18" height="18">
