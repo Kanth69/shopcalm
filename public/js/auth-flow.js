@@ -344,9 +344,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function showPasswordMode() {
         if (webLoginOtpSection) webLoginOtpSection.style.setProperty('display', 'none', 'important');
         if (webPasswordMode) webPasswordMode.style.setProperty('display', 'block', 'important');
+        const changeBtn = document.getElementById('change-identifier-from-login');
+        if (changeBtn) changeBtn.style.display = 'inline-block';
         if (loginAuthSubtitle) loginAuthSubtitle.textContent = 'Enter your password to sign in';
-        const changeLoginBtn = document.getElementById('change-identifier-from-login');
-        if (changeLoginBtn) changeLoginBtn.style.display = 'inline-block';
         const pwInput = document.getElementById('password_for_login');
         if (pwInput) pwInput.focus();
     }
@@ -354,9 +354,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function showOtpMode() {
         if (webPasswordMode) webPasswordMode.style.setProperty('display', 'none', 'important');
         if (webLoginOtpSection) webLoginOtpSection.style.setProperty('display', 'block', 'important');
+        const changeBtn = document.getElementById('change-identifier-from-login');
+        if (changeBtn) changeBtn.style.display = 'none';
         if (loginAuthSubtitle) loginAuthSubtitle.textContent = 'Enter the 6-digit code sent to your WhatsApp';
-        const changeLoginBtn = document.getElementById('change-identifier-from-login');
-        if (changeLoginBtn) changeLoginBtn.style.display = 'none';
         startWebOtpCountdown();
         if (webLoginOtpInput) {
             webLoginOtpInput.value = '';

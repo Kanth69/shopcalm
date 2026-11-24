@@ -103,9 +103,6 @@
             <div class="email-banner-pill d-inline-flex align-items-center gap-2">
                 <i class="bi bi-whatsapp text-success flex-shrink-0" style="font-size: 13px;"></i>
                 <span id="reg-display-email" class="fw-bold email-text"></span>
-                <button type="button" id="edit-reg-email-btn" class="edit-pill-btn" title="Change mobile">
-                    <i class="bi bi-pencil-fill me-0.5" style="font-size: 9.5px;"></i> Edit
-                </button>
             </div>
         </div>
     </div>
