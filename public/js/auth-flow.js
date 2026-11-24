@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const loginIdHidden = document.getElementById('login_identifier_for_login');
                 const loginIdDisplay = document.getElementById('login_identifier_display');
                 if (loginIdHidden) loginIdHidden.value = phone10;
-                if (loginIdDisplay) loginIdDisplay.value = '+91 ' + phone10;
+                if (loginIdDisplay) loginIdDisplay.value = phone10;
 
                 const loginPw = document.getElementById('password_for_login');
                 if (loginPw) loginPw.value = '';

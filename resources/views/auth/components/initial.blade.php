@@ -18,27 +18,21 @@
     </div>
 
     <div class="form-group">
-        <label for="initial_identifier" class="fw-semibold">Mobile Number</label>
-        <div class="input-group">
-            <span class="input-group-text bg-light border text-dark fw-bold font-monospace px-3" style="border-radius: 12px 0 0 12px; font-size: 15px; border-right: none; border-color: #e2e8f0;">
-                <span class="me-1">🇮🇳</span> +91
-            </span>
-            <input
-                id="initial_identifier"
-                class="auth-input"
-                type="tel"
-                name="identifier"
-                required
-                autofocus
-                maxlength="10"
-                pattern="[0-9]{10}"
-                inputmode="numeric"
-                autocomplete="tel-national"
-                placeholder="10-digit mobile number"
-                style="border-radius: 0 12px 12px 0; border-left: none; font-size: 16px; font-weight: 700; letter-spacing: 1px;"
-            >
-        </div>
-        <span class="field-hint"><i class="bi bi-whatsapp text-success me-1"></i> We'll verify via instant WhatsApp OTP</span>
+        <label for="initial_identifier">Mobile Number</label>
+        <input
+            id="initial_identifier"
+            class="auth-input"
+            type="tel"
+            name="identifier"
+            required
+            autofocus
+            maxlength="10"
+            pattern="[0-9]{10}"
+            inputmode="numeric"
+            autocomplete="tel-national"
+            placeholder="Enter 10-digit mobile number"
+        >
+        <span class="field-hint">We'll verify via instant WhatsApp OTP</span>
     </div>
 
     <button type="button" id="initial-continue-btn" class="auth-submit-btn">

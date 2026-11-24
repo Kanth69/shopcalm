@@ -44,15 +44,10 @@
 
         <div class="form-group" id="reg-mobile-group">
             <div class="label-row">
-                <label for="register_mobile" class="fw-semibold">Mobile Number <span class="text-danger">*</span></label>
+                <label for="register_mobile">Mobile Number <span class="text-danger">*</span></label>
                 <button type="button" class="change-identifier-btn" id="change-identifier-from-register" style="display: none;">Change</button>
             </div>
-            <div class="input-group">
-                <span class="input-group-text bg-light border text-dark fw-bold font-monospace px-3" style="border-radius: 12px 0 0 12px; font-size: 14px; border-right: none; border-color: #e2e8f0;">
-                    <span class="me-1">🇮🇳</span> +91
-                </span>
-                <input id="register_mobile" class="auth-input" type="tel" name="mobile_number" value="{{ old('mobile_number') }}" required pattern="[0-9]{10}" maxlength="10" inputmode="numeric" placeholder="10-digit mobile number" style="border-radius: 0 12px 12px 0; border-left: none; font-size: 15px; font-weight: 700; letter-spacing: 0.5px;">
-            </div>
+            <input id="register_mobile" class="auth-input" type="tel" name="mobile_number" value="{{ old('mobile_number') }}" required pattern="[0-9]{10}" maxlength="10" inputmode="numeric" placeholder="Enter 10-digit mobile number">
         </div>
 
         <div class="form-group">
