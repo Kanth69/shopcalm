@@ -442,7 +442,7 @@
                                         </button>
                                     </form>
                                     @if($rzStatus !== 'processed' && $item->online_refund_status !== 'processed')
-                                        <form action="{{ route($triggerRouteName, $item) }}" method="POST" class="d-inline" onsubmit="return confirm('Initiate Razorpay PG refund of ₹{{ number_format($onlineAmt > 0 ? $onlineAmt : $totalNetRefund, 2) }} now?');">
+                                        <form action="{{ route($triggerRouteName, $item) }}" method="POST" class="d-inline" data-confirm="Initiate Razorpay PG refund of <b>₹{{ number_format($onlineAmt > 0 ? $onlineAmt : $totalNetRefund, 2) }}</b> now?" data-confirm-title="Trigger Gateway Refund" data-confirm-icon="warning" data-confirm-btn="<i class='bi bi-lightning-charge-fill me-1'></i> Yes, Trigger Refund" data-confirm-color="#dc2626">
                                             @csrf
                                             <button type="submit" class="btn btn-sm btn-danger rounded-pill px-2.5 py-1 fw-bold d-inline-flex align-items-center gap-1" title="Trigger Razorpay PG refund now" style="font-size: 0.74rem;">
                                                 <i class="bi bi-lightning-charge-fill"></i> Trigger PG

@@ -194,8 +194,43 @@
             if (result.isConfirmed) {
                 document.getElementById('delete-form-' + id).submit();
             }
-        })
+        });
     }
+
+    // Global Enterprise SweetAlert2 Form Confirmation (Zero Chrome native alerts)
+    document.addEventListener('submit', function(e) {
+        const form = e.target;
+        if (form && form.hasAttribute('data-confirm')) {
+            e.preventDefault();
+            const message = form.getAttribute('data-confirm');
+            const title = form.getAttribute('data-confirm-title') || 'Are you sure?';
+            const icon = form.getAttribute('data-confirm-icon') || 'warning';
+            const confirmBtnText = form.getAttribute('data-confirm-btn') || '<i class="bi bi-check2-circle me-1"></i> Proceed';
+            const confirmColor = form.getAttribute('data-confirm-color') || '#4f46e5';
+
+            Swal.fire({
+                title: title,
+                html: message,
+                icon: icon,
+                showCancelButton: true,
+                confirmButtonText: confirmBtnText,
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: confirmColor,
+                cancelButtonColor: '#64748b',
+                customClass: {
+                    popup: 'rounded-4 shadow-lg border-0',
+                    confirmButton: 'btn rounded-pill px-4 py-2 fw-bold text-white',
+                    cancelButton: 'btn btn-light border rounded-pill px-4 py-2 fw-semibold text-secondary ms-2'
+                },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.removeAttribute('data-confirm');
+                    form.submit();
+                }
+            });
+        }
+    });
 </script>
 @stack('scripts')
 </body>

@@ -318,11 +318,11 @@
                                     <span>Adjust</span>
                                 </button>
 
-                                {{-- Toggle Freeze Status --}}
-                                <form action="{{ route('admin.wallets.toggle-status', $w) }}" method="POST" class="d-inline" 
-                                      onsubmit="return confirm('Are you sure you want to {{ $w->status === 'active' ? 'FREEZE (Lock)' : 'UNFREEZE (Restore)' }} this customer wallet?');">
+                                {{-- Toggle Freeze Status (Enterprise SweetAlert2 Modal - Zero Chrome Native Alerts) --}}
+                                <form action="{{ route('admin.wallets.toggle-status', $w) }}" method="POST" class="d-inline" id="toggleWalletForm{{ $w->id }}">
                                     @csrf
-                                    <button type="submit" class="btn btn-wallet-action {{ $w->status === 'active' ? 'btn-wallet-freeze' : 'btn-wallet-unfreeze' }} shadow-xs" 
+                                    <button type="button" class="btn btn-wallet-action {{ $w->status === 'active' ? 'btn-wallet-freeze' : 'btn-wallet-unfreeze' }} shadow-xs" 
+                                            onclick="confirmWalletToggle('toggleWalletForm{{ $w->id }}', {{ $w->status === 'active' ? 'true' : 'false' }}, '{{ addslashes($w->user->name ?? 'Customer') }}')"
                                             title="{{ $w->status === 'active' ? 'Freeze / Lock Wallet' : 'Unfreeze / Restore Wallet' }}">
                                         <i class="bi {{ $w->status === 'active' ? 'bi-lock-fill' : 'bi-unlock-fill' }}"></i>
                                         <span>{{ $w->status === 'active' ? 'Freeze' : 'Unfreeze' }}</span>
@@ -622,6 +622,35 @@
 
 @push('scripts')
 <script>
+function confirmWalletToggle(formId, isFreeze, userName) {
+    if (typeof Swal === 'undefined') {
+        document.getElementById(formId).submit();
+        return;
+    }
+    Swal.fire({
+        title: isFreeze ? 'Freeze Customer Wallet?' : 'Unfreeze Customer Wallet?',
+        html: isFreeze 
+            ? `Are you sure you want to <b>freeze (lock)</b> the wallet for <b>${userName}</b>?<br><small class="text-muted mt-2 d-block">The customer will not be able to redeem wallet balance at checkout until unfrozen.</small>`
+            : `Are you sure you want to <b>unfreeze (restore)</b> the wallet for <b>${userName}</b>?<br><small class="text-muted mt-2 d-block">The customer will be able to redeem their available balance again.</small>`,
+        icon: isFreeze ? 'warning' : 'question',
+        showCancelButton: true,
+        confirmButtonText: isFreeze ? '<i class="bi bi-lock-fill me-1"></i> Yes, Freeze Wallet' : '<i class="bi bi-unlock-fill me-1"></i> Yes, Restore Wallet',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: isFreeze ? '#dc2626' : '#10b981',
+        cancelButtonColor: '#64748b',
+        customClass: {
+            popup: 'rounded-4 shadow-lg border-0',
+            confirmButton: 'btn rounded-pill px-4 py-2 fw-bold text-white',
+            cancelButton: 'btn btn-light border rounded-pill px-4 py-2 fw-semibold text-secondary ms-2'
+        },
+        buttonsStyling: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById(formId).submit();
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     function recalculateTotalPayout() {
         const t1 = parseFloat(document.getElementById('input_tier1')?.value || 0);

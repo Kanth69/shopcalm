@@ -201,7 +201,7 @@
 
                         <td class="text-end pe-4 text-nowrap">
                             <div class="d-inline-flex gap-2">
-                                <form action="{{ route('admin.notifications.approve', $pending->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Approve and immediately broadcast this push notification to all matching customer devices?');">
+                                <form action="{{ route('admin.notifications.approve', $pending->id) }}" method="POST" class="d-inline" data-confirm="Approve and immediately broadcast this push notification to all matching customer devices?" data-confirm-title="Broadcast Push Notification" data-confirm-icon="question" data-confirm-btn="<i class='bi bi-send-fill me-1'></i> Yes, Broadcast Now" data-confirm-color="#10b981">
                                     @csrf
                                     <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 fw-semibold shadow-sm">
                                         <i class="bi bi-check-circle-fill me-1"></i> Approve & Broadcast

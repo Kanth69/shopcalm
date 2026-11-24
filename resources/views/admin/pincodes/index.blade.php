@@ -209,7 +209,7 @@
                                 <a href="{{ route('admin.pincodes.edit', $item) }}" class="btn btn-sm btn-outline-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="Edit Pincode">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <form action="{{ route('admin.pincodes.destroy', $item) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete pincode {{ $item->pincode }}?');">
+                                <form action="{{ route('admin.pincodes.destroy', $item) }}" method="POST" class="d-inline" data-confirm="Permanently delete serviceability for PIN code <b>{{ $item->pincode }}</b>?" data-confirm-title="Delete Pincode" data-confirm-icon="warning" data-confirm-btn="<i class='bi bi-trash3 me-1'></i> Yes, Delete" data-confirm-color="#dc2626">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="Delete Pincode">

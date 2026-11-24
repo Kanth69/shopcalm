@@ -85,7 +85,7 @@
             </div>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <form action="{{ route('admin.products.approve', $product) }}" method="POST" class="d-inline" onsubmit="return confirm('Override rejection and approve this product now?');">
+            <form action="{{ route('admin.products.approve', $product) }}" method="POST" class="d-inline" data-confirm="Override previous rejection and approve <b>{{ addslashes($product->name) }}</b> for storefront sale now?" data-confirm-title="Override & Approve Product" data-confirm-icon="question" data-confirm-btn="<i class='bi bi-check-circle-fill me-1'></i> Yes, Approve Product" data-confirm-color="#10b981">
                 @csrf
                 <button type="submit" class="btn btn-success fw-bold rounded-pill px-3.5 py-2 shadow-sm">
                     <i class="bi bi-check-circle-fill me-1.5"></i> Override & Approve

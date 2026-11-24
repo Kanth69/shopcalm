@@ -540,37 +540,52 @@ function toggleKey(keyId, btn) {
 
 // Delete a key from the pool
 function deleteKey(keyId, label, btn) {
-    if (!confirm(`Are you sure you want to remove "${label}" from your LocationIQ pool?`)) {
-        return;
-    }
-
-    const alertBox = document.getElementById('poolAlertBox');
-    btn.disabled = true;
-
-    fetch("{{ route('admin.integrations.locationiq.keys.delete') }}", {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+    Swal.fire({
+        title: 'Remove API Key?',
+        html: `Are you sure you want to remove <b>"${label}"</b> from your LocationIQ pool?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: '<i class="bi bi-trash3 me-1"></i> Yes, Remove',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+        customClass: {
+            popup: 'rounded-4 shadow-lg border-0',
+            confirmButton: 'btn rounded-pill px-4 py-2 fw-bold text-white',
+            cancelButton: 'btn btn-light border rounded-pill px-4 py-2 fw-semibold text-secondary ms-2'
         },
-        body: JSON.stringify({ id: keyId })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            const row = document.getElementById(`row_${keyId}`);
-            if (row) row.remove();
-            showAutoDismissAlert(alertBox, 'info', '<strong>Key Removed:</strong> The key was removed from your active pool.', 4000);
-            setTimeout(() => window.location.reload(), 1200);
-        } else {
+        buttonsStyling: false
+    }).then((result) => {
+        if (!result.isConfirmed) return;
+
+        const alertBox = document.getElementById('poolAlertBox');
+        btn.disabled = true;
+
+        fetch("{{ route('admin.integrations.locationiq.keys.delete') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ id: keyId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const row = document.getElementById(`row_${keyId}`);
+                if (row) row.remove();
+                showAutoDismissAlert(alertBox, 'info', '<strong>Key Removed:</strong> The key was removed from your active pool.', 4000);
+                setTimeout(() => window.location.reload(), 1200);
+            } else {
+                btn.disabled = false;
+                showAutoDismissAlert(alertBox, 'danger', data.message || 'Failed to remove key.', 6000);
+            }
+        })
+        .catch(err => {
             btn.disabled = false;
-            showAutoDismissAlert(alertBox, 'danger', data.message || 'Failed to remove key.', 6000);
-        }
-    })
-    .catch(err => {
-        btn.disabled = false;
-        showAutoDismissAlert(alertBox, 'danger', err.message, 6000);
+            showAutoDismissAlert(alertBox, 'danger', err.message, 6000);
+        });
     });
 }
 

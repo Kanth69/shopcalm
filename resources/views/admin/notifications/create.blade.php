@@ -15,7 +15,7 @@
 @endsection
 
 @section('content')
-<form action="{{ route('admin.notifications.send') }}" method="POST" id="pushForm">
+<form action="{{ route('admin.notifications.send') }}" method="POST" id="pushForm" data-confirm="Broadcast this push notification alert to all matching active app devices now?" data-confirm-title="Broadcast Push Alert" data-confirm-icon="question" data-confirm-btn="<i class='bi bi-send-fill me-1'></i> Yes, Broadcast Now" data-confirm-color="#4f46e5">
     @csrf
 
     <div class="row g-4">
@@ -148,7 +148,7 @@
             <!-- Submit Button -->
             <div class="d-flex align-items-center justify-content-between mb-5">
                 <a href="{{ route('admin.notifications.index') }}" class="btn btn-light rounded-pill px-4">Cancel</a>
-                <button type="submit" class="btn btn-primary rounded-pill px-5 py-2.5 fw-bold shadow" onclick="return confirm('Broadcast this push notification alert to all matching active app devices now?');">
+                <button type="submit" class="btn btn-primary rounded-pill px-5 py-2.5 fw-bold shadow">
                     <i class="bi bi-send-fill me-2"></i> Broadcast Push Alert Now
                 </button>
             </div>
