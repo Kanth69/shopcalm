@@ -124,8 +124,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const pwMode = document.getElementById('web-password-mode');
                 const otpSection = document.getElementById('web-login-otp-section');
                 const subtitle = document.getElementById('login-auth-subtitle');
-                if (pwMode) pwMode.style.display = 'block';
-                if (otpSection) otpSection.style.display = 'none';
+                if (pwMode) pwMode.style.setProperty('display', 'block', 'important');
+                if (otpSection) otpSection.style.setProperty('display', 'none', 'important');
                 if (subtitle) subtitle.textContent = 'Enter your password to sign in';
             }
 
@@ -341,6 +341,25 @@ document.addEventListener('DOMContentLoaded', function() {
     const loginAuthSubtitle = document.getElementById('login-auth-subtitle');
     let webOtpTimer = null;
 
+    function showPasswordMode() {
+        if (webLoginOtpSection) webLoginOtpSection.style.setProperty('display', 'none', 'important');
+        if (webPasswordMode) webPasswordMode.style.setProperty('display', 'block', 'important');
+        if (loginAuthSubtitle) loginAuthSubtitle.textContent = 'Enter your password to sign in';
+        const pwInput = document.getElementById('password_for_login');
+        if (pwInput) pwInput.focus();
+    }
+
+    function showOtpMode() {
+        if (webPasswordMode) webPasswordMode.style.setProperty('display', 'none', 'important');
+        if (webLoginOtpSection) webLoginOtpSection.style.setProperty('display', 'block', 'important');
+        if (loginAuthSubtitle) loginAuthSubtitle.textContent = 'Enter the 6-digit code sent to your WhatsApp';
+        startWebOtpCountdown();
+        if (webLoginOtpInput) {
+            webLoginOtpInput.value = '';
+            webLoginOtpInput.focus();
+        }
+    }
+
     function startWebOtpCountdown() {
         let sec = 90;
         if (webLoginCountdown) {
@@ -382,14 +401,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.success) {
                     showToast('WhatsApp OTP sent successfully!', 'success');
-                    if (webPasswordMode) webPasswordMode.style.display = 'none';
-                    if (webLoginOtpSection) webLoginOtpSection.style.display = 'block';
-                    if (loginAuthSubtitle) loginAuthSubtitle.textContent = 'Enter the 6-digit code sent to your WhatsApp';
-                    startWebOtpCountdown();
-                    if (webLoginOtpInput) {
-                        webLoginOtpInput.value = '';
-                        webLoginOtpInput.focus();
-                    }
+                    showOtpMode();
                 } else {
                     showToast(data.message || 'Failed to send WhatsApp OTP.', 'error');
                 }
@@ -404,11 +416,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (webCancelOtpBtn) {
         webCancelOtpBtn.addEventListener('click', function() {
-            if (webLoginOtpSection) webLoginOtpSection.style.display = 'none';
-            if (webPasswordMode) webPasswordMode.style.display = 'block';
-            if (loginAuthSubtitle) loginAuthSubtitle.textContent = 'Enter your password to sign in';
-            const pwInput = document.getElementById('password_for_login');
-            if (pwInput) pwInput.focus();
+            showPasswordMode();
         });
     }
 
@@ -1088,13 +1096,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const editEmailBtn = document.getElementById('edit-reg-email-btn');
+    const regBackToDetailsBtn = document.getElementById('reg-back-to-details-btn');
+    function backToDetailsAction() {
+        hideRegAlert('otp');
+        transitionRegSubstep('details');
+        const nameInp = document.getElementById('name');
+        if (nameInp) nameInp.focus();
+    }
     if (editEmailBtn) {
-        editEmailBtn.addEventListener('click', function() {
-            hideRegAlert('otp');
-            transitionRegSubstep('details');
-            const mobileInp = document.getElementById('register_mobile');
-            if (mobileInp) mobileInp.focus();
-        });
+        editEmailBtn.addEventListener('click', backToDetailsAction);
+    }
+    if (regBackToDetailsBtn) {
+        regBackToDetailsBtn.addEventListener('click', backToDetailsAction);
     }
 
     const showForgotBtn = document.getElementById('show-forgot-password');

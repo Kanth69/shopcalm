@@ -37,20 +37,20 @@
     </div>
 
     <form id="form-register-details" class="auth-form" onsubmit="return false;">
-        <div class="form-group">
+        <div class="form-group mb-3" id="reg-mobile-group">
+            <div class="label-row">
+                <label for="register_mobile">Account</label>
+                <button type="button" class="change-identifier-btn" id="change-identifier-from-register">Change</button>
+            </div>
+            <input id="register_mobile" class="auth-input readonly-input" type="tel" name="mobile_number" value="{{ old('mobile_number') }}" required readonly tabindex="-1" placeholder="Enter 10-digit mobile number">
+        </div>
+
+        <div class="form-group mb-3">
             <label for="name">Full Name <span class="text-danger">*</span></label>
             <input id="name" class="auth-input" type="text" name="name" value="{{ old('name') }}" required placeholder="e.g. Rahul Sharma" autofocus>
         </div>
 
-        <div class="form-group" id="reg-mobile-group">
-            <div class="label-row">
-                <label for="register_mobile">Mobile Number <span class="text-danger">*</span></label>
-                <button type="button" class="change-identifier-btn" id="change-identifier-from-register" style="display: none;">Change</button>
-            </div>
-            <input id="register_mobile" class="auth-input" type="tel" name="mobile_number" value="{{ old('mobile_number') }}" required pattern="[0-9]{10}" maxlength="10" inputmode="numeric" placeholder="Enter 10-digit mobile number">
-        </div>
-
-        <div class="form-group">
+        <div class="form-group mb-3">
             <label for="referral_code">Referral Code <small class="text-muted">(Optional)</small></label>
             <input id="referral_code" class="auth-input font-monospace text-uppercase" type="text" name="referral_code" value="{{ request('ref', old('referral_code', session('referral_code'))) }}" placeholder="e.g. WISE1234">
         </div>
@@ -150,5 +150,11 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
         </button>
+
+        <div class="text-center mt-3">
+            <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-primary fw-semibold" id="reg-back-to-details-btn" style="font-size: 13px;">
+                <i class="bi bi-arrow-left me-1"></i> Edit Details
+            </button>
+        </div>
     </form>
 </div>
