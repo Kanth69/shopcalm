@@ -17,7 +17,7 @@
         <span id="initial-alert-msg"></span>
     </div>
 
-    <div class="form-group mb-4">
+    <div class="form-group" style="margin-bottom: 24px;">
         <label for="initial_identifier">Mobile Number</label>
         <input
             id="initial_identifier"
@@ -32,6 +32,7 @@
             autocomplete="tel-national"
             placeholder="Enter 10-digit mobile number"
         >
+        <span class="field-hint" style="display: block; margin-top: 8px; font-size: 12.5px; color: #64748b;">We'll check if you already have an account</span>
     </div>
 
     <button type="button" id="initial-continue-btn" class="auth-submit-btn">
