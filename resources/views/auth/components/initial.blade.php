@@ -17,7 +17,7 @@
         <span id="initial-alert-msg"></span>
     </div>
 
-    <div class="form-group">
+    <div class="form-group mb-4">
         <label for="initial_identifier">Mobile Number</label>
         <input
             id="initial_identifier"
@@ -32,7 +32,6 @@
             autocomplete="tel-national"
             placeholder="Enter 10-digit mobile number"
         >
-        <span class="field-hint">We'll verify via instant WhatsApp OTP</span>
     </div>
 
     <button type="button" id="initial-continue-btn" class="auth-submit-btn">

@@ -26,7 +26,7 @@
 
     <div id="web-password-section">
         <input type="hidden" name="remember" value="1">
-        <div class="form-group mb-3">
+        <div class="form-group" style="margin-bottom: 24px;">
             <div class="label-row">
                 <label for="password_for_login">Password</label>
                 <a href="#" class="forgot-link" id="show-forgot-password">Forgot?</a>
@@ -39,7 +39,7 @@
             </div>
         </div>
 
-        <button type="submit" id="login-submit-btn" class="auth-submit-btn mt-3">
+        <button type="submit" id="login-submit-btn" class="auth-submit-btn" style="margin-top: 6px;">
             <span>Sign In</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -47,7 +47,7 @@
         </button>
     </div>
 
-    <div class="my-3 d-flex align-items-center" id="web-login-divider">
+    <div class="my-4 d-flex align-items-center" id="web-login-divider">
         <hr class="flex-grow-1 border-secondary opacity-25">
         <span class="px-2 text-muted fw-bold small" style="font-size: 11px; letter-spacing: 0.5px;">OR</span>
         <hr class="flex-grow-1 border-secondary opacity-25">
