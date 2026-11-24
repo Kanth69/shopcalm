@@ -193,8 +193,20 @@ class AuthController extends BaseApiController
             'type'          => 'nullable|string',
         ]);
 
-        $type = strtoupper($request->input('type', 'LOGIN'));
-        $isValid = $this->whatsAppService->verifyOtp($request->mobile_number, $request->otp, $type);
+        $type = strtoupper((string) $request->input('type', ''));
+        $cleanPhone = preg_replace('/\D/', '', $request->mobile_number);
+        $last10 = (strlen($cleanPhone) >= 10) ? substr($cleanPhone, -10) : $cleanPhone;
+
+        $isValid = false;
+        if (!empty($type)) {
+            $isValid = $this->whatsAppService->verifyOtp($request->mobile_number, $request->otp, $type)
+                    || $this->whatsAppService->verifyOtp($last10, $request->otp, $type);
+        } else {
+            $isValid = $this->whatsAppService->verifyOtp($request->mobile_number, $request->otp, 'LOGIN')
+                    || $this->whatsAppService->verifyOtp($last10, $request->otp, 'LOGIN')
+                    || $this->whatsAppService->verifyOtp($request->mobile_number, $request->otp, 'REGISTER')
+                    || $this->whatsAppService->verifyOtp($last10, $request->otp, 'REGISTER');
+        }
 
         if (!$isValid) {
             return $this->sendError('Invalid or expired WhatsApp OTP code.', [], 422);

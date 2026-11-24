@@ -83,6 +83,12 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
         </button>
+
+        <div class="text-center mt-3">
+            <button type="button" id="web-cancel-otp-btn" class="btn btn-link btn-sm p-0 text-decoration-none text-primary fw-semibold" style="font-size: 13px;">
+                <i class="bi bi-arrow-left me-1"></i> Use Password Instead
+            </button>
+        </div>
     </div>
 
     <p class="text-center text-muted mt-3 mb-0" style="font-size: 0.76rem; line-height: 1.5;">
