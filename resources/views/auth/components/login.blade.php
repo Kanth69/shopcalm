@@ -67,15 +67,17 @@
     <div id="web-login-otp-section" style="display: none;" class="my-3 p-3 bg-light rounded-4 border">
         <div class="d-flex align-items-center justify-content-between mb-2">
             <span class="fw-bold small text-dark"><i class="bi bi-shield-lock text-success me-1"></i> Enter 6-digit WhatsApp OTP</span>
-            <span id="web-login-countdown" class="badge bg-secondary font-monospace">60s</span>
+            <div class="d-flex align-items-center">
+                <span id="web-login-countdown" class="badge bg-secondary font-monospace">90s</span>
+                <button type="button" id="web-login-resend-btn" class="btn btn-link btn-sm p-0 text-decoration-none text-success fw-bold" style="display: none; font-size: 13px;"><i class="bi bi-arrow-repeat me-1"></i>Resend OTP</button>
+            </div>
         </div>
         <div class="input-group mb-2">
-            <input type="text" id="web-login-otp-input" class="form-control font-monospace fw-bold text-center fs-5" maxlength="6" placeholder="••••••" inputmode="numeric">
+            <input type="text" id="web-login-otp-input" class="form-control font-monospace text-center fs-5" maxlength="6" placeholder="••••••" inputmode="numeric" style="letter-spacing: 5px; font-weight: 700;">
             <button type="button" id="web-login-verify-btn" class="btn btn-primary px-3 fw-bold">Verify & Login</button>
         </div>
-        <div class="d-flex justify-content-between align-items-center">
-            <button type="button" id="web-login-resend-btn" class="btn btn-link btn-sm p-0 text-decoration-none text-success fw-bold" style="display: none;">Resend OTP</button>
-            <button type="button" id="web-cancel-otp-btn" class="btn btn-link btn-sm p-0 text-decoration-none text-muted">Use Password Instead</button>
+        <div class="d-flex justify-content-end align-items-center">
+            <button type="button" id="web-cancel-otp-btn" class="btn btn-link btn-sm p-0 text-decoration-none text-muted" style="font-size: 12px;">Use Password Instead</button>
         </div>
     </div>
 

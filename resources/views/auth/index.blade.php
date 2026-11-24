@@ -532,6 +532,13 @@
             color: #94a3b8;
         }
 
+        #web-login-otp-input::placeholder {
+            color: #cbd5e1 !important;
+            opacity: 0.45 !important;
+            font-weight: 400 !important;
+            letter-spacing: 6px !important;
+        }
+
         .auth-submit-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);

@@ -336,8 +336,11 @@ document.addEventListener('DOMContentLoaded', function() {
     let webOtpTimer = null;
 
     function startWebOtpCountdown() {
-        let sec = 60;
-        if (webLoginCountdown) webLoginCountdown.textContent = sec + 's';
+        let sec = 90;
+        if (webLoginCountdown) {
+            webLoginCountdown.textContent = sec + 's';
+            webLoginCountdown.style.display = 'inline-block';
+        }
         if (webLoginResendBtn) webLoginResendBtn.style.display = 'none';
         if (webOtpTimer) clearInterval(webOtpTimer);
         webOtpTimer = setInterval(() => {
@@ -345,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (webLoginCountdown) webLoginCountdown.textContent = sec + 's';
             if (sec <= 0) {
                 clearInterval(webOtpTimer);
-                if (webLoginCountdown) webLoginCountdown.textContent = 'Expired';
+                if (webLoginCountdown) webLoginCountdown.style.display = 'none';
                 if (webLoginResendBtn) webLoginResendBtn.style.display = 'inline-block';
             }
         }, 1000);
