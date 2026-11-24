@@ -200,8 +200,9 @@ class CheckoutController extends BaseApiController
 
         // Wallet Balance
         $wallet = $this->walletService->getOrCreateWallet($user);
-        $walletBalance = (float) $wallet->balance;
-        $useWallet = (bool) $request->input('use_wallet', false);
+        $isWalletFrozen = ($wallet && $wallet->status === 'frozen');
+        $walletBalance = ($wallet && !$isWalletFrozen) ? (float) $wallet->balance : 0.00;
+        $useWallet = (!$isWalletFrozen) && (bool) $request->input('use_wallet', false);
 
         $netSubtotal = max(0, $subtotal - $couponDiscount);
         $walletUsed = 0.00;
@@ -286,6 +287,7 @@ class CheckoutController extends BaseApiController
             'free_shipping_min'       => $freeShippingMin,
             'delivery_charge'         => round($deliveryCharge, 2),
             'cod_fee'                 => round($codFee, 2),
+            'is_wallet_frozen'        => $isWalletFrozen,
             'wallet_balance'          => round($walletBalance, 2),
             'wallet_max_usage_percentage' => WalletService::getMaxUsagePercentage(),
             'wallet_amount_used'      => round($walletUsed, 2),

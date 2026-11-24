@@ -117,9 +117,9 @@
 <div class="container-fluid px-0">
 
     {{-- KPI Metric Cards --}}
-    <div class="row g-3 mb-4">
+    <div class="row g-3 mb-3">
         {{-- Active Wallet Liability --}}
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-sm-6 col-lg-4">
             <div class="card border-0 shadow-sm rounded-4 p-3.5 bg-white h-100 position-relative overflow-hidden">
                 <div class="d-flex align-items-center gap-3">
                     <div class="rounded-circle p-2.5 bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;">
@@ -136,7 +136,7 @@
         </div>
 
         {{-- Total Distributed --}}
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-sm-6 col-lg-4">
             <div class="card border-0 shadow-sm rounded-4 p-3.5 bg-white h-100 position-relative overflow-hidden">
                 <div class="d-flex align-items-center gap-3">
                     <div class="rounded-circle p-2.5 bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;">
@@ -153,7 +153,7 @@
         </div>
 
         {{-- Total Redeemed in Orders --}}
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-sm-12 col-lg-4">
             <div class="card border-0 shadow-sm rounded-4 p-3.5 bg-white h-100 position-relative overflow-hidden">
                 <div class="d-flex align-items-center gap-3">
                     <div class="rounded-circle p-2.5 bg-warning bg-opacity-15 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;">
@@ -168,44 +168,99 @@
                 <div class="kpi-accent" style="background: linear-gradient(90deg, #f59e0b, #fbbf24);"></div>
             </div>
         </div>
+    </div>
 
-        {{-- Active Referral Rules Policy Card --}}
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm rounded-4 p-3.5 bg-white h-100 position-relative overflow-hidden">
-                <div class="d-flex align-items-center justify-content-between mb-1">
-                    <div class="d-flex align-items-center gap-1.5">
-                        <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.5px;">Referral Policy</div>
-                        @if($rules['referral_enabled'])
-                            <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.65rem;">
-                                ● Active
-                            </span>
-                        @else
-                            <span class="badge bg-secondary bg-opacity-20 text-secondary rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.65rem;">
-                                ○ Disabled
-                            </span>
-                        @endif
+    {{-- SEPARATE PROGRAM CONTROL CARDS (Zero Clutter - 100% Clear Status) --}}
+    <div class="row g-3 mb-4">
+        {{-- Card 1: Referral & Welcome Program --}}
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3.5 bg-white h-100 position-relative overflow-hidden" style="border: 1.5px solid #e2e8f0 !important;">
+                <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background: #f3e8ff; color: #7c3aed;">
+                            <i class="bi bi-gift-fill fs-6"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-0" style="font-size: 0.92rem;">Customer Referral Program</h6>
                     </div>
+                    @if($rules['referral_enabled'])
+                        <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.72rem;">
+                            ● ACTIVE
+                        </span>
+                    @else
+                        <span class="badge bg-secondary bg-opacity-20 text-secondary rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.72rem;">
+                            ○ DISABLED
+                        </span>
+                    @endif
+                </div>
+
+                <div class="row g-2 small mb-3">
+                    <div class="col-6">
+                        <span class="text-muted d-block" style="font-size: 0.72rem;">Welcome Signup Bonus</span>
+                        <div class="d-flex align-items-center gap-1.5 mt-0.5">
+                            <strong class="font-monospace text-dark fs-6">₹{{ number_format($rules['signup_bonus'], 0) }}</strong>
+                            @if($rules['signup_bonus_enabled'])
+                                <span class="badge bg-success bg-opacity-10 text-success" style="font-size: 0.65rem;">ON</span>
+                            @else
+                                <span class="badge bg-secondary bg-opacity-15 text-muted" style="font-size: 0.65rem;">OFF</span>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted d-block" style="font-size: 0.72rem;">3-Tier Repeat Rewards</span>
+                        <strong class="font-monospace text-success mt-0.5 d-block fs-6">
+                            ₹{{ number_format($rules['first_order_reward'] + $rules['second_order_reward'] + $rules['third_order_reward'], 0) }}
+                            <small class="text-muted fw-normal" style="font-size: 0.7rem;">(₹{{ (int)$rules['first_order_reward'] }}+₹{{ (int)$rules['second_order_reward'] }}+₹{{ (int)$rules['third_order_reward'] }})</small>
+                        </strong>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                    <span class="text-muted" style="font-size: 0.75rem;">Status: <strong>{{ $rules['referral_enabled'] ? 'Sharing & Earning Enabled' : 'Program Paused' }}</strong></span>
                     @if(auth()->user()->isSuperAdmin())
-                    <button type="button" class="btn btn-link p-0 text-primary fw-bold text-decoration-none" style="font-size: 0.72rem;" data-bs-toggle="modal" data-bs-target="#editRulesModal">
-                        <i class="bi bi-sliders me-0.5"></i> Edit
-                    </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold" onclick="openRulesTab('tab-referral')">
+                            <i class="bi bi-sliders me-1"></i> Configure Referral
+                        </button>
                     @endif
                 </div>
-                <div class="d-flex align-items-center gap-1.5 small mb-1">
-                    <span class="text-secondary" style="font-size: 0.75rem;">Welcome Bonus:</span>
-                    <strong class="text-dark font-monospace">₹{{ number_format($rules['signup_bonus'], 0) }}</strong>
-                    @if(!$rules['signup_bonus_enabled'])
-                        <span class="text-muted" style="font-size: 0.65rem;">(Disabled)</span>
+            </div>
+        </div>
+
+        {{-- Card 2: Wallet Checkout Utilization Policy --}}
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3.5 bg-white h-100 position-relative overflow-hidden" style="border: 1.5px solid #e2e8f0 !important;">
+                <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background: #e0e7ff; color: #4338ca;">
+                            <i class="bi bi-wallet2 fs-6"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-0" style="font-size: 0.92rem;">Wallet Checkout Policy</h6>
+                    </div>
+                    <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.72rem; background: #e0e7ff; color: #4338ca;">
+                        ● MAX {{ (int)($rules['max_usage_percentage'] ?? 25) }}% CAPPED
+                    </span>
+                </div>
+
+                <div class="row g-2 small mb-3">
+                    <div class="col-6">
+                        <span class="text-muted d-block" style="font-size: 0.72rem;">Max Wallet Usage / Order</span>
+                        <strong class="font-monospace text-primary fs-6 mt-0.5 d-block">{{ (int)($rules['max_usage_percentage'] ?? 25) }}% of Products</strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted d-block" style="font-size: 0.72rem;">Delivery & COD Protection</span>
+                        <span class="text-success fw-bold d-block mt-0.5" style="font-size: 0.78rem;">
+                            <i class="bi bi-shield-check me-0.5"></i> 100% Real Cash
+                        </span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                    <span class="text-muted" style="font-size: 0.75rem;">Min Order: <strong>{{ ($rules['min_order_spend'] ?? 0) > 0 ? '₹' . number_format($rules['min_order_spend'], 0) : 'None (All Orders)' }}</strong></span>
+                    @if(auth()->user()->isSuperAdmin())
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold" onclick="openRulesTab('tab-wallet')">
+                            <i class="bi bi-sliders me-1"></i> Configure Wallet Cap
+                        </button>
                     @endif
                 </div>
-                <div class="d-flex align-items-center gap-1.5 small mb-1">
-                    <span class="text-secondary" style="font-size: 0.75rem;">3-Tier Repeat:</span>
-                    <strong class="text-success font-monospace">₹{{ number_format($rules['first_order_reward'], 0) }} + ₹{{ number_format($rules['second_order_reward'], 0) }} + ₹{{ number_format($rules['third_order_reward'], 0) }}</strong>
-                </div>
-                <div class="text-muted" style="font-size: 0.7rem;">
-                    Max Payout: <strong class="text-dark">₹{{ number_format($rules['first_order_reward'] + $rules['second_order_reward'] + $rules['third_order_reward'], 0) }}</strong>/friend
-                </div>
-                <div class="kpi-accent" style="background: linear-gradient(90deg, {{ $rules['referral_enabled'] ? '#8b5cf6, #a78bfa' : '#9ca3af, #cbd5e1' }});"></div>
             </div>
         </div>
     </div>
@@ -497,114 +552,156 @@
                 </div>
 
                 <div class="modal-body p-4">
-                    {{-- Master Program Switches --}}
-                    <div class="p-3 bg-light rounded-4 border mb-4">
-                        <div class="d-flex align-items-center justify-content-between mb-3 pb-3 border-bottom">
-                            <div>
-                                <h6 class="fw-bold text-dark mb-0.5">Enable Referral Program</h6>
-                                <small class="text-secondary d-block" style="font-size: 0.78rem;">Allow customers to share their referral link and earn repeat delivery milestones.</small>
+                    {{-- Nav Tabs for Referral vs Wallet Policy --}}
+                    <ul class="nav nav-pills nav-fill mb-4 p-1.5 bg-light rounded-pill border" id="rulesModalTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active rounded-pill fw-bold py-2 d-flex align-items-center justify-content-center gap-2" 
+                                    id="tab-referral-btn" data-bs-toggle="pill" data-bs-target="#tab-referral" type="button" role="tab" style="font-size: 0.88rem;">
+                                <i class="bi bi-gift-fill text-purple"></i>
+                                <span>1. Referral & Welcome Program</span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link rounded-pill fw-bold py-2 d-flex align-items-center justify-content-center gap-2" 
+                                    id="tab-wallet-btn" data-bs-toggle="pill" data-bs-target="#tab-wallet" type="button" role="tab" style="font-size: 0.88rem;">
+                                <i class="bi bi-wallet2 text-primary"></i>
+                                <span>2. Wallet Checkout Policy</span>
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="rulesModalTabContent">
+                        {{-- TAB 1: REFERRAL & WELCOME PROGRAM --}}
+                        <div class="tab-pane fade show active" id="tab-referral" role="tabpanel">
+                            {{-- Master Switches with high visibility ON/OFF badges --}}
+                            <div class="p-3 bg-light rounded-4 border mb-4">
+                                <div class="d-flex align-items-center justify-content-between mb-3 pb-3 border-bottom">
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <h6 class="fw-bold text-dark mb-0">Enable Customer Referral Program</h6>
+                                            <span id="badge_ref_status" class="badge {{ $rules['referral_enabled'] ? 'bg-success' : 'bg-secondary' }} rounded-pill px-2.5 py-0.5 fw-bold" style="font-size: 0.68rem;">
+                                                {{ $rules['referral_enabled'] ? 'ACTIVE (ON)' : 'DISABLED (OFF)' }}
+                                            </span>
+                                        </div>
+                                        <small class="text-secondary d-block mt-0.5" style="font-size: 0.78rem;">Allow customers to share their unique referral code and earn repeat milestone credits.</small>
+                                    </div>
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="wallet_referral_enabled" value="1" id="rule_ref_enabled" {{ $rules['referral_enabled'] ? 'checked' : '' }} onchange="updateSwitchBadge(this, 'badge_ref_status')" style="width: 2.8em; height: 1.5em; cursor: pointer;">
+                                    </div>
+                                </div>
+
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <h6 class="fw-bold text-dark mb-0">Enable Signup Welcome Bonus</h6>
+                                            <span id="badge_bonus_status" class="badge {{ $rules['signup_bonus_enabled'] ? 'bg-success' : 'bg-secondary' }} rounded-pill px-2.5 py-0.5 fw-bold" style="font-size: 0.68rem;">
+                                                {{ $rules['signup_bonus_enabled'] ? 'ACTIVE (ON)' : 'DISABLED (OFF)' }}
+                                            </span>
+                                        </div>
+                                        <small class="text-secondary d-block mt-0.5" style="font-size: 0.78rem;">Instantly credit new customers with a welcome bonus when they register via a referral link.</small>
+                                    </div>
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="wallet_signup_bonus_enabled" value="1" id="rule_bonus_enabled" {{ $rules['signup_bonus_enabled'] ? 'checked' : '' }} onchange="updateSwitchBadge(this, 'badge_bonus_status')" style="width: 2.8em; height: 1.5em; cursor: pointer;">
+                                    </div>
+                                </div>
                             </div>
-                            <div class="form-check form-switch mb-0">
-                                <input class="form-check-input" type="checkbox" role="switch" name="wallet_referral_enabled" value="1" id="rule_ref_enabled" {{ $rules['referral_enabled'] ? 'checked' : '' }} style="width: 2.8em; height: 1.5em; cursor: pointer;">
+
+                            {{-- Friend Signup Bonus --}}
+                            <div class="mb-4">
+                                <label class="form-label small fw-bold text-uppercase">
+                                    <i class="bi bi-gift-fill text-primary me-1"></i>New Friend Signup Bonus
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light fw-bold font-monospace">₹</span>
+                                    <input type="number" step="1" min="0" name="wallet_signup_bonus" class="form-control font-monospace fw-bold" value="{{ $rules['signup_bonus'] }}" required id="input_signup_bonus">
+                                </div>
+                                <small class="text-muted" style="font-size: 0.72rem;">Credited immediately upon friend's successful registration.</small>
+                            </div>
+
+                            {{-- 3-Tier Repeat Rewards --}}
+                            <div class="card border rounded-4 p-3.5 bg-light">
+                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                    <h6 class="fw-bold text-dark mb-0">
+                                        <i class="bi bi-layers-fill text-success me-1.5"></i>3-Tier Repeat Order Rewards for Referrer
+                                    </h6>
+                                    <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2.5 py-0.5 fw-bold" style="font-size: 0.72rem;">RETENTION LOOP</span>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-semibold text-muted">🥇 1st Order Delivered</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-white fw-bold font-monospace">₹</span>
+                                            <input type="number" step="1" min="0" name="wallet_first_order_reward" class="form-control font-monospace fw-bold tier-input" value="{{ $rules['first_order_reward'] }}" required id="input_tier1">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-semibold text-muted">🥈 2nd Order Delivered</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-white fw-bold font-monospace">₹</span>
+                                            <input type="number" step="1" min="0" name="wallet_second_order_reward" class="form-control font-monospace fw-bold tier-input" value="{{ $rules['second_order_reward'] }}" required id="input_tier2">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-semibold text-muted">🥉 3rd Order Delivered</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-white fw-bold font-monospace">₹</span>
+                                            <input type="number" step="1" min="0" name="wallet_third_order_reward" class="form-control font-monospace fw-bold tier-input" value="{{ $rules['third_order_reward'] }}" required id="input_tier3">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3 pt-2.5 border-top d-flex justify-content-between align-items-center text-secondary small" style="font-size: 0.78rem;">
+                                    <span>Total Payout Potential per Referred Friend:</span>
+                                    <strong class="text-success font-monospace fs-6" id="total_payout_preview">
+                                        ₹{{ number_format($rules['first_order_reward'] + $rules['second_order_reward'] + $rules['third_order_reward'], 2) }}
+                                    </strong>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div>
-                                <h6 class="fw-bold text-dark mb-0.5">Enable Signup Welcome Bonus</h6>
-                                <small class="text-secondary d-block" style="font-size: 0.78rem;">Instantly credit new customers with a welcome bonus when they register via a referral link.</small>
-                            </div>
-                            <div class="form-check form-switch mb-0">
-                                <input class="form-check-input" type="checkbox" role="switch" name="wallet_signup_bonus_enabled" value="1" id="rule_bonus_enabled" {{ $rules['signup_bonus_enabled'] ? 'checked' : '' }} style="width: 2.8em; height: 1.5em; cursor: pointer;">
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Reward Amounts Configuration --}}
-                    <div class="row g-3 mb-3">
-                        {{-- Signup Bonus --}}
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-uppercase">
-                                <i class="bi bi-gift-fill text-primary me-1"></i>New Friend Signup Bonus
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light fw-bold font-monospace">₹</span>
-                                <input type="number" step="1" min="0" name="wallet_signup_bonus" class="form-control font-monospace fw-bold" value="{{ $rules['signup_bonus'] }}" required id="input_signup_bonus">
-                            </div>
-                            <small class="text-muted" style="font-size: 0.72rem;">Credited immediately upon friend's successful registration.</small>
-                        </div>
-
-                        {{-- Min Order Spend Threshold --}}
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-uppercase">
-                                <i class="bi bi-cart-check text-secondary me-1"></i>Min Order Spend to Qualify
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light fw-bold font-monospace">₹</span>
-                                <input type="number" step="1" min="0" name="wallet_min_order_reward_spend" class="form-control font-monospace fw-bold" value="{{ $rules['min_order_spend'] }}" placeholder="0 for no minimum">
-                            </div>
-                            <small class="text-muted" style="font-size: 0.72rem;">Set to 0 to reward orders of any value.</small>
-                        </div>
-                    </div>
-
-                    {{-- Wallet Checkout Utilization Cap Rule --}}
-                    <div class="p-3 bg-light rounded-4 border mb-3">
-                        <div class="row align-items-center g-3">
-                            <div class="col-md-7">
-                                <h6 class="fw-bold text-dark mb-1">
+                        {{-- TAB 2: WALLET CHECKOUT UTILIZATION POLICY --}}
+                        <div class="tab-pane fade" id="tab-wallet" role="tabpanel">
+                            {{-- Wallet Checkout Utilization Cap Rule --}}
+                            <div class="p-3.5 bg-light rounded-4 border mb-4">
+                                <label class="form-label small fw-bold text-uppercase text-dark mb-1">
                                     <i class="bi bi-percent text-primary me-1"></i>Max Wallet Usage per Order
-                                </h6>
+                                </label>
+                                <div class="input-group mb-2">
+                                    <input type="number" step="1" min="1" max="100" name="wallet_max_usage_percentage" class="form-control font-monospace fw-bold text-end fs-5" value="{{ $rules['max_usage_percentage'] ?? 25 }}" required>
+                                    <span class="input-group-text bg-white fw-bold text-primary">% of Product Subtotal</span>
+                                </div>
                                 <small class="text-secondary d-block" style="font-size: 0.78rem;">
-                                    Cap maximum wallet deduction against Net Product Subtotal. Delivery & COD fees must always be paid directly by customer.
+                                    Maximum percentage of Net Product Subtotal (after coupons) that can be paid using wallet balance. Default recommended: <strong>25%</strong>.
                                 </small>
                             </div>
-                            <div class="col-md-5">
-                                <div class="input-group">
-                                    <input type="number" step="1" min="1" max="100" name="wallet_max_usage_percentage" class="form-control font-monospace fw-bold text-end" value="{{ $rules['max_usage_percentage'] ?? 25 }}" required>
-                                    <span class="input-group-text bg-white fw-bold">% of Subtotal</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    {{-- 3-Tier Repeat Rewards --}}
-                    <div class="card border rounded-4 p-3.5 bg-light mb-3">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <h6 class="fw-bold text-dark mb-0">
-                                <i class="bi bi-layers-fill text-success me-1.5"></i>3-Tier Repeat Order Rewards for Referrer
-                            </h6>
-                            <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2.5 py-0.5 fw-bold" style="font-size: 0.72rem;">RETENTION LOOP</span>
-                        </div>
+                            {{-- Min Order Spend Threshold --}}
+                            <div class="p-3.5 bg-light rounded-4 border mb-4">
+                                <label class="form-label small fw-bold text-uppercase text-dark mb-1">
+                                    <i class="bi bi-cart-check text-secondary me-1"></i>Min Cart Order Value to Unlock Wallet
+                                </label>
+                                <div class="input-group mb-2">
+                                    <span class="input-group-text bg-white fw-bold font-monospace">₹</span>
+                                    <input type="number" step="1" min="0" name="wallet_min_order_reward_spend" class="form-control font-monospace fw-bold text-end fs-5" value="{{ $rules['min_order_spend'] }}" placeholder="0 for no minimum">
+                                </div>
+                                <small class="text-secondary d-block" style="font-size: 0.78rem;">
+                                    Set to <strong>0</strong> to allow wallet deduction on all orders. Or set e.g. <strong>₹299</strong> to enforce a minimum basket size before wallet can be applied.
+                                </small>
+                            </div>
 
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label small fw-semibold text-muted">🥇 1st Order Delivered</label>
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text bg-white fw-bold font-monospace">₹</span>
-                                    <input type="number" step="1" min="0" name="wallet_first_order_reward" class="form-control font-monospace fw-bold tier-input" value="{{ $rules['first_order_reward'] }}" required id="input_tier1">
-                                </div>
+                            {{-- Protection Guarantees Card --}}
+                            <div class="card border-0 rounded-4 p-3.5" style="background: #ecfdf5; border: 1.5px solid #a7f3d0 !important;">
+                                <h6 class="fw-bold text-success mb-2 d-flex align-items-center gap-1.5" style="font-size: 0.88rem;">
+                                    <i class="bi bi-shield-check fs-5"></i>
+                                    <span>Built-in Financial Protections:</span>
+                                </h6>
+                                <ul class="list-unstyled mb-0 small text-secondary" style="font-size: 0.8rem; line-height: 1.6;">
+                                    <li class="mb-1">✓ <strong>Delivery Charges</strong> (e.g. ₹40) are strictly collected in real cash / UPI from customer and never covered by wallet.</li>
+                                    <li class="mb-1">✓ <strong>COD Handling Fees</strong> (e.g. ₹40) are strictly collected at doorstep delivery and never covered by wallet.</li>
+                                    <li>✓ <strong>Frozen Wallets</strong> are blocked from redeeming balance at checkout across both Web and Mobile App.</li>
+                                </ul>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label small fw-semibold text-muted">🥈 2nd Order Delivered</label>
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text bg-white fw-bold font-monospace">₹</span>
-                                    <input type="number" step="1" min="0" name="wallet_second_order_reward" class="form-control font-monospace fw-bold tier-input" value="{{ $rules['second_order_reward'] }}" required id="input_tier2">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label small fw-semibold text-muted">🥉 3rd Order Delivered</label>
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text bg-white fw-bold font-monospace">₹</span>
-                                    <input type="number" step="1" min="0" name="wallet_third_order_reward" class="form-control font-monospace fw-bold tier-input" value="{{ $rules['third_order_reward'] }}" required id="input_tier3">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mt-3 pt-2.5 border-top d-flex justify-content-between align-items-center text-secondary small" style="font-size: 0.78rem;">
-                            <span>Total Payout Potential per Referred Friend:</span>
-                            <strong class="text-success font-monospace fs-6" id="total_payout_preview">
-                                ₹{{ number_format($rules['first_order_reward'] + $rules['second_order_reward'] + $rules['third_order_reward'], 2) }}
-                            </strong>
                         </div>
                     </div>
                 </div>
@@ -622,6 +719,30 @@
 
 @push('scripts')
 <script>
+function openRulesTab(tabId) {
+    const modalEl = document.getElementById('editRulesModal');
+    if (!modalEl) return;
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+
+    const triggerEl = document.querySelector(`button[data-bs-target="#${tabId}"]`);
+    if (triggerEl) {
+        bootstrap.Tab.getOrCreateInstance(triggerEl).show();
+    }
+}
+
+function updateSwitchBadge(input, badgeId) {
+    const badge = document.getElementById(badgeId);
+    if (!badge) return;
+    if (input.checked) {
+        badge.className = 'badge bg-success rounded-pill px-2.5 py-0.5 fw-bold';
+        badge.textContent = 'ACTIVE (ON)';
+    } else {
+        badge.className = 'badge bg-secondary rounded-pill px-2.5 py-0.5 fw-bold';
+        badge.textContent = 'DISABLED (OFF)';
+    }
+}
+
 function confirmWalletToggle(formId, isFreeze, userName) {
     if (typeof Swal === 'undefined') {
         document.getElementById(formId).submit();
