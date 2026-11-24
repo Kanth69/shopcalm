@@ -1,3 +1,7 @@
+@php
+    $rawStoreName = \App\Models\Setting::get('store_name', 'ShopCalm');
+    $brandDisplay = str_ireplace('shopcalm', 'ShopCalm', $rawStoreName);
+@endphp
 <div class="auth-header text-center">
     <a href="{{ route('home') }}" class="auth-logo d-inline-flex align-items-center justify-content-center mb-3 text-decoration-none">
         <x-logo height="40" />
@@ -74,4 +78,11 @@
             <button type="button" id="web-cancel-otp-btn" class="btn btn-link btn-sm p-0 text-decoration-none text-muted">Use Password Instead</button>
         </div>
     </div>
+
+    <p class="text-center text-muted mt-3 mb-0" style="font-size: 0.76rem; line-height: 1.5;">
+        By continuing, you agree to {{ $brandDisplay }}'s 
+        <a href="{{ route('page.terms') }}" target="_blank" class="text-primary text-decoration-none fw-semibold">Terms & Conditions</a> 
+        and 
+        <a href="{{ route('page.privacy') }}" target="_blank" class="text-primary text-decoration-none fw-semibold">Privacy Policy</a>.
+    </p>
 </form>
