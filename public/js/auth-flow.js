@@ -121,6 +121,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (pwInput) {
                     pwInput.value = '';
                 }
+                const pwMode = document.getElementById('web-password-mode');
+                const otpSection = document.getElementById('web-login-otp-section');
+                const subtitle = document.getElementById('login-auth-subtitle');
+                if (pwMode) pwMode.style.display = 'block';
+                if (otpSection) otpSection.style.display = 'none';
+                if (subtitle) subtitle.textContent = 'Enter your password to sign in';
             }
 
             const firstInput = nextEl.querySelector('input:not([readonly]):not([type="hidden"])');
@@ -326,13 +332,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Web 1-Tap WhatsApp OTP Login
     const webLoginOtpBtn = document.getElementById('web-login-otp-btn');
     const webLoginOtpSection = document.getElementById('web-login-otp-section');
-    const webPasswordSection = document.getElementById('web-password-section');
-    const webLoginDivider = document.getElementById('web-login-divider');
+    const webPasswordMode = document.getElementById('web-password-mode');
     const webCancelOtpBtn = document.getElementById('web-cancel-otp-btn');
     const webLoginVerifyBtn = document.getElementById('web-login-verify-btn');
     const webLoginResendBtn = document.getElementById('web-login-resend-btn');
     const webLoginOtpInput = document.getElementById('web-login-otp-input');
     const webLoginCountdown = document.getElementById('web-login-countdown');
+    const loginAuthSubtitle = document.getElementById('login-auth-subtitle');
     let webOtpTimer = null;
 
     function startWebOtpCountdown() {
@@ -376,12 +382,14 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.success) {
                     showToast('WhatsApp OTP sent successfully!', 'success');
+                    if (webPasswordMode) webPasswordMode.style.display = 'none';
                     if (webLoginOtpSection) webLoginOtpSection.style.display = 'block';
-                    if (webPasswordSection) webPasswordSection.style.display = 'none';
-                    if (webLoginDivider) webLoginDivider.style.display = 'none';
-                    if (webLoginOtpBtn) webLoginOtpBtn.style.display = 'none';
+                    if (loginAuthSubtitle) loginAuthSubtitle.textContent = 'Enter the 6-digit code sent to your WhatsApp';
                     startWebOtpCountdown();
-                    if (webLoginOtpInput) webLoginOtpInput.focus();
+                    if (webLoginOtpInput) {
+                        webLoginOtpInput.value = '';
+                        webLoginOtpInput.focus();
+                    }
                 } else {
                     showToast(data.message || 'Failed to send WhatsApp OTP.', 'error');
                 }
@@ -397,9 +405,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (webCancelOtpBtn) {
         webCancelOtpBtn.addEventListener('click', function() {
             if (webLoginOtpSection) webLoginOtpSection.style.display = 'none';
-            if (webPasswordSection) webPasswordSection.style.display = 'block';
-            if (webLoginDivider) webLoginDivider.style.display = 'flex';
-            if (webLoginOtpBtn) webLoginOtpBtn.style.display = 'block';
+            if (webPasswordMode) webPasswordMode.style.display = 'block';
+            if (loginAuthSubtitle) loginAuthSubtitle.textContent = 'Enter your password to sign in';
+            const pwInput = document.getElementById('password_for_login');
+            if (pwInput) pwInput.focus();
         });
     }
 

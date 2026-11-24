@@ -6,8 +6,8 @@
     <a href="{{ route('home') }}" class="auth-logo d-inline-flex align-items-center justify-content-center mb-3 text-decoration-none">
         <x-logo height="40" />
     </a>
-    <h2 class="auth-title">Welcome Back 👋</h2>
-    <p class="auth-subtitle">Enter your password to sign in</p>
+    <h2 class="auth-title" id="login-auth-title">Welcome Back 👋</h2>
+    <p class="auth-subtitle" id="login-auth-subtitle">Enter your password to sign in</p>
 </div>
 
 <!-- Prominent Red Alert Banner Above Login Form -->
@@ -20,7 +20,7 @@
     @csrf
     <input type="hidden" name="login_identifier" id="login_identifier_for_login">
 
-    <div class="form-group">
+    <div class="form-group mb-2">
         <div class="label-row">
             <label for="login_identifier_display">Account</label>
             <button type="button" class="change-identifier-btn" id="change-identifier-from-login">Change</button>
@@ -28,9 +28,10 @@
         <input id="login_identifier_display" class="auth-input readonly-input" type="text" readonly tabindex="-1">
     </div>
 
-    <div id="web-password-section">
+    {{-- MODE 1: PASSWORD LOGIN --}}
+    <div id="web-password-mode">
         <input type="hidden" name="remember" value="1">
-        <div class="form-group" style="margin-bottom: 24px;">
+        <div class="form-group mb-3">
             <div class="label-row">
                 <label for="password_for_login">Password</label>
                 <a href="#" class="forgot-link" id="show-forgot-password">Forgot?</a>
@@ -43,41 +44,50 @@
             </div>
         </div>
 
-        <button type="submit" id="login-submit-btn" class="auth-submit-btn" style="margin-top: 6px;">
+        <button type="submit" id="login-submit-btn" class="auth-submit-btn">
             <span>Sign In</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
         </button>
+
+        <div class="login-or-divider my-3 text-center position-relative" id="web-login-divider">
+            <hr class="border-secondary opacity-25 m-0">
+            <span class="bg-white px-3 text-muted fw-bold small position-absolute top-50 start-50 translate-middle" style="font-size: 11px; letter-spacing: 0.5px;">OR</span>
+        </div>
+
+        {{-- 1-Tap Fast WhatsApp OTP Button --}}
+        <button type="button" id="web-login-otp-btn" class="auth-submit-btn" style="background: #10b981; border: none;">
+            <i class="bi bi-whatsapp me-2 fs-5"></i>
+            <span>Login with WhatsApp OTP</span>
+        </button>
     </div>
 
-    <div class="my-4 d-flex align-items-center" id="web-login-divider">
-        <hr class="flex-grow-1 border-secondary opacity-25">
-        <span class="px-2 text-muted fw-bold small" style="font-size: 11px; letter-spacing: 0.5px;">OR</span>
-        <hr class="flex-grow-1 border-secondary opacity-25">
-    </div>
-
-    {{-- 1-Tap Fast WhatsApp OTP Button --}}
-    <button type="button" id="web-login-otp-btn" class="auth-submit-btn" style="background: #10b981; border: none; margin-top: 4px;">
-        <i class="bi bi-whatsapp me-2 fs-5"></i>
-        <span>Login with WhatsApp OTP</span>
-    </button>
-
-    {{-- Web WhatsApp OTP Entry Section --}}
-    <div id="web-login-otp-section" style="display: none;" class="my-3 p-3 bg-light rounded-4 border">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-            <span class="fw-bold small text-dark"><i class="bi bi-shield-lock text-success me-1"></i> Enter 6-digit WhatsApp OTP</span>
-            <div class="d-flex align-items-center">
-                <span id="web-login-countdown" class="badge bg-secondary font-monospace">90s</span>
-                <button type="button" id="web-login-resend-btn" class="btn btn-link btn-sm p-0 text-decoration-none text-success fw-bold" style="display: none; font-size: 13px;"><i class="bi bi-arrow-repeat me-1"></i>Resend OTP</button>
+    {{-- MODE 2: DIRECT WHATSAPP OTP LOGIN --}}
+    <div id="web-login-otp-section" style="display: none;">
+        <div class="form-group mb-3">
+            <div class="label-row">
+                <label for="web-login-otp-input">WhatsApp OTP</label>
+                <div class="d-flex align-items-center">
+                    <span id="web-login-countdown" class="badge bg-secondary font-monospace">90s</span>
+                    <button type="button" id="web-login-resend-btn" class="btn btn-link btn-sm p-0 text-decoration-none text-success fw-bold" style="display: none; font-size: 12.5px;"><i class="bi bi-arrow-repeat me-1"></i>Resend OTP</button>
+                </div>
             </div>
+            <input type="text" id="web-login-otp-input" class="auth-input font-monospace text-center fs-5" maxlength="6" placeholder="••••••" inputmode="numeric" style="letter-spacing: 6px; font-weight: 700;">
+            <span class="field-hint" style="font-size: 12px; color: #64748b; margin-top: 4px;">Enter the 6-digit code sent to your WhatsApp</span>
         </div>
-        <div class="input-group mb-2">
-            <input type="text" id="web-login-otp-input" class="form-control font-monospace text-center fs-5" maxlength="6" placeholder="••••••" inputmode="numeric" style="letter-spacing: 5px; font-weight: 700;">
-            <button type="button" id="web-login-verify-btn" class="btn btn-primary px-3 fw-bold">Verify & Login</button>
-        </div>
-        <div class="d-flex justify-content-end align-items-center">
-            <button type="button" id="web-cancel-otp-btn" class="btn btn-link btn-sm p-0 text-decoration-none text-muted" style="font-size: 12px;">Use Password Instead</button>
+
+        <button type="button" id="web-login-verify-btn" class="auth-submit-btn">
+            <span>Verify & Login</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+        </button>
+
+        <div class="text-center mt-3">
+            <button type="button" id="web-cancel-otp-btn" class="btn btn-link btn-sm p-0 text-decoration-none text-primary fw-semibold" style="font-size: 13px;">
+                <i class="bi bi-arrow-left me-1"></i> Use Password Instead
+            </button>
         </div>
     </div>
 
