@@ -102,7 +102,7 @@ class AuthenticatedSessionController extends Controller
         }
 
         $guestSessionId = $request->session()->getId();
-        Auth::guard('customer')->login($user);
+        Auth::guard('customer')->login($user, true);
         $request->session()->regenerate();
 
         app(\App\Services\CartService::class)->mergeSessionCart($guestSessionId);

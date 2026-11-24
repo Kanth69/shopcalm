@@ -193,7 +193,7 @@ class RegisteredUserController extends Controller
 
         $guestSessionId = $request->session()->getId();
 
-        Auth::login($user);
+        Auth::login($user, true);
 
         // Merge guest session cart into newly registered customer's cart
         app(\App\Services\CartService::class)->mergeSessionCart($guestSessionId);

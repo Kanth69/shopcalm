@@ -25,7 +25,8 @@
     </div>
 
     <div id="web-password-section">
-        <div class="form-group">
+        <input type="hidden" name="remember" value="1">
+        <div class="form-group mb-3">
             <div class="label-row">
                 <label for="password_for_login">Password</label>
                 <a href="#" class="forgot-link" id="show-forgot-password">Forgot?</a>
@@ -38,15 +39,7 @@
             </div>
         </div>
 
-        <div class="form-options">
-            <label class="checkbox-container">
-                <input id="remember_me" type="checkbox" name="remember">
-                <span class="checkmark"></span>
-                <span class="label-text">Stay logged in</span>
-            </label>
-        </div>
-
-        <button type="submit" id="login-submit-btn" class="auth-submit-btn">
+        <button type="submit" id="login-submit-btn" class="auth-submit-btn mt-3">
             <span>Sign In</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
