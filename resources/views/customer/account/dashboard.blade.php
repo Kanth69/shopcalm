@@ -23,7 +23,7 @@
                     </div>
                     <div class="min-w-0">
                         <div class="d-flex align-items-center gap-2 flex-wrap mb-0.5">
-                            <h5 class="fw-bolder mb-0 text-white text-truncate" style="font-size: 1.25rem; letter-spacing: -0.02em;">Welcome back, {{ $user->name }}! 👋</h5>
+                            <h5 class="fw-bolder mb-0 text-white text-truncate" style="font-size: 1.25rem; letter-spacing: -0.02em;">Welcome back, {{ $user->name }}!</h5>
                             <span class="badge rounded-pill px-2.5 py-0.5 fw-bold d-inline-flex align-items-center gap-1" 
                                   style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4); font-size: 0.68rem;">
                                 <i class="bi bi-patch-check-fill"></i> Verified Member
@@ -93,7 +93,7 @@
                     </div>
                     <div class="min-w-0 flex-grow-1 overflow-hidden">
                         <div class="fw-bolder text-white text-truncate" style="font-size: 1.12rem; letter-spacing: -0.01em; line-height: 1.25;">
-                            Hi, {{ $user->name }} 👋
+                            Hi, {{ $user->name }}
                         </div>
                         <div class="text-white-50 small text-truncate" style="font-size: 0.74rem;">
                             {{ $user->mobile_number ?: $user->email }}

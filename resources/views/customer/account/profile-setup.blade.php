@@ -12,7 +12,7 @@
         <div class="col-12 col-md-10 col-lg-8">
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
                 <div class="card-header text-white py-4 px-3 px-md-4 text-center" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%);">
-                    <h2 class="h5 mb-1 fw-bold text-white">Welcome to {{ $storeName }}! 👋</h2>
+                    <h2 class="h5 mb-1 fw-bold text-white">Welcome to {{ $storeName }}!</h2>
                     <p class="mb-0 text-white-50 small">Let's personalize your shopping experience. All fields are optional.</p>
                 </div>
                 <div class="card-body p-4 p-md-5">

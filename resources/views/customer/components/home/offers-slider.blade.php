@@ -56,10 +56,10 @@
                                     <img src="{{ $imgPath }}" class="w-100 h-100 object-fit-cover position-absolute" alt="{{ $offer->title }}" style="inset: 0;">
                                 @else
                                     {{-- Vibrant Color Gradient with Decorative Watermark --}}
-                                    <div class="position-absolute top-0 end-0 h-100 d-flex align-items-center pe-3 pe-md-5 opacity-15" style="font-size: 150px; line-height: 1; pointer-events: none; z-index: 0;">
-                                        @if(($offer->type ?? '') === 'FLASH_DEAL') ⚡
-                                        @elseif(($offer->type ?? '') === 'MEGA_SALE') 🔥
-                                        @else 🏷️
+                                    <div class="position-absolute top-0 end-0 h-100 d-flex align-items-center pe-3 pe-md-5 opacity-15" style="font-size: 110px; line-height: 1; pointer-events: none; z-index: 0;">
+                                        @if(($offer->type ?? '') === 'FLASH_DEAL') <i class="bi bi-lightning-charge-fill"></i>
+                                        @elseif(($offer->type ?? '') === 'MEGA_SALE') <i class="bi bi-tag-fill"></i>
+                                        @else <i class="bi bi-bag-check-fill"></i>
                                         @endif
                                     </div>
                                     <div class="position-absolute w-100 h-100 top-0 start-0 pointer-events-none" style="background: radial-gradient(circle at 80% 20%, rgba(255,255,255,0.12) 0%, transparent 50%); z-index: 0;"></div>

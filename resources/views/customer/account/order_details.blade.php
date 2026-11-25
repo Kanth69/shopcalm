@@ -376,22 +376,22 @@
         </span>
     </div>
 
-    {{-- Responsive Progress Stepper (Horizontally scrollable if screen width is narrow) --}}
-    <div class="overflow-x-auto py-2 no-scrollbar" style="scrollbar-width: none; -ms-overflow-style: none;">
-        <div class="position-relative d-flex align-items-center justify-content-between my-2" style="min-width: 480px; padding: 0 10px;">
+    {{-- 💻 Desktop Stepper (>= 768px): Full-Width Horizontal Stepper --}}
+    <div class="d-none d-md-block py-2">
+        <div class="position-relative d-flex align-items-center justify-content-between my-2" style="padding: 0 16px;">
             {{-- Background track --}}
-            <div class="position-absolute" style="top:16px; left:24px; right:24px; height:4px; background:#e2e8f0; border-radius:99px; z-index:0;"></div>
+            <div class="position-absolute" style="top:16px; left:36px; right:36px; height:4px; background:#e2e8f0; border-radius:99px; z-index:0;"></div>
             {{-- Filled track --}}
             @php $fillPct = $stepIdx > 0 ? ($stepIdx / (count($stageList) - 1)) * 100 : 0; @endphp
-            <div class="position-absolute" style="top:16px; left:24px; width:calc({{ round($fillPct) }}% - 0px); max-width:calc(100% - 48px); height:4px; background:{{ $st['stripe'] }}; border-radius:99px; z-index:1; transition:width 0.5s ease;"></div>
+            <div class="position-absolute" style="top:16px; left:36px; width:calc({{ round($fillPct) }}% - 0px); max-width:calc(100% - 72px); height:4px; background:{{ $st['stripe'] }}; border-radius:99px; z-index:1; transition:width 0.5s ease;"></div>
 
             @foreach($stageList as $si => $stage)
             @php $done = $si <= $stepIdx; $current = $si === $stepIdx; @endphp
-            <div class="d-flex flex-column align-items-center position-relative flex-fill" style="z-index:2;">
+            <div class="d-flex flex-column align-items-center position-relative flex-fill px-2" style="z-index:2;">
                 <div class="rounded-circle d-flex align-items-center justify-content-center"
-                     style="width:32px; height:32px;
-                            background:{{ $done ? $st['stripe'] : '#e2e8f0' }};
-                            border:2px solid {{ $done ? $st['stripe'] : '#e2e8f0' }};
+                     style="width:34px; height:34px;
+                            background:{{ $done ? $st['stripe'] : '#ffffff' }};
+                            border:2.5px solid {{ $done ? $st['stripe'] : '#cbd5e1' }};
                             box-shadow:{{ $current ? '0 0 0 4px '.($st['bg']) : 'none' }};
                             transition:all 0.3s;">
                     @if($done)
@@ -400,12 +400,60 @@
                         <div style="width:7px; height:7px; border-radius:50%; background:#cbd5e1;"></div>
                     @endif
                 </div>
-                <span class="mt-2 text-center"
-                      style="font-size:0.72rem; line-height:1.2; white-space:nowrap;
+                <span class="mt-2 text-center text-nowrap"
+                      style="font-size:0.78rem; line-height:1.2;
                              color:{{ $done ? $st['color'] : '#94a3b8' }};
                              font-weight:{{ $current ? '700' : ($done ? '600' : '400') }};">
                     {{ $stage['label'] }}
                 </span>
+            </div>
+            @endforeach
+        </div>
+    </div>
+
+    {{-- 📱 Mobile Stepper (< 768px): Clean Vertical App-Style Timeline (Zero Clipping, 100% Readable) --}}
+    <div class="d-block d-md-none py-1">
+        <div class="position-relative ps-1">
+            @foreach($stageList as $si => $stage)
+            @php
+                $done = $si <= $stepIdx;
+                $current = $si === $stepIdx;
+                $isLast = $si === count($stageList) - 1;
+            @endphp
+            <div class="d-flex align-items-start position-relative {{ !$isLast ? 'pb-3' : '' }}">
+                {{-- Vertical connecting line --}}
+                @if(!$isLast)
+                    <div class="position-absolute"
+                         style="top: 24px; bottom: 0; left: 11px; width: 2px; background: {{ $si < $stepIdx ? $st['stripe'] : '#e2e8f0' }}; z-index: 0;"></div>
+                @endif
+
+                {{-- Status Circle Icon --}}
+                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 position-relative"
+                     style="width: 24px; height: 24px; z-index: 1; background: {{ $done ? $st['stripe'] : '#ffffff' }}; border: 2px solid {{ $done ? $st['stripe'] : '#cbd5e1' }}; box-shadow: {{ $current ? '0 0 0 3px ' . $st['bg'] : 'none' }};">
+                    @if($done)
+                        <i class="bi bi-check-lg text-white" style="font-size: 0.72rem; font-weight: 700;"></i>
+                    @else
+                        <div style="width: 5px; height: 5px; border-radius: 50%; background: #94a3b8;"></div>
+                    @endif
+                </div>
+
+                {{-- Milestone Text & Status Info --}}
+                <div class="ms-3 min-w-0 flex-grow-1">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                        <span class="fw-bold" style="font-size: 0.84rem; color: {{ $done ? '#0f172a' : '#94a3b8' }};">
+                            {{ $stage['label'] }}
+                        </span>
+                        @if($current)
+                            <span class="badge rounded-pill px-2 py-0.5 fw-bold" style="{{ $statusStyle }}; font-size: 0.65rem;">
+                                Current Status
+                            </span>
+                        @elseif($done)
+                            <span class="text-success small fw-semibold" style="font-size: 0.7rem;">
+                                <i class="bi bi-check2"></i> Completed
+                            </span>
+                        @endif
+                    </div>
+                </div>
             </div>
             @endforeach
         </div>
@@ -509,11 +557,11 @@
                             </div>
                             <div class="text-secondary small text-break mt-0.5" style="font-size: 0.75rem; line-height: 1.35;">
                                 @php
-                                    $deliveryStatusText = '⚡ Arriving today at your doorstep';
+                                    $deliveryStatusText = 'Arriving today at your doorstep';
                                     if ($order->fulfillment?->hasActiveDeliveryIssue()) {
-                                        $deliveryStatusText = '⚠️ Delivery Attempted — Delivery partner will re-attempt soon';
+                                        $deliveryStatusText = 'Delivery Attempted — Delivery partner will re-attempt soon';
                                     } elseif (str_contains(strtolower($order->delivery_slot ?? ''), 'tomorrow') || str_contains(strtolower($order->fulfillment?->delivery_slot ?? ''), 'tomorrow')) {
-                                        $deliveryStatusText = '📅 Rescheduled — Arriving tomorrow at your doorstep';
+                                        $deliveryStatusText = 'Rescheduled — Arriving tomorrow at your doorstep';
                                     }
                                 @endphp
                                 <i class="bi bi-clock-history me-1 text-muted"></i>{{ $isOutForDelivery ? $deliveryStatusText : ($order->delivery_slot ?: 'Preparing for dispatch') }}
@@ -754,20 +802,20 @@
 @if($isDelivered)
     @if(!$order->feedback)
         <div class="card border-0 shadow-sm rounded-4 mb-4 p-4 text-center overflow-hidden" style="background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%); border: 1.5px solid #86efac !important; max-width: 100%;">
-            <div class="d-inline-flex align-items-center justify-content-center mx-auto mb-2 shadow-xs" style="width: 48px; height: 48px; border-radius: 14px; background: #dcfce7; color: #16a34a; font-size: 1.35rem;">
+            <div class="d-inline-flex align-items-center justify-content-center mx-auto mb-2 shadow-xs" style="width: 44px; height: 44px; border-radius: 12px; background: #dcfce7; color: #16a34a; font-size: 1.2rem;">
                 <i class="bi bi-star-fill text-warning"></i>
             </div>
-            <h5 class="fw-extrabold text-dark mb-1" style="font-size: 1.05rem;">How was your delivery experience with {{ $order->rider_name ?: 'our delivery partner' }}?</h5>
-            <p class="text-secondary small mb-3 mx-auto" style="max-width: 460px; font-size: 0.8rem;">Your 5-star rating evaluates delivery punctuality, polite behavior, and careful package handling.</p>
+            <h5 class="fw-bold text-dark mb-1" style="font-size: 1rem;">Rate Delivery Experience</h5>
+            <p class="text-secondary small mb-3 mx-auto" style="max-width: 440px; font-size: 0.82rem;">How was the delivery by {{ $order->rider_name ?: 'our delivery partner' }}?</p>
             <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
                 @for($star = 1; $star <= 5; $star++)
-                    <button type="button" class="btn btn-light rounded-circle shadow-xs border-0 star-quick-btn" style="width: 44px; height: 44px; font-size: 1.4rem; color: #f59e0b; background: #fffbeb; display: flex; align-items: center; justify-content: center; transition: transform 0.15s ease;" onclick="openFeedbackWithRating({{ $star }})" title="Rate {{ $star }} Stars">
-                        ★
+                    <button type="button" class="btn btn-light rounded-circle shadow-xs border star-quick-btn" style="width: 40px; height: 40px; color: #f59e0b; background: #fffbeb; border-color: #fde68a !important; display: flex; align-items: center; justify-content: center; transition: transform 0.15s ease;" onclick="openFeedbackWithRating({{ $star }})" title="Rate {{ $star }} Stars">
+                        <i class="bi bi-star-fill" style="font-size: 1.15rem;"></i>
                     </button>
                 @endfor
             </div>
-            <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 py-2 fw-bold shadow-xs mx-auto d-inline-flex align-items-center gap-1.5" data-bs-toggle="modal" data-bs-target="#modalOrderFeedback" style="font-size: 0.82rem;">
-                <i class="bi bi-pencil-square"></i> <span>Write Detailed Review / Add Tags</span>
+            <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 py-2 fw-semibold shadow-xs mx-auto d-inline-flex align-items-center gap-1.5" data-bs-toggle="modal" data-bs-target="#modalOrderFeedback" style="font-size: 0.82rem;">
+                <i class="bi bi-pencil-square"></i> <span>Write Feedback</span>
             </button>
         </div>
     @else
@@ -811,17 +859,17 @@
                 </h6>
             </div>
             <div class="card-body p-3 p-md-4">
-                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2" style="font-size: 0.86rem;">
-                    <span class="text-muted">Order Reference:</span>
-                    <span class="fw-bold text-dark font-monospace text-end ps-2">#{{ $order->order_number }}</span>
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2 flex-wrap gap-1" style="font-size: 0.86rem;">
+                    <span class="text-muted text-nowrap">Order Reference:</span>
+                    <span class="fw-bold text-dark font-monospace text-end ps-2 ms-auto">#{{ $order->order_number }}</span>
                 </div>
-                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2" style="font-size: 0.86rem;">
-                    <span class="text-muted">Order Date:</span>
-                    <span class="fw-semibold text-dark text-end ps-2">{{ $order->created_at ? $order->created_at->format('d M, Y') : 'N/A' }}</span>
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2 flex-wrap gap-1" style="font-size: 0.86rem;">
+                    <span class="text-muted text-nowrap">Order Date:</span>
+                    <span class="fw-semibold text-dark text-end ps-2 ms-auto">{{ $order->created_at ? $order->created_at->format('d M, Y') : 'N/A' }}</span>
                 </div>
-                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2" style="font-size: 0.86rem;">
-                    <span class="text-muted">Payment Mode:</span>
-                    <span class="fw-bold text-dark text-end ps-2">
+                <div class="d-flex justify-content-between align-items-start border-bottom pb-2 mb-2 flex-wrap gap-1" style="font-size: 0.86rem;">
+                    <span class="text-muted text-nowrap">Payment Mode:</span>
+                    <span class="fw-bold text-dark text-end ps-2 ms-auto" style="max-width: 100%;">
                         @if($order->payment_method === 'wallet' || ($order->total_amount <= 0 && $order->wallet_amount_used > 0))
                             <span class="text-success"><i class="bi bi-wallet2 me-1"></i>ShopCalm Wallet (100% Paid)</span>
                         @elseif($order->wallet_amount_used > 0)
@@ -842,18 +890,18 @@
                     </span>
                 </div>
                 @if($order->primaryPayment?->bank_reference)
-                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2" style="font-size: 0.86rem;">
-                    <span class="text-muted">Bank Ref (UTR):</span>
-                    <span class="font-monospace fw-bold text-primary text-end ps-2">{{ $order->primaryPayment->bank_reference }}</span>
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2 flex-wrap gap-1" style="font-size: 0.86rem;">
+                    <span class="text-muted text-nowrap">Bank Ref (UTR):</span>
+                    <span class="font-monospace fw-bold text-primary text-end ps-2 ms-auto">{{ $order->primaryPayment->bank_reference }}</span>
                 </div>
                 @endif
-                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2" style="font-size: 0.86rem;">
-                    <span class="text-muted">Status:</span>
-                    <span class="badge rounded-pill px-3 py-1 fw-bold text-end ms-2" style="{{ $statusStyle }}; font-size: 0.72rem;">{{ ucfirst($order->status) }}</span>
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2 flex-wrap gap-1" style="font-size: 0.86rem;">
+                    <span class="text-muted text-nowrap">Status:</span>
+                    <span class="badge rounded-pill px-3 py-1 fw-bold text-end ms-auto" style="{{ $statusStyle }}; font-size: 0.72rem;">{{ ucfirst($order->status) }}</span>
                 </div>
-                <div class="d-flex justify-content-between align-items-center pt-1" style="font-size: 0.88rem;">
+                <div class="d-flex justify-content-between align-items-center pt-1 flex-wrap gap-1" style="font-size: 0.88rem;">
                     <span class="text-muted fw-semibold">Total Amount:</span>
-                    <span class="fw-bolder text-primary fs-6 font-monospace text-end ps-2">₹{{ number_format($order->total_amount, 2) }}</span>
+                    <span class="fw-bolder text-primary fs-6 font-monospace text-end ps-2 ms-auto">₹{{ number_format($order->total_amount, 2) }}</span>
                 </div>
             </div>
         </div>
@@ -872,12 +920,12 @@
                     <i class="bi bi-person-circle text-primary fs-5"></i>
                     <h6 class="fw-bold text-dark mb-0" style="font-size: 0.94rem;">{{ $order->shipping_name }}</h6>
                 </div>
-                <p class="text-secondary small mb-3 ps-4" style="line-height: 1.5; font-size: 0.84rem;">
+                <p class="text-secondary small mb-3 ps-0 ps-sm-3" style="line-height: 1.5; font-size: 0.84rem;">
                     {{ $order->shipping_address }}<br>
                     {{ $order->shipping_city }}, {{ $order->shipping_state }} - {{ $order->shipping_zip }}<br>
                     {{ $order->shipping_country }}
                 </p>
-                <div class="ps-4 text-muted small d-flex flex-column gap-1.5" style="font-size: 0.8rem;">
+                <div class="ps-0 ps-sm-3 text-muted small d-flex flex-column gap-1.5" style="font-size: 0.8rem;">
                     <div><i class="bi bi-envelope me-2 text-info"></i>{{ $order->shipping_email }}</div>
                     <div><i class="bi bi-telephone-fill me-2 text-success"></i>{{ $order->shipping_phone }}</div>
                     @php
@@ -1047,7 +1095,7 @@
                             @endif
                         </div>
 
-                        <div class="flex-grow-1 min-w-0" style="min-width: 0; max-width: calc(100% - 74px); overflow: hidden; word-break: break-word;">
+                        <div class="flex-grow-1 min-w-0" style="min-width: 0; overflow: hidden; word-break: break-word;">
                             <div class="d-flex align-items-center gap-1.5 flex-wrap mb-1" style="max-width: 100%;">
                                 @if($product && $product->brand)
                                     <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
@@ -1304,14 +1352,14 @@
         <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
             
             {{-- Form Section --}}
-            <div id="feedbackFormSection" class="d-flex flex-column h-100" style="min-height: 0; overflow: hidden; flex: 1 1 auto;">
+            <div id="feedbackFormSection" class="flex-column h-100" style="display: flex; min-height: 0; overflow: hidden; flex: 1 1 auto;">
                 <div class="modal-header border-0 pb-0 px-4 pt-4">
                     <div class="d-flex align-items-center gap-2">
                         <div style="width: 36px; height: 36px; border-radius: 10px; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
                             <i class="bi bi-star-fill"></i>
                         </div>
                         <div>
-                            <h6 class="modal-title fw-bold text-dark mb-0" id="modalOrderFeedbackLabel">Delivery & Experience Feedback</h6>
+                            <h6 class="modal-title fw-bold text-dark mb-0" id="modalOrderFeedbackLabel">Delivery Feedback</h6>
                             <small class="text-muted">Order #{{ $order->order_number }}</small>
                         </div>
                     </div>
@@ -1362,15 +1410,15 @@
 
                         {{-- Quick Feedback Tags --}}
                         <div class="mb-3">
-                            <label class="form-label fw-bold text-dark small mb-1.5">Quick Highlights (Click to Select):</label>
+                            <label class="form-label fw-bold text-dark small mb-1.5">Highlights (Tap to select):</label>
                             @php
                                 $availableTags = [
-                                    '⚡ Lightning Fast Delivery',
-                                    '📦 Perfect Packaging',
-                                    '😊 Polite Rider',
-                                    '📞 Proactive Calling',
-                                    '⏱️ On-Time Delivery',
-                                    '🛡️ Safe Handover',
+                                    'Fast Delivery',
+                                    'Careful Packaging',
+                                    'Polite Rider',
+                                    'Proactive Call',
+                                    'On-Time Arrival',
+                                    'Contactless Handover',
                                 ];
                                 $selectedTags = $order->feedback->tags ?? [];
                             @endphp
@@ -1408,20 +1456,20 @@
                 </form>
             </div>
 
-            {{-- Thank You Pop-up Success Section (Zero Browser Alert) --}}
-            <div id="feedbackSuccessSection" style="display: none;" class="p-4 py-5 text-center">
-                <div style="width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; margin: 0 auto 1.25rem; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35);">
+            {{-- Thank You Pop-up Success Section --}}
+            <div id="feedbackSuccessSection" class="p-4 py-5 text-center d-none" style="display: none;">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: #ecfdf5; color: #059669; border: 2px solid #a7f3d0; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 1.25rem;">
                     <i class="bi bi-check-lg"></i>
                 </div>
-                <h4 class="fw-extrabold text-dark mb-1">Thank You For Your Feedback! 🎉</h4>
-                <p class="text-secondary small mb-3">Your rating and feedback have been shared with our logistics and delivery team.</p>
+                <h5 class="fw-bold text-dark mb-1">Thank You For Your Feedback</h5>
+                <p class="text-secondary small mb-3">Your rating helps us evaluate rider service and packaging standards.</p>
                 <div class="d-inline-flex align-items-center gap-2 py-1.5 px-3 rounded-pill bg-light border mb-4">
-                    <span class="text-warning fw-bold fs-6" id="feedbackSuccessStars">★★★★★</span>
+                    <div class="text-warning fw-bold fs-6 d-flex gap-1" id="feedbackSuccessStars"></div>
                     <span class="fw-bold text-dark small" id="feedbackSuccessLabel">Rated 5/5 Stars</span>
                 </div>
                 <div>
-                    <button type="button" class="btn btn-dark rounded-pill px-4 py-2 fw-bold btn-sm shadow-xs" onclick="location.reload()">
-                        <i class="bi bi-check-circle-fill me-1 text-success"></i> Done
+                    <button type="button" class="btn btn-dark rounded-pill px-4 py-2 fw-semibold btn-sm shadow-xs" data-bs-dismiss="modal" onclick="location.reload()">
+                        Done
                     </button>
                 </div>
             </div>
@@ -1450,6 +1498,7 @@ document.addEventListener('DOMContentLoaded', function () {
         inputDelivery.value = val;
         labelDelivery.innerText = ratingsMap[val] || (val + ' / 5');
     }
+    window.setDeliveryStars = setDeliveryStars;
 
     deliveryStars.forEach(s => {
         s.addEventListener('click', () => setDeliveryStars(parseInt(s.dataset.rating)));
@@ -1457,6 +1506,21 @@ document.addEventListener('DOMContentLoaded', function () {
         s.addEventListener('mouseleave', () => { s.style.transform = 'scale(1)'; });
     });
     setDeliveryStars(parseInt(inputDelivery.value) || 5);
+
+    // Reset modal state whenever modal is opened
+    const feedbackModalEl = document.getElementById('modalOrderFeedback');
+    if (feedbackModalEl) {
+        feedbackModalEl.addEventListener('show.bs.modal', function () {
+            const formSection = document.getElementById('feedbackFormSection');
+            const successSection = document.getElementById('feedbackSuccessSection');
+            if (formSection && successSection) {
+                formSection.classList.remove('d-none');
+                formSection.style.setProperty('display', 'flex', 'important');
+                successSection.classList.add('d-none');
+                successSection.style.setProperty('display', 'none', 'important');
+            }
+        });
+    }
 
     // Product Stars Handler
     const productStars = document.querySelectorAll('.star-item-product');
@@ -1514,16 +1578,27 @@ document.addEventListener('DOMContentLoaded', function () {
                     const successLabel = document.getElementById('feedbackSuccessLabel');
 
                     const rating = data.feedback ? data.feedback.delivery_rating : parseInt(inputDelivery.value);
-                    successStars.innerText = '★'.repeat(rating) + '☆'.repeat(5 - rating);
-                    successLabel.innerText = `Rated ${rating}/5 Stars`;
+                    if (successStars) {
+                        successStars.innerHTML = '';
+                        for (let s = 1; s <= 5; s++) {
+                            const icon = document.createElement('i');
+                            icon.className = s <= rating ? 'bi bi-star-fill text-warning' : 'bi bi-star text-muted';
+                            successStars.appendChild(icon);
+                        }
+                    }
+                    if (successLabel) {
+                        successLabel.innerText = `Rated ${rating}/5 Stars`;
+                    }
 
-                    formSection.style.display = 'none';
-                    successSection.style.display = 'block';
+                    formSection.classList.add('d-none');
+                    formSection.style.setProperty('display', 'none', 'important');
+                    successSection.classList.remove('d-none');
+                    successSection.style.setProperty('display', 'block', 'important');
 
-                    // Auto-reload after 2.5s
+                    // Auto-reload after 2s
                     setTimeout(() => {
                         location.reload();
-                    }, 2500);
+                    }, 2000);
                 } else {
                     alert(data.message || 'Something went wrong.');
                     btnSubmit.disabled = false;
@@ -1557,8 +1632,9 @@ function toggleFeedbackTag(btn, tag) {
 }
 
 function openFeedbackWithRating(star) {
-    const starBtn = document.querySelector(`.star-btn[data-rating="${star}"]`);
-    if (starBtn) starBtn.click();
+    if (typeof window.setDeliveryStars === 'function') {
+        window.setDeliveryStars(star);
+    }
     const modalEl = document.getElementById('modalOrderFeedback');
     if (modalEl && window.bootstrap) {
         const modal = bootstrap.Modal.getOrCreateInstance(modalEl);

@@ -83,10 +83,10 @@
                                 style="font-size: 0.8rem; border-color: #cbd5e1 !important;">
                             <span class="text-truncate" id="currentSortText">
                                 @switch(request('sort'))
-                                    @case('price_asc') 💰 Low to High @break
-                                    @case('price_desc') 💎 High to Low @break
-                                    @case('rating_high') ⭐ Top Rated @break
-                                    @default ✨ Latest
+                                    @case('price_asc') Price: Low to High @break
+                                    @case('price_desc') Price: High to Low @break
+                                    @case('rating_high') Highest Rated @break
+                                    @default Latest Arrivals
                                 @endswitch
                             </span>
                             <i class="bi bi-chevron-down ms-1.5 text-muted small"></i>
@@ -94,25 +94,25 @@
                         <ul class="dropdown-menu dropdown-menu-end shadow-lg rounded-4 border-0 p-2 mt-1" aria-labelledby="sortDropdownMenuBtn" style="min-width: 210px; max-width: 90vw; z-index: 1055; right: 0 !important; left: auto !important;">
                             <li>
                                 <button type="button" class="dropdown-item rounded-3 py-2 px-3 fw-medium sort-dropdown-item d-flex align-items-center justify-content-between {{ request('sort', 'latest') == 'latest' ? 'active bg-primary text-white' : 'text-dark' }}" data-value="latest">
-                                    <span>✨ Latest Arrivals</span>
+                                    <span><i class="bi bi-clock-history me-1.5 text-secondary"></i>Latest Arrivals</span>
                                     @if(request('sort', 'latest') == 'latest') <i class="bi bi-check-lg"></i> @endif
                                 </button>
                             </li>
                             <li>
                                 <button type="button" class="dropdown-item rounded-3 py-2 px-3 fw-medium sort-dropdown-item d-flex align-items-center justify-content-between {{ request('sort') == 'price_asc' ? 'active bg-primary text-white' : 'text-dark' }}" data-value="price_asc">
-                                    <span>💰 Price: Low to High</span>
+                                    <span><i class="bi bi-sort-numeric-down me-1.5 text-secondary"></i>Price: Low to High</span>
                                     @if(request('sort') == 'price_asc') <i class="bi bi-check-lg"></i> @endif
                                 </button>
                             </li>
                             <li>
                                 <button type="button" class="dropdown-item rounded-3 py-2 px-3 fw-medium sort-dropdown-item d-flex align-items-center justify-content-between {{ request('sort') == 'price_desc' ? 'active bg-primary text-white' : 'text-dark' }}" data-value="price_desc">
-                                    <span>💎 Price: High to Low</span>
+                                    <span><i class="bi bi-sort-numeric-up-alt me-1.5 text-secondary"></i>Price: High to Low</span>
                                     @if(request('sort') == 'price_desc') <i class="bi bi-check-lg"></i> @endif
                                 </button>
                             </li>
                             <li>
                                 <button type="button" class="dropdown-item rounded-3 py-2 px-3 fw-medium sort-dropdown-item d-flex align-items-center justify-content-between {{ request('sort') == 'rating_high' ? 'active bg-primary text-white' : 'text-dark' }}" data-value="rating_high">
-                                    <span>⭐ Highest Rated</span>
+                                    <span><i class="bi bi-star-fill me-1.5 text-warning"></i>Highest Rated</span>
                                     @if(request('sort') == 'rating_high') <i class="bi bi-check-lg"></i> @endif
                                 </button>
                             </li>
@@ -138,7 +138,7 @@
                     <i class="bi bi-fire text-warning fs-4"></i>
                 </div>
                 <div>
-                    <h6 class="mb-0 fw-bold text-white">🔥 Active Mega Sale & Offer Deals</h6>
+                    <h6 class="mb-0 fw-bold text-white">Active Mega Sale & Offer Deals</h6>
                     <small class="text-white-50">Showing only products with active sale discounts applied</small>
                 </div>
             </div>

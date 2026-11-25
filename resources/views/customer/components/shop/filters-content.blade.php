@@ -156,14 +156,14 @@
                 <div class="p-2.5 px-3 border-top" style="border-color: #f1f5f9 !important;">
                     <div class="form-check py-1 mb-1 d-flex align-items-center gap-2">
                         <input class="form-check-input filter-check m-0 flex-shrink-0" type="checkbox" name="only_discounted" value="1" id="discounted_{{ $prefix }}" {{ request('only_discounted') ? 'checked' : '' }}>
-                        <label class="form-check-label small text-dark fw-medium cursor-pointer" for="discounted_{{ $prefix }}" style="font-size: 0.82rem;">
-                            🔥 On Sale Deals
+                        <label class="form-check-label small text-dark fw-medium cursor-pointer d-inline-flex align-items-center" for="discounted_{{ $prefix }}" style="font-size: 0.82rem;">
+                            <i class="bi bi-tag-fill me-1.5 text-danger"></i> On Sale Deals
                         </label>
                     </div>
                     <div class="form-check py-1 mb-0 d-flex align-items-center gap-2">
                         <input class="form-check-input filter-check m-0 flex-shrink-0" type="checkbox" name="featured" value="1" id="feat_{{ $prefix }}" {{ request('featured') ? 'checked' : '' }}>
-                        <label class="form-check-label small text-dark fw-medium cursor-pointer" for="feat_{{ $prefix }}" style="font-size: 0.82rem;">
-                            ⭐ Featured Only
+                        <label class="form-check-label small text-dark fw-medium cursor-pointer d-inline-flex align-items-center" for="feat_{{ $prefix }}" style="font-size: 0.82rem;">
+                            <i class="bi bi-star-fill me-1.5 text-warning"></i> Featured Only
                         </label>
                     </div>
                 </div>
@@ -196,8 +196,8 @@
                 <div class="p-2.5 px-3 border-top" style="border-color: #f1f5f9 !important;">
                     <div class="form-check py-1 mb-0 d-flex align-items-center gap-2">
                         <input class="form-check-input filter-check m-0 flex-shrink-0" type="checkbox" name="in_stock" value="1" id="stock_{{ $prefix }}" {{ request('in_stock') ? 'checked' : '' }}>
-                        <label class="form-check-label small text-dark fw-medium cursor-pointer" for="stock_{{ $prefix }}" style="font-size: 0.82rem;">
-                            📦 In Stock Only
+                        <label class="form-check-label small text-dark fw-medium cursor-pointer d-inline-flex align-items-center" for="stock_{{ $prefix }}" style="font-size: 0.82rem;">
+                            <i class="bi bi-check2-circle me-1.5 text-success"></i> In Stock Only
                         </label>
                     </div>
                 </div>

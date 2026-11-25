@@ -310,7 +310,7 @@
             <div class="min-w-0 flex-grow-1">
                 <span class="text-muted small d-block mb-1.5 fw-semibold text-uppercase" style="font-size: 0.7rem; line-height: 1.2; letter-spacing: 0.5px;">DELIVERING TO</span>
                 <div class="text-dark fw-bold mb-1" style="font-size: 0.94rem;">
-                    {{ $order->shipping_name }} <span class="text-muted fw-normal font-monospace small ms-1">(📞 {{ $order->shipping_phone }})</span>
+                    {{ $order->shipping_name }} <span class="text-muted fw-normal font-monospace small ms-1">(<i class="bi bi-telephone-fill small text-success me-0.5"></i>{{ $order->shipping_phone }})</span>
                 </div>
                 <p class="text-secondary mb-0" style="line-height: 1.55; font-size: 0.85rem; word-break: break-word;">
                     {{ $order->shipping_address }}, {{ $order->shipping_city }}, {{ $order->shipping_state }} <span class="font-monospace fw-bold text-dark text-nowrap">- {{ $order->shipping_zip }}</span>

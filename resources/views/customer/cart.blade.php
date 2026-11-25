@@ -111,7 +111,7 @@
                                 <div class="min-w-0 flex-grow-1">
                                     <span class="fw-bold text-dark d-block" id="fs-title-text" style="font-size: 0.84rem; line-height: 1.35;">
                                         @if($amountNeeded <= 0)
-                                            🎉 You've unlocked <span class="text-success fw-bolder">FREE Delivery</span>!
+                                            You've unlocked <span class="text-success fw-bolder">FREE Delivery</span>!
                                         @else
                                             Add <span class="text-primary fw-bolder" id="fs-amount-needed">₹{{ number_format($amountNeeded, 2) }}</span> more for <span class="fw-bolder">FREE Delivery!</span>
                                         @endif
@@ -490,7 +490,7 @@
 
         if (fsTitleText && fsBadge && fsProgressBar) {
             if (amountNeeded <= 0) {
-                fsTitleText.innerHTML = '🎉 You\'ve unlocked <span class="text-success fw-bolder">FREE Delivery</span> on this order!';
+                fsTitleText.innerHTML = 'You\'ve unlocked <span class="text-success fw-bolder">FREE Delivery</span> on this order!';
                 fsBadge.textContent = 'UNLOCKED';
                 fsBadge.style.background = '#d1fae5';
                 fsBadge.style.color = '#047857';

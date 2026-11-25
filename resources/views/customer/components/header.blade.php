@@ -12,8 +12,8 @@
 @if($liveMegaSale)
 <div class="py-2 text-white text-center position-relative overflow-hidden" style="background: linear-gradient(135deg, {{ $liveMegaSale->theme_color ?? '#6366f1' }} 0%, #0f172a 100%); font-size: 0.88rem; z-index: 1030;">
     <div class="container d-flex align-items-center justify-content-center flex-wrap gap-2">
-        <span class="badge bg-warning text-dark fw-bold text-uppercase px-2.5 py-1 rounded-pill me-1">
-            {{ $liveMegaSale->badge_text ?? '🔥 SALE' }}
+        <span class="badge bg-warning text-dark fw-bold text-uppercase px-2.5 py-1 rounded-pill me-1 d-inline-flex align-items-center gap-1">
+            <i class="bi bi-lightning-charge-fill"></i> {{ $liveMegaSale->badge_text ?? 'SALE' }}
         </span>
         <strong class="fw-bold">{{ $liveMegaSale->title }} IS LIVE!</strong>
         <span class="d-none d-md-inline text-white-50">{{ $liveMegaSale->description ?? 'Special discounts across all categories' }}</span>
@@ -278,13 +278,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 </a>
 
                 <!-- Profile Avatar Dropdown / Sign In Button -->
-                <div class="ps-0 ps-md-3 border-start-0 border-md-start border-light-subtle flex-shrink-0">
+                <div class="ps-0 ps-md-3 border-start-0 border-md-start border-light-subtle flex-shrink-0 position-relative" style="z-index: 1080;">
                     @auth('customer')
                         @php
                             $userObj = Auth::guard('customer')->user();
                             $firstInitial = strtoupper(substr($userObj->name ?? 'C', 0, 1));
                         @endphp
-                        <div class="dropdown">
+                        <div class="dropdown position-relative" style="z-index: 1080;">
                             <a href="#" class="d-flex align-items-center gap-1 text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false" title="Account">
                                 <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-xs avatar-circle flex-shrink-0" 
                                      style="width: 34px; height: 34px; background: #0d6efd; font-size: 0.88rem;">
@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </div>
                                 <i class="bi bi-chevron-down text-muted small d-none d-sm-inline" style="font-size: 0.68rem;"></i>
                             </a>
-                            <div class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-2 mt-2" style="min-width: 220px;">
+                            <div class="dropdown-menu dropdown-menu-end shadow border rounded-3 p-2 mt-2" style="min-width: 230px; z-index: 1090 !important; border-color: rgba(0,0,0,0.08) !important; box-shadow: 0 10px 30px rgba(0,0,0,0.12) !important;">
                                 <div class="px-3 py-2 border-bottom mb-2">
                                     <div class="fw-bold text-dark text-truncate" style="font-size: 0.88rem;">{{ $userObj->name }}</div>
                                     <div class="text-muted text-truncate small" style="font-size: 0.75rem;">{{ $userObj->email }}</div>
@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         @if(!$hideHeaderSearch)
         <!-- Mobile Search Bar (Amazon Style with Amber Search Button) -->
-        <div class="d-block d-md-none pt-1.5 pb-0.5 position-relative" style="z-index: 1061;">
+        <div class="d-block d-md-none pt-1.5 pb-0.5 position-relative" style="z-index: 1050;">
             <form action="{{ $headerSearchAction }}" method="GET" class="position-relative" id="mobileSearchForm" autocomplete="off">
                 <input type="hidden" name="category[]" id="mobileSearchCategoryInput" value="{{ $selectedCatId ?? '' }}">
                 <div class="amazon-mobile-search-container d-flex align-items-stretch rounded-3 overflow-hidden" 

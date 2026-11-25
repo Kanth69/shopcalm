@@ -56,10 +56,10 @@
          style="background: linear-gradient(135deg, {{ $themeColor }} 0%, #1e1b4b 65%, #0f172a 100%);">
         
         {{-- Decorative Watermark Icon / Pattern --}}
-        <div class="position-absolute top-0 end-0 h-100 d-flex align-items-center pe-3 pe-md-5 opacity-15" style="font-size: 140px; line-height: 1; pointer-events: none; z-index: 0;">
-            @if(($heroOffer->type ?? '') === 'FLASH_DEAL') ⚡
-            @elseif(($heroOffer->type ?? '') === 'MEGA_SALE') 🔥
-            @else 🏷️
+        <div class="position-absolute top-0 end-0 h-100 d-flex align-items-center pe-3 pe-md-5 opacity-15" style="font-size: 110px; line-height: 1; pointer-events: none; z-index: 0;">
+            @if(($heroOffer->type ?? '') === 'FLASH_DEAL') <i class="bi bi-lightning-charge-fill"></i>
+            @elseif(($heroOffer->type ?? '') === 'MEGA_SALE') <i class="bi bi-tag-fill"></i>
+            @else <i class="bi bi-bag-check-fill"></i>
             @endif
         </div>
         <div class="position-absolute w-100 h-100 top-0 start-0 pointer-events-none" style="background: radial-gradient(circle at 80% 20%, rgba(255,255,255,0.12) 0%, transparent 50%); z-index: 0;"></div>
@@ -240,10 +240,10 @@
                 $discountFormatted = $offer->discount_type === 'PERCENTAGE' 
                     ? (floatval($offer->discount_value) == intval($offer->discount_value) ? intval($offer->discount_value) : number_format($offer->discount_value, 1)) . '% OFF'
                     : 'FLAT ₹' . number_format($offer->discount_value) . ' OFF';
-                $badgeIcon = match($offer->type) {
-                    'FLASH_DEAL' => '⚡',
-                    'MEGA_SALE'  => '🔥',
-                    default      => '🏷️'
+                $badgeIconClass = match($offer->type) {
+                    'FLASH_DEAL' => 'bi-lightning-charge-fill',
+                    'MEGA_SALE'  => 'bi-tag-fill',
+                    default      => 'bi-bookmark-star-fill'
                 };
             @endphp
             <a href="{{ $isSelected ? route('offers.index') : route('offers.index', ['offer_id' => $offer->id]) }}" 
@@ -253,8 +253,8 @@
                title="{{ $offer->title }}">
                 
                 <div class="d-flex align-items-center justify-content-between position-relative z-1">
-                    <span class="badge rounded-pill px-2 py-0.5 fw-bold" style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(4px); font-size: 0.62rem;">
-                        {{ $badgeIcon }} {{ $offer->badge_text ?: 'SPECIAL DEAL' }}
+                    <span class="badge rounded-pill px-2 py-0.5 fw-bold d-inline-flex align-items-center" style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(4px); font-size: 0.62rem;">
+                        <i class="bi {{ $badgeIconClass }} me-1"></i>{{ $offer->badge_text ?: 'SPECIAL DEAL' }}
                     </span>
                     @if($isSelected)
                         <span class="badge rounded-pill px-1.5 py-0.5 fw-bold text-white shadow-xs" style="background: #10b981; font-size: 0.6rem;">

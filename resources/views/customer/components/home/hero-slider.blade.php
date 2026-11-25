@@ -52,11 +52,11 @@
                                     </picture>
                                 @else
                                     {{-- No Image: Vibrant Gradient Card with Title & Button --}}
-                                    <div class="position-absolute top-0 end-0 h-100 d-flex align-items-center pe-3 pe-md-5 opacity-10" style="font-size: 140px; line-height: 1; pointer-events: none; z-index: 0;">
-                                        @if(($banner->banner_type ?? '') === 'CAMPAIGN_OFFER') 🔥
-                                        @elseif($banner->banner_type === 'CATEGORY_HEADER') 🗂️
-                                        @elseif($banner->banner_type === 'BRAND_PROMO') 🏅
-                                        @else 🛍️
+                                    <div class="position-absolute top-0 end-0 h-100 d-flex align-items-center pe-3 pe-md-5 opacity-10" style="font-size: 110px; line-height: 1; pointer-events: none; z-index: 0;">
+                                        @if(($banner->banner_type ?? '') === 'CAMPAIGN_OFFER') <i class="bi bi-tag-fill"></i>
+                                        @elseif($banner->banner_type === 'CATEGORY_HEADER') <i class="bi bi-grid-fill"></i>
+                                        @elseif($banner->banner_type === 'BRAND_PROMO') <i class="bi bi-award-fill"></i>
+                                        @else <i class="bi bi-bag-fill"></i>
                                         @endif
                                     </div>
 

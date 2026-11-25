@@ -1100,8 +1100,8 @@
                                         <input class="form-check-input flex-shrink-0 cursor-pointer m-0" type="radio" name="payment_method" id="pay_online" value="online" checked form="checkout-form" style="width: 1.25rem; height: 1.25rem; accent-color: #4f46e5;">
                                         <div class="flex-grow-1 min-w-0">
                                             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                                                <label class="form-check-label fw-bold text-dark mb-0 cursor-pointer fs-6" for="pay_online">
-                                                    💳 Online Payment (Razorpay)
+                                                <label class="form-check-label fw-bold text-dark mb-0 cursor-pointer fs-6 d-inline-flex align-items-center gap-1.5" for="pay_online">
+                                                    <i class="bi bi-credit-card text-primary"></i> <span>Online Payment (Razorpay)</span>
                                                 </label>
                                                 <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 fw-semibold" style="font-size: 0.68rem;">UPI, Cards, NetBanking</span>
                                             </div>
@@ -1119,8 +1119,8 @@
                                         <input class="form-check-input flex-shrink-0 cursor-pointer m-0" type="radio" name="payment_method" id="cod" value="cod" form="checkout-form" style="width: 1.25rem; height: 1.25rem; accent-color: #4f46e5;">
                                         <div class="flex-grow-1 min-w-0">
                                             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                                                <label class="form-check-label fw-bold text-dark mb-0 cursor-pointer fs-6" for="cod" id="cod-label">
-                                                    💵 Cash on Delivery (COD)
+                                                <label class="form-check-label fw-bold text-dark mb-0 cursor-pointer fs-6 d-inline-flex align-items-center gap-1.5" for="cod" id="cod-label">
+                                                    <i class="bi bi-cash text-success"></i> <span>Cash on Delivery (COD)</span>
                                                 </label>
                                                 <span id="cod-badge" class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 fw-semibold" style="font-size: 0.68rem;">PAY AT DOORSTEP</span>
                                             </div>
@@ -2380,10 +2380,10 @@ document.addEventListener('DOMContentLoaded', function() {
             badgeClass: 'badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25',
             defaultSlot: 'Anytime (7 AM - 9 PM)',
             slots: [
-                { id: 'home_anytime', text: '⚡ Anytime (7 AM - 9 PM)', value: 'Anytime (7 AM - 9 PM)' },
-                { id: 'home_morning', text: '🌅 Morning (7 AM - 12 PM)', value: 'Morning (7 AM - 12 PM)' },
-                { id: 'home_afternoon', text: '☀️ Afternoon (12 PM - 5 PM)', value: 'Afternoon (12 PM - 5 PM)' },
-                { id: 'home_evening', text: '🌆 Evening (5 PM - 9 PM)', value: 'Evening (5 PM - 9 PM)' },
+                { id: 'home_anytime', text: 'Anytime (7 AM - 9 PM)', value: 'Anytime (7 AM - 9 PM)' },
+                { id: 'home_morning', text: 'Morning (7 AM - 12 PM)', value: 'Morning (7 AM - 12 PM)' },
+                { id: 'home_afternoon', text: 'Afternoon (12 PM - 5 PM)', value: 'Afternoon (12 PM - 5 PM)' },
+                { id: 'home_evening', text: 'Evening (5 PM - 9 PM)', value: 'Evening (5 PM - 9 PM)' },
             ]
         },
         work: {
@@ -2391,9 +2391,9 @@ document.addEventListener('DOMContentLoaded', function() {
             badgeClass: 'badge bg-warning bg-opacity-20 text-dark border border-warning border-opacity-50',
             defaultSlot: 'Office Hours (10 AM - 6 PM)',
             slots: [
-                { id: 'work_allday', text: '🏢 Office Hours (10 AM - 6 PM)', value: 'Office Hours (10 AM - 6 PM)' },
-                { id: 'work_morning', text: '🌅 First Half (10 AM - 2 PM)', value: 'First Half (10 AM - 2 PM)' },
-                { id: 'work_afternoon', text: '🌇 Second Half (2 PM - 6 PM)', value: 'Second Half (2 PM - 6 PM)' },
+                { id: 'work_allday', text: 'Office Hours (10 AM - 6 PM)', value: 'Office Hours (10 AM - 6 PM)' },
+                { id: 'work_morning', text: 'First Half (10 AM - 2 PM)', value: 'First Half (10 AM - 2 PM)' },
+                { id: 'work_afternoon', text: 'Second Half (2 PM - 6 PM)', value: 'Second Half (2 PM - 6 PM)' },
             ]
         },
         office: {
@@ -2401,9 +2401,9 @@ document.addEventListener('DOMContentLoaded', function() {
             badgeClass: 'badge bg-warning bg-opacity-20 text-dark border border-warning border-opacity-50',
             defaultSlot: 'Office Hours (10 AM - 6 PM)',
             slots: [
-                { id: 'work_allday', text: '🏢 Office Hours (10 AM - 6 PM)', value: 'Office Hours (10 AM - 6 PM)' },
-                { id: 'work_morning', text: '🌅 First Half (10 AM - 2 PM)', value: 'First Half (10 AM - 2 PM)' },
-                { id: 'work_afternoon', text: '🌇 Second Half (2 PM - 6 PM)', value: 'Second Half (2 PM - 6 PM)' },
+                { id: 'work_allday', text: 'Office Hours (10 AM - 6 PM)', value: 'Office Hours (10 AM - 6 PM)' },
+                { id: 'work_morning', text: 'First Half (10 AM - 2 PM)', value: 'First Half (10 AM - 2 PM)' },
+                { id: 'work_afternoon', text: 'Second Half (2 PM - 6 PM)', value: 'Second Half (2 PM - 6 PM)' },
             ]
         },
         other: {
@@ -2411,9 +2411,9 @@ document.addEventListener('DOMContentLoaded', function() {
             badgeClass: 'badge bg-success bg-opacity-10 text-success border border-success border-opacity-25',
             defaultSlot: 'Anytime (9 AM - 8 PM)',
             slots: [
-                { id: 'other_anytime', text: '⚡ Anytime (9 AM - 8 PM)', value: 'Anytime (9 AM - 8 PM)' },
-                { id: 'other_morning', text: '🌅 Morning / Day (9 AM - 2 PM)', value: 'Morning / Day (9 AM - 2 PM)' },
-                { id: 'other_afternoon', text: '🌇 Afternoon / Evening (2 PM - 8 PM)', value: 'Afternoon / Evening (2 PM - 8 PM)' },
+                { id: 'other_anytime', text: 'Anytime (9 AM - 8 PM)', value: 'Anytime (9 AM - 8 PM)' },
+                { id: 'other_morning', text: 'Morning / Day (9 AM - 2 PM)', value: 'Morning / Day (9 AM - 2 PM)' },
+                { id: 'other_afternoon', text: 'Afternoon / Evening (2 PM - 8 PM)', value: 'Afternoon / Evening (2 PM - 8 PM)' },
             ]
         }
     };
