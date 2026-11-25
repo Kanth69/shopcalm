@@ -20,27 +20,26 @@
     $st = $map[$s] ?? $map['pending'];
     $statusStyle = "background:{$st['bg']}; color:{$st['color']}; border:1px solid {$st['border']};";
 
-    $stageList = [
-        ['key' => 'pending',          'label' => 'Placed'],
-        ['key' => 'confirmed',        'label' => 'Confirmed'],
-        ['key' => 'packed',           'label' => 'Packed'],
-        ['key' => 'shipped',          'label' => 'Shipped'],
-        ['key' => 'out_for_delivery', 'label' => 'Out for Delivery'],
-        ['key' => 'delivered',        'label' => 'Delivered'],
+    // 4-Milestone Horizontal Progression (Flipkart / Amazon standard)
+    $fourStageList = [
+        ['key' => 'placed',    'label' => 'Placed'],
+        ['key' => 'confirmed', 'label' => 'Confirmed'],
+        ['key' => 'shipped',   'label' => ($s === 'out_for_delivery' ? 'Out for Delivery' : 'Shipped')],
+        ['key' => 'delivered', 'label' => 'Delivered'],
     ];
 
-    $stageRankMap = [
+    $fourStageRankMap = [
         'pending'          => 0,
         'placed'           => 0,
         'confirmed'        => 1,
         'processing'       => 1,
-        'packed'           => 2,
-        'shipped'          => 3,
-        'out_for_delivery' => 4,
-        'delivered'        => 5,
+        'packed'           => 1,
+        'shipped'          => 2,
+        'out_for_delivery' => 2,
+        'delivered'        => 3,
     ];
 
-    $stepIdx = in_array($s, ['cancelled', 'failed']) ? false : ($stageRankMap[$s] ?? false);
+    $fourStepIdx = in_array($s, ['cancelled', 'failed']) ? false : ($fourStageRankMap[$s] ?? false);
 @endphp
 
 {{-- Header Banner Card --}}
@@ -364,8 +363,8 @@
 </div>
 @endif
 
-{{-- ── Progress Tracker Card (Live Tracking) ── --}}
-@if($s !== 'cancelled' && $stepIdx !== false)
+{{-- ── Progress Tracker Card (Live Tracking - 100% Horizontal) ── --}}
+@if($s !== 'cancelled' && $fourStepIdx !== false)
 <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 p-3 p-sm-4" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
     <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
         <span class="fw-bold text-dark small text-uppercase d-flex align-items-center gap-1.5" style="letter-spacing: 0.05em; font-size: 0.76rem;">
@@ -376,84 +375,36 @@
         </span>
     </div>
 
-    {{-- 💻 Desktop Stepper (>= 768px): Full-Width Horizontal Stepper --}}
-    <div class="d-none d-md-block py-2">
-        <div class="position-relative d-flex align-items-center justify-content-between my-2" style="padding: 0 16px;">
+    {{-- Clean 4-Milestone Horizontal Stepper (Fits 100% on Mobile & Desktop, Zero Clipping) --}}
+    <div class="py-2">
+        <div class="position-relative d-flex align-items-center justify-content-between my-2" style="padding: 0 10px;">
             {{-- Background track --}}
-            <div class="position-absolute" style="top:16px; left:36px; right:36px; height:4px; background:#e2e8f0; border-radius:99px; z-index:0;"></div>
+            <div class="position-absolute" style="top:14px; left:24px; right:24px; height:4px; background:#e2e8f0; border-radius:99px; z-index:0;"></div>
             {{-- Filled track --}}
-            @php $fillPct = $stepIdx > 0 ? ($stepIdx / (count($stageList) - 1)) * 100 : 0; @endphp
-            <div class="position-absolute" style="top:16px; left:36px; width:calc({{ round($fillPct) }}% - 0px); max-width:calc(100% - 72px); height:4px; background:{{ $st['stripe'] }}; border-radius:99px; z-index:1; transition:width 0.5s ease;"></div>
+            @php $fillPct = $fourStepIdx > 0 ? ($fourStepIdx / (count($fourStageList) - 1)) * 100 : 0; @endphp
+            <div class="position-absolute" style="top:14px; left:24px; width:calc({{ round($fillPct) }}% - 0px); max-width:calc(100% - 48px); height:4px; background:{{ $st['stripe'] }}; border-radius:99px; z-index:1; transition:width 0.4s ease;"></div>
 
-            @foreach($stageList as $si => $stage)
-            @php $done = $si <= $stepIdx; $current = $si === $stepIdx; @endphp
-            <div class="d-flex flex-column align-items-center position-relative flex-fill px-2" style="z-index:2;">
+            @foreach($fourStageList as $si => $stage)
+            @php $done = $si <= $fourStepIdx; $current = $si === $fourStepIdx; @endphp
+            <div class="d-flex flex-column align-items-center position-relative flex-fill px-0.5" style="z-index:2; min-width: 0;">
                 <div class="rounded-circle d-flex align-items-center justify-content-center"
-                     style="width:34px; height:34px;
+                     style="width:28px; height:28px;
                             background:{{ $done ? $st['stripe'] : '#ffffff' }};
-                            border:2.5px solid {{ $done ? $st['stripe'] : '#cbd5e1' }};
-                            box-shadow:{{ $current ? '0 0 0 4px '.($st['bg']) : 'none' }};
+                            border:2px solid {{ $done ? $st['stripe'] : '#cbd5e1' }};
+                            box-shadow:{{ $current ? '0 0 0 3.5px '.($st['bg']) : 'none' }};
                             transition:all 0.3s;">
                     @if($done)
-                        <i class="bi bi-check-lg text-white small fw-bold"></i>
+                        <i class="bi bi-check-lg text-white" style="font-size: 0.75rem; font-weight: 700;"></i>
                     @else
-                        <div style="width:7px; height:7px; border-radius:50%; background:#cbd5e1;"></div>
+                        <div style="width:6px; height:6px; border-radius:50%; background:#94a3b8;"></div>
                     @endif
                 </div>
-                <span class="mt-2 text-center text-nowrap"
-                      style="font-size:0.78rem; line-height:1.2;
+                <span class="mt-1.5 text-center text-nowrap"
+                      style="font-size:clamp(0.68rem, 2.4vw, 0.78rem); line-height:1.2;
                              color:{{ $done ? $st['color'] : '#94a3b8' }};
                              font-weight:{{ $current ? '700' : ($done ? '600' : '400') }};">
                     {{ $stage['label'] }}
                 </span>
-            </div>
-            @endforeach
-        </div>
-    </div>
-
-    {{-- 📱 Mobile Stepper (< 768px): Clean Vertical App-Style Timeline (Zero Clipping, 100% Readable) --}}
-    <div class="d-block d-md-none py-1">
-        <div class="position-relative ps-1">
-            @foreach($stageList as $si => $stage)
-            @php
-                $done = $si <= $stepIdx;
-                $current = $si === $stepIdx;
-                $isLast = $si === count($stageList) - 1;
-            @endphp
-            <div class="d-flex align-items-start position-relative {{ !$isLast ? 'pb-3' : '' }}">
-                {{-- Vertical connecting line --}}
-                @if(!$isLast)
-                    <div class="position-absolute"
-                         style="top: 24px; bottom: 0; left: 11px; width: 2px; background: {{ $si < $stepIdx ? $st['stripe'] : '#e2e8f0' }}; z-index: 0;"></div>
-                @endif
-
-                {{-- Status Circle Icon --}}
-                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 position-relative"
-                     style="width: 24px; height: 24px; z-index: 1; background: {{ $done ? $st['stripe'] : '#ffffff' }}; border: 2px solid {{ $done ? $st['stripe'] : '#cbd5e1' }}; box-shadow: {{ $current ? '0 0 0 3px ' . $st['bg'] : 'none' }};">
-                    @if($done)
-                        <i class="bi bi-check-lg text-white" style="font-size: 0.72rem; font-weight: 700;"></i>
-                    @else
-                        <div style="width: 5px; height: 5px; border-radius: 50%; background: #94a3b8;"></div>
-                    @endif
-                </div>
-
-                {{-- Milestone Text & Status Info --}}
-                <div class="ms-3 min-w-0 flex-grow-1">
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
-                        <span class="fw-bold" style="font-size: 0.84rem; color: {{ $done ? '#0f172a' : '#94a3b8' }};">
-                            {{ $stage['label'] }}
-                        </span>
-                        @if($current)
-                            <span class="badge rounded-pill px-2 py-0.5 fw-bold" style="{{ $statusStyle }}; font-size: 0.65rem;">
-                                Current Status
-                            </span>
-                        @elseif($done)
-                            <span class="text-success small fw-semibold" style="font-size: 0.7rem;">
-                                <i class="bi bi-check2"></i> Completed
-                            </span>
-                        @endif
-                    </div>
-                </div>
             </div>
             @endforeach
         </div>
@@ -1345,89 +1296,57 @@
 </div>
 @endif
 
-{{-- ── Order Delivery Experience Feedback Modal ── --}}
+{{-- ── Order Delivery Experience Feedback Modal (Compact 1-Tap) ── --}}
 @if($order->status === 'delivered')
 <div class="modal fade" id="modalOrderFeedback" tabindex="-1" aria-labelledby="modalOrderFeedbackLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px; margin: 1rem auto;">
         <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
             
             {{-- Form Section --}}
-            <div id="feedbackFormSection" class="flex-column h-100" style="display: flex; min-height: 0; overflow: hidden; flex: 1 1 auto;">
-                <div class="modal-header border-0 pb-0 px-4 pt-4">
-                    <div class="d-flex align-items-center gap-2">
-                        <div style="width: 36px; height: 36px; border-radius: 10px; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
-                            <i class="bi bi-star-fill"></i>
-                        </div>
-                        <div>
-                            <h6 class="modal-title fw-bold text-dark mb-0" id="modalOrderFeedbackLabel">Delivery Feedback</h6>
-                            <small class="text-muted">Order #{{ $order->order_number }}</small>
-                        </div>
+            <div id="feedbackFormSection" class="flex-column" style="display: flex;">
+                <div class="modal-header border-0 pb-1 px-3 pt-3.5 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="modal-title fw-bold text-dark mb-0" id="modalOrderFeedbackLabel">Rate Delivery</h6>
+                        <small class="text-muted" style="font-size: 0.74rem;">Order #{{ $order->order_number }}</small>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close small" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
-                <form id="formOrderFeedback" action="{{ route('account.orders.feedback.store', $order) }}" method="POST" class="d-flex flex-column" style="min-height: 0; overflow: hidden; flex: 1 1 auto;">
+                <form id="formOrderFeedback" action="{{ route('account.orders.feedback.store', $order) }}" method="POST" class="d-flex flex-column">
                     @csrf
-                    <div class="modal-body px-4 py-3">
-                        <div class="alert alert-light border rounded-3 p-2.5 mb-3 d-flex align-items-center gap-2" style="background:#f8fafc;">
-                            <i class="bi bi-info-circle text-primary fs-5"></i>
-                            <span class="small text-muted">Your feedback helps us evaluate rider service, timely delivery, and packaging quality.</span>
-                        </div>
-
-                        {{-- Delivery Experience Rating --}}
-                        <div class="mb-3 text-center p-3 rounded-3" style="background: #fafafa; border: 1px dashed #e2e8f0;">
-                            <label class="form-label fw-bold text-dark small text-uppercase mb-1" style="letter-spacing: 0.05em;">
-                                1. How was your Delivery Experience?
-                            </label>
-                            <div class="d-flex justify-content-center gap-2 my-1" id="starGroupDelivery">
+                    <div class="modal-body px-3 py-2">
+                        {{-- 5-Star Rating Row --}}
+                        <div class="text-center py-2.5 mb-2 rounded-3" style="background: #fafafa; border: 1px solid #f1f5f9;">
+                            <div class="d-flex justify-content-center gap-2 mb-1" id="starGroupDelivery">
                                 @for($i = 1; $i <= 5; $i++)
-                                    <i class="bi bi-star-fill star-item-delivery fs-3 cursor-pointer text-warning" 
-                                       data-rating="{{ $i }}" style="cursor: pointer; transition: transform 0.2s;"></i>
+                                    <i class="bi bi-star-fill star-item-delivery fs-2 cursor-pointer text-warning" 
+                                       data-rating="{{ $i }}" style="cursor: pointer; transition: transform 0.15s;"></i>
                                 @endfor
                             </div>
                             <input type="hidden" name="delivery_rating" id="inputDeliveryRating" value="{{ $order->feedback->delivery_rating ?? 5 }}">
-                            <span class="small fw-semibold text-secondary" id="labelDeliveryRating">
+                            <input type="hidden" name="product_rating" id="inputProductRating" value="{{ $order->feedback->product_rating ?? 5 }}">
+                            <span class="small fw-bold text-dark" id="labelDeliveryRating" style="font-size: 0.82rem;">
                                 {{ $order->feedback ? $order->feedback->delivery_rating . ' / 5 Stars' : '5 / 5 - Excellent' }}
                             </span>
                         </div>
 
-                        {{-- Product & Packaging Rating --}}
-                        <div class="mb-3 text-center p-3 rounded-3" style="background: #fafafa; border: 1px dashed #e2e8f0;">
-                            <label class="form-label fw-bold text-dark small text-uppercase mb-1" style="letter-spacing: 0.05em;">
-                                2. Product Condition & Packaging?
-                            </label>
-                            <div class="d-flex justify-content-center gap-2 my-1" id="starGroupProduct">
-                                @for($i = 1; $i <= 5; $i++)
-                                    <i class="bi bi-star-fill star-item-product fs-3 cursor-pointer text-warning" 
-                                       data-rating="{{ $i }}" style="cursor: pointer; transition: transform 0.2s;"></i>
-                                @endfor
-                            </div>
-                            <input type="hidden" name="product_rating" id="inputProductRating" value="{{ $order->feedback->product_rating ?? 5 }}">
-                            <span class="small fw-semibold text-secondary" id="labelProductRating">
-                                {{ $order->feedback ? $order->feedback->product_rating . ' / 5 Stars' : '5 / 5 - Perfect' }}
-                            </span>
-                        </div>
-
-                        {{-- Quick Feedback Tags --}}
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-dark small mb-1.5">Highlights (Tap to select):</label>
+                        {{-- Quick Tags (Clickable Pills) --}}
+                        <div class="mb-2">
                             @php
                                 $availableTags = [
                                     'Fast Delivery',
-                                    'Careful Packaging',
                                     'Polite Rider',
-                                    'Proactive Call',
-                                    'On-Time Arrival',
-                                    'Contactless Handover',
+                                    'Careful Packaging',
+                                    'On-Time',
                                 ];
                                 $selectedTags = $order->feedback->tags ?? [];
                             @endphp
-                            <div class="d-flex flex-wrap gap-2">
+                            <div class="d-flex flex-wrap gap-1.5 justify-content-center">
                                 @foreach($availableTags as $tag)
                                     @php $isSelected = in_array($tag, $selectedTags); @endphp
                                     <button type="button" 
-                                            class="btn btn-sm btn-tag {{ $isSelected ? 'btn-primary text-white' : 'btn-light border text-dark' }} rounded-pill px-3 py-1 fw-semibold"
-                                            style="font-size: 0.75rem;" 
+                                            class="btn btn-sm btn-tag {{ $isSelected ? 'btn-primary text-white' : 'btn-light border text-dark' }} rounded-pill px-2.5 py-1 fw-semibold"
+                                            style="font-size: 0.72rem;" 
                                             onclick="toggleFeedbackTag(this, '{{ $tag }}')">
                                         {{ $tag }}
                                     </button>
@@ -1440,35 +1359,34 @@
                             </div>
                         </div>
 
-                        {{-- Optional Comments --}}
+                        {{-- Optional 1-Line Comment --}}
                         <div class="mb-2">
-                            <label class="form-label fw-bold text-dark small mb-1">Additional Comments (Optional):</label>
-                            <textarea name="comment" class="form-control rounded-3" rows="3" placeholder="Tell us more about your delivery or package experience..." style="font-size: 0.85rem;">{{ $order->feedback->comment ?? '' }}</textarea>
+                            <input type="text" name="comment" class="form-control form-control-sm rounded-pill px-3 py-1.5" placeholder="Add a note (optional)..." value="{{ $order->feedback->comment ?? '' }}" style="font-size: 0.8rem;">
                         </div>
                     </div>
 
-                    <div class="modal-footer border-0 px-4 pb-3 pt-2 d-flex justify-content-end gap-2" style="flex-shrink: 0; position: sticky; bottom: 0; z-index: 10; background: #ffffff !important; border-top: 1px solid #e2e8f0 !important;">
-                        <button type="button" class="btn btn-light rounded-pill px-3 py-2 fw-semibold" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" id="btnSubmitFeedback" class="btn btn-primary rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center gap-1.5 shadow-sm">
-                            <i class="bi bi-check-circle-fill"></i> <span>{{ $order->feedback ? 'Update Feedback' : 'Submit Feedback' }}</span>
+                    <div class="modal-footer border-0 px-3 pb-3 pt-0 d-flex gap-2">
+                        <button type="button" class="btn btn-light rounded-pill px-3 py-2 fw-semibold flex-fill btn-sm" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" id="btnSubmitFeedback" class="btn btn-primary rounded-pill px-4 py-2 fw-bold flex-fill shadow-xs btn-sm">
+                            <span>{{ $order->feedback ? 'Update' : 'Submit Rating' }}</span>
                         </button>
                     </div>
                 </form>
             </div>
 
             {{-- Thank You Pop-up Success Section --}}
-            <div id="feedbackSuccessSection" class="p-4 py-5 text-center d-none" style="display: none;">
-                <div style="width: 60px; height: 60px; border-radius: 50%; background: #ecfdf5; color: #059669; border: 2px solid #a7f3d0; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 1.25rem;">
+            <div id="feedbackSuccessSection" class="p-4 py-4 text-center d-none" style="display: none;">
+                <div style="width: 48px; height: 48px; border-radius: 50%; background: #ecfdf5; color: #059669; border: 2px solid #a7f3d0; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 0.75rem;">
                     <i class="bi bi-check-lg"></i>
                 </div>
-                <h5 class="fw-bold text-dark mb-1">Thank You For Your Feedback</h5>
-                <p class="text-secondary small mb-3">Your rating helps us evaluate rider service and packaging standards.</p>
-                <div class="d-inline-flex align-items-center gap-2 py-1.5 px-3 rounded-pill bg-light border mb-4">
+                <h6 class="fw-bold text-dark mb-1">Thank You For Rating!</h6>
+                <p class="text-secondary small mb-3" style="font-size: 0.76rem;">Your review helps us maintain high delivery quality.</p>
+                <div class="d-inline-flex align-items-center gap-1.5 py-1 px-2.5 rounded-pill bg-light border mb-3">
                     <div class="text-warning fw-bold fs-6 d-flex gap-1" id="feedbackSuccessStars"></div>
-                    <span class="fw-bold text-dark small" id="feedbackSuccessLabel">Rated 5/5 Stars</span>
+                    <span class="fw-bold text-dark small" id="feedbackSuccessLabel" style="font-size: 0.75rem;">Rated 5/5 Stars</span>
                 </div>
                 <div>
-                    <button type="button" class="btn btn-dark rounded-pill px-4 py-2 fw-semibold btn-sm shadow-xs" data-bs-dismiss="modal" onclick="location.reload()">
+                    <button type="button" class="btn btn-dark rounded-pill px-4 py-1.5 fw-semibold btn-sm shadow-xs" data-bs-dismiss="modal" onclick="location.reload()">
                         Done
                     </button>
                 </div>
@@ -1483,6 +1401,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Delivery Stars Handler
     const deliveryStars = document.querySelectorAll('.star-item-delivery');
     const inputDelivery = document.getElementById('inputDeliveryRating');
+    const inputProduct = document.getElementById('inputProductRating');
     const labelDelivery = document.getElementById('labelDeliveryRating');
     const ratingsMap = { 1: '1 / 5 - Poor', 2: '2 / 5 - Fair', 3: '3 / 5 - Good', 4: '4 / 5 - Very Good', 5: '5 / 5 - Excellent' };
 
@@ -1490,12 +1409,13 @@ document.addEventListener('DOMContentLoaded', function () {
         deliveryStars.forEach(s => {
             const r = parseInt(s.dataset.rating);
             if (r <= val) {
-                s.className = 'bi bi-star-fill star-item-delivery fs-3 cursor-pointer text-warning';
+                s.className = 'bi bi-star-fill star-item-delivery fs-2 cursor-pointer text-warning';
             } else {
-                s.className = 'bi bi-star star-item-delivery fs-3 cursor-pointer text-muted';
+                s.className = 'bi bi-star star-item-delivery fs-2 cursor-pointer text-muted';
             }
         });
         inputDelivery.value = val;
+        if (inputProduct) inputProduct.value = val;
         labelDelivery.innerText = ratingsMap[val] || (val + ' / 5');
     }
     window.setDeliveryStars = setDeliveryStars;
@@ -1521,32 +1441,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
-
-    // Product Stars Handler
-    const productStars = document.querySelectorAll('.star-item-product');
-    const inputProduct = document.getElementById('inputProductRating');
-    const labelProduct = document.getElementById('labelProductRating');
-    const productRatingsMap = { 1: '1 / 5 - Damaged', 2: '2 / 5 - Below Average', 3: '3 / 5 - Average', 4: '4 / 5 - Good', 5: '5 / 5 - Perfect' };
-
-    function setProductStars(val) {
-        productStars.forEach(s => {
-            const r = parseInt(s.dataset.rating);
-            if (r <= val) {
-                s.className = 'bi bi-star-fill star-item-product fs-3 cursor-pointer text-warning';
-            } else {
-                s.className = 'bi bi-star star-item-product fs-3 cursor-pointer text-muted';
-            }
-        });
-        inputProduct.value = val;
-        labelProduct.innerText = productRatingsMap[val] || (val + ' / 5');
-    }
-
-    productStars.forEach(s => {
-        s.addEventListener('click', () => setProductStars(parseInt(s.dataset.rating)));
-        s.addEventListener('mouseenter', () => { s.style.transform = 'scale(1.2)'; });
-        s.addEventListener('mouseleave', () => { s.style.transform = 'scale(1)'; });
-    });
-    setProductStars(parseInt(inputProduct.value) || 5);
 
     // Form Submit via AJAX
     const form = document.getElementById('formOrderFeedback');

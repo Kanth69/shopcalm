@@ -25,6 +25,10 @@ class OrderFeedbackController extends Controller
             return response()->json(['success' => false, 'message' => 'Feedback can only be provided for delivered orders.'], 422);
         }
 
+        if (!$request->has('product_rating') || empty($request->input('product_rating'))) {
+            $request->merge(['product_rating' => $request->input('delivery_rating', 5)]);
+        }
+
         $validated = $request->validate([
             'delivery_rating' => ['required', 'integer', 'min:1', 'max:5'],
             'product_rating'  => ['required', 'integer', 'min:1', 'max:5'],
