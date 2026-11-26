@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Cart;
 use App\Models\MarketingAutomation;
 use App\Models\Order;
+use App\Models\Product;
+use App\Models\ProductStockAlert;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -238,6 +240,77 @@ class MarketingAutomationService
         }
 
         return $processedCount;
+    }
+
+    /**
+     * Trigger Back in Stock App Push Notifications to waiting customers when product is restocked.
+     */
+    public function triggerBackInStockAlerts(Product $product, ?string $optionKey = null): int
+    {
+        $automation = MarketingAutomation::where('key', 'back_in_stock')->first();
+        if (!$automation || !$automation->is_active) {
+            return 0;
+        }
+
+        $query = ProductStockAlert::with('user')
+            ->where('product_id', $product->id)
+            ->where('status', 'pending');
+
+        if ($optionKey) {
+            $query->where(function ($q) use ($optionKey) {
+                $q->whereNull('selected_option')->orWhere('selected_option', $optionKey);
+            });
+        }
+
+        $alerts = $query->get();
+        if ($alerts->isEmpty()) {
+            return 0;
+        }
+
+        $sentCount = 0;
+        $sellPrice = (float) ($product->selling_price ?: $product->price);
+
+        foreach ($alerts as $alert) {
+            $user = $alert->user;
+            if (!$user) {
+                continue;
+            }
+
+            $customerName = explode(' ', trim($user->name ?: 'Customer'))[0];
+            $tags = [
+                '{customer_name}'  => $customerName,
+                '{product_name}'   => $product->name,
+                '{product_price}'  => '₹' . number_format($sellPrice, 2),
+            ];
+
+            $lang = $user->preferred_language ?: 'default';
+            $message = $automation->formatMessage($lang, $tags);
+
+            $payload = [
+                'type'       => 'stock_alert',
+                'product_id' => (string) $product->id,
+                'slug'       => (string) $product->slug,
+                'screen'     => 'product_detail',
+            ];
+
+            $imgUrl = $product->main_image ? asset('storage/' . $product->main_image) : null;
+            $this->fcm->sendToUser($user, $message['title'], $message['body'], $payload, $imgUrl);
+
+            $alert->update([
+                'status'      => 'notified',
+                'notified_at' => now(),
+            ]);
+
+            $sentCount++;
+        }
+
+        if ($sentCount > 0) {
+            $automation->increment('total_sent', $sentCount);
+            $automation->update(['last_triggered_at' => now()]);
+            Log::info("Back In Stock Automation: Dispatched {$sentCount} FCM notifications for '{$product->name}'.");
+        }
+
+        return $sentCount;
     }
 
     /**

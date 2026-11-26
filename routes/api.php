@@ -114,6 +114,10 @@ Route::prefix('v1')->group(function () {
 
         // Reviews
         Route::post('/products/{product}/reviews', [\App\Http\Controllers\Customer\ProductReviewController::class, 'store'])->middleware('throttle:5,1');
+
+        // Back in Stock Alerts
+        Route::post('/products/{product}/stock-alert', [ProductController::class, 'subscribeStockAlert']);
+        Route::get('/products/{product}/stock-alert-status', [ProductController::class, 'stockAlertStatus']);
     });
 
     // ── 5. RIDER / DELIVERY PARTNER MOBILE APP API ──

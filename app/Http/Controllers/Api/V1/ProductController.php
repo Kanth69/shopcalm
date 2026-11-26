@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Offer;
 use App\Models\Product;
+use App\Models\ProductStockAlert;
 use App\Services\SearchService;
 use App\Services\OfferService;
 use Illuminate\Http\Request;
@@ -487,5 +488,75 @@ class ProductController extends BaseApiController
             'structured'  => $structured,
             'products'    => $previewProductsFormatted,
         ], 'Search suggestions retrieved successfully.');
+    }
+
+    /**
+     * Subscribe or unsubscribe to Back in Stock App Notification.
+     */
+    public function subscribeStockAlert(Request $request, Product $product)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return $this->sendError('Please sign in to subscribe for stock arrival notifications.', [], 401);
+        }
+
+        $selectedOption = $request->input('selected_option');
+
+        // Check if user already has an active pending alert
+        $existing = ProductStockAlert::where('user_id', $user->id)
+            ->where('product_id', $product->id)
+            ->where('selected_option', $selectedOption)
+            ->where('status', 'pending')
+            ->first();
+
+        if ($existing) {
+            // Toggle off
+            $existing->update(['status' => 'cancelled']);
+            return $this->sendResponse([
+                'is_subscribed' => false,
+                'product_id'    => $product->id,
+            ], "Stock notification alert turned off for {$product->name}.");
+        }
+
+        // Create or reactivate pending alert
+        ProductStockAlert::updateOrCreate(
+            [
+                'user_id'         => $user->id,
+                'product_id'      => $product->id,
+                'selected_option' => $selectedOption,
+            ],
+            [
+                'status'          => 'pending',
+                'notified_at'     => null,
+            ]
+        );
+
+        return $this->sendResponse([
+            'is_subscribed' => true,
+            'product_id'    => $product->id,
+        ], "Alert set! We will notify you via app notification the moment {$product->name} is back in stock.");
+    }
+
+    /**
+     * Check if current user is subscribed to stock alerts for this product.
+     */
+    public function stockAlertStatus(Request $request, Product $product)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return $this->sendResponse(['is_subscribed' => false], 'Guest user.');
+        }
+
+        $selectedOption = $request->input('selected_option');
+        $isSubscribed = ProductStockAlert::where('user_id', $user->id)
+            ->where('product_id', $product->id)
+            ->where('selected_option', $selectedOption)
+            ->where('status', 'pending')
+            ->exists();
+
+        return $this->sendResponse([
+            'is_subscribed' => $isSubscribed,
+            'product_id'    => $product->id,
+        ], 'Stock alert status retrieved.');
     }
 }

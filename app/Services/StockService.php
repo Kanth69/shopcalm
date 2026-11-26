@@ -48,6 +48,15 @@ class StockService
             $lockedProduct->stock = $stockAfter;
             $lockedProduct->save();
 
+            // 3. Trigger Free Back-in-Stock FCM App Push Notifications if was previously out-of-stock
+            if ($stockBefore <= 0 && $stockAfter > 0) {
+                try {
+                    app(\App\Services\MarketingAutomationService::class)->triggerBackInStockAlerts($lockedProduct);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("Back in stock notification dispatch error: " . $e->getMessage());
+                }
+            }
+
             return $lockedProduct;
         });
     }
@@ -93,6 +102,15 @@ class StockService
             // Update the actual product stock
             $lockedProduct->stock = $newStock;
             $lockedProduct->save();
+
+            // Trigger Free Back-in-Stock FCM App Push Notifications if was previously out-of-stock
+            if ($stockBefore <= 0 && $newStock > 0) {
+                try {
+                    app(\App\Services\MarketingAutomationService::class)->triggerBackInStockAlerts($lockedProduct);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("Back in stock notification dispatch error: " . $e->getMessage());
+                }
+            }
 
             return $lockedProduct;
         });

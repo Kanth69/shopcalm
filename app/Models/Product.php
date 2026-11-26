@@ -176,6 +176,11 @@ class Product extends Model
         return $this->hasMany(ProductReview::class);
     }
 
+    public function stockAlerts(): HasMany
+    {
+        return $this->hasMany(ProductStockAlert::class);
+    }
+
     public function approvedReviews(): HasMany
     {
         return $this->hasMany(ProductReview::class)->where('status', 'Approved');
