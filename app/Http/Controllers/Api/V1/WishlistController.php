@@ -39,33 +39,50 @@ class WishlistController extends BaseApiController
         $this->offerService->applyOfferDiscountsToProducts($products);
 
         $transformed = $products->map(function ($product) {
-            $hasDiscount = (isset($product->sale_price) && (float) $product->sale_price < (float) $product->price) || !empty($product->offer_discount_percentage);
-            $finalSelling = $hasDiscount ? (float) $product->sale_price : (float) $product->price;
-            $mrp = (float) $product->price;
-            $discountPct = $product->offer_discount_percentage ?? ($hasDiscount && $mrp > 0 ? round((($mrp - $finalSelling) / $mrp) * 100) : 0);
+            $basePrice = (float) ($product->price ?? 0);
+            $hasDiscount = (isset($product->sale_price) && (float) $product->sale_price < $basePrice) || !empty($product->offer_discount_percentage);
+            $finalSelling = $hasDiscount ? (float) $product->sale_price : $basePrice;
+            $mrp = (float) ($product->mrp && (float) $product->mrp > 0
+                ? $product->mrp
+                : ($basePrice > 0 ? round($basePrice * 1.25, 2) : $finalSelling));
+            if ($mrp < $finalSelling) {
+                $mrp = $finalSelling;
+            }
+
+            $discountPct = ($mrp > $finalSelling && $mrp > 0)
+                ? (int) round((($mrp - $finalSelling) / $mrp) * 100)
+                : (int) ($product->offer_discount_percentage ?? 0);
 
             $img = $product->main_image;
             $imgUrl = !empty($img) ? (str_starts_with($img, 'http') ? $img : asset('storage/' . ltrim($img, '/'))) : null;
 
+            $isReplaceable = (bool) ($product->is_replaceable ?? false);
+            $replacementDays = (int) ($product->replacement_window_days ?? 0);
+            $policyBadge = $isReplaceable ? "{$replacementDays}D Replacement" : "Non-Returnable";
+
             return [
-                'id'                  => (int) $product->id,
-                'name'                => $product->name,
-                'slug'                => $product->slug,
-                'price'               => $mrp,
-                'mrp'                 => $mrp,
-                'selling_price'       => $finalSelling,
-                'offer_price'         => $hasDiscount ? $finalSelling : null,
-                'discount_percentage' => (int) $discountPct,
-                'main_image_url'      => $imgUrl,
-                'primary_image'       => $imgUrl,
-                'stock'               => (int) $product->stock,
-                'stock_quantity'      => (int) $product->stock,
-                'in_stock'            => (bool) ($product->stock > 0),
-                'average_rating'      => (float) $product->averageRating(),
-                'rating'              => (float) $product->averageRating(),
-                'category_id'         => (int) ($product->category_id ?? 0),
-                'category_name'       => $product->category?->name,
-                'brand_name'          => $product->brand?->name,
+                'id'                       => (int) $product->id,
+                'name'                     => $product->name,
+                'slug'                     => $product->slug,
+                'price'                    => $finalSelling,
+                'mrp'                      => $mrp,
+                'selling_price'            => $finalSelling,
+                'offer_price'              => $hasDiscount ? $finalSelling : null,
+                'discount_percentage'      => $discountPct,
+                'you_save_amount'          => round(max(0, $mrp - $finalSelling), 2),
+                'main_image_url'           => $imgUrl,
+                'primary_image'            => $imgUrl,
+                'stock'                    => (int) $product->stock,
+                'stock_quantity'           => (int) $product->stock,
+                'in_stock'                 => (bool) ($product->stock > 0),
+                'average_rating'           => (float) $product->averageRating(),
+                'rating'                   => (float) $product->averageRating(),
+                'category_id'              => (int) ($product->category_id ?? 0),
+                'category_name'            => $product->category?->name,
+                'brand_name'               => $product->brand?->name,
+                'is_replaceable'           => $isReplaceable,
+                'replacement_window_days'  => $replacementDays,
+                'replacement_policy_badge' => $policyBadge,
             ];
         });
 

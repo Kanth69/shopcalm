@@ -132,10 +132,20 @@ class OrderController extends Controller
                 $upiId = $request->input('refund_upi_id');
                 $cancellation = $this->orderService->cancelPrepaidOrder($order, $request->cancellation_reason, $refundMethod, $upiId);
 
-                $refundAmountFormatted = number_format($cancellation->refund_amount, 2);
-                $msg = $cancellation->refund_status === 'processed'
-                    ? "Order #{$order->order_number} cancelled! Direct refund of ₹{$refundAmountFormatted} (Net of GST Fee) has been initiated back to your original payment source (Razorpay PG)."
-                    : "Order #{$order->order_number} cancelled! Net refund request of ₹{$refundAmountFormatted} (Net of GST Fee) submitted successfully. Amount will be credited back to your original payment source (UPI / Card / Bank) via Razorpay within 3-5 business days.";
+                $walletRefundAmt = (float) ($cancellation->wallet_refund_amount ?? 0);
+                $onlineRefundAmt = (float) ($cancellation->online_refund_amount ?? 0);
+                $onlineFormatted = number_format($onlineRefundAmt, 2);
+                $walletFormatted = number_format($walletRefundAmt, 2);
+
+                if ($walletRefundAmt > 0 && $onlineRefundAmt > 0) {
+                    $msg = "Order #{$order->order_number} cancelled! ₹{$walletFormatted} refunded to your ShopCalm Wallet instantly, and ₹{$onlineFormatted} (Net of GST Fee) initiated back to your original payment source (Razorpay PG).";
+                } elseif ($walletRefundAmt > 0) {
+                    $msg = "Order #{$order->order_number} cancelled! ₹{$walletFormatted} has been refunded back to your ShopCalm Wallet balance instantly.";
+                } else {
+                    $msg = $cancellation->refund_status === 'processed'
+                        ? "Order #{$order->order_number} cancelled! Direct refund of ₹{$onlineFormatted} (Net of GST Fee) has been initiated back to your original payment source (Razorpay PG)."
+                        : "Order #{$order->order_number} cancelled! Net refund request of ₹{$onlineFormatted} (Net of GST Fee) submitted successfully. Expected credit: 3-5 business days.";
+                }
             }
 
             if ($wantsJson) {

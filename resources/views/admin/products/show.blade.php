@@ -33,7 +33,10 @@
         <a href="{{ route('admin.stock.show', $product) }}" class="btn btn-outline-success rounded-pill px-3">
             <i class="bi bi-boxes me-1"></i> Stock History
         </a>
-        @if(auth()->user()->isSuperAdmin())
+        @php
+            $isAdminSuper = (auth('admin')->user() ?? auth()->user())?->isSuperAdmin();
+        @endphp
+        @if($isAdminSuper)
         <a href="{{ route('admin.products.edit', $product) }}" class="btn btn-primary rounded-pill px-3">
             <i class="bi bi-pencil-square me-1"></i> Edit Product
         </a>
@@ -59,15 +62,98 @@
             </div>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <form action="{{ route('admin.products.approve', $product) }}" method="POST" class="d-inline">
-                @csrf
-                <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 py-2 shadow-sm">
-                    <i class="bi bi-check-circle-fill me-1.5"></i> Approve & Publish Live
-                </button>
-            </form>
-            <button type="button" class="btn btn-outline-danger fw-bold rounded-pill px-3.5 py-2 bg-white" onclick="promptRejectProduct('{{ route('admin.products.reject', $product) }}', '{{ addslashes($product->name) }}')">
-                <i class="bi bi-x-circle-fill me-1.5"></i> Reject with Reason
+            <button type="button" class="btn btn-success fw-bold rounded-pill px-4 py-2 shadow-sm d-inline-flex align-items-center gap-1.5" data-bs-toggle="modal" data-bs-target="#modalApproveProductShow">
+                <i class="bi bi-check-circle-fill"></i> Approve & Publish Live
             </button>
+            <button type="button" class="btn btn-outline-danger fw-bold rounded-pill px-3.5 py-2 bg-white d-inline-flex align-items-center gap-1.5" onclick="promptRejectProduct('{{ route('admin.products.reject', $product) }}', '{{ addslashes($product->name) }}')">
+                <i class="bi bi-x-circle-fill"></i> Reject with Reason
+            </button>
+        </div>
+    </div>
+
+    {{-- Review, Set Selling Price & Approve Modal in Show Page --}}
+    <div class="modal fade text-start" id="modalApproveProductShow" tabindex="-1" aria-labelledby="modalApproveShowTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header bg-dark text-white py-3 px-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="bg-success bg-opacity-25 text-success p-2 rounded-3 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                            <i class="bi bi-check2-circle fs-5 text-white"></i>
+                        </div>
+                        <div>
+                            <h6 class="modal-title fw-bold text-white mb-0" id="modalApproveShowTitle">Review & Approve Product</h6>
+                            <span class="text-white-50 small" style="font-size: 0.75rem;">Set ShopCalm Storefront Selling Price</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ route('admin.products.approve', $product) }}" method="POST">
+                    @csrf
+                    <div class="modal-body p-4">
+                        <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-3 mb-3 border">
+                            @if($product->main_image)
+                                <img src="{{ Storage::url($product->main_image) }}" class="rounded-2 border object-fit-cover" width="48" height="48" alt="{{ $product->name }}">
+                            @else
+                                <div class="rounded-2 border bg-white d-flex align-items-center justify-content-center text-muted" style="width:48px;height:48px;">
+                                    <i class="bi bi-image"></i>
+                                </div>
+                            @endif
+                            <div class="min-w-0 flex-grow-1">
+                                <h6 class="fw-bold text-dark mb-0 text-truncate" style="font-size: 0.9rem;">{{ $product->name }}</h6>
+                                <span class="text-muted small">SKU: {{ $product->sku }} | Category: {{ $product->category?->name ?? 'General' }}</span>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="p-2.5 rounded-3 bg-light border text-center">
+                                    <span class="d-block text-muted small fw-semibold" style="font-size: 0.72rem;">Wholesale Cost (CP)</span>
+                                    <span class="fw-bold text-dark fs-6">₹{{ number_format($product->cost_price ?? $product->price, 2) }}</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-2.5 rounded-3 bg-light border text-center">
+                                    <span class="d-block text-muted small fw-semibold" style="font-size: 0.72rem;">M.R.P. (Package)</span>
+                                    <span class="fw-bold text-muted fs-6 text-decoration-line-through">₹{{ number_format($product->mrp ?? ($product->price * 1.5), 2) }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-dark small">ShopCalm Storefront Selling Price (₹) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white fw-bold">₹</span>
+                                <input type="number" name="price" step="0.01" min="0" 
+                                    class="form-control form-control-lg fw-bold text-success border-success" 
+                                    id="show_approve_price_input"
+                                    data-cost="{{ $product->cost_price ?? $product->price }}"
+                                    data-mrp="{{ $product->mrp ?? ($product->price * 1.5) }}"
+                                    value="{{ old('price', $product->price > 0 ? $product->price : ($product->cost_price ?? 0)) }}" 
+                                    required>
+                            </div>
+                            <div class="form-text text-muted" style="font-size: 0.75rem;">This is the active price customers will pay on ShopCalm.</div>
+                        </div>
+
+                        {{-- Live Margin & Discount Preview Box --}}
+                        <div class="p-3 rounded-3 border bg-success bg-opacity-10">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small fw-semibold text-dark" style="font-size: 0.78rem;">Platform Gross Margin:</span>
+                                <span class="fw-bold text-success fs-6" id="show_margin_amount">--</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="small fw-semibold text-muted" style="font-size: 0.75rem;">Customer Discount vs M.R.P.:</span>
+                                <span class="fw-bold text-primary small" id="show_discount_rate">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light px-4 py-2.5 d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-1.5" data-bs-dismiss="modal" style="font-size: 0.82rem;">Cancel</button>
+                        <button type="submit" class="btn btn-success rounded-pill px-4 py-1.5 fw-bold shadow-sm d-inline-flex align-items-center gap-1.5" style="font-size: 0.82rem;">
+                            <i class="bi bi-check2-circle"></i> Confirm Price & Publish Live
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 @elseif($product->status === 'Rejected')
@@ -451,6 +537,40 @@ function promptRejectProduct(rejectUrl, productName) {
         }
     });
 }
+
+function updateShowApproveMargin() {
+    const input = document.getElementById('show_approve_price_input');
+    if (!input) return;
+
+    const cost = parseFloat(input.dataset.cost) || 0;
+    const mrp = parseFloat(input.dataset.mrp) || 0;
+    const price = parseFloat(input.value) || 0;
+
+    const marginAmtEl = document.getElementById('show_margin_amount');
+    const discountEl = document.getElementById('show_discount_rate');
+
+    if (marginAmtEl && discountEl) {
+        const margin = price - cost;
+        const marginPct = price > 0 ? ((margin / price) * 100).toFixed(1) : '0';
+        marginAmtEl.textContent = '₹' + margin.toFixed(2) + ' (' + marginPct + '%)';
+        marginAmtEl.className = margin >= 0 ? 'fw-bold text-success fs-6' : 'fw-bold text-danger fs-6';
+
+        if (mrp > price && mrp > 0) {
+            const discPct = Math.round(((mrp - price) / mrp) * 100);
+            discountEl.textContent = discPct + '% OFF (Save ₹' + (mrp - price).toFixed(2) + ')';
+        } else {
+            discountEl.textContent = '0% (At or above MRP)';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const showInput = document.getElementById('show_approve_price_input');
+    if (showInput) {
+        updateShowApproveMargin();
+        showInput.addEventListener('input', updateShowApproveMargin);
+    }
+});
 </script>
 @endpush
 @endsection

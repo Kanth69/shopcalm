@@ -25,13 +25,27 @@ class ProductController extends Controller
         protected ImageOptimizerService $imageOptimizer
     ) {}
 
+    protected function getCurrentUser()
+    {
+        return auth('product_manager')->user() ?? auth('admin')->user() ?? auth()->user();
+    }
+
     /**
      * Display all catalog products for the Product Manager.
      */
     public function index(Request $request): View
     {
+        $user = $this->getCurrentUser();
+        $isSuperAdmin = $user && $user->isSuperAdmin();
+
         $query = Product::with(['category', 'brand'])
             ->withAvg(['reviews as avg_rating' => fn($q) => $q->where('status', 'Approved')], 'rating');
+
+        if (!$isSuperAdmin) {
+            $query->where('submitted_by', $user?->id);
+        } elseif ($request->filled('submitted_by')) {
+            $query->where('submitted_by', $request->submitted_by);
+        }
 
         // Status Filter
         if ($request->filled('status')) {
@@ -92,12 +106,19 @@ class ProductController extends Controller
 
         $products = $query->paginate(15)->withQueryString();
 
-        // Metrics for filter tabs
-        $totalCount = Product::count();
-        $activeCount = Product::where('status', 'Active')->count();
-        $pendingCount = Product::where('status', 'Pending_Approval')->count();
-        $rejectedCount = Product::where('status', 'Rejected')->count();
-        $inactiveCount = Product::where('status', 'Inactive')->count();
+        // Metrics for filter tabs (strictly scoped to this vendor or global for admin)
+        $metricsQuery = Product::query();
+        if (!$isSuperAdmin) {
+            $metricsQuery->where('submitted_by', $user?->id);
+        } elseif ($request->filled('submitted_by')) {
+            $metricsQuery->where('submitted_by', $request->submitted_by);
+        }
+
+        $totalCount = (clone $metricsQuery)->count();
+        $activeCount = (clone $metricsQuery)->where('status', 'Active')->count();
+        $pendingCount = (clone $metricsQuery)->where('status', 'Pending_Approval')->count();
+        $rejectedCount = (clone $metricsQuery)->where('status', 'Rejected')->count();
+        $inactiveCount = (clone $metricsQuery)->where('status', 'Inactive')->count();
 
         $categories = Category::orderBy('name')->get();
         $brands = Brand::orderBy('name')->get();
@@ -119,10 +140,17 @@ class ProductController extends Controller
      */
     public function pending(Request $request): View
     {
-        $products = Product::with(['category', 'brand'])
-            ->where('status', 'Pending_Approval')
-            ->latest()
-            ->paginate(15);
+        $user = $this->getCurrentUser();
+        $isSuperAdmin = $user && $user->isSuperAdmin();
+
+        $query = Product::with(['category', 'brand'])
+            ->where('status', 'Pending_Approval');
+
+        if (!$isSuperAdmin) {
+            $query->where('submitted_by', $user?->id);
+        }
+
+        $products = $query->latest()->paginate(15);
 
         return view('product-manager.products.pending', compact('products'));
     }
@@ -132,10 +160,17 @@ class ProductController extends Controller
      */
     public function rejected(Request $request): View
     {
-        $products = Product::with(['category', 'brand'])
-            ->where('status', 'Rejected')
-            ->latest()
-            ->paginate(15);
+        $user = $this->getCurrentUser();
+        $isSuperAdmin = $user && $user->isSuperAdmin();
+
+        $query = Product::with(['category', 'brand'])
+            ->where('status', 'Rejected');
+
+        if (!$isSuperAdmin) {
+            $query->where('submitted_by', $user?->id);
+        }
+
+        $products = $query->latest()->paginate(15);
 
         return view('product-manager.products.rejected', compact('products'));
     }
@@ -145,6 +180,13 @@ class ProductController extends Controller
      */
     public function show(Product $product): View
     {
+        $user = $this->getCurrentUser();
+        $isSuperAdmin = $user && $user->isSuperAdmin();
+
+        if (!$isSuperAdmin && $product->submitted_by !== $user?->id) {
+            abort(403, 'Unauthorized. You can only view your own products.');
+        }
+
         $product->load([
             'category',
             'brand',
@@ -165,6 +207,9 @@ class ProductController extends Controller
      */
     public function create(): View
     {
+        $user = $this->getCurrentUser();
+        $isSuperAdmin = $user && $user->isSuperAdmin();
+
         $categories = Category::where('status', 'Active')->orderBy('name')->get();
         if ($categories->isEmpty()) {
             $categories = Category::orderBy('name')->get();
@@ -175,7 +220,7 @@ class ProductController extends Controller
             $brands = Brand::orderBy('name')->get();
         }
 
-        return view('product-manager.products.create', compact('categories', 'brands'));
+        return view('product-manager.products.create', compact('categories', 'brands', 'isSuperAdmin'));
     }
 
     /**
@@ -183,6 +228,9 @@ class ProductController extends Controller
      */
     public function store(ProductRequest $request): RedirectResponse
     {
+        $user = $this->getCurrentUser();
+        $isSuperAdmin = $user && $user->isSuperAdmin();
+
         $validated = $request->validated();
 
         // Generate clean unique slug
@@ -205,10 +253,14 @@ class ProductController extends Controller
             $validated['main_image'] = $this->imageOptimizer->optimizeAndStore($request->file('main_image'), 'products/main');
         }
 
-        // Enforce approval workflow: New products by Product Manager start as Pending_Approval
+        $validated['mrp'] = $request->filled('mrp') ? (float)$request->mrp : null;
+        $validated['cost_price'] = $request->filled('cost_price') ? (float)$request->cost_price : null;
+        $validated['price'] = $validated['cost_price'] ?? 0;
+        $validated['is_replaceable'] = $request->boolean('is_replaceable');
+        $validated['replacement_window_days'] = $validated['is_replaceable'] ? ($request->input('replacement_window_days', 7) ?: 7) : 0;
         $validated['status'] = 'Pending_Approval';
         $validated['rejection_reason'] = null;
-        $validated['submitted_by'] = Auth::id();
+        $validated['submitted_by'] = $isSuperAdmin ? ($request->input('submitted_by', $user?->id) ?: $user?->id) : $user?->id;
         $validated['featured'] = $request->boolean('featured');
         $validated['trending'] = $request->boolean('trending');
         $validated['has_options'] = $request->boolean('has_options');
@@ -286,7 +338,7 @@ class ProductController extends Controller
                 'stock_before'  => 0,
                 'stock_after'   => $product->stock,
                 'notes'         => 'Initial inventory recorded upon product creation',
-                'created_by'    => Auth::id(),
+                'created_by'    => $user?->id ?? Auth::id(),
             ]);
         }
 
@@ -302,11 +354,18 @@ class ProductController extends Controller
      */
     public function edit(Product $product): View
     {
+        $user = $this->getCurrentUser();
+        $isSuperAdmin = $user && $user->isSuperAdmin();
+
+        if (!$isSuperAdmin && $product->submitted_by !== $user?->id) {
+            abort(403, 'Unauthorized. You can only edit your own products.');
+        }
+
         $categories = Category::orderBy('name')->get();
         $brands = Brand::orderBy('name')->get();
         $product->load(['category', 'brand', 'galleryImages']);
 
-        return view('product-manager.products.edit', compact('product', 'categories', 'brands'));
+        return view('product-manager.products.edit', compact('product', 'categories', 'brands', 'isSuperAdmin'));
     }
 
     /**
@@ -314,6 +373,13 @@ class ProductController extends Controller
      */
     public function update(ProductRequest $request, Product $product): RedirectResponse
     {
+        $user = $this->getCurrentUser();
+        $isSuperAdmin = $user && $user->isSuperAdmin();
+
+        if (!$isSuperAdmin && $product->submitted_by !== $user?->id) {
+            abort(403, 'Unauthorized. You can only update your own products.');
+        }
+
         $validated = $request->validated();
 
         // Handle Slug modification
@@ -351,7 +417,14 @@ class ProductController extends Controller
 
         $validated['featured'] = $request->boolean('featured');
         $validated['trending'] = $request->boolean('trending');
-        $validated['submitted_by'] = Auth::id();
+        $validated['mrp'] = $request->filled('mrp') ? (float)$request->mrp : null;
+        $validated['cost_price'] = $request->filled('cost_price') ? (float)$request->cost_price : null;
+        $validated['is_replaceable'] = $request->boolean('is_replaceable');
+        $validated['replacement_window_days'] = $validated['is_replaceable'] ? ($request->input('replacement_window_days', 7) ?: 7) : 0;
+
+        // Selling Price is strictly controlled and decided upon Admin approval in /admin/products
+        unset($validated['price']);
+
         $validated['has_options'] = $request->boolean('has_options');
 
         if ($validated['has_options'] && $request->filled('option_keys') && $request->filled('option_values')) {
@@ -433,10 +506,17 @@ class ProductController extends Controller
      */
     public function resubmit(Product $product): RedirectResponse
     {
+        $user = $this->getCurrentUser();
+        $isSuperAdmin = $user && $user->isSuperAdmin();
+
+        if (!$isSuperAdmin && $product->submitted_by !== $user?->id) {
+            abort(403, 'Unauthorized.');
+        }
+
         $product->update([
             'status'           => 'Pending_Approval',
             'rejection_reason' => null,
-            'submitted_by'     => Auth::id(),
+            'submitted_by'     => $product->submitted_by ?? $user?->id,
         ]);
 
         $product->rejectionReasons()->where('status', 'active')->update(['status' => 'resolved']);
@@ -453,7 +533,14 @@ class ProductController extends Controller
      */
     public function toggleStatus(Product $product): RedirectResponse
     {
-        if ($product->status === 'Pending_Approval') {
+        $user = $this->getCurrentUser();
+        $isSuperAdmin = $user && $user->isSuperAdmin();
+
+        if (!$isSuperAdmin && $product->submitted_by !== $user?->id) {
+            abort(403, 'Unauthorized.');
+        }
+
+        if (!$isSuperAdmin && $product->status === 'Pending_Approval') {
             return back()->with('toast', [
                 'type' => 'warning',
                 'title' => 'Approval Required',
@@ -476,7 +563,14 @@ class ProductController extends Controller
      */
     public function deleteGalleryImage(Request $request, int $id)
     {
-        $image = ProductImage::findOrFail($id);
+        $user = $this->getCurrentUser();
+        $isSuperAdmin = $user && $user->isSuperAdmin();
+
+        $image = ProductImage::with('product')->findOrFail($id);
+        if (!$isSuperAdmin && $image->product && $image->product->submitted_by !== $user?->id) {
+            abort(403, 'Unauthorized.');
+        }
+
         if ($image->image && Storage::disk('public')->exists($image->image)) {
             Storage::disk('public')->delete($image->image);
         }

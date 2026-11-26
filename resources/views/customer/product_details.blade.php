@@ -49,10 +49,26 @@
                 <div class="card border-0 rounded-4 overflow-hidden shadow-xs position-relative mb-2.5" 
                      style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
                     
-                    {{-- Calculation of Discount --}}
+                    {{-- Calculation of Discount & Strikethrough Pricing --}}
                     @php
-                        $hasDiscount = (isset($product->sale_price) && (float) $product->sale_price < (float) $product->price) || !empty($product->offer_discount_percentage);
-                        $discountPct = $product->offer_discount_percentage ?? ($hasDiscount && (float) $product->price > 0 ? round((((float) $product->price - (float) $product->sale_price) / (float) $product->price) * 100) : 0);
+                        $currentPrice = (float) ($product->sale_price ?? $product->price);
+                        $mrpPrice = (float) ($product->mrp ?? 0);
+                        $hasMrp = ($mrpPrice > $currentPrice);
+                        $hasOffer = isset($product->sale_price) && ((float) $product->sale_price < (float) $product->price);
+                        
+                        $hasDiscount = $hasMrp || $hasOffer;
+                        $strikethroughPrice = $hasMrp ? $mrpPrice : ($hasOffer ? (float) $product->price : 0);
+                        
+                        if ($hasMrp) {
+                            $discountPct = round((($mrpPrice - $currentPrice) / $mrpPrice) * 100);
+                            $savedAmount = round($mrpPrice - $currentPrice, 2);
+                        } elseif ($hasOffer) {
+                            $discountPct = $product->offer_discount_percentage ?? round((((float)$product->price - $currentPrice) / (float)$product->price) * 100);
+                            $savedAmount = round((float)$product->price - $currentPrice, 2);
+                        } else {
+                            $discountPct = 0;
+                            $savedAmount = 0;
+                        }
                     @endphp
 
                     {{-- Wishlist & Share Action Buttons (Top Right) --}}
@@ -257,31 +273,62 @@
             {{-- 3. Price Strip (Amazon / Flipkart Clean Typographic Style) --}}
             <div class="mb-3">
                 <div class="d-flex align-items-baseline gap-2 flex-wrap mb-1">
-                    @if($hasDiscount)
+                    @if($hasDiscount && $strikethroughPrice > $currentPrice)
                         <span class="text-danger fw-bold fs-4">-{{ $discountPct }}%</span>
                         <span class="fw-bolder text-dark" style="font-size: clamp(1.6rem, 3vw, 2.1rem); letter-spacing: -0.03em;">
-                            ₹{{ number_format($product->sale_price, 2) }}
+                            ₹{{ number_format($currentPrice, 2) }}
                         </span>
                         <span class="text-muted text-decoration-line-through fs-6" style="font-size: 0.95rem;">
-                            M.R.P.: ₹{{ number_format($product->price, 2) }}
+                            M.R.P.: ₹{{ number_format($strikethroughPrice, 2) }}
                         </span>
                     @else
                         <span class="fw-bolder text-dark" style="font-size: clamp(1.6rem, 3vw, 2.1rem); letter-spacing: -0.03em;">
-                            ₹{{ number_format($product->price, 2) }}
+                            ₹{{ number_format($currentPrice, 2) }}
                         </span>
                     @endif
                 </div>
 
                 <div class="text-muted small d-flex align-items-center gap-2 flex-wrap" style="font-size: 0.8rem;">
                     <span>Inclusive of all taxes</span>
-                    @if($hasDiscount)
+                    @if($hasDiscount && $savedAmount > 0)
                         <span>•</span>
                         <span class="text-success fw-bold">
-                            <i class="bi bi-piggy-bank-fill me-1"></i> You Save ₹{{ number_format($product->price - $product->sale_price, 2) }}
+                            <i class="bi bi-piggy-bank-fill me-1"></i> You Save ₹{{ number_format($savedAmount, 2) }}
                         </span>
                     @endif
                 </div>
             </div>
+
+            {{-- 4. ShopCalm Official Replacement / Return Policy Card --}}
+            @if($product->is_replaceable)
+                <div class="p-3 rounded-3 mb-3 d-flex align-items-start gap-2.5 border" style="background: #f0fdf4; border-color: #bbf7d0 !important;">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px; background: #dcfce7; color: #16a34a;">
+                        <i class="bi bi-arrow-repeat fs-6"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark" style="font-size: 0.86rem;">
+                            {{ $product->replacement_window_days ?? 7 }} Days Replacement Only
+                        </div>
+                        <div class="text-secondary small" style="font-size: 0.76rem; line-height: 1.4;">
+                            Eligible for free replacement within {{ $product->replacement_window_days ?? 7 }} days of delivery if defective, damaged, or wrong item delivered (with unboxing proof). Returns or cash refunds are not offered.
+                        </div>
+                    </div>
+                </div>
+            @else
+                <div class="p-3 rounded-3 mb-3 d-flex align-items-start gap-2.5 border" style="background: #f8fafc; border-color: #e2e8f0 !important;">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px; background: #f1f5f9; color: #64748b;">
+                        <i class="bi bi-shield-x fs-6"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark" style="font-size: 0.86rem;">
+                            Non-Returnable & Non-Replaceable
+                        </div>
+                        <div class="text-muted small" style="font-size: 0.76rem; line-height: 1.4;">
+                            To provide direct wholesale-level partner pricing and ensure item hygiene, this product is non-returnable and non-replaceable once delivered.
+                        </div>
+                    </div>
+                </div>
+            @endif
 
 
             {{-- 5. Short Description --}}

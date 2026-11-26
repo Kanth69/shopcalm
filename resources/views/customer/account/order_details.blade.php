@@ -20,26 +20,27 @@
     $st = $map[$s] ?? $map['pending'];
     $statusStyle = "background:{$st['bg']}; color:{$st['color']}; border:1px solid {$st['border']};";
 
-    // 4-Milestone Horizontal Progression (Flipkart / Amazon standard)
-    $fourStageList = [
-        ['key' => 'placed',    'label' => 'Placed'],
-        ['key' => 'confirmed', 'label' => 'Confirmed'],
-        ['key' => 'shipped',   'label' => ($s === 'out_for_delivery' ? 'Out for Delivery' : 'Shipped')],
-        ['key' => 'delivered', 'label' => 'Delivered'],
+    // 5-Milestone Horizontal Progression (Flipkart / Amazon standard)
+    $fiveStageList = [
+        ['key' => 'placed',           'label' => 'Placed'],
+        ['key' => 'confirmed',        'label' => 'Confirmed'],
+        ['key' => 'shipped',          'label' => 'Shipped'],
+        ['key' => 'out_for_delivery', 'label' => 'Out for Delivery'],
+        ['key' => 'delivered',        'label' => 'Delivered'],
     ];
 
-    $fourStageRankMap = [
+    $fiveStageRankMap = [
         'pending'          => 0,
         'placed'           => 0,
         'confirmed'        => 1,
         'processing'       => 1,
         'packed'           => 1,
         'shipped'          => 2,
-        'out_for_delivery' => 2,
-        'delivered'        => 3,
+        'out_for_delivery' => 3,
+        'delivered'        => 4,
     ];
 
-    $fourStepIdx = in_array($s, ['cancelled', 'failed']) ? false : ($fourStageRankMap[$s] ?? false);
+    $fiveStepIdx = in_array($s, ['cancelled', 'failed']) ? false : ($fiveStageRankMap[$s] ?? false);
 @endphp
 
 {{-- Header Banner Card --}}
@@ -112,7 +113,7 @@
                 @endif
 
                 @if($canCancel)
-                    <button type="button" id="btn-order-cancel-pending" onclick="cancelPendingOrderFromDetails()"
+                    <button type="button" id="btn-order-cancel-pending" data-bs-toggle="modal" data-bs-target="#modalCancelOrder" onclick="cancelPendingOrderFromDetails()"
                             class="btn btn-outline-danger rounded-pill px-4 py-2.5 fw-semibold d-inline-flex align-items-center justify-content-center gap-1.5 flex-grow-1 flex-sm-grow-0"
                             style="font-size: 0.85rem;">
                         <i class="bi bi-x-circle me-0.5"></i> <span>Cancel Order</span>
@@ -230,7 +231,7 @@
                         <div class="p-2.5 rounded-3 bg-white border">
                             <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5 mb-1">
                                 <span class="fw-bold text-dark" style="font-size: 0.88rem;"><i class="bi bi-receipt-cutoff text-secondary me-1.5"></i> Cash on Delivery (COD)</span>
-                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.7rem;">✓ 100% Free Cancellation</span>
+                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.7rem;"><i class="bi bi-check2-circle me-1"></i>100% Free Cancellation</span>
                             </div>
                             <div class="text-muted small mt-1" style="font-size: 0.73rem;">
                                 No cash was collected for this order. Order delivery has been cancelled with zero charges.
@@ -240,7 +241,7 @@
                         <div class="p-2.5 rounded-3 bg-white border">
                             <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5 mb-1">
                                 <span class="fw-bold text-dark" style="font-size: 0.88rem;"><i class="bi bi-credit-card text-secondary me-1.5"></i> Online Payment (Unpaid / Cancelled)</span>
-                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.7rem;">✓ 100% Free Cancellation</span>
+                                <span class="badge bg-success text-white rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.7rem;"><i class="bi bi-check2-circle me-1"></i>100% Free Cancellation</span>
                             </div>
                             <div class="text-muted small mt-1" style="font-size: 0.73rem;">
                                 No payment was collected for this order. The pending online transaction has been cancelled with zero charges.
@@ -251,7 +252,7 @@
                             <div class="p-2.5 rounded-3 bg-white border mb-2">
                                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5">
                                     <span class="fw-bold text-dark" style="font-size: 0.85rem;"><i class="bi bi-wallet2 text-success me-1.5"></i> ShopCalm Wallet</span>
-                                    <span class="badge bg-success text-white rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">⚡ Instantly Credited</span>
+                                    <span class="badge bg-success text-white rounded-pill px-2 py-0.5" style="font-size: 0.68rem;"><i class="bi bi-lightning-charge-fill me-1"></i>Instantly Credited</span>
                                 </div>
                                 <div class="text-muted small mt-1" style="font-size: 0.73rem;">
                                     <strong>₹{{ number_format($walletRefundVal, 2) }}</strong> credited back to your ShopCalm Wallet balance.
@@ -269,9 +270,9 @@
                                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5 mb-1.5">
                                     <span class="fw-bold text-dark" style="font-size: 0.85rem;"><i class="bi bi-credit-card text-primary me-1.5"></i> Original Payment Source (Razorpay Direct)</span>
                                     @if($isProcessed)
-                                        <span class="badge bg-success text-white rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">✓ Refund Processed</span>
+                                        <span class="badge bg-success text-white rounded-pill px-2 py-0.5" style="font-size: 0.68rem;"><i class="bi bi-check2-circle me-1"></i>Refund Processed</span>
                                     @else
-                                        <span class="badge bg-warning text-dark rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">⏳ Direct Refund Initiated</span>
+                                        <span class="badge bg-warning text-dark rounded-pill px-2 py-0.5" style="font-size: 0.68rem;"><i class="bi bi-hourglass-split me-1"></i>Direct Refund Initiated</span>
                                     @endif
                                 </div>
 
@@ -310,9 +311,9 @@
                                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5 mb-1">
                                     <span class="fw-bold text-dark" style="font-size: 0.85rem;"><i class="bi bi-bank text-info me-1.5"></i> Bank UPI: <code class="text-dark bg-light px-1.5 py-0.5 rounded border font-monospace">{{ $cancellation->refund_upi_id }}</code></span>
                                     @if($cancellation->refund_status === 'processed')
-                                        <span class="badge bg-success text-white rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">✓ Processed</span>
+                                        <span class="badge bg-success text-white rounded-pill px-2 py-0.5" style="font-size: 0.68rem;"><i class="bi bi-check2-circle me-1"></i>Processed</span>
                                     @else
-                                        <span class="badge bg-warning text-dark rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">⏳ Pending Payout</span>
+                                        <span class="badge bg-warning text-dark rounded-pill px-2 py-0.5" style="font-size: 0.68rem;"><i class="bi bi-hourglass-split me-1"></i>Pending Payout</span>
                                     @endif
                                 </div>
                                 @if($cancellation->refund_status === 'processed')
@@ -364,7 +365,7 @@
 @endif
 
 {{-- ── Progress Tracker Card (Live Tracking - 100% Horizontal) ── --}}
-@if($s !== 'cancelled' && $fourStepIdx !== false)
+@if($s !== 'cancelled' && $fiveStepIdx !== false)
 <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 p-3 p-sm-4" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
     <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
         <span class="fw-bold text-dark small text-uppercase d-flex align-items-center gap-1.5" style="letter-spacing: 0.05em; font-size: 0.76rem;">
@@ -375,17 +376,17 @@
         </span>
     </div>
 
-    {{-- Clean 4-Milestone Horizontal Stepper (Fits 100% on Mobile & Desktop, Zero Clipping) --}}
+    {{-- Clean 5-Milestone Horizontal Stepper (Fits 100% on Mobile & Desktop, Zero Clipping) --}}
     <div class="py-2">
-        <div class="position-relative d-flex align-items-center justify-content-between my-2" style="padding: 0 10px;">
+        <div class="position-relative d-flex align-items-start justify-content-between my-2" style="padding: 0 4px;">
             {{-- Background track --}}
-            <div class="position-absolute" style="top:14px; left:24px; right:24px; height:4px; background:#e2e8f0; border-radius:99px; z-index:0;"></div>
+            <div class="position-absolute" style="top:14px; left:20px; right:20px; height:4px; background:#e2e8f0; border-radius:99px; z-index:0;"></div>
             {{-- Filled track --}}
-            @php $fillPct = $fourStepIdx > 0 ? ($fourStepIdx / (count($fourStageList) - 1)) * 100 : 0; @endphp
-            <div class="position-absolute" style="top:14px; left:24px; width:calc({{ round($fillPct) }}% - 0px); max-width:calc(100% - 48px); height:4px; background:{{ $st['stripe'] }}; border-radius:99px; z-index:1; transition:width 0.4s ease;"></div>
+            @php $fillPct = $fiveStepIdx > 0 ? ($fiveStepIdx / (count($fiveStageList) - 1)) * 100 : 0; @endphp
+            <div class="position-absolute" style="top:14px; left:20px; width:calc((100% - 40px) * {{ $fillPct / 100 }}); height:4px; background:{{ $st['stripe'] }}; border-radius:99px; z-index:1; transition:width 0.4s ease;"></div>
 
-            @foreach($fourStageList as $si => $stage)
-            @php $done = $si <= $fourStepIdx; $current = $si === $fourStepIdx; @endphp
+            @foreach($fiveStageList as $si => $stage)
+            @php $done = $si <= $fiveStepIdx; $current = $si === $fiveStepIdx; @endphp
             <div class="d-flex flex-column align-items-center position-relative flex-fill px-0.5" style="z-index:2; min-width: 0;">
                 <div class="rounded-circle d-flex align-items-center justify-content-center"
                      style="width:28px; height:28px;
@@ -399,10 +400,11 @@
                         <div style="width:6px; height:6px; border-radius:50%; background:#94a3b8;"></div>
                     @endif
                 </div>
-                <span class="mt-1.5 text-center text-nowrap"
-                      style="font-size:clamp(0.68rem, 2.4vw, 0.78rem); line-height:1.2;
+                <span class="mt-1.5 text-center"
+                      style="font-size:clamp(0.62rem, 2.1vw, 0.75rem); line-height:1.2;
                              color:{{ $done ? $st['color'] : '#94a3b8' }};
-                             font-weight:{{ $current ? '700' : ($done ? '600' : '400') }};">
+                             font-weight:{{ $current ? '700' : ($done ? '600' : '400') }};
+                             max-width: 68px; word-break: normal;">
                     {{ $stage['label'] }}
                 </span>
             </div>
@@ -474,7 +476,7 @@
                     <button type="button" class="btn btn-sm {{ $order->feedback ? 'btn-outline-success' : 'btn-warning text-dark' }} rounded-pill px-3 py-1.5 fw-bold shadow-xs d-inline-flex align-items-center gap-1" 
                             data-bs-toggle="modal" data-bs-target="#modalOrderFeedback" style="font-size: 0.78rem; white-space: nowrap;">
                         <i class="bi {{ $order->feedback ? 'bi-star-fill text-warning' : 'bi-star-fill' }}"></i> 
-                        <span>{{ $order->feedback ? 'Feedback (' . $order->feedback->delivery_rating . '★)' : 'Rate Delivery' }}</span>
+                        <span>{{ $order->feedback ? 'Feedback (' . $order->feedback->delivery_rating . '/5)' : 'Rate Delivery' }}</span>
                     </button>
                     <form action="{{ route('account.orders.reorder', $order) }}" method="POST" class="d-inline m-0 p-0">
                         @csrf
@@ -601,21 +603,23 @@
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 p-3 p-sm-4" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important; max-width: 100%;">
         <div class="d-flex align-items-start align-items-sm-center justify-content-between flex-wrap gap-2.5" style="min-width: 0; max-width: 100%;">
             <div class="d-flex align-items-start align-items-sm-center gap-2.5" style="min-width: 0; flex: 1 1 auto;">
-                <div style="width: 42px; height: 42px; min-width: 42px; border-radius: 12px; background: {{ $order->status === 'delivered' ? '#ecfdf5' : '#f0f9ff' }}; color: {{ $order->status === 'delivered' ? '#059669' : '#0284c7' }}; border: 1px solid {{ $order->status === 'delivered' ? '#a7f3d0' : '#bae6fd' }}; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
-                    <i class="bi {{ $order->status === 'delivered' ? 'bi-bag-check-fill' : 'bi-box-seam-fill' }}"></i>
+                <div style="width: 42px; height: 42px; min-width: 42px; border-radius: 12px; background: {{ $order->status === 'delivered' ? '#ecfdf5' : ($isOutForDelivery ? '#e0f2fe' : '#f0f9ff') }}; color: {{ $order->status === 'delivered' ? '#059669' : ($isOutForDelivery ? '#0284c7' : '#0284c7') }}; border: 1px solid {{ $order->status === 'delivered' ? '#a7f3d0' : ($isOutForDelivery ? '#7dd3fc' : '#bae6fd') }}; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
+                    <i class="bi {{ $order->status === 'delivered' ? 'bi-bag-check-fill' : ($isOutForDelivery ? 'bi-bicycle' : 'bi-box-seam-fill') }}"></i>
                 </div>
                 <div style="min-width: 0; flex: 1 1 auto; overflow: hidden; word-break: break-word;">
                     <div class="d-flex align-items-center gap-1.5 mb-1 flex-wrap">
-                        <span class="badge {{ $order->status === 'delivered' ? 'bg-success' : 'bg-primary' }} text-white rounded-pill px-2.5 py-1 fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.03em;">
-                            {{ $order->status === 'delivered' ? 'DELIVERED' : 'COURIER DISPATCH' }}
+                        <span class="badge {{ $order->status === 'delivered' ? 'bg-success' : ($isOutForDelivery ? 'bg-info text-dark' : 'bg-primary') }} rounded-pill px-2.5 py-1 fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.03em;">
+                            {{ $order->status === 'delivered' ? 'DELIVERED' : ($isOutForDelivery ? 'OUT FOR DELIVERY' : 'COURIER DISPATCH') }}
                         </span>
                         <strong class="text-dark" style="font-size: 0.92rem; line-height: 1.35;">
-                            {{ $order->status === 'delivered' ? 'Delivered via ' . ($order->courier_partner ?: 'National Logistics') : ($order->courier_partner ?: 'Express Logistics Partner') }}
+                            {{ $order->status === 'delivered' ? 'Delivered via ' . ($order->courier_partner ?: 'National Logistics') : ($isOutForDelivery ? 'Out for delivery via ' . ($order->courier_partner ?: 'Logistics Partner') : ($order->courier_partner ?: 'Express Logistics Partner')) }}
                         </strong>
                     </div>
                     <div class="text-secondary small mt-0.5" style="font-size: 0.76rem; line-height: 1.35; word-break: break-word;">
                         @if($order->status === 'delivered')
                             Delivered on <span class="fw-semibold text-dark">{{ $order->delivered_at?->format('d M, Y \a\t h:i A') ?? $order->updated_at->format('d M, Y \a\t h:i A') }}</span>
+                        @elseif($isOutForDelivery)
+                            Your shipment is out for delivery today with the courier agent
                         @elseif($order->tracking_number)
                             Tracking ID: <span class="font-monospace fw-bold text-dark px-1.5 py-0.5 rounded bg-light border text-break">{{ $order->tracking_number }}</span>
                         @else
@@ -630,7 +634,7 @@
                     <button type="button" class="btn btn-sm {{ $order->feedback ? 'btn-outline-success' : 'btn-warning text-dark' }} rounded-pill px-3 py-1.5 fw-bold shadow-xs d-inline-flex align-items-center gap-1" 
                             data-bs-toggle="modal" data-bs-target="#modalOrderFeedback" style="font-size: 0.78rem; white-space: nowrap;">
                         <i class="bi {{ $order->feedback ? 'bi-star-fill text-warning' : 'bi-star-fill' }}"></i> 
-                        <span>{{ $order->feedback ? 'Feedback (' . $order->feedback->delivery_rating . '★)' : 'Rate Delivery' }}</span>
+                        <span>{{ $order->feedback ? 'Feedback (' . $order->feedback->delivery_rating . '/5)' : 'Rate Delivery' }}</span>
                     </button>
                     <form action="{{ route('account.orders.reorder', $order) }}" method="POST" class="d-inline m-0 p-0">
                         @csrf
@@ -779,7 +783,7 @@
                     <div class="fw-bold text-dark small" style="font-size: 0.88rem;">
                         You rated this delivery:
                         <span class="text-warning fw-extrabold font-monospace">
-                            @for($i = 1; $i <= $order->feedback->delivery_rating; $i++)★@endfor
+                            @for($i = 1; $i <= $order->feedback->delivery_rating; $i++)<i class="bi bi-star-fill"></i>@endfor
                         </span>
                         <span class="text-muted">({{ $order->feedback->delivery_rating }}/5)</span>
                     </div>
@@ -945,7 +949,7 @@
             @endphp
             <div class="p-3 p-md-4 {{ $index < $order->items->count()-1 ? 'border-bottom' : '' }}" style="border-color: #f1f5f9 !important; max-width: 100%; min-width: 0; overflow: hidden;">
                 
-                {{-- 💻 Desktop Layout (Aligned to Header Bar) --}}
+                {{-- Desktop Layout (Aligned to Header Bar) --}}
                 <div class="d-none d-md-flex align-items-center" style="min-width: 0; max-width: 100%;">
                     {{-- 1. Thumbnail + Info (50%) --}}
                     <div class="d-flex align-items-center gap-3 min-w-0" style="flex: 1 1 50%; min-width: 0; overflow: hidden;">
@@ -953,7 +957,7 @@
                             @php $orderThumb = $item->display_image ?? $product?->main_image; @endphp
                             @if($orderThumb)
                                 <a href="{{ route('product.show', $product->slug) }}">
-                                    <img src="{{ asset('storage/' . $orderThumb) }}"
+                                    <img src="{{ str_starts_with($orderThumb, 'http') ? $orderThumb : asset('storage/' . $orderThumb) }}"
                                          alt="{{ $item->product_name }}"
                                          class="rounded-3 border p-1 bg-white shadow-2xs"
                                          width="64" height="64" style="object-fit: contain;">
@@ -993,6 +997,19 @@
                                    title="{{ $item->product_name }}">
                                     {{ $item->product_name }}
                                 </a>
+                                @if($product->is_replaceable)
+                                    <div class="mt-1">
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
+                                            <i class="bi bi-arrow-repeat me-1"></i> {{ $product->replacement_window_days ?? 7 }}D Replacement on Defects
+                                        </span>
+                                    </div>
+                                @else
+                                    <div class="mt-1">
+                                        <span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
+                                            <i class="bi bi-shield-x me-1"></i> Non-Returnable & Non-Replaceable
+                                        </span>
+                                    </div>
+                                @endif
                             @else
                                 <div class="fw-bold text-dark text-truncate" style="font-size: 0.9rem;">{{ $item->product_name }}</div>
                                 <span class="text-muted small" style="font-size: 0.72rem;">Product no longer available</span>
@@ -1026,14 +1043,14 @@
                     </div>
                 </div>
 
-                {{-- 📱 Mobile Layout (Spacious Vertical Stack with Clear Price Hierarchy) --}}
+                {{-- Mobile Layout (Spacious Vertical Stack with Clear Price Hierarchy) --}}
                 <div class="d-block d-md-none" style="width: 100%; max-width: 100%; min-width: 0; overflow: hidden;">
                     <div class="d-flex align-items-start gap-2.5 gap-sm-3 mb-2.5" style="width: 100%; max-width: 100%; min-width: 0;">
                         <div class="flex-shrink-0">
                             @php $orderThumb = $item->display_image ?? $product?->main_image; @endphp
                             @if($orderThumb)
                                 <a href="{{ route('product.show', $product->slug) }}">
-                                    <img src="{{ asset('storage/' . $orderThumb) }}"
+                                    <img src="{{ str_starts_with($orderThumb, 'http') ? $orderThumb : asset('storage/' . $orderThumb) }}"
                                          alt="{{ $item->product_name }}"
                                          class="rounded-3 border p-1 bg-white shadow-2xs"
                                          width="64" height="64" style="width: 64px; height: 64px; object-fit: contain; flex-shrink: 0;">
@@ -1073,6 +1090,19 @@
                                    title="{{ $item->product_name }}">
                                     {{ $item->product_name }}
                                 </a>
+                                @if($product->is_replaceable)
+                                    <div class="mb-1">
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
+                                            <i class="bi bi-arrow-repeat me-1"></i> {{ $product->replacement_window_days ?? 7 }}D Replacement on Defects
+                                        </span>
+                                    </div>
+                                @else
+                                    <div class="mb-1">
+                                        <span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
+                                            <i class="bi bi-shield-x me-1"></i> Non-Returnable & Non-Replaceable
+                                        </span>
+                                    </div>
+                                @endif
                             @else
                                 <div class="fw-bold text-dark mb-1 text-line-clamp-2" style="font-size: 0.9rem; line-height: 1.35;">{{ $item->product_name }}</div>
                             @endif
@@ -1290,6 +1320,164 @@
             </div>
             <div class="modal-footer border-0 p-3 pt-0">
                 <button type="button" class="btn btn-light rounded-pill px-4 fw-semibold text-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
+{{-- ── Cancellation & Auto-Split Refund Modal ── --}}
+@if($canCancel)
+@php
+    $modalWalletUsed = (float)($order->wallet_amount_used ?? 0);
+    $modalIsPaid = ($order->payment_status === 'paid');
+    $modalOnlinePaid = ($modalIsPaid && in_array(strtolower($order->payment_method), ['online', 'razorpay'])) ? (float)$order->total_amount : 0.00;
+    $modalIsCod = strtolower($order->payment_method ?? '') === 'cod';
+    $modalIsUnpaidOnline = ($order->payment_method === 'online' && !$modalIsPaid);
+
+    // Calculate cancellation fee preview if order is paid online
+    $modalFee = 0.00;
+    $modalNetOnlineRefund = $modalOnlinePaid;
+    if ($modalIsPaid && $modalOnlinePaid > 0) {
+        $taxAmt = (float) $order->tax_amount;
+        if ($taxAmt <= 0) {
+            $prodPayable = max(0, (float) $order->subtotal_amount - (float) $order->coupon_discount_amount);
+            $base = round($prodPayable / 1.18, 2);
+            $taxAmt = round($prodPayable - $base, 2);
+        }
+        $modalFee = min($modalOnlinePaid, $taxAmt);
+        $modalNetOnlineRefund = max(0, $modalOnlinePaid - $modalFee);
+    }
+@endphp
+<div class="modal fade" id="modalCancelOrder" tabindex="-1" aria-labelledby="modalCancelOrderLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 460px; margin: 1rem auto;">
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+            {{-- Header --}}
+            <div class="modal-header border-bottom py-3 px-3 px-sm-4 bg-light bg-opacity-50">
+                <div class="d-flex align-items-center gap-2.5">
+                    <div class="rounded-circle bg-danger bg-opacity-10 text-danger d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; min-width: 36px;">
+                        <i class="bi bi-x-circle-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h6 class="modal-title fw-bold text-dark mb-0" id="modalCancelOrderLabel" style="font-size: 0.95rem;">Cancel Order</h6>
+                        <small class="text-muted" style="font-size: 0.74rem;">Order #{{ $order->order_number }}</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            {{-- Body --}}
+            <div class="modal-body p-3 p-sm-4">
+                {{-- Refund Destination Breakdown Card --}}
+                <div class="rounded-3 p-3 mb-3 border" style="background: #f8fafc; border-color: #e2e8f0 !important;">
+                    <div class="d-flex align-items-center justify-content-between mb-2 pb-1.5 border-bottom border-secondary-subtle">
+                        <span class="text-uppercase fw-bold text-secondary d-flex align-items-center gap-1" style="font-size: 0.68rem; letter-spacing: 0.05em;">
+                            <i class="bi bi-shield-check text-success"></i> Refund Breakdown
+                        </span>
+                        @if(!$modalIsPaid || $modalFee <= 0)
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.68rem;">
+                                100% Free Cancellation
+                            </span>
+                        @else
+                            <span class="badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.68rem;">
+                                Net Refund (Less GST Fee)
+                            </span>
+                        @endif
+                    </div>
+
+                    {{-- Wallet Refund Destination (If wallet was used) --}}
+                    @if($modalWalletUsed > 0)
+                        <div class="d-flex align-items-start justify-content-between gap-2 py-1.5 {{ ($modalOnlinePaid > 0) ? 'border-bottom border-light' : '' }}">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="bi bi-wallet2 text-success mt-0.5"></i>
+                                <div>
+                                    <div class="fw-bold text-dark" style="font-size: 0.84rem;">ShopCalm Wallet</div>
+                                    <div class="text-muted" style="font-size: 0.72rem;">100% wallet portion credited back instantly.</div>
+                                </div>
+                            </div>
+                            <div class="fw-bold font-monospace text-success text-end flex-shrink-0" style="font-size: 0.88rem;">
+                                +₹{{ number_format($modalWalletUsed, 2) }}
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- Original Source Online Refund Destination (If online payment was made) --}}
+                    @if($modalOnlinePaid > 0)
+                        <div class="d-flex align-items-start justify-content-between gap-2 py-1.5">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="bi bi-credit-card text-primary mt-0.5"></i>
+                                <div>
+                                    <div class="fw-bold text-dark" style="font-size: 0.84rem;">Original Payment Source</div>
+                                    <div class="text-muted" style="font-size: 0.72rem;">Direct refund to Bank / UPI via Razorpay (3-5 days).</div>
+                                    @if($modalFee > 0)
+                                        <div class="text-muted" style="font-size: 0.68rem;">(Paid: ₹{{ number_format($modalOnlinePaid, 2) }} - GST Fee: ₹{{ number_format($modalFee, 2) }})</div>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="fw-bold font-monospace text-primary text-end flex-shrink-0" style="font-size: 0.88rem;">
+                                +₹{{ number_format($modalNetOnlineRefund, 2) }}
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- Free COD Cancellation Notice (If COD and zero wallet) --}}
+                    @if($modalIsCod && $modalWalletUsed == 0)
+                        <div class="d-flex align-items-start gap-2 py-1">
+                            <i class="bi bi-cash-coin text-secondary mt-0.5"></i>
+                            <div>
+                                <div class="fw-bold text-dark" style="font-size: 0.84rem;">Cash on Delivery (COD)</div>
+                                <div class="text-muted" style="font-size: 0.72rem;">No cash was collected for this order. ₹0 charged.</div>
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- Unpaid Online Order Notice --}}
+                    @if($modalIsUnpaidOnline && $modalWalletUsed == 0)
+                        <div class="d-flex align-items-start gap-2 py-1">
+                            <i class="bi bi-clock-history text-secondary mt-0.5"></i>
+                            <div>
+                                <div class="fw-bold text-dark" style="font-size: 0.84rem;">Unpaid Transaction</div>
+                                <div class="text-muted" style="font-size: 0.72rem;">Payment was pending. Order will be cancelled with zero charges.</div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Reason Selection Section (Dropdown) --}}
+                <div class="mb-3">
+                    <label for="selectCancelReason" class="form-label fw-bold text-dark small mb-1.5" style="font-size: 0.8rem;">
+                        Reason for Cancellation <span class="text-danger">*</span>
+                    </label>
+                    <select id="selectCancelReason" class="form-select form-select-sm rounded-3 py-2" style="font-size: 0.82rem; border-color: #cbd5e1;">
+                        <option value="Order placed by mistake" selected>Order placed by mistake</option>
+                        <option value="Delivery time is too long">Delivery time is too long</option>
+                        <option value="Need to change delivery address">Need to change delivery address</option>
+                        <option value="Need to change payment method">Need to change payment method</option>
+                        <option value="Found a better price elsewhere">Found a better price elsewhere</option>
+                        <option value="Other reason">Other reason</option>
+                    </select>
+                </div>
+
+                {{-- Optional Additional Feedback --}}
+                <div>
+                    <label for="cancelAdditionalNotes" class="form-label text-muted small mb-1" style="font-size: 0.74rem;">
+                        Additional comments (optional)
+                    </label>
+                    <textarea id="cancelAdditionalNotes" class="form-control form-control-sm rounded-3" rows="2"
+                              placeholder="Any extra feedback..." style="font-size: 0.8rem;"></textarea>
+                </div>
+            </div>
+
+            {{-- Footer Action Buttons --}}
+            <div class="modal-footer border-top py-2.5 px-3 px-sm-4 bg-light bg-opacity-50 d-flex align-items-center justify-content-between">
+                <button type="button" class="btn btn-light rounded-pill px-3 py-2 fw-semibold btn-sm" data-bs-dismiss="modal" style="font-size: 0.8rem;">
+                    Don't Cancel (Keep Order)
+                </button>
+                <button type="button" id="btnConfirmCancelModal" onclick="submitModalOrderCancellation()"
+                        class="btn btn-danger rounded-pill px-4 py-2 fw-bold btn-sm shadow-xs d-inline-flex align-items-center gap-1.5"
+                        style="font-size: 0.8rem;">
+                    <i class="bi bi-x-circle"></i> <span>Confirm Cancellation</span>
+                </button>
             </div>
         </div>
     </div>
@@ -1594,74 +1782,71 @@ function selectSlotBtn(radio) {
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 function cancelPendingOrderFromDetails() {
-    Swal.fire({
-        title: 'Cancel Order #{{ $order->order_number }}?',
-        text: 'Please select a reason for cancelling this order:',
-        input: 'select',
-        inputOptions: {
-            'Order placed by mistake': 'Order placed by mistake',
-            'Found better price elsewhere': 'Found better price elsewhere',
-            'Need to change payment method': 'Need to change payment method',
-            'Need to change delivery address': 'Need to change delivery address',
-            'Changed my mind': 'Changed my mind',
-            'Other reason': 'Other reason'
-        },
-        inputValue: 'Order placed by mistake',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#64748b',
-        confirmButtonText: 'Yes, Cancel Order',
-        cancelButtonText: 'Keep Order'
-    }).then((result) => {
-        if (!result.isConfirmed) return;
+    const modalEl = document.getElementById('modalCancelOrder');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+}
 
-        const chosenReason = result.value || 'Customer cancelled from order details';
-        const btnCancel = document.getElementById('btn-order-cancel-pending');
-        if (btnCancel) {
-            btnCancel.disabled = true;
-            btnCancel.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Cancelling...';
+function submitModalOrderCancellation() {
+    const selectReason = document.getElementById('selectCancelReason');
+    const baseReason = (selectReason && selectReason.value) ? selectReason.value : 'Order placed by mistake';
+    const notesInput = document.getElementById('cancelAdditionalNotes');
+    const extraNotes = notesInput ? notesInput.value.trim() : '';
+    const finalReason = extraNotes ? (baseReason + ' — ' + extraNotes) : baseReason;
+
+    const btnConfirm = document.getElementById('btnConfirmCancelModal');
+    if (btnConfirm) {
+        btnConfirm.disabled = true;
+        btnConfirm.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Cancelling...';
+    }
+
+    fetch("{{ route('account.orders.cancel', $order) }}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": "{{ csrf_token() }}",
+            "Accept": "application/json"
+        },
+        body: JSON.stringify({
+            cancellation_reason: finalReason,
+            refund_method: "original_source"
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        // Hide modal
+        const modalEl = document.getElementById('modalCancelOrder');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            if (modalInstance) modalInstance.hide();
         }
 
-        fetch("{{ route('account.orders.cancel', $order) }}", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-TOKEN": "{{ csrf_token() }}",
-                "Accept": "application/json"
-            },
-            body: JSON.stringify({
-                cancellation_reason: chosenReason,
-                refund_method: "wallet"
-            })
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Order Cancelled!',
-                    text: data.message || 'Your order has been cancelled successfully.',
-                    confirmButtonColor: '#10b981'
-                }).then(() => {
-                    window.location.reload();
-                });
-            } else {
-                if (btnCancel) {
-                    btnCancel.disabled = false;
-                    btnCancel.innerHTML = '<i class="bi bi-x-circle me-1"></i> Cancel Order';
-                }
-                Swal.fire('Error', data.message || 'Could not cancel order.', 'error');
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Order Cancelled!',
+                text: data.message || 'Your order has been cancelled successfully.',
+                confirmButtonColor: '#10b981'
+            }).then(() => {
+                window.location.reload();
+            });
+        } else {
+            if (btnConfirm) {
+                btnConfirm.disabled = false;
+                btnConfirm.innerHTML = '<i class="bi bi-x-circle"></i> <span>Confirm Cancellation</span>';
             }
-        })
-        .catch(err => {
-            console.error("Cancel error:", err);
-            if (btnCancel) {
-                btnCancel.disabled = false;
-                btnCancel.innerHTML = '<i class="bi bi-x-circle me-1"></i> Cancel Order';
-            }
-            Swal.fire('Error', 'Network error while cancelling order.', 'error');
-        });
+            Swal.fire('Error', data.message || 'Could not cancel order.', 'error');
+        }
+    })
+    .catch(err => {
+        console.error("Cancellation error:", err);
+        if (btnConfirm) {
+            btnConfirm.disabled = false;
+            btnConfirm.innerHTML = '<i class="bi bi-x-circle"></i> <span>Confirm Cancellation</span>';
+        }
+        Swal.fire('Error', 'Network error while cancelling order. Please try again.', 'error');
     });
 }
 </script>

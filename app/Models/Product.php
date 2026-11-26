@@ -12,6 +12,11 @@ class Product extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /** Runtime computed offer properties (not persisted to DB) */
+    public ?float $sale_price = null;
+    public ?string $offer_badge = null;
+    public ?int $offer_discount_percentage = null;
+
     protected $fillable = [
         'category_id',
         'brand_id',
@@ -25,10 +30,13 @@ class Product extends Model
         'video_url',
         'cost_price',
         'price',
+        'mrp',
         'stock',
         'featured',
         'trending',
         'status',
+        'is_replaceable',
+        'replacement_window_days',
         'rejection_reason',
         'submitted_by',
         'main_image',
@@ -50,9 +58,12 @@ class Product extends Model
         'has_options'   => 'boolean',
         'option_stocks' => 'array',
         'option_images' => 'array',
-        'cost_price'    => 'decimal:2',
-        'price'         => 'decimal:2',
-        'weight'        => 'decimal:2',
+        'cost_price'              => 'decimal:2',
+        'price'                   => 'decimal:2',
+        'mrp'                     => 'decimal:2',
+        'is_replaceable'          => 'boolean',
+        'replacement_window_days' => 'integer',
+        'weight'                  => 'decimal:2',
         'length'        => 'decimal:2',
         'width'         => 'decimal:2',
         'height'        => 'decimal:2',
@@ -98,6 +109,36 @@ class Product extends Model
     public function submitter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function productOwner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function getSellingPriceAttribute(): float
+    {
+        return (float) $this->price;
+    }
+
+    public function getDiscountPercentageAttribute(): int
+    {
+        $currentPrice = (float) ($this->sale_price ?? $this->price);
+        $mrp = (float) ($this->mrp ?? 0);
+        if ($mrp > $currentPrice && $mrp > 0) {
+            return (int) round((($mrp - $currentPrice) / $mrp) * 100);
+        }
+        return (int) ($this->offer_discount_percentage ?? 0);
+    }
+
+    public function getYouSaveAmountAttribute(): float
+    {
+        $currentPrice = (float) ($this->sale_price ?? $this->price);
+        $mrp = (float) ($this->mrp ?? 0);
+        if ($mrp > $currentPrice) {
+            return round($mrp - $currentPrice, 2);
+        }
+        return 0.0;
     }
 
     public function isPendingApproval(): bool
@@ -312,6 +353,7 @@ class Product extends Model
                 $this->option_stocks = $stocks;
             }
         }
-        $this->decrement('stock', $quantity);
+        $this->stock = max(0, ((int) $this->stock) - $quantity);
+        $this->save();
     }
 }

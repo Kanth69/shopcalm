@@ -1,6 +1,19 @@
 @php
-    $hasDiscount = (isset($product->sale_price) && (float) $product->sale_price < (float) $product->price) || !empty($product->offer_discount_percentage);
-    $discountPct = $product->offer_discount_percentage ?? ($hasDiscount && (float) $product->price > 0 ? round((((float) $product->price - (float) $product->sale_price) / (float) $product->price) * 100) : 0);
+    $currentPrice = (float) ($product->sale_price ?? $product->price);
+    $mrpPrice = (float) ($product->mrp ?? 0);
+    $hasMrp = ($mrpPrice > $currentPrice);
+    $hasOffer = isset($product->sale_price) && ((float) $product->sale_price < (float) $product->price);
+    
+    $hasDiscount = $hasMrp || $hasOffer;
+    $strikethroughPrice = $hasMrp ? $mrpPrice : ($hasOffer ? (float) $product->price : 0);
+    
+    if ($hasMrp) {
+        $discountPct = round((($mrpPrice - $currentPrice) / $mrpPrice) * 100);
+    } elseif ($hasOffer) {
+        $discountPct = $product->offer_discount_percentage ?? round((((float)$product->price - $currentPrice) / (float)$product->price) * 100);
+    } else {
+        $discountPct = 0;
+    }
     $rating = (float)($product->averageRating() ?? 0);
 @endphp
 
@@ -87,11 +100,11 @@
             <div class="min-w-0 pe-1">
                 <div class="d-flex align-items-baseline gap-1.5 flex-wrap">
                     <span class="price fw-bolder text-dark font-monospace" style="font-size: 0.94rem; letter-spacing: -0.3px;">
-                        ₹{{ number_format($product->sale_price ?? $product->price, 2) }}
+                        ₹{{ number_format($currentPrice, 2) }}
                     </span>
-                    @if($hasDiscount)
+                    @if($hasDiscount && $strikethroughPrice > $currentPrice)
                         <span class="text-muted text-decoration-line-through small" style="font-size: 0.7rem;">
-                            ₹{{ number_format($product->price, 2) }}
+                            ₹{{ number_format($strikethroughPrice, 2) }}
                         </span>
                         @if($discountPct > 0)
                             <span class="text-success fw-bold small text-nowrap" style="font-size: 0.72rem;">

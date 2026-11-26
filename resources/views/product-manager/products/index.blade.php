@@ -124,9 +124,9 @@
                     <tr>
                         <th class="ps-4 text-uppercase text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 0.05em;">Product</th>
                         <th class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 0.05em;">Category & Brand</th>
-                        <th class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 0.05em;">Price & Stock</th>
+                        <th class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 0.05em;">Supply Rate & Stock</th>
                         <th class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 0.05em;">Approval Status</th>
-                        <th class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 0.05em;">Badges</th>
+                        <th class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 0.05em;">Policy & Badges</th>
                         <th class="pe-4 text-end text-uppercase text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 0.05em;">Actions</th>
                     </tr>
                 </thead>
@@ -157,7 +157,14 @@
                             <div style="font-size:0.72rem; color:#94a3b8;">{{ $product->brand->name ?? '—' }}</div>
                         </td>
                         <td>
-                            <div class="fw-bold text-dark" style="font-size:0.88rem;">₹{{ number_format($product->price, 2) }}</div>
+                            @if($product->cost_price)
+                                <div class="fw-bold text-dark" style="font-size:0.88rem;">Supply: ₹{{ number_format($product->cost_price, 2) }}</div>
+                            @else
+                                <div class="fw-bold text-dark" style="font-size:0.88rem;">Supply: —</div>
+                            @endif
+                            @if($product->mrp)
+                                <div class="text-muted small" style="font-size:0.72rem;">MRP: ₹{{ number_format($product->mrp, 2) }}</div>
+                            @endif
                             <div class="small {{ $product->stock <= 5 ? 'text-danger fw-bold' : 'text-muted' }}" style="font-size: 0.72rem;">Stock: {{ $product->stock }}</div>
                         </td>
                         <td>
@@ -188,13 +195,24 @@
                             @endif
                         </td>
                         <td>
-                            <div class="d-flex flex-wrap gap-1">
-                                @if($product->featured)
-                                    <span class="badge bg-warning bg-opacity-10 text-warning text-dark border border-warning border-opacity-25" style="border-radius: 6px; font-size: 0.68rem;">Featured</span>
+                            <div class="d-flex flex-column align-items-start gap-1">
+                                @if($product->is_replaceable)
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25" style="border-radius: 6px; font-size: 0.68rem;">
+                                        <i class="bi bi-arrow-repeat me-1"></i>{{ $product->replacement_window_days ?? 7 }}D Replace
+                                    </span>
+                                @else
+                                    <span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary border-opacity-25" style="border-radius: 6px; font-size: 0.68rem;">
+                                        <i class="bi bi-shield-x me-1"></i>No Replace
+                                    </span>
                                 @endif
-                                @if($product->trending)
-                                    <span class="badge bg-info bg-opacity-10 text-info text-dark border border-info border-opacity-25" style="border-radius: 6px; font-size: 0.68rem;">Trending</span>
-                                @endif
+                                <div class="d-flex gap-1 flex-wrap">
+                                    @if($product->featured)
+                                        <span class="badge bg-warning bg-opacity-10 text-warning text-dark border border-warning border-opacity-25" style="border-radius: 6px; font-size: 0.65rem;">Featured</span>
+                                    @endif
+                                    @if($product->trending)
+                                        <span class="badge bg-info bg-opacity-10 text-info text-dark border border-info border-opacity-25" style="border-radius: 6px; font-size: 0.65rem;">Trending</span>
+                                    @endif
+                                </div>
                             </div>
                         </td>
                         <td class="pe-4 text-end">

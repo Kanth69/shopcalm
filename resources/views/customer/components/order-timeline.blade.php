@@ -1,6 +1,14 @@
 @php
+    $normalizedStatus = strtolower(str_replace(['_', '-'], ' ', (string)$order->status));
     $statuses = ['pending', 'confirmed', 'packed', 'shipped', 'out for delivery', 'delivered'];
-    $currentStatusIndex = array_search($order->status, $statuses);
+    $currentStatusIndex = array_search($normalizedStatus, $statuses);
+    if ($currentStatusIndex === false) {
+        $statusMap = [
+            'placed' => 0,
+            'processing' => 1,
+        ];
+        $currentStatusIndex = $statusMap[$normalizedStatus] ?? 0;
+    }
 @endphp
 
 <div class="order-timeline">
@@ -9,7 +17,7 @@
             <div class="timeline-icon">
                 <i class="bi bi-check"></i>
             </div>
-            <div class="timeline-label">{{ ucfirst($status) }}</div>
+            <div class="timeline-label">{{ ucwords($status) }}</div>
         </div>
         @if(!$loop->last)
             <div class="timeline-connector {{ $index < $currentStatusIndex ? 'completed' : '' }}"></div>

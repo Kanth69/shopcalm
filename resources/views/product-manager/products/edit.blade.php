@@ -91,43 +91,79 @@
                 </div>
             </div>
 
-            <!-- 2. Pricing & Inventory -->
+            <!-- 2. Pricing, Supply Terms & Replacement Policy -->
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-                <div class="card-header bg-white py-3 border-bottom">
+                <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
                     <h6 class="mb-0 fw-bold text-dark">
-                        <i class="bi bi-currency-rupee text-primary me-2"></i>2. Pricing & Inventory
+                        <i class="bi bi-currency-rupee text-primary me-2"></i>2. Pricing, Supply Terms & Replacement Policy
                     </h6>
+                    <span class="badge bg-light text-dark border fw-normal px-2.5 py-1" style="font-size:0.75rem;">
+                        <i class="bi bi-lock-fill me-1 text-primary"></i> Partner Confidential Supply
+                    </span>
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label class="form-label fw-bold text-dark small">Cost Price (CP)</label>
+                            <label class="form-label fw-bold text-dark small">M.R.P. (Package Strikethrough) <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted">₹</span>
-                                <input type="number" name="cost_price" step="0.01" min="0" class="form-control @error('cost_price') is-invalid @enderror" value="{{ old('cost_price', $product->cost_price) }}" placeholder="e.g. 1800.00">
+                                <input type="number" name="mrp" id="vendor_input_mrp" step="0.01" min="0" class="form-control fw-bold @error('mrp') is-invalid @enderror" value="{{ old('mrp', $product->mrp) }}" required placeholder="e.g. 999.00">
                             </div>
-                            <div class="form-text text-muted" style="font-size: 0.72rem;">Procurement / wholesale cost (internal only).</div>
-                            @error('cost_price') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Manufacturer package printed rate.</div>
+                            @error('mrp') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="col-md-4">
-                            <label class="form-label fw-bold text-dark small">Selling Price (SP) <span class="text-danger">*</span></label>
+                            <label class="form-label fw-bold text-dark small">Wholesale Supply Rate (CP) <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted">₹</span>
-                                <input type="number" name="price" step="0.01" min="0" class="form-control fw-bold @error('price') is-invalid @enderror" value="{{ old('price', $product->price) }}" required>
+                                <input type="number" name="cost_price" step="0.01" min="0" class="form-control fw-bold @error('cost_price') is-invalid @enderror" value="{{ old('cost_price', $product->cost_price) }}" required placeholder="e.g. 250.00">
                             </div>
-                            <div class="form-text text-muted" style="font-size: 0.72rem;">Customer price before offers.</div>
-                            @error('price') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Supply rate to ShopCalm (reviewed by Admin).</div>
+                            @error('cost_price') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="col-md-4">
                             <label class="form-label fw-bold text-dark small">Stock Inventory <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-boxes"></i></span>
-                                <input type="number" name="stock" min="0" class="form-control fw-bold @error('stock') is-invalid @enderror" value="{{ old('stock', $product->stock) }}" required>
+                                <input type="number" name="stock" min="0" class="form-control fw-bold @error('stock') is-invalid @enderror" value="{{ old('stock', $product->stock) }}" required placeholder="e.g. 50">
                                 <span class="input-group-text bg-light text-muted small">Units</span>
                             </div>
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Available quantity for dispatch.</div>
                             @error('stock') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                        </div>
+                    </div>
+
+                    {{-- Confidential Terms Notice --}}
+                    <div class="mt-3 p-2.5 rounded-3 bg-light border d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-check text-success fs-5 flex-shrink-0"></i>
+                        <span class="small text-muted" style="font-size: 0.75rem;">
+                            <strong>Partner Confidentiality:</strong> Your Wholesale Supply Rate is strictly private. ShopCalm sets customer pricing and absorbs marketing discounts.
+                        </span>
+                    </div>
+
+                    {{-- Replacement Policy Settings (Product Level) --}}
+                    <hr class="my-3 text-secondary opacity-25">
+                    <div class="row align-items-center g-3">
+                        <div class="col-md-7">
+                            <div class="form-check form-switch d-flex align-items-center gap-2 ps-0">
+                                <input class="form-check-input ms-0 mt-0" type="checkbox" name="is_replaceable" id="is_replaceable_switch" value="1" {{ old('is_replaceable', $product->is_replaceable) ? 'checked' : '' }} onchange="toggleReplacementWindow(this)" style="cursor: pointer; width: 2.4rem; height: 1.25rem;">
+                                <label class="form-check-label fw-bold text-dark small mb-0" for="is_replaceable_switch" style="cursor: pointer;">
+                                    Provide Replacement for Defective / Damaged Items (Default: OFF / No Replacement)
+                                </label>
+                            </div>
+                            <div class="form-text text-muted mt-1 ps-1" style="font-size: 0.72rem;">
+                                Default policy is <strong>Non-Returnable & Non-Replaceable</strong>. Enable only if you provide replacement inventory for verified transit damage or defect.
+                            </div>
+                        </div>
+
+                        <div class="col-md-5" id="replacement_window_wrapper" style="display: {{ old('is_replaceable', $product->is_replaceable) ? 'block' : 'none' }};">
+                            <label class="form-label fw-bold text-dark small">Replacement Window (Days)</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" name="replacement_window_days" id="replacement_window_days" min="1" max="30" class="form-control fw-bold" value="{{ old('replacement_window_days', $product->replacement_window_days ?? 7) }}" placeholder="7">
+                                <span class="input-group-text bg-light text-muted">Days after delivery</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -149,12 +185,12 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-dark small">Option Category / Type</label>
                             <select name="option_type" id="option_type_select" class="form-select fw-semibold" onchange="applyPresetOptions()">
-                                <option value="size" {{ old('option_type', $product->option_type ?? 'size') === 'size' ? 'selected' : '' }}>👕 Clothing Sizes (S, M, L, XL, XXL)</option>
-                                <option value="waist" {{ old('option_type', $product->option_type) === 'waist' ? 'selected' : '' }}>👖 Waist Sizes (28, 30, 32, 34, 36)</option>
-                                <option value="color" {{ old('option_type', $product->option_type) === 'color' ? 'selected' : '' }}>🎨 Colors (Black, Blue, Red, White)</option>
-                                <option value="size_color" {{ old('option_type', $product->option_type) === 'size_color' ? 'selected' : '' }}>🎨 + 👕 Double Variant: Color + Clothing Size (e.g. Blue - S, Blue - M)</option>
-                                <option value="waist_color" {{ old('option_type', $product->option_type) === 'waist_color' ? 'selected' : '' }}>🎨 + 👖 Double Variant: Color + Waist Size (e.g. Black - 30, Black - 32)</option>
-                                <option value="custom" {{ old('option_type', $product->option_type) === 'custom' ? 'selected' : '' }}>➕ Custom Options</option>
+                                <option value="size" {{ old('option_type', $product->option_type ?? 'size') === 'size' ? 'selected' : '' }}>Clothing Sizes (S, M, L, XL, XXL)</option>
+                                <option value="waist" {{ old('option_type', $product->option_type) === 'waist' ? 'selected' : '' }}>Waist Sizes (28, 30, 32, 34, 36)</option>
+                                <option value="color" {{ old('option_type', $product->option_type) === 'color' ? 'selected' : '' }}>Colors (Black, Blue, Red, White)</option>
+                                <option value="size_color" {{ old('option_type', $product->option_type) === 'size_color' ? 'selected' : '' }}>Double Variant: Color + Clothing Size (e.g. Blue - S, Blue - M)</option>
+                                <option value="waist_color" {{ old('option_type', $product->option_type) === 'waist_color' ? 'selected' : '' }}>Double Variant: Color + Waist Size (e.g. Black - 30, Black - 32)</option>
+                                <option value="custom" {{ old('option_type', $product->option_type) === 'custom' ? 'selected' : '' }}>Custom Options</option>
                             </select>
                         </div>
                         <div class="col-md-6 d-flex align-items-end">
@@ -971,6 +1007,13 @@
         categorySelect.addEventListener('change', updateBrands);
         updateBrands();
     });
+
+    function toggleReplacementWindow(checkbox) {
+        const wrapper = document.getElementById('replacement_window_wrapper');
+        if (wrapper) {
+            wrapper.style.display = checkbox.checked ? 'block' : 'none';
+        }
+    }
 </script>
 @endpush
 @endsection

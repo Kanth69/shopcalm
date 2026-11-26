@@ -16,7 +16,7 @@ class StoreCartRequest extends FormRequest
     {
         return [
             'product_id'      => 'required|exists:products,id',
-            'quantity'        => 'required|integer|min:1',
+            'quantity'        => 'required|integer|min:1|max:10',
             'selected_option' => 'nullable|string|max:100',
         ];
     }

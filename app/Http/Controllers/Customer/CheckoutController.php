@@ -346,26 +346,10 @@ class CheckoutController extends Controller
                 return response()->json(['success' => false, 'message' => 'Please log in to place an order.'], 401);
             }
 
-            // Enforce rule: Customer with any pending order cannot place a new order until they cancel or proceed with it
+            // Auto-retire any stale uncompleted pending order so customer checkout is 100% seamless
             $pendingOrder = $this->checkoutService->getActivePendingOrder($user);
-            if ($pendingOrder) {
-                $msg = "You already have a pending order (#{$pendingOrder->order_number}). You cannot place a new order until you cancel or proceed with that order.";
-                if ($request->ajax() || $request->wantsJson()) {
-                    return response()->json([
-                        'success'              => false,
-                        'has_pending_order'    => true,
-                        'pending_order_id'     => $pendingOrder->id,
-                        'pending_order_number' => $pendingOrder->order_number,
-                        'pending_order_total'  => number_format((float) $pendingOrder->total_amount, 2),
-                        'proceed_url'          => route('checkout.payment_failed', $pendingOrder),
-                        'order_url'            => route('account.orders.show', $pendingOrder),
-                        'cancel_url'           => route('account.orders.cancel', $pendingOrder),
-                        'message'              => $msg,
-                    ], 422);
-                }
-
-                return redirect()->route('checkout.payment_failed', $pendingOrder)
-                    ->with('toast', ['type' => 'warning', 'title' => 'Pending Order Exists', 'message' => $msg]);
+            if ($pendingOrder && $pendingOrder->payment_status !== 'paid') {
+                $this->checkoutService->cancelStalePendingOrder($pendingOrder, 'Superseded by new checkout attempt.');
             }
 
             // Check if wallet balance 100% covers the order (Zero remaining to pay)
@@ -390,13 +374,17 @@ class CheckoutController extends Controller
             $baseDeliveryCharge = isset($pincodeCheck['delivery_charge']) ? (float) $pincodeCheck['delivery_charge'] : $defaultShippingFee;
             $shippingFee = ($subtotalAmount >= $freeShippingMin) ? 0.00 : $baseDeliveryCharge;
 
-            $payableBeforeWallet = max(0, $subtotalAmount - $discountAmount - $offerDiscount + $shippingFee);
+            $netSubtotalAmount = max(0, $subtotalAmount - $discountAmount - $offerDiscount);
             $useWallet = !empty($data['use_wallet']) || Session::get('use_wallet', false);
             $userWallet = $user ? app(\App\Services\WalletService::class)->getOrCreateWallet($user) : null;
             $walletBalance = ($userWallet && $userWallet->status === 'active') ? (float) $userWallet->balance : 0.00;
 
-            $isFullyPaidByWallet = ($useWallet && $walletBalance >= $payableBeforeWallet);
-            $isZeroAmountOrder = ($payableBeforeWallet <= 0) || $isFullyPaidByWallet;
+            $usableWalletAmount = ($useWallet && $walletBalance > 0)
+                ? \App\Services\WalletService::calculateUsableWalletAmount($walletBalance, $netSubtotalAmount)
+                : 0.00;
+
+            $payableRemaining = max(0, $netSubtotalAmount - $usableWalletAmount) + $shippingFee;
+            $isZeroAmountOrder = ($payableRemaining <= 0);
 
             // IF 100% COVERED BY WALLET OR OFFERS: Bypass payment gateway (no 0.00 gateway error!), debit wallet & confirm order immediately!
             if ($isZeroAmountOrder) {

@@ -223,9 +223,15 @@ class CheckoutController extends BaseApiController
             if ($originalPrice < $unitPrice) {
                 $originalPrice = $unitPrice;
             }
-            $totalMrp += round($originalPrice * $item->quantity, 2);
-            if ($originalPrice > $unitPrice) {
-                $totalDiscount += ($originalPrice - $unitPrice) * $item->quantity;
+            $mrp = (float) ($product && $product->mrp && (float) $product->mrp > 0
+                ? $product->mrp
+                : ($originalPrice > 0 ? $originalPrice : ($unitPrice > 0 ? round($unitPrice * 1.25, 2) : 0)));
+            if ($mrp < $unitPrice) {
+                $mrp = $unitPrice;
+            }
+            $totalMrp += round($mrp * $item->quantity, 2);
+            if ($mrp > $unitPrice) {
+                $totalDiscount += ($mrp - $unitPrice) * $item->quantity;
             }
         }
         $totalDiscount = round($totalDiscount, 2);
@@ -373,20 +379,10 @@ class CheckoutController extends BaseApiController
             : ($user->email ?? 'customer@shopcalm.in');
 
         try {
-            // Check if user already has an active pending order (Amazon/Flipkart Single-Order Pattern)
+            // Auto-retire any stale uncompleted pending order so checkout is 100% seamless without 422 traps
             $pendingOrder = $this->checkoutService->getActivePendingOrder($user);
             if ($pendingOrder && $pendingOrder->payment_status !== 'paid') {
-                return $this->sendError(
-                    "You already have a pending order (#{$pendingOrder->order_number}). Please proceed with or cancel that order.",
-                    [
-                        'has_pending_order'    => true,
-                        'pending_order_id'     => (int) $pendingOrder->id,
-                        'pending_order_number' => $pendingOrder->order_number,
-                        'pending_order_total'  => (float) $pendingOrder->total_amount,
-                        'payment_method'       => $pendingOrder->payment_method,
-                    ],
-                    422
-                );
+                $this->checkoutService->cancelStalePendingOrder($pendingOrder, 'Superseded by new mobile checkout attempt.');
             }
 
             if ($validated['payment_method'] === 'cod') {

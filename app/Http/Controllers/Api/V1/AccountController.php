@@ -78,21 +78,36 @@ class AccountController extends BaseApiController
                     $unitPrice = (float) ($item->unit_price ?? $item->price ?? 0);
                     $qty = (int) ($item->quantity ?? 1);
                     $totPrice = (float) ($item->total_price ?? $item->subtotal ?? ($unitPrice * $qty));
+                    $mrp = (float) ($item->product?->mrp && (float) $item->product?->mrp > 0
+                        ? $item->product->mrp
+                        : ($item->original_price && (float) $item->original_price > $unitPrice
+                            ? $item->original_price
+                            : ($unitPrice > 0 ? round($unitPrice * 1.25, 2) : $unitPrice)));
+                    if ($mrp < $unitPrice) {
+                        $mrp = $unitPrice;
+                    }
+                    $isReplaceable = (bool) ($item->product?->is_replaceable ?? false);
+                    $replacementDays = (int) ($item->product?->replacement_window_days ?? 0);
+
                     return [
-                        'id'              => $item->id,
-                        'product_id'      => $item->product_id,
-                        'product_slug'    => $item->product?->slug,
-                        'product_name'    => $item->product_name ?? $item->product?->name ?? 'Product',
-                        'brand_name'      => $item->product?->brand?->name,
-                        'category_name'   => $item->product?->category?->name,
-                        'product_image'   => $imgPath ? (str_starts_with($imgPath, 'http') ? $imgPath : asset('storage/' . $imgPath)) : null,
-                        'selected_option' => $item->selected_option,
-                        'quantity'        => $qty,
-                        'original_price'  => (float) ($item->original_price ?? $unitPrice),
-                        'unit_price'      => $unitPrice,
-                        'price'           => $unitPrice,
-                        'total_price'     => $totPrice,
-                        'subtotal'        => $totPrice,
+                        'id'                       => $item->id,
+                        'product_id'               => $item->product_id,
+                        'product_slug'             => $item->product?->slug,
+                        'product_name'             => $item->product_name ?? $item->product?->name ?? 'Product',
+                        'brand_name'               => $item->product?->brand?->name,
+                        'category_name'            => $item->product?->category?->name,
+                        'product_image'            => $imgPath ? (str_starts_with($imgPath, 'http') ? $imgPath : asset('storage/' . $imgPath)) : null,
+                        'selected_option'          => $item->selected_option,
+                        'quantity'                 => $qty,
+                        'original_price'           => $mrp,
+                        'mrp'                      => $mrp,
+                        'unit_price'               => $unitPrice,
+                        'price'                    => $unitPrice,
+                        'total_price'              => $totPrice,
+                        'subtotal'                 => $totPrice,
+                        'is_replaceable'           => $isReplaceable,
+                        'replacement_window_days'  => $replacementDays,
+                        'replacement_policy_badge' => $isReplaceable ? "{$replacementDays}D Replacement" : "Non-Returnable",
                     ];
                 }),
             ];
@@ -240,23 +255,41 @@ class AccountController extends BaseApiController
                 $qty = (int) ($item->quantity ?? 1);
                 $totPrice = (float) ($item->total_price ?? $item->subtotal ?? ($unitPrice * $qty));
                 $sku = $item->product?->sku ?: ('SC-' . str_pad((string) ($item->product_id ?? $item->id), 5, '0', STR_PAD_LEFT));
+                $mrp = (float) ($item->product?->mrp && (float) $item->product?->mrp > 0
+                    ? $item->product->mrp
+                    : ($item->original_price && (float) $item->original_price > $unitPrice
+                        ? $item->original_price
+                        : ($unitPrice > 0 ? round($unitPrice * 1.25, 2) : $unitPrice)));
+                if ($mrp < $unitPrice) {
+                    $mrp = $unitPrice;
+                }
+                $isReplaceable = (bool) ($item->product?->is_replaceable ?? false);
+                $replacementDays = (int) ($item->product?->replacement_window_days ?? 0);
+
                 return [
-                    'id'              => $item->id,
-                    'product_id'      => $item->product_id,
-                    'product_slug'    => $item->product?->slug,
-                    'product_name'    => $item->product_name ?? $item->product?->name ?? 'Product',
-                    'sku'             => $sku,
-                    'brand_name'      => $item->product?->brand?->name,
-                    'category_name'   => $item->product?->category?->name,
-                    'product_image'   => $imgPath ? (str_starts_with($imgPath, 'http') ? $imgPath : asset('storage/' . $imgPath)) : null,
-                    'selected_option' => $item->selected_option,
-                    'quantity'        => $qty,
-                    'original_price'  => (float) ($item->original_price ?? $unitPrice),
-                    'offer_discount'  => (float) ($item->offer_discount ?? max(0, (float) ($item->original_price ?? $unitPrice) - $unitPrice)),
-                    'unit_price'      => $unitPrice,
-                    'price'           => $unitPrice,
-                    'total_price'     => $totPrice,
-                    'subtotal'        => $totPrice,
+                    'id'                       => $item->id,
+                    'product_id'               => $item->product_id,
+                    'product_slug'             => $item->product?->slug,
+                    'product_name'             => $item->product_name ?? $item->product?->name ?? 'Product',
+                    'sku'                      => $sku,
+                    'brand_name'               => $item->product?->brand?->name,
+                    'category_name'            => $item->product?->category?->name,
+                    'product_image'            => $imgPath ? (str_starts_with($imgPath, 'http') ? $imgPath : asset('storage/' . $imgPath)) : null,
+                    'selected_option'          => $item->selected_option,
+                    'quantity'                 => $qty,
+                    'original_price'           => $mrp,
+                    'mrp'                      => $mrp,
+                    'offer_discount'           => (float) ($item->offer_discount ?? max(0, $mrp - $unitPrice)),
+                    'unit_price'               => $unitPrice,
+                    'price'                    => $unitPrice,
+                    'total_price'              => $totPrice,
+                    'subtotal'                 => $totPrice,
+                    'is_replaceable'           => $isReplaceable,
+                    'replacement_window_days'  => $replacementDays,
+                    'replacement_policy_badge' => $isReplaceable ? "{$replacementDays}D Replacement" : "Non-Returnable",
+                    'policy_description'       => $isReplaceable
+                        ? "Standard replacement within {$replacementDays} days for verified transit damage or defect."
+                        : "Zero return policy. Standard non-returnable non-refundable sale.",
                 ];
             }),
         ], 'Order details retrieved.');

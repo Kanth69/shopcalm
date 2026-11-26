@@ -182,7 +182,7 @@
 
     $stepIdx = in_array($s, ['cancelled', 'failed']) ? false : ($stageRankMap[$s] ?? false);
 
-    $thumbs     = $order->items->take(3)->map(fn($i) => $i->product?->main_image)->filter();
+    $thumbs     = $order->items->take(3)->map(fn($i) => $i->display_image ?? $i->product?->main_image)->filter();
     $extraCount = max(0, $order->items->count() - 3);
 @endphp
 
@@ -203,7 +203,7 @@
                         @forelse($thumbs as $ti => $img)
                         <div class="rounded-3 border-2 border-white overflow-hidden flex-shrink-0"
                              style="width:50px; height:50px; margin-left:{{ $ti > 0 ? '-14px' : '0' }}; z-index:{{ 10-$ti }}; position:relative; border:2px solid white; box-shadow:0 1px 4px rgba(0,0,0,0.12);">
-                            <img src="{{ asset('storage/'.$img) }}" alt="product"
+                            <img src="{{ str_starts_with($img, 'http') ? $img : asset('storage/'.$img) }}" alt="product"
                                  style="width:100%; height:100%; object-fit:cover;">
                         </div>
                         @empty

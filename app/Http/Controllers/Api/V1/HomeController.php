@@ -148,7 +148,8 @@ class HomeController extends BaseApiController
 
         // 5. Consolidated Products Query with Eager Loading (Page 1)
         $productsPaginator = Product::select([
-                'id', 'category_id', 'brand_id', 'product_type', 'name', 'slug', 'sku', 'price',
+                'id', 'category_id', 'brand_id', 'product_type', 'name', 'slug', 'sku', 'price', 'mrp',
+                'is_replaceable', 'replacement_window_days',
                 'stock', 'featured', 'trending', 'status', 'main_image',
                 'has_options', 'option_type', 'option_stocks', 'option_images',
                 'created_at'
@@ -224,25 +225,46 @@ class HomeController extends BaseApiController
 
         $sellingPrice = (float) $product->price;
         $offerPrice = isset($product->sale_price) ? (float) $product->sale_price : null;
-        $discountPct = (int) ($product->offer_discount_percentage ?? 0);
-        if ($offerPrice !== null && $offerPrice < $sellingPrice && $discountPct <= 0) {
-            $discountPct = (int) round((($sellingPrice - $offerPrice) / $sellingPrice) * 100);
+        $finalPrice = $offerPrice !== null && $offerPrice < $sellingPrice ? $offerPrice : $sellingPrice;
+        $mrp = $product->mrp && $product->mrp > 0 ? (float) $product->mrp : ($sellingPrice > 0 ? round($sellingPrice * 1.25, 2) : 0.0);
+        if ($mrp < $finalPrice) {
+            $mrp = $finalPrice;
         }
+        
+        // Calculate discount percentage based on MRP vs final deal price
+        $discountPct = (int) ($product->offer_discount_percentage ?? 0);
+        if ($mrp > $finalPrice && $mrp > 0) {
+            $discountPct = max($discountPct, (int) round((($mrp - $finalPrice) / $mrp) * 100));
+        }
+        $youSaveAmount = max(0.0, round($mrp - $finalPrice, 2));
+
+        $isReplaceable = (bool) ($product->is_replaceable ?? false);
+        $replacementWindow = $isReplaceable ? (int) ($product->replacement_window_days ?? 7) : 0;
+        $policyBadge = $isReplaceable ? "{$replacementWindow} Days Replacement Only" : "Non-Returnable & Non-Replaceable";
+        $policyDesc = $isReplaceable 
+            ? "Free replacement within {$replacementWindow} days in case of verified manufacturing defect or damage." 
+            : "This item is strictly non-returnable and non-replaceable. 0% Returns policy.";
 
         return [
-            'id'                  => $product->id,
-            'category_id'         => $product->category_id ?? 0,
-            'brand_id'            => $product->brand_id,
-            'product_type'        => $product->product_type,
-            'name'                => $product->name,
-            'slug'                => $product->slug,
-            'sku'                 => $product->sku,
-            'price'               => $sellingPrice,
-            'selling_price'       => $offerPrice !== null && $offerPrice < $sellingPrice ? $offerPrice : $sellingPrice,
-            'mrp'                 => $sellingPrice,
-            'sale_price'          => $offerPrice,
-            'offer_price'         => $offerPrice,
-            'discount_percentage' => $discountPct,
+            'id'                        => $product->id,
+            'category_id'               => $product->category_id ?? 0,
+            'brand_id'                  => $product->brand_id,
+            'product_type'              => $product->product_type,
+            'name'                      => $product->name,
+            'slug'                      => $product->slug,
+            'sku'                       => $product->sku,
+            'price'                     => $finalPrice,
+            'selling_price'             => $finalPrice,
+            'original_price'            => $mrp,
+            'mrp'                       => $mrp,
+            'sale_price'                => $offerPrice,
+            'offer_price'               => $offerPrice,
+            'discount_percentage'       => $discountPct,
+            'you_save_amount'           => $youSaveAmount,
+            'is_replaceable'            => $isReplaceable,
+            'replacement_window_days'   => $replacementWindow,
+            'replacement_policy_badge'  => $policyBadge,
+            'policy_description'        => $policyDesc,
             'stock'               => (int) $product->stock,
             'stock_quantity'      => (int) $product->stock,
             'in_stock'            => $product->stock > 0,

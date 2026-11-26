@@ -23,7 +23,7 @@
                     <tr>
                         <th class="ps-4" style="font-size: 0.72rem;">Product</th>
                         <th style="font-size: 0.72rem;">Category & Brand</th>
-                        <th style="font-size: 0.72rem;">Price</th>
+                        <th style="font-size: 0.72rem;">Pricing (CP & MRP)</th>
                         <th style="font-size: 0.72rem;">Stock</th>
                         <th style="font-size: 0.72rem;">Submitted</th>
                         <th class="pe-4 text-end" style="font-size: 0.72rem;">Action</th>
@@ -52,16 +52,26 @@
                             <div class="text-muted" style="font-size: 0.72rem;">{{ $prod->brand->name ?? '—' }}</div>
                         </td>
                         <td>
-                            <div class="fw-bold text-dark">₹{{ number_format($prod->price, 2) }}</div>
+                            <div class="d-flex flex-column">
+                                <span class="fw-bold text-dark" style="font-size: 0.88rem;">
+                                    ₹{{ number_format($prod->cost_price ?? $prod->price, 2) }}
+                                    <span class="badge bg-light text-muted border ms-1" style="font-size: 0.65rem;">Wholesale CP</span>
+                                </span>
+                                @if($prod->mrp && $prod->mrp > 0)
+                                    <span class="text-muted small" style="font-size: 0.74rem;">
+                                        M.R.P.: <span class="text-decoration-line-through">₹{{ number_format($prod->mrp, 2) }}</span>
+                                    </span>
+                                @endif
+                            </div>
                         </td>
                         <td>
                             <span class="small fw-semibold text-dark">{{ $prod->stock }} units</span>
                         </td>
                         <td>
-                            <span class="badge bg-warning bg-opacity-10 text-warning text-dark border border-warning border-opacity-25 rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">
-                                <i class="bi bi-hourglass-split me-1 text-warning"></i> In Review
+                            <span class="text-muted small" style="font-size: 0.75rem;">
+                                <i class="bi bi-calendar3 me-1"></i>{{ $prod->created_at->format('d M Y') }}
                             </span>
-                            <div class="text-muted" style="font-size: 0.7rem;">{{ $prod->created_at->diffForHumans() }}</div>
+                            <div class="text-muted" style="font-size: 0.70rem;">{{ $prod->created_at->diffForHumans() }}</div>
                         </td>
                         <td class="pe-4 text-end">
                             <a href="{{ route('product-manager.products.edit', $prod) }}" class="btn btn-sm btn-outline-primary rounded-pill px-3" title="Edit Specifications">

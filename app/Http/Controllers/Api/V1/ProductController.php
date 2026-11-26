@@ -170,9 +170,33 @@ class ProductController extends BaseApiController
         $this->offerService->applyOfferDiscountsToProducts($products->getCollection());
         $products->getCollection()->transform(function ($product) {
             $product->main_image_url = $product->main_image && !str_starts_with($product->main_image, 'http') ? asset('storage/' . $product->main_image) : ($product->main_image ?? null);
-            $product->selling_price = (float) $product->price;
-            $product->offer_price = isset($product->sale_price) ? (float) $product->sale_price : null;
-            $product->discount_percentage = $product->offer_discount_percentage ?? 0;
+            $sellingPrice = (float) $product->price;
+            $offerPrice = isset($product->sale_price) ? (float) $product->sale_price : null;
+            $finalPrice = $offerPrice !== null && $offerPrice < $sellingPrice ? $offerPrice : $sellingPrice;
+            $mrp = $product->mrp && $product->mrp > 0 ? (float) $product->mrp : ($sellingPrice > 0 ? round($sellingPrice * 1.25, 2) : 0.0);
+            if ($mrp < $finalPrice) {
+                $mrp = $finalPrice;
+            }
+
+            $discountPct = (int) ($product->offer_discount_percentage ?? 0);
+            if ($mrp > $finalPrice && $mrp > 0) {
+                $discountPct = max($discountPct, (int) round((($mrp - $finalPrice) / $mrp) * 100));
+            }
+
+            $product->price = $finalPrice;
+            $product->selling_price = $finalPrice;
+            $product->original_price = $mrp;
+            $product->mrp = $mrp;
+            $product->offer_price = $offerPrice;
+            $product->discount_percentage = $discountPct;
+            $product->you_save_amount = max(0.0, round($mrp - $finalPrice, 2));
+
+            $isReplaceable = (bool) ($product->is_replaceable ?? false);
+            $window = $isReplaceable ? (int) ($product->replacement_window_days ?? 7) : 0;
+            $product->is_replaceable = $isReplaceable;
+            $product->replacement_window_days = $window;
+            $product->replacement_policy_badge = $isReplaceable ? "{$window} Days Replacement Only" : "Non-Returnable & Non-Replaceable";
+
             $product->average_rating = $product->averageRating();
             return $product;
         });
@@ -231,9 +255,36 @@ class ProductController extends BaseApiController
         }
 
         // Compute aggregations
-        $product->selling_price = (float) $product->price;
-        $product->offer_price = isset($product->sale_price) ? (float) $product->sale_price : null;
-        $product->discount_percentage = $product->offer_discount_percentage ?? 0;
+        $sellingPrice = (float) $product->price;
+        $offerPrice = isset($product->sale_price) ? (float) $product->sale_price : null;
+        $finalPrice = $offerPrice !== null && $offerPrice < $sellingPrice ? $offerPrice : $sellingPrice;
+        $mrp = $product->mrp && $product->mrp > 0 ? (float) $product->mrp : ($sellingPrice > 0 ? round($sellingPrice * 1.25, 2) : 0.0);
+        if ($mrp < $finalPrice) {
+            $mrp = $finalPrice;
+        }
+
+        $discountPct = (int) ($product->offer_discount_percentage ?? 0);
+        if ($mrp > $finalPrice && $mrp > 0) {
+            $discountPct = max($discountPct, (int) round((($mrp - $finalPrice) / $mrp) * 100));
+        }
+
+        $product->price = $finalPrice;
+        $product->selling_price = $finalPrice;
+        $product->original_price = $mrp;
+        $product->mrp = $mrp;
+        $product->offer_price = $offerPrice;
+        $product->discount_percentage = $discountPct;
+        $product->you_save_amount = max(0.0, round($mrp - $finalPrice, 2));
+
+        $isReplaceable = (bool) ($product->is_replaceable ?? false);
+        $window = $isReplaceable ? (int) ($product->replacement_window_days ?? 7) : 0;
+        $product->is_replaceable = $isReplaceable;
+        $product->replacement_window_days = $window;
+        $product->replacement_policy_badge = $isReplaceable ? "{$window} Days Replacement Only" : "Non-Returnable & Non-Replaceable";
+        $product->policy_description = $isReplaceable 
+            ? "Free replacement within {$window} days in case of verified manufacturing defect or damage." 
+            : "This item is strictly non-returnable and non-replaceable. 0% Returns policy.";
+
         $product->average_rating = $product->averageRating();
         $product->total_reviews = $product->reviews->count();
         $product->youtube_embed_url = $product->getYoutubeEmbedUrl();
@@ -259,9 +310,24 @@ class ProductController extends BaseApiController
         $this->offerService->applyOfferDiscountsToProducts($relatedProducts);
         $relatedProducts->transform(function ($rp) {
             $rp->main_image_url = $rp->main_image && !str_starts_with($rp->main_image, 'http') ? asset('storage/' . $rp->main_image) : ($rp->main_image ?? null);
-            $rp->selling_price = (float) $rp->price;
-            $rp->offer_price = isset($rp->sale_price) ? (float) $rp->sale_price : null;
-            $rp->discount_percentage = $rp->offer_discount_percentage ?? 0;
+            $rpSellPrice = (float) $rp->price;
+            $rpOfferPrice = isset($rp->sale_price) ? (float) $rp->sale_price : null;
+            $rpFinalPrice = $rpOfferPrice !== null && $rpOfferPrice < $rpSellPrice ? $rpOfferPrice : $rpSellPrice;
+            $rpMrp = $rp->mrp && $rp->mrp > 0 ? (float) $rp->mrp : ($rpSellPrice > 0 ? round($rpSellPrice * 1.25, 2) : 0.0);
+            if ($rpMrp < $rpFinalPrice) {
+                $rpMrp = $rpFinalPrice;
+            }
+            $rpDiscPct = (int) ($rp->offer_discount_percentage ?? 0);
+            if ($rpMrp > $rpFinalPrice && $rpMrp > 0) {
+                $rpDiscPct = max($rpDiscPct, (int) round((($rpMrp - $rpFinalPrice) / $rpMrp) * 100));
+            }
+            $rp->price = $rpFinalPrice;
+            $rp->selling_price = $rpFinalPrice;
+            $rp->original_price = $rpMrp;
+            $rp->mrp = $rpMrp;
+            $rp->offer_price = $rpOfferPrice;
+            $rp->discount_percentage = $rpDiscPct;
+            $rp->you_save_amount = max(0.0, round($rpMrp - $rpFinalPrice, 2));
             $rp->average_rating = $rp->averageRating();
             return $rp;
         });
@@ -385,7 +451,7 @@ class ProductController extends BaseApiController
             ->with(['category:id,name,slug', 'brand:id,name,slug'])
             ->withAvg(['reviews' => fn($q) => $q->where('status', 'Approved')], 'rating')
             ->take(4)
-            ->get(['id', 'name', 'slug', 'category_id', 'brand_id', 'price', 'stock', 'main_image']);
+            ->get(['id', 'name', 'slug', 'category_id', 'brand_id', 'price', 'mrp', 'stock', 'main_image']);
 
         $this->offerService->applyOfferDiscountsToProducts($previewProducts);
 
@@ -394,16 +460,24 @@ class ProductController extends BaseApiController
             if ($img && !str_starts_with($img, 'http')) {
                 $img = asset('storage/' . $img);
             }
+            $sellPrice = (float) ($p->sale_price ?? $p->price);
+            $mrp = $p->mrp && $p->mrp > 0 ? (float) $p->mrp : round($sellPrice * 1.25, 2);
+            if ($mrp < $sellPrice) {
+                $mrp = $sellPrice;
+            }
+            $discPct = $mrp > $sellPrice ? (int) round((($mrp - $sellPrice) / $mrp) * 100) : 0;
             return [
-                'id'            => (int) $p->id,
-                'name'          => $p->name,
-                'slug'          => $p->slug,
-                'selling_price' => (float) ($p->sale_price ?? $p->price),
-                'mrp'           => (float) $p->price,
-                'image_url'     => $img,
-                'category_name' => $p->category->name ?? null,
-                'brand_name'    => $p->brand->name ?? null,
-                'rating'        => (float) ($p->reviews_avg_rating ?? 4.5),
+                'id'                  => (int) $p->id,
+                'name'                => $p->name,
+                'slug'                => $p->slug,
+                'selling_price'       => $sellPrice,
+                'mrp'                 => $mrp,
+                'discount_percentage' => $discPct,
+                'you_save_amount'     => max(0.0, round($mrp - $sellPrice, 2)),
+                'image_url'           => $img,
+                'category_name'       => $p->category->name ?? null,
+                'brand_name'          => $p->brand->name ?? null,
+                'rating'              => (float) ($p->reviews_avg_rating ?? 4.5),
             ];
         });
 

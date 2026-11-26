@@ -86,6 +86,20 @@ class OfferController extends BaseApiController
             $mainUrl = !empty($mainImg) ? (str_starts_with($mainImg, 'http') ? $mainImg : asset('storage/' . ltrim($mainImg, '/'))) : null;
             $basePrice = (float) ($product->price ?? 0);
             $salePrice = isset($product->sale_price) ? (float) $product->sale_price : $basePrice;
+            $mrp = (float) ($product->mrp && (float) $product->mrp > 0
+                ? $product->mrp
+                : ($basePrice > 0 ? round($basePrice * 1.25, 2) : $salePrice));
+            if ($mrp < $salePrice) {
+                $mrp = $salePrice;
+            }
+
+            $discountPct = ($mrp > $salePrice && $mrp > 0)
+                ? (int) round((($mrp - $salePrice) / $mrp) * 100)
+                : (int) ($product->offer_discount_percentage ?? 0);
+
+            $isReplaceable = (bool) ($product->is_replaceable ?? false);
+            $replacementDays = (int) ($product->replacement_window_days ?? 0);
+            $policyBadge = $isReplaceable ? "{$replacementDays}D Replacement" : "Non-Returnable";
 
             return [
                 'id'                        => $product->id,
@@ -96,14 +110,19 @@ class OfferController extends BaseApiController
                 'category_id'               => $product->category_id,
                 'category_name'             => $product->category?->name,
                 'brand_name'                => $product->brand?->name,
-                'price'                     => $basePrice,
-                'mrp'                       => $basePrice,
+                'price'                     => $salePrice,
+                'mrp'                       => $mrp,
+                'original_price'            => $mrp,
                 'selling_price'             => $salePrice,
                 'sale_price'                => $salePrice,
                 'offer_price'               => $salePrice,
-                'discount_percentage'       => $product->offer_discount_percentage ?? 0,
-                'offer_discount_percentage' => $product->offer_discount_percentage ?? 0,
+                'discount_percentage'       => $discountPct,
+                'offer_discount_percentage' => (int) ($product->offer_discount_percentage ?? $discountPct),
+                'you_save_amount'           => round(max(0, $mrp - $salePrice), 2),
                 'offer_badge'               => $product->offer_badge ?? null,
+                'is_replaceable'            => $isReplaceable,
+                'replacement_window_days'   => $replacementDays,
+                'replacement_policy_badge'  => $policyBadge,
                 'main_image'                => $mainImg,
                 'main_image_url'            => $mainUrl,
                 'primary_image'             => $mainUrl,

@@ -199,7 +199,7 @@
                 <div class="row g-3 mb-4">
                     <div class="col-sm-3">
                         <div class="p-3 bg-light rounded-4 border text-center">
-                            <div class="small text-muted fw-bold text-uppercase" style="font-size: 0.72rem;">Cost Price (CP)</div>
+                            <div class="small text-muted fw-bold text-uppercase" style="font-size: 0.72rem;">Wholesale Cost (CP)</div>
                             <div class="h4 fw-bolder text-secondary mb-0 mt-1">
                                 {{ $product->cost_price ? '₹' . number_format($product->cost_price, 2) : '—' }}
                             </div>
@@ -207,8 +207,10 @@
                     </div>
                     <div class="col-sm-3">
                         <div class="p-3 bg-light rounded-4 border text-center">
-                            <div class="small text-muted fw-bold text-uppercase" style="font-size: 0.72rem;">Selling Price</div>
-                            <div class="h4 fw-bolder text-dark mb-0 mt-1">₹{{ number_format($product->price, 2) }}</div>
+                            <div class="small text-muted fw-bold text-uppercase" style="font-size: 0.72rem;">Package M.R.P.</div>
+                            <div class="h4 fw-bolder text-dark mb-0 mt-1">
+                                {{ $product->mrp ? '₹' . number_format($product->mrp, 2) : '—' }}
+                            </div>
                         </div>
                     </div>
                     <div class="col-sm-3">

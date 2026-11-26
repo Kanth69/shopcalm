@@ -206,7 +206,7 @@
                         @forelse($thumbs as $ti => $img)
                         <div class="rounded-3 border border-2 border-white overflow-hidden flex-shrink-0"
                              style="width: 46px; height: 46px; margin-left: {{ $ti > 0 ? '-12px' : '0' }}; z-index: {{ 10 - $ti }}; position: relative; box-shadow: 0 1px 4px rgba(0,0,0,0.1); background: #ffffff;">
-                            <img src="{{ asset('storage/'.$img) }}" alt="product"
+                            <img src="{{ str_starts_with($img, 'http') ? $img : asset('storage/'.$img) }}" alt="product"
                                  style="width: 100%; height: 100%; object-fit: contain;">
                         </div>
                         @empty

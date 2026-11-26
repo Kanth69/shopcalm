@@ -196,7 +196,7 @@
     </div>
 
     <!-- ============================================================== -->
-    <!-- ⚠️ 1. MAIN STATUS & COMPACT RECOVERY ACTIONS CARD               -->
+    <!-- 1. MAIN STATUS & COMPACT RECOVERY ACTIONS CARD -->
     <!-- ============================================================== -->
     <div class="card border-0 payment-failed-card">
         
@@ -300,7 +300,7 @@
     </div>
 
     <!-- ============================================================== -->
-    <!-- 📍 2. DELIVERING TO (DEDICATED CARD WITH GUARANTEED PADDING)    -->
+    <!-- 2. DELIVERING TO (DEDICATED CARD WITH GUARANTEED PADDING)    -->
     <!-- ============================================================== -->
     <div class="failed-delivery-card card border-0 shadow-xs bg-white">
         <div class="d-flex align-items-start gap-3">
@@ -320,7 +320,7 @@
     </div>
 
     <!-- ============================================================== -->
-    <!-- 📦 3. ITEMS IN ORDER (OVERFLOW-SAFE, CRISP & AIRY)             -->
+    <!-- 3. ITEMS IN ORDER (OVERFLOW-SAFE, CRISP & AIRY)             -->
     <!-- ============================================================== -->
     <div class="card border-0 shadow-xs failed-info-card">
         <div class="card-header bg-white py-3 px-3.5 px-sm-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -353,8 +353,9 @@
                 @endphp
                 <div class="failed-item-box">
                     <div class="d-flex align-items-start gap-3">
-                        @if($product && $product->main_image)
-                            <img src="{{ asset('storage/' . $product->main_image) }}" alt="" class="rounded-3 border flex-shrink-0 bg-white" width="50" height="50" style="object-fit: contain;">
+                        @php $thumb = $item->display_image ?? $product?->main_image; @endphp
+                        @if($thumb)
+                            <img src="{{ str_starts_with($thumb, 'http') ? $thumb : asset('storage/' . $thumb) }}" alt="{{ $item->product_name }}" class="rounded-3 border flex-shrink-0 bg-white" width="50" height="50" style="object-fit: contain;">
                         @else
                             <div class="rounded-3 bg-light border d-flex align-items-center justify-content-center text-muted flex-shrink-0" style="width: 50px; height: 50px;">
                                 <i class="bi bi-image opacity-25 fs-5"></i>
@@ -406,7 +407,7 @@
     </div>
 
     <!-- ============================================================== -->
-    <!-- 🧾 4. PRICE DETAILS (DISTINCT SPACIOUS CARD)                   -->
+    <!-- 4. PRICE DETAILS (DISTINCT SPACIOUS CARD)                   -->
     <!-- ============================================================== -->
     @php
         $totalMrp = (float) $order->items->sum(function($it) {
@@ -540,7 +541,7 @@ function handleCancelPendingOrder() {
             },
             body: JSON.stringify({
                 cancellation_reason: "Customer cancelled pending online order",
-                refund_method: "wallet"
+                refund_method: "original_source"
             })
         })
         .then(r => r.json())

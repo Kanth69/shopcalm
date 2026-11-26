@@ -66,7 +66,7 @@ class AccountController extends Controller
     {
         $user = Auth::guard('customer')->user() ?? Auth::user();
 
-        if ($user && (int)$order->user_id !== (int)$user->id) {
+        if (!$user || (int)$order->user_id !== (int)$user->id) {
             return redirect()->route('account.orders.index')->with('error', 'Unauthorized access to this order invoice.');
         }
 
@@ -74,11 +74,21 @@ class AccountController extends Controller
         return view('order-manager.orders.invoice', compact('order'));
     }
 
-    public function publicInvoice($orderParam)
+    public function publicInvoice(Request $request, $orderParam)
     {
         $order = Order::where('id', $orderParam)
             ->orWhere('order_number', $orderParam)
             ->firstOrFail();
+
+        // Security check: Must have signed URL, or authenticated owner, or authorized staff
+        $user = Auth::guard('customer')->user() ?? Auth::guard('admin')->user() ?? Auth::guard('order_manager')->user() ?? Auth::user();
+        $isStaff = $user && ($user->isAdmin() || $user->canAccessOrderManagerPortal());
+        $isOwner = $user && (int)$order->user_id === (int)$user->id;
+
+        if (!$isOwner && !$isStaff && !$request->hasValidSignature()) {
+            abort(403, 'Unauthorized. Access to this invoice requires customer login or a secure verified link.');
+        }
+
         $order->load(['user', 'items.product', 'coupon']);
         return view('order-manager.orders.invoice', compact('order'));
     }

@@ -44,9 +44,27 @@
                         </thead>
                         <tbody>
                             @foreach($order->items as $item)
+                            @php
+                                $thumb = $item->display_image ?? $item->product?->main_image;
+                                $itemImg = $thumb ? (str_starts_with($thumb, 'http') ? $thumb : asset('storage/' . $thumb)) : null;
+                            @endphp
                             <tr>
                                 <td>
-                                    <h6 class="mb-0 fw-bold">{{ $item->product_name }}</h6>
+                                    <div class="d-flex align-items-center gap-2.5">
+                                        <div class="rounded-3 border overflow-hidden flex-shrink-0 d-flex align-items-center justify-content-center bg-white" style="width: 44px; height: 44px;">
+                                            @if($itemImg)
+                                                <img src="{{ $itemImg }}" alt="{{ $item->product_name }}" class="w-100 h-100 object-fit-contain">
+                                            @else
+                                                <i class="bi bi-image text-muted opacity-50"></i>
+                                            @endif
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 fw-bold">{{ $item->product_name }}</h6>
+                                            @if($item->selected_option)
+                                                <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5 mt-1" style="font-size: 0.7rem;">{{ $item->selected_option }}</span>
+                                            @endif
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="text-end text-muted text-decoration-line-through">₹{{ number_format($item->original_price, 2) }}</td>
                                 <td class="text-end text-success">-₹{{ number_format($item->offer_discount, 2) }}</td>

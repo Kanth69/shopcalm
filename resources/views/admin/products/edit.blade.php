@@ -73,43 +73,93 @@
                 </div>
             </div>
 
-            <!-- 2. Pricing & Inventory -->
+            <!-- 2. Pricing, Margin & Replacement Policy -->
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-                <div class="card-header bg-white py-3 border-bottom">
+                <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
                     <h6 class="mb-0 fw-bold text-dark">
-                        <i class="bi bi-currency-rupee text-primary me-2"></i>2. Pricing & Inventory
+                        <i class="bi bi-currency-rupee text-primary me-2"></i>2. Pricing, Margin & Replacement Policy
                     </h6>
+                    <span class="badge bg-light text-dark border fw-normal px-2.5 py-1" style="font-size:0.75rem;">
+                        <i class="bi bi-shield-lock me-1 text-primary"></i> Super Admin Master Pricing
+                    </span>
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold text-dark small">Cost Price (CP)</label>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-dark small">M.R.P. (Strikethrough Price)</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted">₹</span>
-                                <input type="number" name="cost_price" step="0.01" min="0" class="form-control @error('cost_price') is-invalid @enderror" value="{{ old('cost_price', $product->cost_price) }}" placeholder="e.g. 1800.00">
+                                <input type="number" name="mrp" id="admin_input_mrp" step="0.01" min="0" class="form-control fw-bold @error('mrp') is-invalid @enderror" value="{{ old('mrp', $product->mrp) }}" placeholder="e.g. 999.00" oninput="calculateAdminMarginPreview()">
                             </div>
-                            <div class="form-text text-muted" style="font-size: 0.72rem;">Procurement / wholesale cost (internal only).</div>
-                            @error('cost_price') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Package printed rate (shows as strikethrough).</div>
+                            @error('mrp') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                         </div>
 
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold text-dark small">Selling Price (SP) <span class="text-danger">*</span></label>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-dark small">ShopCalm Selling Price <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted">₹</span>
-                                <input type="number" name="price" step="0.01" min="0" class="form-control fw-bold @error('price') is-invalid @enderror" value="{{ old('price', $product->price) }}" required>
+                                <input type="number" name="price" id="admin_input_price" step="0.01" min="0" class="form-control fw-bold @error('price') is-invalid @enderror" value="{{ old('price', $product->price) }}" required placeholder="e.g. 499.00" oninput="calculateAdminMarginPreview()">
                             </div>
-                            <div class="form-text text-muted" style="font-size: 0.72rem;">Customer price before offers.</div>
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Actual customer selling price.</div>
                             @error('price') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-dark small">Wholesale Cost Price (CP)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted">₹</span>
+                                <input type="number" name="cost_price" id="admin_input_cost" step="0.01" min="0" class="form-control @error('cost_price') is-invalid @enderror" value="{{ old('cost_price', $product->cost_price) }}" placeholder="e.g. 250.00" oninput="calculateAdminMarginPreview()">
+                            </div>
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Vendor supply / procurement rate (internal only).</div>
+                            @error('cost_price') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                        </div>
+
+                        <div class="col-md-3">
                             <label class="form-label fw-bold text-dark small">Stock Inventory <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-boxes"></i></span>
-                                <input type="number" name="stock" min="0" class="form-control fw-bold @error('stock') is-invalid @enderror" value="{{ old('stock', $product->stock) }}" required>
+                                <input type="number" name="stock" min="0" class="form-control fw-bold @error('stock') is-invalid @enderror" value="{{ old('stock', $product->stock) }}" required placeholder="e.g. 50">
                                 <span class="input-group-text bg-light text-muted small">Units</span>
                             </div>
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Available quantity for dispatch.</div>
                             @error('stock') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                        </div>
+                    </div>
+
+                    {{-- Live Profit & Discount Preview Strip --}}
+                    <div class="mt-3 p-3 rounded-3 bg-light border d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="small text-muted">Customer Discount: <strong id="admin_preview_discount" class="text-success">0% OFF</strong></span>
+                            <span class="text-muted opacity-50">|</span>
+                            <span class="small text-muted">Gross Profit Margin: <strong id="admin_preview_margin" class="text-primary">₹0.00</strong></span>
+                        </div>
+                        <div class="small text-muted fst-italic" style="font-size: 0.72rem;">
+                            <i class="bi bi-info-circle me-1"></i> Customer sees MRP scratch + Selling Price. Wholesale cost is 100% confidential.
+                        </div>
+                    </div>
+
+                    {{-- Replacement Policy Settings (Product Level) --}}
+                    <hr class="my-3 text-secondary opacity-25">
+                    <div class="row align-items-center g-3">
+                        <div class="col-md-7">
+                            <div class="form-check form-switch d-flex align-items-center gap-2 ps-0">
+                                <input class="form-check-input ms-0 mt-0" type="checkbox" name="is_replaceable" id="is_replaceable_switch" value="1" {{ old('is_replaceable', $product->is_replaceable) ? 'checked' : '' }} onchange="toggleReplacementWindow(this)" style="cursor: pointer; width: 2.4rem; height: 1.25rem;">
+                                <label class="form-check-label fw-bold text-dark small mb-0" for="is_replaceable_switch" style="cursor: pointer;">
+                                    Allow Replacement for Defective / Damaged Items (Default: OFF / No Replacement)
+                                </label>
+                            </div>
+                            <div class="form-text text-muted mt-1 ps-1" style="font-size: 0.72rem;">
+                                If OFF, item displays as <strong>Non-Returnable & Non-Replaceable</strong>. If ON, free replacement is offered for verified defects.
+                            </div>
+                        </div>
+
+                        <div class="col-md-5" id="replacement_window_wrapper" style="display: {{ old('is_replaceable', $product->is_replaceable) ? 'block' : 'none' }};">
+                            <label class="form-label fw-bold text-dark small">Replacement Window (Days)</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" name="replacement_window_days" id="replacement_window_days" min="1" max="30" class="form-control fw-bold" value="{{ old('replacement_window_days', $product->replacement_window_days ?? 7) }}" placeholder="7">
+                                <span class="input-group-text bg-light text-muted">Days after delivery</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1010,7 +1060,43 @@
 
         categorySelect.addEventListener('change', updateBrands);
         updateBrands();
+        calculateAdminMarginPreview();
     });
+
+    function toggleReplacementWindow(checkbox) {
+        const wrapper = document.getElementById('replacement_window_wrapper');
+        if (wrapper) {
+            wrapper.style.display = checkbox.checked ? 'block' : 'none';
+        }
+    }
+
+    function calculateAdminMarginPreview() {
+        const mrp = parseFloat(document.getElementById('admin_input_mrp')?.value || 0);
+        const price = parseFloat(document.getElementById('admin_input_price')?.value || 0);
+        const cost = parseFloat(document.getElementById('admin_input_cost')?.value || 0);
+
+        const discountElem = document.getElementById('admin_preview_discount');
+        const marginElem = document.getElementById('admin_preview_margin');
+
+        if (discountElem) {
+            if (mrp > price && mrp > 0) {
+                const pct = Math.round(((mrp - price) / mrp) * 100);
+                discountElem.textContent = pct + '% OFF';
+            } else {
+                discountElem.textContent = '0% OFF';
+            }
+        }
+
+        if (marginElem) {
+            if (price > cost && cost > 0) {
+                const margin = (price - cost).toFixed(2);
+                const marginPct = Math.round(((price - cost) / price) * 100);
+                marginElem.textContent = '₹' + margin + ' (' + marginPct + '%)';
+            } else {
+                marginElem.textContent = '₹0.00';
+            }
+        }
+    }
 </script>
 @endpush
 @endsection

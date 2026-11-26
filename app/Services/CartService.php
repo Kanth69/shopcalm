@@ -164,6 +164,7 @@ class CartService
 
     public function addProduct(int $productId, int $quantity = 1, ?string $selectedOption = null, bool $isBuyNow = false)
     {
+        $quantity = max(1, min(10, $quantity));
         $this->resetMemoizedCart();
         $cart = $this->getCart();
         $product = Product::findOrFail($productId);

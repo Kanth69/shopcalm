@@ -16,7 +16,10 @@ class ReviewController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = ProductReview::with(['product', 'user'])->latest();
+        $vendorId = auth()->id();
+        $query = ProductReview::with(['product', 'user'])
+            ->whereHas('product', fn($p) => $p->where('submitted_by', $vendorId))
+            ->latest();
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -41,22 +44,23 @@ class ReviewController extends Controller
 
         $reviews = $query->paginate(15)->withQueryString();
 
-        // Metrics & Rating distribution
-        $totalReviews = ProductReview::count();
-        $pendingReviews = ProductReview::where('status', 'Pending')->count();
-        $approvedReviews = ProductReview::where('status', 'Approved')->count();
-        $rejectedReviews = ProductReview::where('status', 'Rejected')->count();
-        $averageRating = ProductReview::where('status', 'Approved')->avg('rating') ?? 0;
+        // Metrics & Rating distribution scoped to vendor
+        $baseScoped = ProductReview::whereHas('product', fn($p) => $p->where('submitted_by', $vendorId));
+        $totalReviews = (clone $baseScoped)->count();
+        $pendingReviews = (clone $baseScoped)->where('status', 'Pending')->count();
+        $approvedReviews = (clone $baseScoped)->where('status', 'Approved')->count();
+        $rejectedReviews = (clone $baseScoped)->where('status', 'Rejected')->count();
+        $averageRating = (clone $baseScoped)->where('status', 'Approved')->avg('rating') ?? 0;
 
         $ratingCounts = [
-            5 => ProductReview::where('rating', 5)->count(),
-            4 => ProductReview::where('rating', 4)->count(),
-            3 => ProductReview::where('rating', 3)->count(),
-            2 => ProductReview::where('rating', 2)->count(),
-            1 => ProductReview::where('rating', 1)->count(),
+            5 => (clone $baseScoped)->where('rating', 5)->count(),
+            4 => (clone $baseScoped)->where('rating', 4)->count(),
+            3 => (clone $baseScoped)->where('rating', 3)->count(),
+            2 => (clone $baseScoped)->where('rating', 2)->count(),
+            1 => (clone $baseScoped)->where('rating', 1)->count(),
         ];
 
-        $products = Product::has('reviews')->orderBy('name')->get();
+        $products = Product::where('submitted_by', $vendorId)->has('reviews')->orderBy('name')->get();
 
         return view('product-manager.reviews.index', compact(
             'reviews',

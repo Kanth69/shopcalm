@@ -38,6 +38,12 @@ class CartController extends BaseApiController
             if ($originalPrice < $unitPrice) {
                 $originalPrice = $unitPrice;
             }
+            $mrp = (float) ($product && $product->mrp && (float) $product->mrp > 0
+                ? $product->mrp
+                : ($originalPrice > 0 ? $originalPrice : ($unitPrice > 0 ? round($unitPrice * 1.25, 2) : 0)));
+            if ($mrp < $unitPrice) {
+                $mrp = $unitPrice;
+            }
             $itemTotal = round($unitPrice * $item->quantity, 2);
 
             $imgPath = $product ? ($product->main_image ?? $product->featured_image ?? null) : null;
@@ -50,38 +56,53 @@ class CartController extends BaseApiController
 
             if ($item->is_selected && $inStock) {
                 $subtotal += $itemTotal;
-                $totalMrp += round($originalPrice * $item->quantity, 2);
-                if ($originalPrice > $unitPrice) {
-                    $totalSavings += ($originalPrice - $unitPrice) * $item->quantity;
+                $totalMrp += round($mrp * $item->quantity, 2);
+                if ($mrp > $unitPrice) {
+                    $totalSavings += ($mrp - $unitPrice) * $item->quantity;
                 }
             }
 
-            $discountPct = ($originalPrice > $unitPrice && $originalPrice > 0)
-                ? (int) round((($originalPrice - $unitPrice) / $originalPrice) * 100)
+            $discountPct = ($mrp > $unitPrice && $mrp > 0)
+                ? (int) round((($mrp - $unitPrice) / $mrp) * 100)
                 : 0;
 
+            $isReplaceable = (bool) ($product ? $product->is_replaceable : false);
+            $replacementDays = (int) ($product ? $product->replacement_window_days : 0);
+            $policyBadge = $isReplaceable ? "{$replacementDays}D Replacement" : "Non-Returnable";
+            $policyDesc = $isReplaceable
+                ? "Eligible for replacement within {$replacementDays} days for verified defect or transit damage."
+                : "Zero return policy. Standard non-returnable non-refundable sale.";
+
             $items[] = [
-                'id'                  => (int) $item->id,
-                'cart_item_id'        => (int) $item->id,
-                'product_id'          => (int) $item->product_id,
-                'name'                => $product ? $product->name : 'Product',
-                'product_name'        => $product ? $product->name : 'Product',
-                'slug'                => $product ? $product->slug : '',
-                'brand_name'          => ($product && $product->brand) ? $product->brand->name : null,
-                'quantity'            => (int) $item->quantity,
-                'price'               => $unitPrice,
-                'unit_price'          => $unitPrice,
-                'original_price'      => $originalPrice,
-                'discount_percentage' => $discountPct,
-                'image_url'           => $imgPath ? (str_starts_with($imgPath, 'http') ? $imgPath : asset('storage/' . $imgPath)) : null,
-                'selected_option'     => $item->selected_option,
-                'is_selected'         => (bool) ($item->is_selected && $inStock),
-                'total'               => $itemTotal,
-                'subtotal'            => $itemTotal,
-                'in_stock'            => $inStock,
-                'max_available'       => $maxAvail,
-                'stock_status'        => !$inStock ? 'out_of_stock' : ($maxAvail <= 5 ? 'limited_stock' : 'in_stock'),
-                'stock_message'       => !$inStock ? 'Currently out of stock' : ($maxAvail <= 5 ? "Only {$maxAvail} left in stock" : null),
+                'id'                       => (int) $item->id,
+                'cart_item_id'             => (int) $item->id,
+                'product_id'               => (int) $item->product_id,
+                'name'                     => $product ? $product->name : 'Product',
+                'product_name'             => $product ? $product->name : 'Product',
+                'slug'                     => $product ? $product->slug : '',
+                'brand_name'               => ($product && $product->brand) ? $product->brand->name : null,
+                'quantity'                 => (int) $item->quantity,
+                'price'                    => $unitPrice,
+                'unit_price'               => $unitPrice,
+                'selling_price'            => $unitPrice,
+                'mrp'                      => $mrp,
+                'original_price'           => $mrp,
+                'discount_percentage'      => $discountPct,
+                'you_save_amount'          => round(max(0, $mrp - $unitPrice), 2),
+                'total_item_savings'       => round(max(0, $mrp - $unitPrice) * $item->quantity, 2),
+                'image_url'                => $imgPath ? (str_starts_with($imgPath, 'http') ? $imgPath : asset('storage/' . $imgPath)) : null,
+                'selected_option'          => $item->selected_option,
+                'is_selected'              => (bool) ($item->is_selected && $inStock),
+                'total'                    => $itemTotal,
+                'subtotal'                 => $itemTotal,
+                'in_stock'                 => $inStock,
+                'max_available'            => $maxAvail,
+                'stock_status'             => !$inStock ? 'out_of_stock' : ($maxAvail <= 5 ? 'limited_stock' : 'in_stock'),
+                'stock_message'            => !$inStock ? 'Currently out of stock' : ($maxAvail <= 5 ? "Only {$maxAvail} left in stock" : null),
+                'is_replaceable'           => $isReplaceable,
+                'replacement_window_days'  => $replacementDays,
+                'replacement_policy_badge' => $policyBadge,
+                'policy_description'       => $policyDesc,
             ];
         }
 
@@ -124,7 +145,7 @@ class CartController extends BaseApiController
     {
         $request->validate([
             'product_id'      => 'required|exists:products,id',
-            'quantity'        => 'required|integer|min:1',
+            'quantity'        => 'required|integer|min:1|max:10',
             'selected_option' => 'nullable|string',
             'is_buy_now'      => 'nullable|boolean',
         ]);
@@ -153,7 +174,7 @@ class CartController extends BaseApiController
     public function update(Request $request, int $itemId): JsonResponse
     {
         $request->validate([
-            'quantity' => 'required|integer|min:0',
+            'quantity' => 'required|integer|min:0|max:10',
         ]);
 
         $result = $this->cartService->updateQuantity($itemId, (int) $request->quantity);

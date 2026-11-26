@@ -5,7 +5,7 @@
 @section('account_content')
 
 {{-- ======================================================== --}}
-{{-- 🖥️ 1. DESKTOP DASHBOARD VIEW (Visible on >= 768px screens) --}}
+{{-- 1. DESKTOP DASHBOARD VIEW (Visible on >= 768px screens) --}}
 {{-- ======================================================== --}}
 <div class="d-none d-md-block">
     {{-- Desktop Welcome Banner Header --}}
@@ -74,7 +74,7 @@
 </div>
 
 {{-- ======================================================== --}}
-{{-- 📱 2. SIMPLE, CLEAN, APP-LIKE MOBILE DASHBOARD (< 768px)  --}}
+{{-- 2. SIMPLE, CLEAN, APP-LIKE MOBILE DASHBOARD (< 768px)  --}}
 {{-- ======================================================== --}}
 <div class="d-block d-md-none pb-4">
     {{-- Simple Mobile Header with Rich Vibrant Color & Spacious Layout --}}
@@ -245,8 +245,9 @@
                 {{-- Product Thumbnail & Details Row: Perfectly Center-Aligned --}}
                 <div class="d-flex align-items-center gap-3 mb-3 w-100 overflow-hidden">
                     <div class="flex-shrink-0">
-                        @if($product && $product->main_image)
-                            <img src="{{ asset('storage/' . $product->main_image) }}" alt="{{ $firstItem->product_name }}" 
+                        @php $dashThumb = $firstItem->display_image ?? $product?->main_image; @endphp
+                        @if($dashThumb)
+                            <img src="{{ str_starts_with($dashThumb, 'http') ? $dashThumb : asset('storage/' . $dashThumb) }}" alt="{{ $firstItem->product_name }}" 
                                  class="rounded-3 border p-1 bg-white" width="60" height="60" style="object-fit: contain;">
                         @else
                             <div class="rounded-3 bg-light border d-flex align-items-center justify-content-center text-muted" style="width: 60px; height: 60px;">

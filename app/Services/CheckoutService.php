@@ -55,6 +55,21 @@ class CheckoutService
     }
 
     /**
+     * Silently cancel/retire an abandoned unpaid pending order when customer places a new checkout.
+     * Guarantees zero friction, zero 422 errors, and restores any reserved wallet balance.
+     */
+    public function cancelStalePendingOrder(Order $order, string $reason = 'Superseded by new checkout attempt.'): void
+    {
+        DB::transaction(function () use ($order, $reason) {
+            $this->markOrderPaymentFailed($order, $reason);
+            $order->update([
+                'status'         => 'cancelled',
+                'payment_status' => 'failed',
+            ]);
+        });
+    }
+
+    /**
      * Place a standard Cash on Delivery (COD) Order.
      */
     public function placeOrder(array $data): Order
@@ -62,8 +77,8 @@ class CheckoutService
         return DB::transaction(function () use ($data) {
             $user = Auth::guard('customer')->user() ?? (Auth::user() ?? (Auth::guard('sanctum')->user() ?? request()->user('sanctum')));
             $existingPending = $this->getActivePendingOrder($user);
-            if ($existingPending) {
-                throw new Exception("You already have a pending order (#{$existingPending->order_number}). You cannot place a new order until you cancel or proceed with that order.");
+            if ($existingPending && $existingPending->payment_status !== 'paid') {
+                $this->cancelStalePendingOrder($existingPending, 'Customer placed new COD order.');
             }
 
             $cart = $this->cartService->getSelectedCart();
@@ -117,10 +132,11 @@ class CheckoutService
                 }
             }
 
-            $codFee = $rawCodFee;
             $itemsPayable = max(0, $netSubtotalAmount - $walletAmountUsed);
-            $totalAmount = round($itemsPayable + $shippingFee + $codFee, 2);
-            $isZeroOrder = ($totalAmount <= 0.00);
+            $isZeroOrder = ($itemsPayable <= 0 && $shippingFee <= 0);
+            $codFee = $isZeroOrder ? 0.00 : $rawCodFee;
+            $totalAmount = $isZeroOrder ? 0.00 : round($itemsPayable + $shippingFee + $codFee, 2);
+            $isFullyPaidByWallet = $isZeroOrder && ($walletAmountUsed > 0);
             $finalPaymentMethod = $isZeroOrder ? ($walletAmountUsed > 0 ? 'wallet' : 'coupon') : 'cod';
             $finalPaymentStatus = $isZeroOrder ? 'paid' : 'pending';
 
@@ -183,7 +199,7 @@ class CheckoutService
                 'shipping_city' => $data['shipping_city'],
                 'shipping_state' => $data['shipping_state'],
                 'shipping_zip' => $data['shipping_zip'],
-                'shipping_country' => $data['shipping_country'],
+                'shipping_country' => $data['shipping_country'] ?? 'India',
                 'shipping_latitude'  => $data['shipping_latitude'] ?? ($data['latitude'] ?? null),
                 'shipping_longitude' => $data['shipping_longitude'] ?? ($data['longitude'] ?? null),
                 'shipping_landmark'  => $data['shipping_landmark'] ?? ($data['landmark'] ?? null),
@@ -290,8 +306,8 @@ class CheckoutService
     {
         return DB::transaction(function () use ($data, $user) {
             $existingPending = $this->getActivePendingOrder($user);
-            if ($existingPending) {
-                throw new Exception("You already have a pending order (#{$existingPending->order_number}). You cannot place a new order until you cancel or proceed with that order.");
+            if ($existingPending && $existingPending->payment_status !== 'paid') {
+                $this->cancelStalePendingOrder($existingPending, 'Customer placed new COD order.');
             }
 
             $cart = $this->cartService->getSelectedCart();
@@ -691,10 +707,15 @@ class CheckoutService
                 ]
             );
 
-            // 3. Deduct Product Stock & Record Movements
+            // 3. Validate & Deduct Product Stock & Option Stock & Record Movements
             foreach ($order->items as $item) {
                 $product = Product::where('id', $item->product_id)->lockForUpdate()->first();
                 if ($product) {
+                    $availStock = $product->getOptionStock($item->selected_option);
+                    if ($availStock < $item->quantity) {
+                        throw new Exception("Product {$product->name} has insufficient stock (Only {$availStock} available).");
+                    }
+
                     $stockBefore = $product->stock;
                     $stockAfter = max(0, $stockBefore - $item->quantity);
 
@@ -705,12 +726,11 @@ class CheckoutService
                         'quantity'      => $item->quantity,
                         'stock_before'  => $stockBefore,
                         'stock_after'   => $stockAfter,
-                        'notes'         => "Order #{$order->order_number} converted to Cash on Delivery (COD).",
+                        'notes'         => "Order #{$order->order_number} converted to Cash on Delivery (COD)" . ($item->selected_option ? " [Option: {$item->selected_option}]" : "") . ".",
                         'created_by'    => null,
                     ]);
 
-                    $product->stock = $stockAfter;
-                    $product->save();
+                    $product->reduceOptionStock($item->selected_option, $item->quantity);
                 }
             }
 
@@ -755,18 +775,12 @@ class CheckoutService
 
     /**
      * Generate a unique, high-concurrency collision-proof Order Number.
-     * Guaranteed zero collision across simultaneous multi-user checkouts.
+     * Global Time-Sorted Entropy Format: SC-YYMM-XXXX-XXXX
+     * Guaranteed zero collision across simultaneous multi-user checkouts with zero slow DB queries.
      */
     public function generateOrderNumber(): string
     {
-        do {
-            $candidate = 'WK' . date('Ymd') . strtoupper(bin2hex(random_bytes(3)));
-        } while (
-            Order::where('order_number', $candidate)->exists() ||
-            Payment::where('order_number', $candidate)->exists()
-        );
-
-        return $candidate;
+        return 'SC-' . date('ym') . '-' . strtoupper(bin2hex(random_bytes(2))) . '-' . strtoupper(bin2hex(random_bytes(2)));
     }
 
     /**

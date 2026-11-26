@@ -19,9 +19,22 @@ class ProductController extends Controller
         protected ImageOptimizerService $imageOptimizer
     ) {}
 
+    protected function getAdminUser()
+    {
+        return auth('admin')->user() ?? auth()->user();
+    }
+
+    protected function checkSuperAdmin(): void
+    {
+        $user = $this->getAdminUser();
+        if (!$user || !$user->isSuperAdmin()) {
+            abort(403, 'Unauthorized. Only Super Admin can manage products directly.');
+        }
+    }
+
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'brand', 'latestRejectionReason']);
+        $query = Product::with(['category', 'brand', 'latestRejectionReason', 'submitter']);
 
         // Search
         if ($request->filled('search')) {
@@ -42,6 +55,16 @@ class ProductController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
+        if ($request->filled('submitted_by')) {
+            if ($request->submitted_by === 'in_house') {
+                $query->where(function ($q) {
+                    $q->whereNull('submitted_by')
+                      ->orWhereHas('submitter', fn($u) => $u->whereIn('role_id', [\App\Models\User::ROLE_SUPER_ADMIN, \App\Models\User::ROLE_ADMIN]));
+                });
+            } else {
+                $query->where('submitted_by', $request->submitted_by);
+            }
+        }
 
         // Sorting
         $sort = $request->get('sort', 'latest');
@@ -55,6 +78,7 @@ class ProductController extends Controller
         $products = $query->paginate(10)->withQueryString();
         $categories = Category::where('status', 'Active')->orderBy('name')->get();
         $brands = Brand::where('status', 1)->orderBy('name')->get();
+        $vendors = \App\Models\User::where('role_id', \App\Models\User::ROLE_PRODUCT_MANAGER)->orderBy('name')->get();
 
         $totalCount = Product::count();
         $activeCount = Product::where('status', 'Active')->count();
@@ -66,6 +90,7 @@ class ProductController extends Controller
             'products', 
             'categories', 
             'brands',
+            'vendors',
             'totalCount',
             'activeCount',
             'pendingCount',
@@ -77,14 +102,18 @@ class ProductController extends Controller
     /**
      * Approve a pending product and make it live on the storefront.
      */
-    public function approve(Product $product)
+    public function approve(Request $request, Product $product)
     {
         $this->authorize('approve-products');
 
-        $product->update([
+        $updateData = [
             'status'           => 'Active',
             'rejection_reason' => null,
-        ]);
+        ];
+        if ($request->filled('price')) {
+            $updateData['price'] = (float) $request->price;
+        }
+        $product->update($updateData);
 
         $product->rejectionReasons()->where('status', 'active')->update(['status' => 'resolved']);
 
@@ -115,7 +144,7 @@ class ProductController extends Controller
         ]);
 
         $product->rejectionReasons()->create([
-            'rejected_by' => auth()->id(),
+            'rejected_by' => $this->getAdminUser()?->id,
             'reason'      => $request->rejection_reason,
             'status'      => 'active',
         ]);
@@ -129,9 +158,7 @@ class ProductController extends Controller
 
     public function create()
     {
-        if (!auth()->user()->isSuperAdmin()) {
-            abort(403, 'Unauthorized. Only Super Admin can create products directly.');
-        }
+        $this->checkSuperAdmin();
         $categories = Category::where('status', 'Active')->orderBy('name')->get();
         $brands = Brand::where('status', 1)->orderBy('name')->get();
         return view('admin.products.create', compact('categories', 'brands'));
@@ -139,11 +166,9 @@ class ProductController extends Controller
 
     public function store(ProductRequest $request)
     {
-        if (!auth()->user()->isSuperAdmin()) {
-            abort(403, 'Unauthorized. Only Super Admin can create products directly.');
-        }
+        $this->checkSuperAdmin();
         $validated = $request->validated();
-        $validated['slug'] = $validated['slug'] ?: Str::slug($validated['name']);
+        $validated['slug'] = !empty($validated['slug']) ? $validated['slug'] : Str::slug($validated['name']);
 
         // Handle duplicate slug
         $originalSlug = $validated['slug'];
@@ -157,6 +182,10 @@ class ProductController extends Controller
             $validated['main_image'] = $this->imageOptimizer->optimizeAndStore($request->file('main_image'), 'products/main');
         }
 
+        $validated['mrp'] = $request->filled('mrp') ? (float)$request->mrp : null;
+        $validated['is_replaceable'] = $request->boolean('is_replaceable');
+        $validated['replacement_window_days'] = $validated['is_replaceable'] ? ($request->input('replacement_window_days', 7) ?: 7) : 0;
+        $validated['submitted_by'] = $product->submitted_by ?? $this->getAdminUser()?->id;
         $validated['featured'] = $request->has('featured');
         $validated['trending'] = $request->has('trending');
         $validated['has_options'] = $request->boolean('has_options');
@@ -239,9 +268,7 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
-        if (!auth()->user()->isSuperAdmin()) {
-            abort(403, 'Unauthorized. Only Super Admin can edit products directly.');
-        }
+        $this->checkSuperAdmin();
         $categories = Category::where('status', 'Active')->orderBy('name')->get();
         $brands = Brand::where('status', 1)->orderBy('name')->get();
         $product->load('galleryImages');
@@ -250,11 +277,9 @@ class ProductController extends Controller
 
     public function update(ProductRequest $request, Product $product)
     {
-        if (!auth()->user()->isSuperAdmin()) {
-            abort(403, 'Unauthorized. Only Super Admin can edit products directly.');
-        }
+        $this->checkSuperAdmin();
         $validated = $request->validated();
-        $validated['slug'] = $validated['slug'] ?: Str::slug($validated['name']);
+        $validated['slug'] = !empty($validated['slug']) ? $validated['slug'] : Str::slug($validated['name']);
 
         // Handle duplicate slug
         $originalSlug = $validated['slug'];
@@ -271,6 +296,10 @@ class ProductController extends Controller
             $validated['main_image'] = $this->imageOptimizer->optimizeAndStore($request->file('main_image'), 'products/main');
         }
 
+        $validated['mrp'] = $request->filled('mrp') ? (float)$request->mrp : null;
+        $validated['is_replaceable'] = $request->boolean('is_replaceable');
+        $validated['replacement_window_days'] = $validated['is_replaceable'] ? ($request->input('replacement_window_days', 7) ?: 7) : 0;
+        $validated['submitted_by'] = $product->submitted_by ?? $this->getAdminUser()?->id;
         $validated['featured'] = $request->has('featured');
         $validated['trending'] = $request->has('trending');
         $validated['has_options'] = $request->boolean('has_options');
@@ -353,9 +382,7 @@ class ProductController extends Controller
 
     public function deleteGalleryImage($id)
     {
-        if (!auth()->user()->isSuperAdmin()) {
-            abort(403, 'Unauthorized. Only Super Admin can modify product gallery.');
-        }
+        $this->checkSuperAdmin();
         $image = ProductImage::findOrFail($id);
         Storage::disk('public')->delete($image->image);
         $image->delete();

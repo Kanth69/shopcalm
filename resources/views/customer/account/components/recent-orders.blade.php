@@ -99,8 +99,9 @@
                             
                             <div class="d-flex align-items-center gap-2.5 mb-2.5">
                                 <div class="flex-shrink-0">
-                                    @if($product && $product->main_image)
-                                        <img src="{{ asset('storage/' . $product->main_image) }}" alt="{{ $firstItem->product_name }}" 
+                                    @php $thumb = $firstItem->display_image ?? $product?->main_image; @endphp
+                                    @if($thumb)
+                                        <img src="{{ str_starts_with($thumb, 'http') ? $thumb : asset('storage/' . $thumb) }}" alt="{{ $firstItem->product_name }}" 
                                              class="rounded-3 border p-0.5 bg-white" width="48" height="48" style="object-fit: contain;">
                                     @else
                                         <div class="rounded-3 bg-light border d-flex align-items-center justify-content-center text-muted" style="width: 48px; height: 48px;">
