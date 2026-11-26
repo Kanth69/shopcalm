@@ -116,7 +116,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/ping', [\App\Http\Controllers\Api\V1\RiderController::class, 'ping']);
         Route::post('/webhook/razorpay', [\App\Http\Controllers\Api\V1\RiderController::class, 'handleRazorpayWebhook']);
 
-        Route::middleware(['auth:sanctum'])->group(function () {
+        Route::middleware(['auth:sanctum', 'delivery.partner'])->group(function () {
             Route::get('/dashboard', [\App\Http\Controllers\Api\V1\RiderController::class, 'dashboard']);
             Route::get('/orders/{order}', [\App\Http\Controllers\Api\V1\RiderController::class, 'show']);
             Route::get('/orders/{order}/payment-status', [\App\Http\Controllers\Api\V1\RiderController::class, 'paymentStatus']);

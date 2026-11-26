@@ -10,10 +10,39 @@ use Illuminate\Support\Facades\Auth;
 class DeliveryPartnerMiddleware
 {
     /**
-     * Handle an incoming request for the Delivery Partner portal.
+     * Handle an incoming request for the Delivery Partner portal and Rider APIs.
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // 1. API / Sanctum Request handling (Rider Mobile App API)
+        if ($request->is('api/*') || $request->expectsJson()) {
+            $user = $request->user();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthenticated.'
+                ], 401);
+            }
+
+            if (!$user->canAccessDeliveryPortal()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Forbidden. Only authorized Delivery Partners can access this API.'
+                ], 403);
+            }
+
+            if (in_array($user->status, ['Blocked', 'Deleted'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your rider account has been deactivated or blocked.'
+                ], 403);
+            }
+
+            return $next($request);
+        }
+
+        // 2. Web Portal handling
         $guard = Auth::guard('delivery_partner')->check() ? 'delivery_partner' : (Auth::guard('admin')->check() ? 'admin' : null);
 
         if (!$guard) {

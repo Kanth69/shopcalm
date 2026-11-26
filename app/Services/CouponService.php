@@ -14,9 +14,9 @@ use Exception;
 class CouponService
 {
     /**
-     * Validate coupon eligibility for a user and cart subtotal.
+     * Validate coupon eligibility for a user, cart subtotal, and anti-fraud checks.
      */
-    public function validateCoupon(string $code, ?User $user, float $totalAmount, $cart = null): Coupon
+    public function validateCoupon(string $code, ?User $user, float $totalAmount, $cart = null, ?array $shippingData = null): Coupon
     {
         $coupon = Coupon::with(['targets'])->where('code', strtoupper(trim($code)))->first();
 
@@ -40,6 +40,62 @@ class CouponService
             }
         }
 
+        // ── ANTI-FRAUD ENGINE: Detect Multi-Account First-Order Abuse ──
+        $isFirstOrderCoupon = str_contains(strtoupper($coupon->code), 'FIRST') 
+                           || str_contains(strtoupper($coupon->code), 'WELCOME') 
+                           || str_contains(strtoupper($coupon->code), 'NEW')
+                           || ((int) $coupon->usage_limit_per_customer === 1);
+
+        // 1. Account Prior Order Check (Reserved for true first-time orders)
+        if ($isFirstOrderCoupon && $user) {
+            $hasPriorOrder = \App\Models\Order::where('user_id', $user->id)
+                ->whereNotIn('status', ['cancelled', 'failed'])
+                ->exists();
+            if ($hasPriorOrder) {
+                throw new Exception("This promotional code is exclusively reserved for first-time orders only.");
+            }
+        }
+
+        // 2. Multi-Account Phone Fraud Check
+        $phoneToCheck = $shippingData['shipping_phone'] ?? ($shippingData['phone'] ?? ($user?->mobile_number ?? null));
+        if ($phoneToCheck && $isFirstOrderCoupon) {
+            $cleanPhone = substr(preg_replace('/[^0-9]/', '', $phoneToCheck), -10);
+            if (strlen($cleanPhone) >= 10) {
+                $phoneUsed = \App\Models\Order::where('coupon_id', $coupon->id)
+                    ->where('shipping_phone', 'like', "%{$cleanPhone}%")
+                    ->whereNotIn('status', ['cancelled', 'failed'])
+                    ->when($user, fn($q) => $q->where('user_id', '!=', $user->id))
+                    ->exists();
+
+                if ($phoneUsed) {
+                    throw new Exception("This welcome offer has already been redeemed by a past order associated with this contact number.");
+                }
+            }
+        }
+
+        // 3. Multi-Account Delivery Address Fraud Check (Same address snippet + pincode)
+        if (!empty($shippingData['shipping_address']) && !empty($shippingData['shipping_zip']) && $isFirstOrderCoupon) {
+            $zip = trim($shippingData['shipping_zip']);
+            $rawAddress = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $shippingData['shipping_address']));
+            $snippet = substr($rawAddress, 0, 15);
+
+            if (strlen($snippet) >= 6) {
+                $addressUsed = \App\Models\Order::where('coupon_id', $coupon->id)
+                    ->where('shipping_zip', $zip)
+                    ->whereNotIn('status', ['cancelled', 'failed'])
+                    ->when($user, fn($q) => $q->where('user_id', '!=', $user->id))
+                    ->get()
+                    ->contains(function ($ord) use ($snippet) {
+                        $existingRaw = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $ord->shipping_address ?? ''));
+                        return str_contains($existingRaw, $snippet) || str_contains($snippet, substr($existingRaw, 0, 15));
+                    });
+
+                if ($addressUsed) {
+                    throw new Exception("This welcome promotional discount has already been redeemed for this delivery address.");
+                }
+            }
+        }
+
         // Category / Brand / Product Restrictions Validation
         if ($cart && $cart->items && $cart->items->isNotEmpty()) {
             $this->validateApplicability($coupon, $cart);
@@ -51,9 +107,9 @@ class CouponService
     /**
      * Alias method for validateCoupon
      */
-    public function validate(string $code, ?User $user, float $totalAmount, $cart = null): Coupon
+    public function validate(string $code, ?User $user, float $totalAmount, $cart = null, ?array $shippingData = null): Coupon
     {
-        return $this->validateCoupon($code, $user, $totalAmount, $cart);
+        return $this->validateCoupon($code, $user, $totalAmount, $cart, $shippingData);
     }
 
     /**

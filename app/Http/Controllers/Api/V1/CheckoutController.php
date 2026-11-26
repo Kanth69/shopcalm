@@ -314,10 +314,18 @@ class CheckoutController extends BaseApiController
         ]);
 
         $user = $request->user();
+        $cart = $this->cartService->getCart();
         $subtotal = (float) $this->cartService->subtotal();
 
+        $primaryAddress = $user ? $user->addresses()->first() : null;
+        $shippingData = [
+            'shipping_phone'   => $request->shipping_phone ?? ($user?->mobile_number ?? null),
+            'shipping_address' => $request->shipping_address ?? ($primaryAddress?->address ?? null),
+            'shipping_zip'     => $request->shipping_zip ?? ($primaryAddress?->zip ?? null),
+        ];
+
         try {
-            $coupon = $this->couponService->validateCoupon($request->coupon_code, $user, $subtotal);
+            $coupon = $this->couponService->validateCoupon($request->coupon_code, $user, $subtotal, $cart, $shippingData);
             $discount = (float) $this->couponService->calculateDiscount($coupon, $subtotal);
 
             return $this->sendResponse([

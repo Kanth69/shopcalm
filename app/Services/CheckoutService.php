@@ -103,10 +103,10 @@ class CheckoutService
             $discountAmount = 0;
             $couponId = null;
 
-            // Handle Coupon
+            // Handle Coupon with Anti-Fraud Validation
             $appliedCouponCode = $data['coupon_code'] ?? Session::get('applied_coupon');
             if ($appliedCouponCode) {
-                $coupon = $this->couponService->validateCoupon($appliedCouponCode, $user, $subtotalAmount);
+                $coupon = $this->couponService->validateCoupon($appliedCouponCode, $user, $subtotalAmount, $cart, $data);
                 $discountAmount = $this->couponService->calculateDiscount($coupon, $subtotalAmount);
                 $couponId = $coupon->id;
             }
@@ -332,10 +332,10 @@ class CheckoutService
             $discountAmount = 0;
             $couponId = null;
 
-            // Handle Coupon
+            // Handle Coupon with Anti-Fraud Validation
             $appliedCouponCode = $data['coupon_code'] ?? Session::get('applied_coupon');
             if ($appliedCouponCode) {
-                $coupon = $this->couponService->validateCoupon($appliedCouponCode, $user, $subtotalAmount);
+                $coupon = $this->couponService->validateCoupon($appliedCouponCode, $user, $subtotalAmount, $cart, $data);
                 $discountAmount = $this->couponService->calculateDiscount($coupon, $subtotalAmount);
                 $couponId = $coupon->id;
             }
