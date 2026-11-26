@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Exception;
 
@@ -41,7 +42,7 @@ class Wallet extends Model
     }
 
     /**
-     * Credit amount to wallet.
+     * Credit amount to wallet with row-level concurrency lock.
      */
     public function credit(float $amount, string $source, string $description, ?int $orderId = null): WalletTransaction
     {
@@ -49,23 +50,33 @@ class Wallet extends Model
             throw new Exception("Credit amount must be greater than zero.");
         }
 
-        $this->balance += $amount;
-        $this->total_earned += $amount;
-        $this->save();
+        return DB::transaction(function () use ($amount, $source, $description, $orderId) {
+            $lockedWallet = static::where('id', $this->id)->lockForUpdate()->first();
+            if (!$lockedWallet) {
+                throw new Exception("Wallet record not found.");
+            }
 
-        return $this->transactions()->create([
-            'user_id' => $this->user_id,
-            'type' => 'CREDIT',
-            'amount' => $amount,
-            'balance_after' => $this->balance,
-            'source' => $source,
-            'order_id' => $orderId,
-            'description' => $description,
-        ]);
+            $lockedWallet->balance += $amount;
+            $lockedWallet->total_earned += $amount;
+            $lockedWallet->save();
+
+            $this->balance = $lockedWallet->balance;
+            $this->total_earned = $lockedWallet->total_earned;
+
+            return $lockedWallet->transactions()->create([
+                'user_id' => $lockedWallet->user_id,
+                'type' => 'CREDIT',
+                'amount' => $amount,
+                'balance_after' => $lockedWallet->balance,
+                'source' => $source,
+                'order_id' => $orderId,
+                'description' => $description,
+            ]);
+        });
     }
 
     /**
-     * Debit amount from wallet.
+     * Debit amount from wallet with row-level concurrency lock (prevents double-spending).
      */
     public function debit(float $amount, string $source, string $description, ?int $orderId = null): WalletTransaction
     {
@@ -73,22 +84,31 @@ class Wallet extends Model
             throw new Exception("Debit amount must be greater than zero.");
         }
 
-        if ($this->balance < $amount) {
-            throw new Exception("Insufficient wallet balance.");
-        }
+        return DB::transaction(function () use ($amount, $source, $description, $orderId) {
+            $lockedWallet = static::where('id', $this->id)->lockForUpdate()->first();
+            if (!$lockedWallet) {
+                throw new Exception("Wallet record not found.");
+            }
 
-        $this->balance -= $amount;
-        $this->save();
+            if ($lockedWallet->balance < $amount) {
+                throw new Exception("Insufficient wallet balance.");
+            }
 
-        return $this->transactions()->create([
-            'user_id' => $this->user_id,
-            'type' => 'DEBIT',
-            'amount' => $amount,
-            'balance_after' => $this->balance,
-            'source' => $source,
-            'order_id' => $orderId,
-            'description' => $description,
-        ]);
+            $lockedWallet->balance -= $amount;
+            $lockedWallet->save();
+
+            $this->balance = $lockedWallet->balance;
+
+            return $lockedWallet->transactions()->create([
+                'user_id' => $lockedWallet->user_id,
+                'type' => 'DEBIT',
+                'amount' => $amount,
+                'balance_after' => $lockedWallet->balance,
+                'source' => $source,
+                'order_id' => $orderId,
+                'description' => $description,
+            ]);
+        });
     }
 
     /**

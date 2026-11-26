@@ -434,20 +434,20 @@ $registerCustomerRoutes = function () {
         Route::post('/wishlist/move-to-cart/{wishlistItem}', [WishlistController::class, 'moveToCart'])->name('wishlist.move-to-cart');
 
         // Review Routes
-        Route::post('/products/{product}/reviews', [ProductReviewController::class, 'store'])->name('reviews.store');
+        Route::post('/products/{product}/reviews', [ProductReviewController::class, 'store'])->middleware('throttle:5,1')->name('reviews.store');
         Route::delete('/reviews/{review}', [ProductReviewController::class, 'destroy'])->name('reviews.destroy');
 
         // Checkout Routes
         Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
         Route::post('/checkout/save-address', [CheckoutController::class, 'saveAddress'])->name('checkout.save-address');
-        Route::post('/checkout/apply-coupon', [CheckoutController::class, 'applyCoupon'])->name('checkout.apply-coupon');
+        Route::post('/checkout/apply-coupon', [CheckoutController::class, 'applyCoupon'])->middleware('throttle:15,1')->name('checkout.apply-coupon');
         Route::post('/checkout/remove-coupon', [CheckoutController::class, 'removeCoupon'])->name('checkout.remove-coupon');
         Route::post('/checkout/toggle-wallet', [CheckoutController::class, 'toggleWallet'])->name('checkout.toggle-wallet');
-        Route::post('/checkout', [CheckoutController::class, 'placeOrder'])->name('checkout.place-order');
-        Route::post('/checkout/razorpay/verify', [CheckoutController::class, 'verifyRazorpayPayment'])->name('checkout.razorpay.verify');
+        Route::post('/checkout', [CheckoutController::class, 'placeOrder'])->middleware('throttle:10,1')->name('checkout.place-order');
+        Route::post('/checkout/razorpay/verify', [CheckoutController::class, 'verifyRazorpayPayment'])->middleware('throttle:15,1')->name('checkout.razorpay.verify');
         Route::get('/order-success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
         Route::get('/checkout/payment-failed/{order}', [CheckoutController::class, 'paymentFailed'])->name('checkout.payment_failed');
-        Route::post('/checkout/orders/{order}/retry-payment', [CheckoutController::class, 'retryPayment'])->name('checkout.retry_payment');
+        Route::post('/checkout/orders/{order}/retry-payment', [CheckoutController::class, 'retryPayment'])->middleware('throttle:10,1')->name('checkout.retry_payment');
         Route::post('/checkout/orders/{order}/switch-to-cod', [CheckoutController::class, 'switchToCod'])->name('checkout.switch_to_cod');
 
         // Customer Account

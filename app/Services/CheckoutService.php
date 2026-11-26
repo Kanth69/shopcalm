@@ -422,10 +422,15 @@ class CheckoutService
                 Session::forget('use_wallet');
             }
 
-            // 2. Create Order Items and Tax Calculation
+            // 2. Create Order Items and Tax Calculation (with row-level lock)
             $totalOrderTax = 0.00;
             foreach ($cart->items as $item) {
-                $product = $item->product;
+                $product = Product::where('id', $item->product_id)->lockForUpdate()->first();
+                $availStock = $product ? $product->getOptionStock($item->selected_option) : 0;
+                if (!$product || $availStock < $item->quantity) {
+                    throw new Exception("Product " . ($product?->name ?? 'item') . " has insufficient stock (Only {$availStock} available).");
+                }
+
                 $originalPrice = (float) ($product ? $product->price : $item->unit_price);
                 $unitPrice = (float) $item->unit_price;
                 $itemOfferDiscount = max(0, $originalPrice - $unitPrice);

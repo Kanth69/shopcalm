@@ -70,13 +70,13 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
 
         Route::prefix('checkout')->group(function () {
-            Route::post('/validate', [CheckoutController::class, 'validateCheckout']);
-            Route::post('/apply-coupon', [CheckoutController::class, 'applyCoupon']);
-            Route::post('/create-order', [CheckoutController::class, 'createRazorpayOrder']);
-            Route::post('/place-order', [CheckoutController::class, 'placeOrder']);
-            Route::post('/verify-payment', [CheckoutController::class, 'verifyPayment']);
-            Route::post('/orders/{order}/switch-to-cod', [CheckoutController::class, 'switchToCod']);
-            Route::post('/orders/{order}/retry-payment', [CheckoutController::class, 'retryPayment']);
+            Route::post('/validate', [CheckoutController::class, 'validateCheckout'])->middleware('throttle:30,1');
+            Route::post('/apply-coupon', [CheckoutController::class, 'applyCoupon'])->middleware('throttle:15,1');
+            Route::post('/create-order', [CheckoutController::class, 'createRazorpayOrder'])->middleware('throttle:10,1');
+            Route::post('/place-order', [CheckoutController::class, 'placeOrder'])->middleware('throttle:10,1');
+            Route::post('/verify-payment', [CheckoutController::class, 'verifyPayment'])->middleware('throttle:15,1');
+            Route::post('/orders/{order}/switch-to-cod', [CheckoutController::class, 'switchToCod'])->middleware('throttle:10,1');
+            Route::post('/orders/{order}/retry-payment', [CheckoutController::class, 'retryPayment'])->middleware('throttle:10,1');
         });
 
         Route::prefix('account')->group(function () {
@@ -107,7 +107,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // Reviews
-        Route::post('/products/{product}/reviews', [\App\Http\Controllers\Customer\ProductReviewController::class, 'store']);
+        Route::post('/products/{product}/reviews', [\App\Http\Controllers\Customer\ProductReviewController::class, 'store'])->middleware('throttle:5,1');
     });
 
     // ── 5. RIDER / DELIVERY PARTNER MOBILE APP API ──
