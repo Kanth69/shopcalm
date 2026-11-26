@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Models\Address;
 use App\Models\Order;
 use App\Models\OrderFeedback;
+use App\Models\OrderItem;
+use App\Models\OrderReplacement;
 use App\Models\Setting;
 use App\Services\CartService;
 use App\Services\OrderService;
@@ -897,5 +899,238 @@ class AccountController extends BaseApiController
             'feedback_submitted'  => (bool)$order->feedback,
         ], 'Status retrieved.');
     }
+
+    /**
+     * Get Standard Valid Replacement Reasons & Eligibility for an item.
+     */
+    public function getReplacementConfig(Request $request, Order $order, OrderItem $orderItem): JsonResponse
+    {
+        $user = $request->user();
+        if ((int) $order->user_id !== (int) $user->id || (int) $orderItem->order_id !== (int) $order->id) {
+            return $this->sendError('Unauthorized.', [], 403);
+        }
+
+        $product = $orderItem->product;
+        $isReplaceable = (bool) ($product?->is_replaceable ?? false);
+        $windowDays = $isReplaceable ? (int) ($product->replacement_window_days ?: 7) : 0;
+
+        $deliveredAt = $order->fulfillment?->delivered_at ?? $order->updated_at;
+        $expiryDate = $deliveredAt ? $deliveredAt->copy()->addDays($windowDays) : null;
+        $isWithinWindow = $expiryDate ? now()->lte($expiryDate) : false;
+
+        $existingReplacement = OrderReplacement::where('order_item_id', $orderItem->id)
+            ->whereNotIn('status', ['cancelled', 'rejected'])
+            ->first();
+
+        $isEligible = ($order->status === 'delivered') && $isReplaceable && $isWithinWindow && !$existingReplacement;
+
+        $reasonsFormatted = collect(OrderReplacement::VALID_REASONS)->map(function ($config, $key) {
+            return [
+                'key'             => $key,
+                'label'           => $config['label'],
+                'photo_mandatory' => (bool) $config['photo_mandatory'],
+                'description'     => $config['description'],
+            ];
+        })->values();
+
+        return $this->sendResponse([
+            'is_eligible'          => $isEligible,
+            'is_delivered'         => $order->status === 'delivered',
+            'is_replaceable'       => $isReplaceable,
+            'window_days'          => $windowDays,
+            'window_expires_at'    => $expiryDate ? $expiryDate->format('Y-m-d H:i:s') : null,
+            'is_within_window'     => $isWithinWindow,
+            'has_active_request'   => (bool) $existingReplacement,
+            'active_replacement'   => $existingReplacement ? [
+                'replacement_number' => $existingReplacement->replacement_number,
+                'status'             => $existingReplacement->status,
+                'pickup_date'        => $existingReplacement->pickup_date?->format('Y-m-d'),
+                'rider_name'         => $existingReplacement->rider_name,
+            ] : null,
+            'reasons'              => $reasonsFormatted,
+        ], 'Replacement configuration loaded.');
+    }
+
+    /**
+     * Submit Item Replacement Request.
+     */
+    public function requestReplacement(Request $request, Order $order, OrderItem $orderItem): JsonResponse
+    {
+        $user = $request->user();
+        if ((int) $order->user_id !== (int) $user->id || (int) $orderItem->order_id !== (int) $order->id) {
+            return $this->sendError('Unauthorized access to this order item.', [], 403);
+        }
+
+        if ($order->status !== 'delivered') {
+            return $this->sendError('Replacement can only be requested for delivered orders.', [], 422);
+        }
+
+        $product = $orderItem->product;
+        if (!$product || !$product->is_replaceable) {
+            return $this->sendError('This product is non-returnable and non-replaceable as per store policy.', [], 422);
+        }
+
+        $windowDays = (int) ($product->replacement_window_days ?: 7);
+        $deliveredAt = $order->fulfillment?->delivered_at ?? $order->updated_at;
+        $expiryDate = $deliveredAt ? $deliveredAt->copy()->addDays($windowDays) : null;
+        if ($expiryDate && now()->gt($expiryDate)) {
+            return $this->sendError("The {$windowDays}-day replacement window for this item has expired on " . $expiryDate->format('d M Y') . '.', [], 422);
+        }
+
+        $alreadySubmitted = OrderReplacement::where('order_item_id', $orderItem->id)
+            ->whereNotIn('status', ['cancelled', 'rejected'])
+            ->exists();
+        if ($alreadySubmitted) {
+            return $this->sendError('A replacement request is already in progress for this item.', [], 422);
+        }
+
+        $validKeys = array_keys(OrderReplacement::VALID_REASONS);
+        $request->validate([
+            'reason'          => ['required', 'string', 'in:' . implode(',', $validKeys)],
+            'customer_notes'  => ['nullable', 'string', 'max:1000'],
+            'proof_images'    => ['nullable', 'array', 'max:4'],
+            'proof_images.*'  => ['nullable', 'image', 'max:5120'], // Max 5MB per image
+        ]);
+
+        $reasonKey = $request->reason;
+        $reasonConfig = OrderReplacement::VALID_REASONS[$reasonKey];
+
+        // Enforce: Photo proof is mandatory ONLY if physical_damage
+        $uploadedImages = [];
+        if ($request->hasFile('proof_images')) {
+            foreach ($request->file('proof_images') as $file) {
+                if ($file->isValid()) {
+                    $uploadedImages[] = $file->store('replacements', 'public');
+                }
+            }
+        }
+
+        if ($reasonConfig['photo_mandatory'] && empty($uploadedImages)) {
+            return $this->sendError('Clear photo proof is required for physical damage or broken seal claims.', [], 422);
+        }
+
+        $replacement = OrderReplacement::create([
+            'replacement_number'  => OrderReplacement::generateReplacementNumber(),
+            'order_id'            => $order->id,
+            'order_item_id'       => $orderItem->id,
+            'product_id'          => $product->id,
+            'user_id'             => $user->id,
+            'reason'              => $reasonKey,
+            'reason_label'        => $reasonConfig['label'],
+            'customer_notes'      => $request->customer_notes,
+            'proof_images'        => !empty($uploadedImages) ? $uploadedImages : null,
+            'status'              => 'requested',
+        ]);
+
+        return $this->sendResponse([
+            'replacement_id'     => $replacement->id,
+            'replacement_number' => $replacement->replacement_number,
+            'status'             => $replacement->status,
+            'status_label'       => 'Review Pending by Order Manager',
+            'created_at'         => $replacement->created_at->format('Y-m-d H:i:s'),
+        ], 'Your replacement request has been submitted successfully. Order Manager will review and assign a delivery partner for doorstep pickup.');
+    }
+
+    /**
+     * Customer Replacements History List.
+     */
+    public function replacements(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $replacements = OrderReplacement::with(['order', 'orderItem', 'product', 'rider'])
+            ->where('user_id', $user->id)
+            ->latest()
+            ->paginate(15);
+
+        $formatted = $replacements->map(function ($rep) {
+            $proofUrls = [];
+            if (!empty($rep->proof_images)) {
+                foreach ($rep->proof_images as $path) {
+                    $proofUrls[] = asset('storage/' . $path);
+                }
+            }
+
+            return [
+                'id'                 => $rep->id,
+                'replacement_number' => $rep->replacement_number,
+                'order_number'       => $rep->order?->order_number,
+                'item_name'          => $rep->orderItem?->product_name ?? ($rep->product?->name ?? 'Product Item'),
+                'item_image'         => $rep->product?->main_image ? asset('storage/' . $rep->product->main_image) : null,
+                'reason_label'       => $rep->reason_label,
+                'status'             => $rep->status,
+                'status_badge'       => match ($rep->status) {
+                    'requested'       => 'Pending Review',
+                    'approved'        => 'Approved',
+                    'pickup_assigned' => 'Pickup Assigned',
+                    'picked_up'       => 'Item Picked Up',
+                    'completed'       => 'Exchange Completed',
+                    'rejected'        => 'Rejected',
+                    default           => ucfirst($rep->status),
+                },
+                'pickup_date'        => $rep->pickup_date ? $rep->pickup_date->format('d M Y') : null,
+                'rider_name'         => $rep->rider_name,
+                'rider_phone'        => $rep->rider_phone,
+                'rejection_reason'   => $rep->rejection_reason,
+                'proof_photos'       => $proofUrls,
+                'created_at'         => $rep->created_at->format('d M Y, h:i A'),
+            ];
+        });
+
+        return $this->sendResponse([
+            'replacements' => $formatted,
+            'current_page' => $replacements->currentPage(),
+            'total'        => $replacements->total(),
+        ], 'Replacements retrieved.');
+    }
+
+    /**
+     * Single Replacement Detail.
+     */
+    public function replacementDetails(Request $request, OrderReplacement $replacement): JsonResponse
+    {
+        $user = $request->user();
+        if ((int) $replacement->user_id !== (int) $user->id) {
+            return $this->sendError('Unauthorized.', [], 403);
+        }
+
+        $replacement->loadMissing(['order', 'orderItem', 'product', 'rider']);
+
+        $proofUrls = [];
+        if (!empty($replacement->proof_images)) {
+            foreach ($replacement->proof_images as $path) {
+                $proofUrls[] = asset('storage/' . $path);
+            }
+        }
+
+        return $this->sendResponse([
+            'id'                  => $replacement->id,
+            'replacement_number'  => $replacement->replacement_number,
+            'order_number'        => $replacement->order?->order_number,
+            'order_id'            => $replacement->order_id,
+            'product_name'        => $replacement->orderItem?->product_name ?? ($replacement->product?->name ?? 'Item'),
+            'selected_option'     => $replacement->orderItem?->selected_option,
+            'product_image'       => $replacement->product?->main_image ? asset('storage/' . $replacement->product->main_image) : null,
+            'reason'              => $replacement->reason,
+            'reason_label'        => $replacement->reason_label,
+            'customer_notes'      => $replacement->customer_notes,
+            'status'              => $replacement->status,
+            'pickup_date'         => $replacement->pickup_date ? $replacement->pickup_date->format('d M Y') : null,
+            'rider_name'          => $replacement->rider_name,
+            'rider_phone'         => $replacement->rider_phone,
+            'order_manager_notes' => $replacement->order_manager_notes,
+            'rejection_reason'    => $replacement->rejection_reason,
+            'proof_photos'        => $proofUrls,
+            'created_at'          => $replacement->created_at->format('d M Y, h:i A'),
+            'timeline'            => [
+                ['stage' => 'Requested', 'time' => $replacement->created_at->format('d M Y, h:i A'), 'completed' => true],
+                ['stage' => 'Approved', 'time' => $replacement->reviewed_at?->format('d M Y, h:i A'), 'completed' => in_array($replacement->status, ['approved', 'pickup_assigned', 'picked_up', 'completed'])],
+                ['stage' => 'Pickup Assigned', 'time' => $replacement->pickup_date ? ('Scheduled: ' . $replacement->pickup_date->format('d M Y')) : null, 'completed' => in_array($replacement->status, ['pickup_assigned', 'picked_up', 'completed'])],
+                ['stage' => 'Picked Up', 'time' => $replacement->picked_up_at?->format('d M Y, h:i A'), 'completed' => in_array($replacement->status, ['picked_up', 'completed'])],
+                ['stage' => 'Exchange Completed', 'time' => $replacement->completed_at?->format('d M Y, h:i A'), 'completed' => $replacement->status === 'completed'],
+            ],
+        ], 'Replacement details retrieved.');
+    }
 }
+
 

@@ -229,6 +229,12 @@ $registerStaffRoutes = function () {
             Route::post('settlements', [\App\Http\Controllers\OrderManager\SettlementController::class, 'store'])->name('settlements.store');
             Route::get('settlements/{settlement}', [\App\Http\Controllers\OrderManager\SettlementController::class, 'show'])->name('settlements.show');
 
+            // Reverse Logistics & Item Replacements
+            Route::get('replacements', [\App\Http\Controllers\OrderManager\ReplacementController::class, 'index'])->name('replacements.index');
+            Route::get('replacements/live-poll', [\App\Http\Controllers\OrderManager\ReplacementController::class, 'livePoll'])->name('replacements.live-poll');
+            Route::post('replacements/{replacement}/approve-and-assign', [\App\Http\Controllers\OrderManager\ReplacementController::class, 'approveAndAssign'])->name('replacements.approve-and-assign');
+            Route::post('replacements/{replacement}/reject', [\App\Http\Controllers\OrderManager\ReplacementController::class, 'reject'])->name('replacements.reject');
+
             // Orders Lifecycle Management
             Route::get('orders', [\App\Http\Controllers\OrderManager\OrderController::class, 'index'])->name('orders.index');
             Route::get('orders/today', [\App\Http\Controllers\OrderManager\OrderController::class, 'todayOrders'])->name('orders.today');

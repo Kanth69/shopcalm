@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Models\Order;
+use App\Models\OrderReplacement;
 use App\Models\User;
 use App\Models\CashSettlement;
 use App\Models\Payment;
@@ -1105,5 +1106,69 @@ class RiderController extends BaseApiController
     {
         $request->user()->currentAccessToken()->delete();
         return $this->sendResponse([], 'Signed out successfully.');
+    }
+
+    /**
+     * Active Doorstep Reverse Logistics & Replacement Pickups assigned to this Rider.
+     */
+    public function replacements(Request $request): JsonResponse
+    {
+        $rider = $request->user();
+
+        $pickups = OrderReplacement::with(['order', 'product', 'user'])
+            ->where('rider_id', $rider->id)
+            ->whereIn('status', ['approved', 'pickup_assigned'])
+            ->latest('pickup_date')
+            ->get()
+            ->map(function ($rep) {
+                return [
+                    'id'                  => $rep->id,
+                    'replacement_number'  => $rep->replacement_number,
+                    'order_number'        => $rep->order?->order_number,
+                    'customer_name'       => $rep->user?->name ?? 'Customer',
+                    'customer_phone'      => $rep->order?->shipping_phone ?? $rep->user?->mobile_number,
+                    'shipping_address'    => $rep->order?->shipping_address,
+                    'shipping_city'       => $rep->order?->shipping_city,
+                    'shipping_zip'        => $rep->order?->shipping_zip,
+                    'item_name'           => $rep->product?->name ?? 'Product Item',
+                    'reason_label'        => $rep->reason_label,
+                    'pickup_date'         => $rep->pickup_date ? $rep->pickup_date->format('Y-m-d') : null,
+                    'order_manager_notes' => $rep->order_manager_notes,
+                    'status'              => $rep->status,
+                ];
+            });
+
+        return $this->sendResponse([
+            'pickups' => $pickups,
+            'count'   => $pickups->count(),
+        ], 'Assigned reverse pickups loaded.');
+    }
+
+    /**
+     * Complete Doorstep Reverse Pickup (Rider collected the returned/damaged item).
+     */
+    public function completePickup(Request $request, OrderReplacement $replacement): JsonResponse
+    {
+        $rider = $request->user();
+
+        if ($replacement->rider_id && $replacement->rider_id !== $rider->id && !$rider->isSuperAdmin()) {
+            return $this->sendError('Unauthorized. This pickup is assigned to another delivery executive.', [], 403);
+        }
+
+        $request->validate([
+            'rider_notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $replacement->update([
+            'status'       => 'picked_up',
+            'picked_up_at' => now(),
+            'order_manager_notes' => $request->rider_notes ? ($replacement->order_manager_notes . " [Rider: {$request->rider_notes}]") : $replacement->order_manager_notes,
+        ]);
+
+        return $this->sendResponse([
+            'replacement_number' => $replacement->replacement_number,
+            'status'             => 'picked_up',
+            'picked_up_at'       => $replacement->picked_up_at->format('Y-m-d H:i:s'),
+        ], "Item collected from customer for Replacement #{$replacement->replacement_number}.");
     }
 }

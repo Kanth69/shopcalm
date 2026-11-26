@@ -96,6 +96,12 @@ Route::prefix('v1')->group(function () {
             Route::post('/profile', [AccountController::class, 'updateProfile']);
             Route::post('/change-password', [AccountController::class, 'changePassword']);
             Route::get('/tickets', [AccountController::class, 'tickets']);
+
+            // Item Replacements Workflow
+            Route::get('/orders/{order}/items/{orderItem}/replacement-config', [AccountController::class, 'getReplacementConfig']);
+            Route::post('/orders/{order}/items/{orderItem}/replacement', [AccountController::class, 'requestReplacement'])->middleware('throttle:10,1');
+            Route::get('/replacements', [AccountController::class, 'replacements']);
+            Route::get('/replacements/{replacement}', [AccountController::class, 'replacementDetails']);
         });
 
         // Wishlist
@@ -133,6 +139,10 @@ Route::prefix('v1')->group(function () {
             Route::get('/settlement-status', [\App\Http\Controllers\Api\V1\RiderController::class, 'settlementStatus']);
             Route::get('/completed', [\App\Http\Controllers\Api\V1\RiderController::class, 'completed']);
             Route::post('/logout', [\App\Http\Controllers\Api\V1\RiderController::class, 'logout']);
+
+            // Reverse Logistics Pickups
+            Route::get('/replacements', [\App\Http\Controllers\Api\V1\RiderController::class, 'replacements']);
+            Route::post('/replacements/{replacement}/pickup-complete', [\App\Http\Controllers\Api\V1\RiderController::class, 'completePickup']);
         });
     });
 

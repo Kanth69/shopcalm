@@ -364,6 +364,16 @@
                 <span class="nav-badge" style="background: #334155; color: #cbd5e1;">UPI Desk</span>
             @endif
         </a>
+
+        <div class="nav-header">Reverse Logistics</div>
+        <a href="{{ route('order-manager.replacements.index') }}" class="nav-link {{ request()->routeIs('order-manager.replacements.*') ? 'active' : '' }}">
+            <i class="bi bi-arrow-repeat text-info"></i>
+            <span>Item Replacements</span>
+            @php $pendingRepCount = \App\Models\OrderReplacement::where('status', 'requested')->count(); @endphp
+            @if($pendingRepCount > 0)
+                <span class="nav-badge" id="nav-rep-badge" style="background: #06b6d4; color: #000; font-weight: 800;">{{ $pendingRepCount }}</span>
+            @endif
+        </a>
     </div>
 
     <!-- Staff User Footer -->

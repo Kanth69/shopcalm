@@ -129,6 +129,11 @@ class Order extends Model
         return $this->hasOne(OrderCancellation::class);
     }
 
+    public function replacements(): HasMany
+    {
+        return $this->hasMany(OrderReplacement::class);
+    }
+
     public function rider()
     {
         return $this->hasOneThrough(User::class, OrderFulfillment::class, 'order_id', 'id', 'id', 'rider_id');
