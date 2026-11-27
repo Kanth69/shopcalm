@@ -94,7 +94,8 @@ Route::prefix('v1')->group(function () {
             Route::patch('/addresses/{address}', [AccountController::class, 'updateAddress']);
             Route::delete('/addresses/{address}', [AccountController::class, 'deleteAddress']);
             Route::post('/profile', [AccountController::class, 'updateProfile']);
-            Route::post('/change-password', [AccountController::class, 'changePassword']);
+            Route::post('/change-password-otp', [AccountController::class, 'sendChangePasswordOtp'])->middleware('throttle:5,1');
+            Route::post('/change-password', [AccountController::class, 'changePassword'])->middleware('throttle:10,1');
             Route::get('/tickets', [AccountController::class, 'tickets']);
 
             // Item Replacements Workflow

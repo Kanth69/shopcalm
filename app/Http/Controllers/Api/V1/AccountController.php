@@ -627,10 +627,65 @@ class AccountController extends BaseApiController
     /**
      * Change Customer Account Password.
      */
+    /**
+     * Send OTP to customer's registered mobile number for Change Password.
+     */
+    public function sendChangePasswordOtp(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $mobile = $user->mobile_number ?? $user->phone;
+
+        if (empty($mobile)) {
+            return $this->sendError('No registered mobile number found on your account. Please update your profile.', [], 422);
+        }
+
+        try {
+            $whatsAppService = app(\App\Services\WhatsAppService::class);
+            $whatsAppService->sendOtp($mobile, 'CHANGE_PASSWORD');
+
+            $len = strlen($mobile);
+            $masked = $len > 6 ? substr($mobile, 0, 4) . str_repeat('*', max(1, $len - 6)) . substr($mobile, -2) : '******';
+
+            return $this->sendResponse([
+                'masked_mobile' => $masked,
+            ], 'Verification code (OTP) sent to your registered mobile number.');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Send Change Password OTP failed: ' . $e->getMessage());
+            return $this->sendError('Failed to send verification code. Please try again.', [], 500);
+        }
+    }
+
     public function changePassword(Request $request): JsonResponse
     {
         $user = $request->user();
+        $mobile = $user->mobile_number ?? $user->phone;
 
+        // Mode A: OTP verification (Fast, Modern Mobile UX)
+        if ($request->filled('otp')) {
+            $request->validate([
+                'otp'      => 'required|string|size:6',
+                'password' => 'required|string|min:8|confirmed',
+            ]);
+
+            if (empty($mobile)) {
+                return $this->sendError('No registered mobile number associated with this account.', [], 422);
+            }
+
+            $whatsAppService = app(\App\Services\WhatsAppService::class);
+            $isValid = $whatsAppService->verifyOtp($mobile, $request->otp, 'CHANGE_PASSWORD');
+
+            if (!$isValid) {
+                return $this->sendError('Invalid or expired verification code (OTP). Please request a new code.', [], 422);
+            }
+
+            $user->update([
+                'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+            ]);
+
+            return $this->sendResponse([], 'Password updated successfully with verification code.');
+        }
+
+        // Mode B: Old Password verification (Fallback)
         $request->validate([
             'current_password' => 'required|string',
             'password'         => 'required|string|min:8|confirmed',
